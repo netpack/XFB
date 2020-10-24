@@ -1,0 +1,3222 @@
+/*
+Hi and welcome. Thank you for reading my code.
+I've made all in a way that I hope makes is easy for anyone to understand.
+Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
+*/
+
+#include "player.h"
+#include "ui_player.h"
+#include "add_music_single.h"
+#include "add_full_dir.h"
+#include "addgenre.h"
+#include "addjingle.h"
+#include "add_pub.h"
+#include "add_program.h"
+#include "optionsdialog.h"
+#include "aboutus.h"
+#include "youtubedownloader.h"
+#include <QMessageBox>
+#include <QInputDialog>
+#include <QFileDialog>
+#include <QtSql>
+#include <QMediaPlayer>
+#include <QMediaPlaylist>
+#include <QAudio>
+#include <QDebug>
+#include <QMultimedia>
+#include <QAudioProbe>
+#include <QTableWidgetItem>
+#include <QList>
+#include <QDateTime>
+#include <QDrag>
+#include <QDragEnterEvent>
+#include <QDragMoveEvent>
+#include <QSqlTableModel>
+#include <QFileInfo>
+#include <QAudioRecorder>
+#include <QAudioDeviceInfo>
+#include <QAudioDecoder>
+#include <QMediaRecorder>
+#include <QNetworkAccessManager>
+#include <QNetworkConfigurationManager>
+#include <QHttpPart>
+#include <QGraphicsView>
+#include <QGraphicsScene>
+#include <QPointF>
+#include <QVector>
+/*
+#include <phonon/MediaObject>
+#include <qsynthMeter.h>
+*/
+player::player(QWidget *parent) :
+    QMainWindow(parent),
+    ui(new Ui::player)
+{
+
+    qDebug()<<"Starting XFB 1.1 by Netpack - Online Solutions! www.netpack.pt";
+
+
+    ui->setupUi(this);
+
+    updateConfig();
+    checkDbOpen();
+
+
+
+
+
+    Xplayer = new QMediaPlayer(this);
+    Xplaylist = new QMediaPlaylist();
+    Xplaylist->setCurrentIndex(1);
+    Xplayer->setPlaylist(Xplaylist);
+
+
+    onAbout2Finish = 0;
+    autoMode=1;
+    recMode=0;
+    PlayMode="stopped";
+    tmpFullScreen=0;
+
+    ui->txt_ProgramName->hide();
+    ui->bt_ProgramStopandProcess->hide();
+    ui->txt_uploadingPrograms->hide();
+     ui->txt_creatingPrograms->hide();
+
+    audioRecorder = new QAudioRecorder(this);
+    probe = new QAudioProbe;
+    connect(probe, SIGNAL(audioBufferProbed(QAudioBuffer)), this, SLOT(processBuffer(QAudioBuffer)));
+    probe->setSource(audioRecorder);
+
+
+    QAudioFormat m_format;
+    m_format.setSampleRate(16000);
+    m_format.setChannelCount(2);
+    m_format.setSampleSize(16);
+    m_format.setSampleType(QAudioFormat::SignedInt);
+    m_format.setByteOrder(QAudioFormat::LittleEndian);
+    m_format.setCodec("audio/vorbis");
+
+
+
+    /* main phonon music objects */
+    /*
+     audioOutput = new Phonon::AudioOutput(Phonon::MusicCategory, this);
+     mediaObject = new Phonon::MediaObject(this);
+     metaInformationResolver = new Phonon::MediaObject(this);
+*/
+    /* Connect left and right audio phonon data outputs to vumeter slot */
+    /*
+     dataout = new Phonon::AudioDataOutput(this);
+     Phonon::createPath(mediaObject, dataout);
+     connect( dataout, SIGNAL(dataReady(const QMap<Phonon::AudioDataOutput::Channel, QVector<qint16> >)),
+             this, SLOT(dataReceived(const QMap<Phonon::AudioDataOutput::Channel, QVector<qint16> >)));
+*/
+     /* Main music object signals and slots */
+    /*
+     connect(mediaObject, SIGNAL(tick(qint64)), this, SLOT(tick(qint64)));
+     connect(mediaObject, SIGNAL(stateChanged(Phonon::State,Phonon::State)),this, SLOT(stateChanged(Phonon::State,Phonon::State)));
+     connect(mediaObject, SIGNAL(currentSourceChanged(Phonon::MediaSource)),this, SLOT(sourceChanged(Phonon::MediaSource)));
+     connect(mediaObject, SIGNAL(aboutToFinish()), this, SLOT(aboutToFinish()));
+*/
+
+
+
+    //Audio devices
+    foreach (const QString &device, audioRecorder->audioInputs()) {
+            //ui->audioDeviceBox->addItem(device, QVariant(device));
+            qDebug()<<"Audio Hardware on this system: "<<QVariant(QString(device));
+
+        }
+
+    //Audio codecs
+    foreach (const QString &codecName, audioRecorder->supportedAudioCodecs()) {
+            //ui->audioCodecBox->addItem(codecName, QVariant(codecName));
+            qDebug()<<"Audio Codecs on this system: "<<QVariant(QString(codecName));
+        }
+
+    //Containers
+    foreach (const QString &containerName, audioRecorder->supportedContainers()) {
+           // ui->containerBox->addItem(containerName, QVariant(containerName));
+            qDebug()<<"Audio Containers on this system: "<<QVariant(QString(containerName));
+        }
+
+    //Sample rates
+    foreach (int sampleRate, audioRecorder->supportedAudioSampleRates()) {
+       // ui->sampleRateBox->addItem(QString::number(sampleRate), QVariant(sampleRate));
+        qDebug()<<"Audio Sample Rates suported: "<<QVariant(int(sampleRate));
+    }
+
+
+    connect(Xplayer, &QMediaPlayer::positionChanged, this, &player::onPositionChanged);
+    connect(Xplayer, &QMediaPlayer::durationChanged, this, &player::durationChanged);
+    connect(Xplayer, &QMediaPlayer::currentMediaChanged, this, &player::currentMediaChanged);
+    connect(Xplayer, &QMediaPlayer::volumeChanged, this, &player::volumeChanged);
+
+    connect(recTimer,SIGNAL(timeout()),this,SLOT(run_recTimer()));
+
+
+    /* main clock signals and slots */
+    QTimer *timer = new QTimer(this);
+    connect(timer, SIGNAL(timeout()), this, SLOT(showTime()));
+    timer->start(1000);
+    showTime();
+
+
+    /*Scheduler*/
+    /*
+     *
+     * This will run every minute to check if there is something on the database programed for this minute in 'time' and do something if so.
+     *
+     * */
+    QTimer *schedulerTimer = new QTimer(this);
+    connect(schedulerTimer,SIGNAL(timeout()),this,SLOT(run_scheduler()));
+    schedulerTimer->start(60000);
+
+
+    /*Server Scheduler*/
+    /*
+     *
+     *
+     * This will check for new things in the FTP and get them if Role is set to Server
+     *
+     *
+     * */
+
+    if(Role=="Server"){
+        server_this_day_of_the_week = QDate::currentDate().dayOfWeek();
+        QTimer *schedulerTimer = new QTimer(this);
+        connect(schedulerTimer,SIGNAL(timeout()),this,SLOT(run_server_scheduler()));
+        schedulerTimer->start(3600000); //once per hour
+        run_server_scheduler(); //run at startup
+    }
+
+
+    /*Populate music table with an editable table field on double-click*/
+
+    QSqlTableModel *model = new QSqlTableModel(this);
+    model->setTable("musics");
+    model->select();
+
+    ui->musicView->setModel(model);
+    ui->musicView->setSortingEnabled(true);
+    ui->musicView->hideColumn(0);
+    ui->musicView->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
+
+
+
+    /*Populate jingles table with an editable table field on double-click*/
+    QSqlTableModel * jinglesmodel = new QSqlTableModel(this);
+    jinglesmodel->setTable("jingles");
+    jinglesmodel->select();
+    ui->jinglesView->setModel(jinglesmodel);
+    ui->jinglesView->setSortingEnabled(true);
+    ui->jinglesView->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
+
+
+    /*Populate Pub table*/
+
+    QSqlTableModel *pubmodel = new QSqlTableModel(this);
+    pubmodel->setTable("pub");
+    pubmodel->select();
+    ui->pubView->setModel(pubmodel);
+    ui->pubView->setSortingEnabled(true);
+    ui->pubView->hideColumn(0);
+    ui->pubView->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
+
+
+    /*Populate Programs table*/
+
+    QSqlTableModel *programsmodel = new QSqlTableModel(this);
+    programsmodel->setTable("programs");
+    programsmodel->select();
+    ui->programsView->setModel(programsmodel);
+    ui->programsView->setSortingEnabled(true);
+    ui->programsView->hideColumn(0);
+    ui->programsView->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
+
+
+
+    /*Drag & Drop Set*/
+    /*player*/
+     this->setAcceptDrops(true);
+    /*playlist (playlist)*/
+     ui->playlist->setSelectionMode(QAbstractItemView::SingleSelection);
+     ui->playlist->setDragEnabled(true);
+     ui->playlist->viewport()->setAcceptDrops(true);
+     ui->playlist->setAcceptDrops(true);
+     ui->playlist->setDropIndicatorShown(false);
+     ui->playlist->setDragDropMode(QAbstractItemView::InternalMove);
+    /*Music list*/
+     ui->musicView->setSelectionMode(QAbstractItemView::SingleSelection);
+     ui->musicView->setDragEnabled(true);
+     ui->musicView->viewport()->setAcceptDrops(false);
+     ui->musicView->setAcceptDrops(false);
+     ui->musicView->setDropIndicatorShown(true);
+     ui->musicView->setDragDropMode(QAbstractItemView::DragOnly);
+     ui->musicView->setSelectionBehavior(QAbstractItemView::SelectRows);
+     ui->musicView->setSelectionMode(QAbstractItemView::SingleSelection);
+
+     ui->musicView->setContextMenuPolicy(Qt::CustomContextMenu);
+     connect(ui->musicView, SIGNAL(customContextMenuRequested(const QPoint&)),
+         this, SLOT(musicViewContextMenu(const QPoint&)));
+
+     ui->playlist->setContextMenuPolicy(Qt::CustomContextMenu);
+     connect(ui->playlist, SIGNAL(customContextMenuRequested(const QPoint&)),
+             this, SLOT(playlistContextMenu(const QPoint&)));
+
+     ui->jinglesView->setContextMenuPolicy(Qt::CustomContextMenu);
+     connect(ui->jinglesView, SIGNAL(customContextMenuRequested(const QPoint&)),
+         this, SLOT(jinglesViewContextMenu(const QPoint&)));
+
+     ui->pubView->setContextMenuPolicy(Qt::CustomContextMenu);
+     connect(ui->pubView, SIGNAL(customContextMenuRequested(const QPoint&)),
+         this, SLOT(pubViewContextMenu(const QPoint&)));
+
+     ui->programsView->setContextMenuPolicy(Qt::CustomContextMenu);
+     connect(ui->programsView, SIGNAL(customContextMenuRequested(const QPoint&)),
+         this, SLOT(programsViewContextMenu(const QPoint&)));
+
+
+     /*Populate genre1 and 2 filters*/
+     QSqlQueryModel * model_genre1=new QSqlQueryModel();
+
+     QSqlQuery* qry=new QSqlQuery();
+
+     QString sqlq = "select name from genres1";
+     qry->exec(sqlq);
+     model_genre1->setQuery(*qry);
+     ui->cBoxGenre1->setModel(model_genre1);
+     ui->cBoxGenre2->setModel(model_genre1);
+
+    update_music_table();
+
+
+
+    qDebug()<<"PingServer "<<Server_URL;
+    QProcess cmd;
+    QString cmdtmpstr = "ping -c 1 "+Server_URL+" | grep '0% packet loss'";
+    cmd.start("sh",QStringList()<<"-c"<<cmdtmpstr);
+    cmd.waitForFinished();
+    QString cmdOut = cmd.readAll();
+    qDebug()<<"ping "<<Server_URL<<" :: "<<cmdOut;
+    cmd.close();
+
+    QStringList arraycmd = cmdOut.split(" ");
+    qDebug()<<"array obj: "<<arraycmd[3];
+
+    if(arraycmd[3]=="1"){
+
+        qDebug()<<"Server Pinged OK!";
+        checkForUpdates();
+
+
+
+    }
+
+}
+
+
+
+
+player::~player()
+{
+    delete ui;
+    delete audioRecorder;
+    delete probe;
+}
+
+
+
+
+
+
+
+
+
+/*
+void player::dataReceived(const QMap<Phonon::AudioDataOutput::Channel, QVector<qint16> > map){
+
+   if(indexcanal>=1){
+
+       indexcanal --;
+
+       if(indexcanal==1){
+           double valorCanalDireito = map[Phonon::AudioDataOutput::RightChannel][0] / 10;
+           qDebug () << "Valor do canal direito: " << abs(valorCanalDireito);
+
+           double valorCanalEsquerdo = map[Phonon::AudioDataOutput::LeftChannel][0] / 10;
+           qDebug () << "Valor do canal esquerdo: " << abs(valorCanalEsquerdo);
+
+
+
+
+
+          indexcanal = 4;
+
+       }
+
+
+   }
+
+}
+*/
+
+/*
+void player::stateChanged(Phonon::State newState, Phonon::State )
+ {
+     switch (newState) {
+         case Phonon::ErrorState:
+             if (mediaObject->errorType() == Phonon::FatalError) {
+                 QMessageBox::warning(this, tr("Phonon State: Fatal Error 201503271649"),
+                 mediaObject->errorString());
+             } else {
+                 QMessageBox::warning(this, tr("Phonon State: Error 201503271650"),
+                 mediaObject->errorString());
+             }
+             break;
+           case Phonon::PlayingState:
+                        qDebug()<<"Phonon State: Now Playing!!";
+
+                     break;
+             case Phonon::StoppedState:
+                        qDebug()<<("Phonon State: Stopped!!");
+
+
+                     break;
+                 case Phonon::PausedState:
+                        qDebug()<<"Paused!!";
+
+                     break;
+     case Phonon::BufferingState:
+         qDebug() << "Phonon State: Filling up buffers...";
+         break;
+     case Phonon::LoadingState:
+         qDebug() << "Phonon State: Loading...";
+         break;
+     }
+}
+
+
+void player::sourceChanged(const Phonon::MediaSource &source)
+{
+    qDebug() << "SOURCE CHANGED: " << &source;
+
+}
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+void player::processBuffer(const QAudioBuffer &buffer){
+
+    //qrDebug()<<"processBuffer is running...";
+
+
+
+}
+
+
+void player::updateConfig(){
+
+
+    /* get db settings */
+    QFile settings ("../config/settings.conf");
+    if (!settings.open(QIODevice::ReadOnly | QIODevice::Text)){
+        qDebug() << "../config/settings.conf could not be loaded. Please check that it exists";
+        return;
+    }
+
+    QTextStream in(&settings);
+    qDebug() << "Opening ../config/settings.conf";
+    while (!in.atEnd()) {
+        QString line = in.readLine();
+        QStringList results = line.split(" = ");
+
+        if(results[0]=="SavePath"){
+            SavePath = results[1];
+        }
+
+        if(results[0]=="Server_URL"){
+            Server_URL = results[1];
+        }
+        if(results[0]=="Port"){
+            Port = results[1].toInt();
+        }
+        if(results[0]=="User"){
+            User = results[1];
+        }
+        if(results[0]=="Pass"){
+            Pass = results[1];
+        }
+
+        if(results[0]=="ProgramsPath"){
+            ProgramsPath = results[1];
+        }
+
+        if(results[0]=="FTPPath"){
+            FTPPath = results[1];
+        }
+
+        if(results[0]=="ComHour"){
+            ComHour = results[1];
+        }
+
+        if(results[0]=="fullScreen"){
+            fullScreen = results[1];
+            if(fullScreen=="true"){
+
+            }
+        }
+
+        if(results[0]=="RecDevice"){
+            recDevice = results[1];
+        }
+        if(results[0]=="RecCodec"){
+            codec = results[1];
+        }
+        if(results[0]=="RecContainer"){
+            contentamento = results[1];
+        }
+        if(results[0]=="Database"){
+            txt_selected_db = results[1];
+        }
+        if(results[0]=="Disable_Seek_Bar"){
+            disableSeekBar = results[1];
+            if(disableSeekBar=="true")
+                ui->sliderProgress->setEnabled(0);
+            qDebug() << "Disable Seek bar settings: " << disableSeekBar;
+        }
+        if(results[0]=="Normalize_Soft"){
+            normalization_soft = results[1];
+            qDebug() << "normalization_soft settings: " << normalization_soft;
+        }
+        if(results[0]=="Disable_Volume"){
+            Disable_Volume = results[1];
+            if(Disable_Volume=="true")
+                ui->sliderVolume->setEnabled(0);
+            qDebug() << "Disable_Volume settings: " << Disable_Volume;
+        }
+        if(results[0]=="Role"){
+            Role = results[1];
+            qDebug() << "Role settings: " << Role;
+
+            if(Role=="Server"){
+                qDebug("XFB is now running in server mode!");
+
+
+
+            }
+
+
+        }
+
+    }
+
+
+
+
+
+
+}
+
+
+void player::showTime()
+{
+    QTime time = QTime::currentTime();
+    QString text = time.toString("hh:mm");
+    QString segundos = time.toString(":ss");
+    if ((time.second() % 2) == 0)
+        segundos[0] = ' ';
+   // display(text);
+    //qDebug() << "text is: " << text;
+    ui->txt_horas->display(text+segundos);
+
+
+    //ui->txt_segundos->display(segundos);
+}
+
+void player::checkDbOpen(){
+
+        if(!adb.isOpen()){
+
+            qDebug()<<"Opening db from checkDbOpen";
+
+                adb=QSqlDatabase::addDatabase("QSQLITE");
+                adb.setDatabaseName("../config/adb.db");
+                adb.open();
+        }
+
+}
+
+void player::on_actionOpen_triggered()
+{
+
+    qDebug() << "File -> Open file";
+
+
+    QFileDialog dialog(this);
+    dialog.setFileMode(QFileDialog::ExistingFiles);
+    dialog.setNameFilter(tr("Audio Files (*.ogg *.mp3 *.flac *.wav)"));
+    dialog.setViewMode(QFileDialog::Detail);
+    QStringList fileNames;
+    if(dialog.exec())
+    {
+        fileNames = dialog.selectedFiles();
+        ui->playlist->addItems(fileNames);
+    }
+
+
+
+
+}
+
+void::player::playlistContextMenu(const QPoint& pos){
+    QPoint globalPos = ui->playlist->mapToGlobal(pos);
+    QMenu thisMenu;
+    QString remove = tr("Remove this track from the playlist");
+    QString moveToTop = tr("Send this track to the top of the playlist");
+    QString moveToBottom = tr("Send this track to the bottom of the playlist");
+
+
+    thisMenu.addAction(remove);
+    thisMenu.addAction(moveToTop);
+    thisMenu.addAction(moveToBottom);
+
+
+    QAction* selectedItem = thisMenu.exec(globalPos);
+    if(selectedItem){
+        QString selectedListItem = selectedItem->text();
+        int rowidx = ui->playlist->selectionModel()->currentIndex().row();
+        estevalor = ui->playlist->model()->data(ui->playlist->model()->index(rowidx,0)).toString();
+
+        if(selectedListItem==remove){
+            delete ui->playlist->item(rowidx);
+        }
+        if(selectedListItem==moveToTop){
+            delete ui->playlist->item(rowidx);
+            ui->playlist->insertItem(0,estevalor);
+        }
+        if(selectedListItem==moveToBottom){
+            delete ui->playlist->item(rowidx);
+            ui->playlist->addItem(estevalor);
+        }
+
+
+    }
+}
+
+void::player::musicViewContextMenu(const QPoint& pos){
+    QPoint globalPos = ui->musicView->mapToGlobal(pos);
+    QMenu thisMenu;
+    QString addToBottomOfPlaylist = tr("Add to the bottom of playlist");
+    QString addtoTopOfPlaylist = tr("Add to the top of the playlist");
+    QString deleteThisFromDB = tr("Delete this track from database");
+    QString openWithAudacity = tr("Open this in Audacity");
+    QString getInfoFromMediaInfo = tr("Retrieve the meta information from the file");
+
+    thisMenu.addAction(addToBottomOfPlaylist);
+    thisMenu.addAction(addtoTopOfPlaylist);
+    thisMenu.addAction(deleteThisFromDB);
+    thisMenu.addAction(openWithAudacity);
+    thisMenu.addAction(getInfoFromMediaInfo);
+
+    QAction* selectedItem = thisMenu.exec(globalPos);
+    if (selectedItem)
+    {
+        //qDebug()<<"selected item in context menu was: "<<selectedItem->text();
+        QString selectedMenuItem = selectedItem->text();
+        int rowidx = ui->musicView->selectionModel()->currentIndex().row();
+        estevalor = ui->musicView->model()->data(ui->musicView->model()->index(rowidx,7)).toString();
+
+        if(selectedMenuItem==addToBottomOfPlaylist){
+            qDebug()<<"Launch add this to bottom of playlist";
+            ui->playlist->addItem(estevalor);
+        }
+        if(selectedMenuItem==addtoTopOfPlaylist){
+            qDebug()<<"Launch add this to top of playlist";
+         ui->playlist->insertItem(0,estevalor);
+        }
+        if(selectedMenuItem==deleteThisFromDB){
+
+            QMessageBox::StandardButton go;
+            go = QMessageBox::question(this,tr("Sure?"),tr("Are you sure you want to delete the track from the database?"), QMessageBox::Yes|QMessageBox::No);
+            if(go==QMessageBox::Yes){
+
+                QMessageBox::StandardButton rm;
+                rm = QMessageBox::question(this,tr("Erase the file also?"),tr("Do you want to delete the file from the hard drive also?"), QMessageBox::Yes|QMessageBox::No);
+                if(rm==QMessageBox::Yes){
+
+
+                    QProcess sh;
+                    sh.startDetached("sh",QStringList()<<"-c"<<"rm \""+estevalor+"\"");
+
+                    qDebug()<<"File DELETED :: "<<estevalor;
+
+
+                }
+
+                QSqlQuery sql;
+                sql.prepare("delete from musics where path=:path");
+                sql.bindValue(":path",estevalor);
+                if(sql.exec()){
+                    //QMessageBox::information(this,tr("Track removed"),tr("The track was removed"));
+                    update_music_table();
+                } else {
+                    QMessageBox::critical(this,tr("Error"),sql.lastError().text());
+                    qDebug() << "last sql: " << sql.lastQuery();
+                }
+            }
+           }
+
+       if(selectedMenuItem==openWithAudacity){
+           QProcess sh;
+           sh.startDetached("sh",QStringList()<<"-c"<<"audacity \""+estevalor+"\"");
+       }
+       if(selectedMenuItem==getInfoFromMediaInfo){
+           delete ui->playlist->item(rowidx);
+           qDebug()<<"setInfoFromMediaInfo: "<<estevalor;
+           QProcess shi;
+           shi.start("sh", QStringList() << "-c" << "mediainfo \""+estevalor+"\"");
+           shi.waitForFinished();
+           
+                   QString shiout = shi.readAll();
+   
+                   QStringList pieces = shiout.split( "\n" );
+                   QString format = pieces.value( 2 );
+                   QString size = pieces.value( 3 );
+                   QString duration = pieces.value( 4 );
+                   QString bitrate = pieces.value( 6 );
+                   QString album = pieces.value( 7 );
+                   QString artist = pieces.value( 8 );
+                   QString song = pieces.value( 9 );
+                   QString genre = pieces.value( 14 );
+
+                   QStringList artist_arr = artist.split(":");
+                   QString artist_name = artist_arr[1].trimmed();
+
+                   QStringList song_arr = song.split(":");
+                   QString song_name = song_arr[1].trimmed();
+
+                   QStringList format_arr = format.split(":");
+                   QString format_name = format_arr[1].trimmed();
+
+                   QStringList album_arr = album.split(":");
+                   QString album_name = album_arr[1].trimmed();
+
+                   QStringList bitrate_arr = bitrate.split(":");
+                   QString bitrate_name = bitrate_arr[1].trimmed();
+
+                   QStringList duration_arr = duration.split(":");
+                   QString duration_name = duration_arr[1].trimmed();
+
+                   QStringList genre_arr = genre.split(":");
+                   QString genre_name = genre_arr[1].trimmed();
+
+                   QStringList size_arr = size.split(":");
+                   QString size_name = size_arr[1].trimmed();
+
+                   QString msg4box = tr("Artist: ")+artist_name+tr("; Song: ")+song_name+tr("; Album: ")+album_name+tr("; Genre: ")+genre_name+tr(" Bitrate: ")+bitrate_name+tr("; Duration:")+duration_name+tr("; size: ")+size_name+tr("; Format: ")+format_name;
+
+                   QMessageBox::StandardButton rpl;
+                   rpl = QMessageBox::question(this,tr("Apply this info to the database?"),msg4box,QMessageBox::Yes|QMessageBox::No);
+
+                   if(rpl==QMessageBox::Yes){
+                       qDebug()<<"Applying this info to the db: "<<msg4box;
+
+
+                       QSqlQuery qr;
+                       QString tmpqr = "update musics set artist ='"+artist_name+"', song = '"+song_name+"', genre1 = '"+genre_name+"', genre2 = '"+genre_name+"' where path = '"+estevalor+"'";
+
+                       qr.prepare(tmpqr);
+                               
+                       if(qr.exec()){
+                           qDebug()<<"Database updated; Query was: "<<qr.lastQuery();
+                           update_music_table();
+                       } else {
+                           qDebug()<<"Error updating database; Query was: "<<qr.lastQuery();
+                       }
+
+
+
+                   }
+
+       }
+
+
+    }
+    else
+    {
+        // nothing was chosen
+    }
+}
+
+
+
+
+void::player::jinglesViewContextMenu(const QPoint& pos){
+    QPoint globalPos = ui->jinglesView->mapToGlobal(pos);
+    QMenu thisMenu;
+    QString addToBottomOfPlaylist = tr("Add to the bottom of playlist");
+    QString addtoTopOfPlaylist = tr("Add to the top of the playlist");
+    QString deleteThisFromDB = tr("Delete this jingle from the database");
+    QString openWithAudacity = tr("Open this in Audacity");
+
+    thisMenu.addAction(addToBottomOfPlaylist);
+    thisMenu.addAction(addtoTopOfPlaylist);
+    thisMenu.addAction(deleteThisFromDB);
+    thisMenu.addAction(openWithAudacity);
+
+    QAction* selectedItem = thisMenu.exec(globalPos);
+    if (selectedItem)
+    {
+        //qDebug()<<"selected item in context menu was: "<<selectedItem->text();
+        QString selectedMenuItem = selectedItem->text();
+        int rowidx = ui->jinglesView->selectionModel()->currentIndex().row();
+        estevalor = ui->jinglesView->model()->data(ui->jinglesView->model()->index(rowidx,1)).toString();
+
+        if(selectedMenuItem==addToBottomOfPlaylist){
+            qDebug()<<"Launch add this to bottom of playlist";
+            ui->playlist->addItem(estevalor);
+        }
+        if(selectedMenuItem==addtoTopOfPlaylist){
+            qDebug()<<"Launch add this to top of playlist";
+         ui->playlist->insertItem(0,estevalor);
+        }
+        if(selectedMenuItem==deleteThisFromDB){
+
+            QMessageBox::StandardButton go;
+            go = QMessageBox::question(this,tr("Sure?"),tr("Are you sure you want to delete this jingle from the database?"), QMessageBox::Yes|QMessageBox::No);
+            if(go==QMessageBox::Yes){
+                QSqlQuery sql;
+                sql.prepare("delete from jingles where path=:path");
+                sql.bindValue(":path",estevalor);
+                if(sql.exec()){
+                    QMessageBox::information(this,tr("Jingle removed"),tr("The jingle was removed from the database!"));
+                    update_music_table();
+                } else {
+                    QMessageBox::critical(this,tr("Error"),sql.lastError().text());
+                    qDebug() << "last sql: " << sql.lastQuery();
+                }
+            }
+           }
+
+       if(selectedMenuItem==openWithAudacity){
+           QProcess sh;
+           sh.startDetached("sh",QStringList()<<"-c"<<"audacity \""+estevalor+"\"");
+       }
+
+
+    }
+    else
+    {
+        // nothing was chosen
+    }
+}
+
+
+
+void::player::pubViewContextMenu(const QPoint& pos){
+    QPoint globalPos = ui->pubView->mapToGlobal(pos);
+    QMenu thisMenu;
+    QString addToBottomOfPlaylist = tr("Add to the bottom of playlist");
+    QString addtoTopOfPlaylist = tr("Add to the top of the playlist");
+    QString deleteThisFromDB = tr("Delete this pub from the database");
+    QString openWithAudacity = tr("Open this in Audacity");
+
+    thisMenu.addAction(addToBottomOfPlaylist);
+    thisMenu.addAction(addtoTopOfPlaylist);
+    thisMenu.addAction(deleteThisFromDB);
+    thisMenu.addAction(openWithAudacity);
+
+    QAction* selectedItem = thisMenu.exec(globalPos);
+    if (selectedItem)
+    {
+        //qDebug()<<"selected item in context menu was: "<<selectedItem->text();
+        QString selectedMenuItem = selectedItem->text();
+        int rowidx = ui->pubView->selectionModel()->currentIndex().row();
+        estevalor = ui->pubView->model()->data(ui->pubView->model()->index(rowidx,2)).toString();
+
+        if(selectedMenuItem==addToBottomOfPlaylist){
+            qDebug()<<"Launch add this to bottom of playlist";
+            ui->playlist->addItem(estevalor);
+        }
+        if(selectedMenuItem==addtoTopOfPlaylist){
+            qDebug()<<"Launch add this to top of playlist";
+         ui->playlist->insertItem(0,estevalor);
+        }
+        if(selectedMenuItem==deleteThisFromDB){
+
+            QMessageBox::StandardButton go;
+            go = QMessageBox::question(this,tr("Sure?"),tr("Are you sure you want to delete this pub from the database?"), QMessageBox::Yes|QMessageBox::No);
+            if(go==QMessageBox::Yes){
+                QSqlQuery sql;
+                sql.prepare("delete from pub where path=:path");
+                sql.bindValue(":path",estevalor);
+                if(sql.exec()){
+                    QMessageBox::information(this,tr("Jingle removed"),tr("The pub was removed from the database!"));
+                    update_music_table();
+                } else {
+                    QMessageBox::critical(this,tr("Error"),sql.lastError().text());
+                    qDebug() << "last sql: " << sql.lastQuery();
+                }
+            }
+           }
+
+       if(selectedMenuItem==openWithAudacity){
+           QProcess sh;
+           sh.startDetached("sh",QStringList()<<"-c"<<"audacity \""+estevalor+"\"");
+       }
+
+
+    }
+    else
+    {
+        // nothing was chosen
+    }
+}
+
+
+void::player::programsViewContextMenu(const QPoint& pos){
+    QPoint globalPos = ui->programsView->mapToGlobal(pos);
+    QMenu thisMenu;
+    QString addToBottomOfPlaylist = tr("Add to the bottom of playlist");
+    QString addtoTopOfPlaylist = tr("Add to the top of the playlist");
+    QString deleteThisFromDB = tr("Delete this program from the database");
+    QString openWithAudacity = tr("Open this in Audacity");
+
+    thisMenu.addAction(addToBottomOfPlaylist);
+    thisMenu.addAction(addtoTopOfPlaylist);
+    thisMenu.addAction(deleteThisFromDB);
+    thisMenu.addAction(openWithAudacity);
+
+    QAction* selectedItem = thisMenu.exec(globalPos);
+    if (selectedItem)
+    {
+        //qDebug()<<"selected item in context menu was: "<<selectedItem->text();
+        QString selectedMenuItem = selectedItem->text();
+        int rowidx = ui->programsView->selectionModel()->currentIndex().row();
+        estevalor = ui->programsView->model()->data(ui->programsView->model()->index(rowidx,2)).toString();
+
+        if(selectedMenuItem==addToBottomOfPlaylist){
+            qDebug()<<"Launch add this to bottom of playlist";
+            ui->playlist->addItem(estevalor);
+        }
+        if(selectedMenuItem==addtoTopOfPlaylist){
+            qDebug()<<"Launch add this to top of playlist";
+         ui->playlist->insertItem(0,estevalor);
+        }
+        if(selectedMenuItem==deleteThisFromDB){
+
+            QMessageBox::StandardButton go;
+            go = QMessageBox::question(this,tr("Sure?"),tr("Are you sure you want to delete this program from the database?"), QMessageBox::Yes|QMessageBox::No);
+            if(go==QMessageBox::Yes){
+                QSqlQuery sql;
+                sql.prepare("delete from programs where path=:path");
+                sql.bindValue(":path",estevalor);
+                if(sql.exec()){
+                    QMessageBox::information(this,tr("Jingle removed"),tr("The program was removed from the database!"));
+                    update_music_table();
+                } else {
+                    QMessageBox::critical(this,tr("Error"),sql.lastError().text());
+                    qDebug() << "last sql: " << sql.lastQuery();
+                }
+            }
+           }
+
+       if(selectedMenuItem==openWithAudacity){
+           QProcess sh;
+           sh.startDetached("sh",QStringList()<<"-c"<<"audacity \""+estevalor+"\"");
+       }
+
+
+    }
+    else
+    {
+        // nothing was chosen
+    }
+}
+
+
+
+
+
+void player::on_btPlay_clicked(){
+    qDebug()<<"Play button clicked";
+
+    if(PlayMode=="stopped"){
+
+        ui->btPlay->setStyleSheet("background-color:#2CCD54"); //green
+        ui->btPlay->setText(tr("Play and Segue"));
+        PlayMode = "Playing_Segue";
+        playNextSong();
+
+    }  else if(PlayMode=="Playing_StopAtNextOne"){
+
+        ui->btPlay->setStyleSheet("background-color:#2CCD54"); //green
+        ui->btPlay->setText(tr("Play and Segue"));
+        PlayMode = "Playing_Segue";
+
+    } else if(PlayMode=="Playing_Segue"){
+
+        ui->btPlay->setStyleSheet("background-color:#F0DB1B"); //amarillo
+        PlayMode = "Playing_StopAtNextOne";
+        ui->btPlay->setText(tr("Play and Stop"));
+
+
+    }
+
+
+
+
+}
+
+void player::playNextSong(){
+
+
+    if(PlayMode=="Playing_Segue"){
+        qDebug()<<"The white rabit is Playing_segue";
+
+
+        if(ui->playlist->count()>0){
+
+
+            QString itemDaPlaylist = ui->playlist->item(0)->text();
+
+            qDebug()<<"itemDaPlaylist has value "<<itemDaPlaylist;
+
+/*
+            Phonon::MediaSource source(itemDaPlaylist);
+            sources.append(source);
+            int index = sources.indexOf(mediaObject->currentSource())+1;
+            mediaObject->setCurrentSource(sources.at(index));
+            mediaObject->play();
+
+*/
+
+            Xplaylist->removeMedia(0);
+            Xplaylist->addMedia(QUrl::fromLocalFile(itemDaPlaylist));
+
+            qDebug()<<"CurrentIndex is: "<<Xplaylist->currentIndex();
+
+
+
+            qDebug()<<"Xplayer output PRE if error commes here (nothing is good :-) ): "<<Xplayer->errorString();
+            Xplayer->play();
+            //qDebug()<<"Xplayer output if error commes here (nothing is good :-) ): "<<Xplayer->errorString();
+
+            int dotsNumInString = itemDaPlaylist.count(".");
+
+            qDebug()<<"dotsNumInString has value: "<<dotsNumInString;
+
+
+            QFileInfo fileName(itemDaPlaylist);
+            QString baseName = fileName.fileName();
+            ui->txtNowPlaying->setText(baseName);
+
+
+            delete ui->playlist->item(0);
+
+
+            QDateTime now = QDateTime::currentDateTime();
+            QString text = now.toString("yyyy-MM-dd || hh:mm:ss ||");
+            QString historyNewLine = text + " " + baseName;
+            ui->historyList->addItem(historyNewLine);
+
+            lastPlayedSong = itemDaPlaylist;
+
+
+        } else {
+
+            if(autoMode==1){
+                qDebug()<<"Almost giving up dude.. there's nothing to play.. but trying again since we are in autoMode..";
+                playlistAboutToFinish();
+                playNextSong();
+                return;
+            }
+
+            qDebug()<<"I'm giving up dude.. there's nothing to play..";
+            Xplayer->stop();
+            ui->btPlay->setStyleSheet("");
+            ui->btPlay->setText(tr("Play"));
+            PlayMode = "stopped";
+
+        }
+
+
+
+
+    } else if(PlayMode=="Playing_StopAtNextOne"){
+        qDebug()<<"The white rabit is Playing_StopAtNextOne";
+        Xplayer->stop();
+        ui->btPlay->setStyleSheet("");
+        ui->btPlay->setText(tr("Play"));
+        PlayMode = "stopped";
+
+
+
+    } else if(PlayMode=="stopped"){
+        qDebug()<<"The white rabit is stopped";
+
+
+
+
+    }
+
+
+}
+
+void player::on_btStop_clicked()
+{
+    Xplayer->stop();
+    ui->btPlay->setStyleSheet("");
+    ui->btPlay->setText(tr("Play"));
+    PlayMode = "stopped";
+}
+
+void player::on_sliderProgress_sliderMoved(int position)
+{
+    //qDebug()<<"progreess slider mooved "<<position;
+    Xplayer->setPosition(position);
+}
+
+void player::on_sliderVolume_sliderMoved(int position)
+{
+    //qDebug()<<"volume slider mooved "<<position;
+    Xplayer->setVolume(position);
+
+}
+
+void player::onPositionChanged(qint64 position)
+{
+
+
+
+
+
+     //if(position%2==0)
+        //qDebug()<<"Xplayer on position changed to "<<position;
+     ui->sliderProgress->setValue(position);
+
+      int valor = (position*100)/trackTotalDuration;
+
+      QString tamanhoDoValor = QString::number(valor);
+      //qDebug()<<"Tamanho do valor: "<<tamanhoDoValor;
+
+      QStringList segundoValorTamanhoDoValor = tamanhoDoValor.split("");
+      //qDebug() << "O segundo valor de TamanhoDoValor é: " << segundoValorTamanhoDoValor;
+
+
+      if(segundoValorTamanhoDoValor[2]=="0" && valor != lastTrackPercentage)
+      {
+        qDebug()<<"trackPercentage: "<<valor;
+        lastTrackPercentage = valor;
+
+      }
+
+      if(valor >= 80 && onAbout2Finish == 0){
+         playlistAboutToFinish();
+     }
+
+      int segundos = position / 1000;
+      int minutos = 0;
+      int horas = 0;
+      QString xsegundos;
+      QString xminutos;
+      QString xhoras;
+      while(segundos>60)
+      {
+          ++minutos;
+          segundos-=60;
+      }
+      while(minutos>60)
+      {
+          ++horas;
+          minutos-=60;
+      }
+
+      if(segundos<10)
+      {
+          xsegundos = "0"+QString::number(segundos);
+      } else {
+          xsegundos = QString::number(segundos);
+      }
+      if(minutos<10)
+      {
+          xminutos = "0"+QString::number(minutos);
+      } else {
+          xminutos = QString::number(minutos);
+      }
+      if(horas<10)
+      {
+          xhoras = "0"+QString::number(horas);
+      } else {
+          xhoras = QString::number(horas);
+      }
+     QString txtElapsedTimeLable =  xhoras+":"+xminutos+":"+xsegundos+" of "+txtDuration;
+     ui->txtDuration->setText(txtElapsedTimeLable);
+
+}
+
+void player::durationChanged(qint64 position)
+{
+    //qDebug()<<"Xplayer durationChanged changed to "<<position;
+    ui->sliderProgress->setMaximum(position);
+    trackTotalDuration = position;
+
+    int segundos = position / 1000;
+    int minutos = 0;
+    int horas = 0;
+    QString xsegundos;
+    QString xminutos;
+    QString xhoras;
+    while(segundos>60)
+    {
+        ++minutos;
+        segundos-=60;
+    }
+    while(minutos>60)
+    {
+        ++horas;
+        minutos-=60;
+    }
+
+    if(segundos<10)
+    {
+        xsegundos = "0"+QString::number(segundos);
+    } else {
+        xsegundos = QString::number(segundos);
+    }
+    if(minutos<10)
+    {
+        xminutos = "0"+QString::number(minutos);
+    } else {
+        xminutos = QString::number(minutos);
+    }
+    if(horas<10)
+    {
+        xhoras = "0"+QString::number(horas);
+    } else {
+        xhoras = QString::number(horas);
+    }
+
+    txtDuration = xhoras+":"+xminutos+":"+xsegundos;
+
+
+}
+
+void player::currentMediaChanged(const QMediaContent &content)
+{
+
+    if(onAbout2Finish==1)
+    {
+        onAbout2Finish = 0;
+        Xplaylist->removeMedia(Xplaylist->currentIndex());
+        playNextSong();
+    }
+
+}
+
+void player::volumeChanged(int volume){
+    qDebug()<<"Volume: "<<volume;
+}
+
+void player::playlistAboutToFinish()
+{
+    qDebug()<<"Launched playlistAboutToFinish";
+    onAbout2Finish = 1;
+
+    int numItemsInPlaylist = ui->playlist->count();
+    if(numItemsInPlaylist==0)
+        autoModeGetMoreSongs();
+
+}
+
+void player::update_music_table(){
+    checkDbOpen();
+    /*Populate music table with an editable table field on double-click*/
+
+    QSqlTableModel * model = new QSqlTableModel(this);
+    model->setTable("musics");
+    model->select();
+    ui->musicView->setModel(model);
+
+
+    /*Populate jingles table with an editable table field on double-click*/
+    QSqlTableModel * jinglesmodel = new QSqlTableModel(this);
+    jinglesmodel->setTable("jingles");
+    jinglesmodel->select();
+    ui->jinglesView->setModel(jinglesmodel);
+
+
+    /*Populate Pub table*/
+    QSqlTableModel *pubmodel = new QSqlTableModel(this);
+    pubmodel->setTable("pub");
+    pubmodel->select();
+    ui->pubView->setModel(pubmodel);
+
+    /*Populate Programs table*/
+    QSqlTableModel *programsmodel = new QSqlTableModel(this);
+    programsmodel->setTable("programs");
+    programsmodel->select();
+    ui->programsView->setModel(programsmodel);
+
+
+    /*Populate genre1 and 2 filters*/
+    QSqlQueryModel * model_genre1=new QSqlQueryModel();
+    //QSqlQueryModel * model_genre2=new QSqlQueryModel();
+
+    QSqlQuery* qry=new QSqlQuery();
+
+    QString sqlq = "select name from genres1";
+    qry->exec(sqlq);
+    model_genre1->setQuery(*qry);
+    ui->cBoxGenre1->setModel(model_genre1);
+    ui->cBoxGenre2->setModel(model_genre1);
+
+}
+
+void player::dropEvent(QDropEvent *event)
+{
+
+    player *source =
+            qobject_cast<player *>(event->source());
+
+        if(xaction == "drag_to_music_playlist"){
+            qDebug() << "drop MUSIC event! " << estevalor << " xaction: " << xaction;// << "evnt source: " << source->objectName();
+            //qDebug () << "event mime data" << event->mimeData();
+            if(source->objectName()=="player"){
+            //sources.append(estevalor);
+            ui->playlist->addItem(estevalor);
+
+            }
+            xaction = "";
+
+        } else {
+            qDebug () << "xaction is not defined or is not 'drag_to_music_playlist' .. its content is: " << xaction;
+        }
+
+
+       event->acceptProposedAction();
+
+
+}
+
+void player::dragEnterEvent(QDragEnterEvent *event)
+ {
+    //qDebug() << "drag enter event " << event << event->mimeData();
+    if(indexJust3rdDropEvt==1){
+        //qDebug () << "This is the 2nd interaction and we now accepted the proposed action.";
+        event->acceptProposedAction();
+        indexJust3rdDropEvt = 0;
+    } else{
+        indexJust3rdDropEvt++;
+    }
+
+
+
+
+ }
+
+void player::on_musicView_pressed(const QModelIndex &index)
+{
+
+indexJust3rdDropEvt=0;
+
+    ui->musicView->selectRow(index.row());
+    int rowidx = ui->musicView->selectionModel()->currentIndex().row();
+    estevalor = ui->musicView->model()->data(ui->musicView->model()->index(rowidx,7)).toString();
+    qDebug () << "Music path: [" << estevalor << "]";
+
+            xaction = "drag_to_music_playlist";
+            //check if file exists and avoid adding if it does not
+            bool ha = QFile::exists (estevalor);
+            if(!ha){
+
+                QMessageBox::StandardButton reply;
+                reply = QMessageBox::question(this, "The file does NOT exist?", "It seams like the file does NOT exist on the hard drive... Or there is a problem reading it. Should it be deleted from the database?",
+                                              QMessageBox::Yes|QMessageBox::No);
+                if (reply == QMessageBox::Yes) {
+                  qDebug() << "the file should be deleted from the database cause it does not exist in the hd (or path was changed)";
+                      QSqlQuery* qry=new QSqlQuery();
+                      qry->prepare("delete from musics where path = :thpath");
+                      qry->bindValue(":thpath",estevalor);
+
+                     if(qry->exec()){
+                          qDebug() << "Music Deleted from database! last query was:"<< qry->lastQuery();
+                          update_music_table();
+                     } else {
+                         qDebug() << "There was an error deleting the music from the database"<< qry->lastError() << qry->lastQuery();
+                     }
+                } else {
+                  qDebug() << "keeping invalid record in db... please fix path manually..";
+                }
+
+            } else {
+
+                //the file DOES exist .. :-);
+
+                QDrag *drag = new QDrag(this);
+                QMimeData *mimeData = new QMimeData;
+
+                mimeData->setData(text, "drag_to_music_playlist");
+                drag->setMimeData(mimeData);
+                Qt::DropAction dropAction = drag->exec(Qt::CopyAction);
+                qDebug() << "DropAction near 1081 has: " << dropAction;
+
+
+            }
+
+}
+
+void player::on_jinglesView_pressed(const QModelIndex &index)
+{
+    indexJust3rdDropEvt=0;
+
+        //int thisid = index.row()+1;
+        ui->jinglesView->selectRow(index.row());
+        int rowidx = ui->jinglesView->selectionModel()->currentIndex().row();
+
+        QSqlTableModel * model = new QSqlTableModel(this);
+        model->setTable("jingles");
+        model->select();
+        QString sqlPath = model->index(rowidx , 1).data().toString();
+        qDebug()<< sqlPath;
+        xaction = "drag_to_music_playlist";
+        estevalor = sqlPath;
+                //check if file exists and avoid adding if it does not
+                bool ha = QFile::exists (sqlPath);
+                if(!ha){
+
+                    QMessageBox::StandardButton reply;
+                    reply = QMessageBox::question(this, "The file does NOT exist?", "It seams like the file does NOT exist on the hard drive... Should it be deleted from the database?",
+                                                  QMessageBox::Yes|QMessageBox::No);
+                    if (reply == QMessageBox::Yes) {
+                      qDebug() << "the file should be deleted from the database cause it does not exist in the hd (or path should change)";
+                          QSqlQuery* qry=new QSqlQuery();
+                          qry->prepare("delete from jingles where path = :thpath");
+                          qry->bindValue(":thpath",sqlPath);
+
+                         if(qry->exec()){
+                              qDebug() << "Music Deleted form database! last query was:"<< qry->lastQuery();
+                              update_music_table();
+                         } else {
+                             qDebug() << "There was an error deleting the music from the database"<< qry->lastError() << qry->lastQuery();
+                         }
+                    } else {
+                      qDebug() << "keeping invalid record in db... please fix path..";
+                    }
+
+                }
+
+
+
+
+
+        //qDebug() << "Pressed row is: " << index.row() << " and QVariant valor is: " << valor.toString();
+        QDrag *drag = new QDrag(this);
+        QMimeData *mimeData = new QMimeData;
+
+        mimeData->setData(text, "drag_to_music_playlist");
+        drag->setMimeData(mimeData);
+        Qt::DropAction dropAction = drag->exec(Qt::CopyAction);
+
+}
+
+void player::on_pubView_pressed(const QModelIndex &index)
+{
+    indexJust3rdDropEvt=0;
+
+        //int thisid = index.row()+1;
+        ui->pubView->selectRow(index.row());
+        int rowidx = ui->pubView->selectionModel()->currentIndex().row();
+
+        QSqlTableModel * model = new QSqlTableModel(this);
+        model->setTable("pub");
+        model->select();
+        QString sqlPath = model->index(rowidx , 2).data().toString();
+        qDebug()<< sqlPath;
+        xaction = "drag_to_music_playlist";
+        estevalor = sqlPath;
+                //check if file exists and avoid adding if it does not
+                bool ha = QFile::exists (sqlPath);
+                if(!ha){
+
+                    QMessageBox::StandardButton reply;
+                    reply = QMessageBox::question(this, "The file does NOT exist?", "It seams like the file does NOT exist on the hard drive... Should it be deleted from the database?",
+                                                  QMessageBox::Yes|QMessageBox::No);
+                    if (reply == QMessageBox::Yes) {
+                      qDebug() << "the file should be deleted from the database cause it does not exist in the hd (or path should change)";
+                          QSqlQuery* qry=new QSqlQuery();
+                          qry->prepare("delete from pub where path = :thpath");
+                          qry->bindValue(":thpath",sqlPath);
+
+                         if(qry->exec()){
+                              qDebug() << "Pub deleted form database! last query was:"<< qry->lastQuery();
+                              update_music_table();
+                         } else {
+                             qDebug() << "There was an error deleting the music from the database"<< qry->lastError() << qry->lastQuery();
+                         }
+                    } else {
+                      qDebug() << "keeping invalid record in db... please fix path..";
+                    }
+
+                }
+
+
+
+
+
+        //qDebug() << "Pressed row is: " << index.row() << " and QVariant valor is: " << valor.toString();
+        QDrag *drag = new QDrag(this);
+        QMimeData *mimeData = new QMimeData;
+
+        mimeData->setData(text, "drag_to_music_playlist");
+        drag->setMimeData(mimeData);
+        Qt::DropAction dropAction = drag->exec(Qt::CopyAction);
+
+}
+
+void player::on_programsView_pressed(const QModelIndex &index)
+{
+    indexJust3rdDropEvt=0;
+
+        //int thisid = index.row()+1;
+        ui->programsView->selectRow(index.row());
+        int rowidx = ui->programsView->selectionModel()->currentIndex().row();
+
+        QSqlTableModel * model = new QSqlTableModel(this);
+        model->setTable("programs");
+        model->select();
+        QString sqlPath = model->index(rowidx , 2).data().toString();
+        qDebug()<< sqlPath;
+        xaction = "drag_to_music_playlist";
+        estevalor = sqlPath;
+                //check if file exists and avoid adding if it does not
+                bool ha = QFile::exists (sqlPath);
+                if(!ha){
+
+                    QMessageBox::StandardButton reply;
+                    reply = QMessageBox::question(this, "The file does NOT exist?", "It seams like the file does NOT exist on the hard drive... Should it be deleted from the database?",
+                                                  QMessageBox::Yes|QMessageBox::No);
+                    if (reply == QMessageBox::Yes) {
+                      qDebug() << "the file should be deleted from the database cause it does not exist in the hd (or path should change)";
+                          QSqlQuery* qry=new QSqlQuery();
+                          qry->prepare("delete from programs where path = :thpath");
+                          qry->bindValue(":thpath",sqlPath);
+
+                         if(qry->exec()){
+                              qDebug() << "Program deleted form database! last query was:"<< qry->lastQuery();
+                              update_music_table();
+                         } else {
+                             qDebug() << "There was an error deleting the program from the database"<< qry->lastError() << qry->lastQuery();
+                         }
+                    } else {
+                      qDebug() << "keeping invalid record in db... please fix path.. ";
+                    }
+
+                }
+
+
+
+
+
+        //qDebug() << "Pressed row is: " << index.row() << " and QVariant valor is: " << valor.toString();
+        QDrag *drag = new QDrag(this);
+        QMimeData *mimeData = new QMimeData;
+
+        mimeData->setData(text, "drag_to_music_playlist");
+        drag->setMimeData(mimeData);
+        Qt::DropAction dropAction = drag->exec(Qt::CopyAction);
+
+}
+
+void player::on_bt_autoMode_clicked()
+{
+    if(autoMode == 0){
+        autoMode = 1;
+        qDebug()<<"autoMode is ON";
+        ui->bt_autoMode->setStyleSheet("background-color: rgb(175, 227, 59)");
+    } else {
+        autoMode = 0;
+        qDebug()<<"autoMode is OFF";
+        ui->bt_autoMode->setStyleSheet("");
+    }
+}
+
+void player::autoModeGetMoreSongs()
+{
+
+    //check if there's a programed genre for this hour in the hourgenre table
+
+    QDateTime now = QDateTime::currentDateTime();
+    QString currentHour = now.toString("h");
+    int dia = QDate::currentDate().dayOfWeek();
+
+    QString dw;
+    if(dia == 1) dw = "1";
+    if(dia == 2) dw = "2";
+    if(dia == 3) dw = "3";
+    if(dia == 4) dw = "4";
+    if(dia == 5) dw = "5";
+    if(dia == 6) dw = "6";
+    if(dia == 7) dw = "7";
+
+    QString qry="select genre from hourgenre where hour="+currentHour+" and day="+dw;
+    qDebug()<<"hourgenre query is: "<<qry;
+
+    QSqlQuery runQry;
+    QString currentGenre = "";
+
+    if(runQry.exec(qry)){
+
+        qDebug()<<"The query was successfull: "<<qry;
+
+        while(runQry.next()){
+            currentGenre = runQry.value(0).toString();
+            qDebug()<<"We now have selected the following genre for this hour, based on the data from the hourgenre table in the database: "<<currentGenre;
+        }
+
+    } else {
+
+        qDebug()<<"Oh dear, what now? "<<runQry.lastError();
+
+
+    }
+
+
+    if(currentGenre.isEmpty()){
+
+           if(autoMode==1){
+               //randomly select music from db
+               int numMusics = 1;
+               QSqlQuery query;
+               query.prepare("select path from musics order by random() limit :numMusics");
+               query.bindValue(":numMusics", numMusics);
+               if(query.exec())
+               {
+                   qDebug() << "SQL query executed: " << query.lastQuery();
+
+                   while(query.next()){
+                       QString path = query.value(0).toString();
+
+                       if(path!=lastPlayedSong){
+                           ui->playlist->addItem(path);
+                           qDebug() << "autoMode random music chooser adding: " << path;
+
+                       } else {
+
+                           QSqlQuery numOfItemsInDB;
+                           numOfItemsInDB.prepare("select count(path) from music where 1");
+                           numOfItemsInDB.exec();
+                           if(numOfItemsInDB.value(0).toInt()>1){
+                               qDebug()<<"autoMode picked the same song that was played before... Small DB or a Big Coincidence? Quering again for a 'random' new song..";
+                               autoModeGetMoreSongs();
+                           }
+
+                       }
+
+                   }
+
+               } else {
+                   qDebug() << "SQL ERROR: " << query.lastError();
+                   qDebug() << "SQL was: " << query.lastQuery();
+
+
+               }
+           }
+
+    } else {
+
+        if(autoMode==1){
+            //randomly select music from db based on genre for this hour
+
+            QString querystr = "select path from musics where genre1 like '"+currentGenre+"' order by random() limit 1";
+            QSqlQuery query;
+            if(query.exec(querystr))
+            {
+                qDebug() << "SQL query executed: " << query.lastQuery();
+
+                while(query.next()){
+                    QString path = query.value(0).toString();
+
+                    if(path!=lastPlayedSong){
+                        ui->playlist->addItem(path);
+                        qDebug() << "autoMode genre based random music chooser adding: " << path;
+
+                    } else {
+
+                        QSqlQuery numOfItemsInDB;
+                        numOfItemsInDB.prepare("select count(path) from music where 1");
+                        numOfItemsInDB.exec();
+                        if(numOfItemsInDB.value(0).toInt()>1){
+                            qDebug()<<"autoMode picked the same song that was played before... Small DB or a Big Coincidence? Quering again for a 'random' new song..";
+                            autoModeGetMoreSongs();
+                        }
+
+                    }
+
+                }
+
+            } else {
+                qDebug() << "SQL ERROR: " << query.lastError();
+                qDebug() << "SQL was: " << query.lastQuery();
+
+
+            }
+            currentGenre = "";
+        }
+
+    }
+
+
+
+}
+
+void player::on_actionAdd_a_single_song_triggered()
+{
+    add_music_single add_music_single;
+    add_music_single.setModal(true);
+    add_music_single.exec();
+    update_music_table();
+}
+
+void player::on_btPlayNext_clicked()
+{
+    int numOfItemsInPlaylist= ui->playlist->count();
+    if (numOfItemsInPlaylist>0){
+        qDebug()<<"Skipping to next file...";
+        playNextSong();
+    }
+}
+
+void player::on_actionAdd_all_songs_in_a_folder_triggered()
+{
+     qDebug()<<"Add a full dir";
+     add_full_dir add_full_dir;
+     add_full_dir.setModal(true);
+     add_full_dir.exec();
+     update_music_table();
+
+}
+
+void player::on_actionManage_Genres_triggered()
+{
+    addgenre addgenre;
+    addgenre.setModal(true);
+    addgenre.exec();
+
+}
+
+void player::on_actionAdd_Jingle_triggered()
+{
+    addJingle addjingle;
+    addjingle.setModal(true);
+    addjingle.exec();
+    update_music_table();
+}
+
+void player::on_actionAdd_a_publicity_triggered()
+{
+    add_pub addp;
+    addp.setModal(true);
+    addp.exec();
+    update_music_table();
+}
+
+void player::run_server_scheduler(){
+
+    qDebug()<<"-------------------------------> Running Server Scheduler <-------------------------------------";
+
+    qDebug()<<"If statment is will now compare "<< QDate::currentDate().dayOfWeek() << " with "<< server_this_day_of_the_week << " and run if not the same (checking if this was already done today..)";
+    if(QDate::currentDate().dayOfWeek() != server_this_day_of_the_week){
+
+        server_this_day_of_the_week = QDate::currentDate().dayOfWeek();
+
+
+        QString hora = QDateTime::currentDateTime().toString("hh:mm");
+
+        QStringList CHarr = hora.split(":");
+        QString Chora = CHarr[0];
+
+        QStringList zHarr = ComHour.split(":");
+        QString zhora = zHarr[0];
+
+        qDebug()<<"It's now "<<Chora<<". The server looks for programs at "<<zhora;
+
+        if(Chora==zhora){
+        server_ftp_check();
+        }
+    }
+
+
+
+
+}
+
+void player::server_ftp_check(){
+
+
+            qDebug()<<"Looking for new programs in the FTP server to download";
+            QProcess sh,sh2, sh3;
+            QByteArray output, output2;
+            QString outPath, FTPCmdPath, xmls;
+
+
+            sh.start("sh", QStringList() << "-c" << "pwd");
+            sh.waitForFinished();
+            output = sh.readAll();
+            outPath = output;
+            QStringList path_arry = outPath.split("\n");
+            FTPCmdPath = path_arry[0]+"/../config/serverFtpCmdsGetPrograms";
+            qDebug() << "running: " << FTPCmdPath;
+            qDebug() << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   -> If you get errors: cd config && chmod +x serverFtpCmdsGetPrograms && chmod 600 ~/.netrc  <- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
+            sh.close();
+
+            sh2.start("sh", QStringList() << "-c" << FTPCmdPath);
+            sh2.waitForFinished(-1);
+            output2 = sh2.readAll();
+            xmls = output2;
+            qDebug()<<output2;
+            sh2.close();
+
+            QString mvcmdstr = "ls *.ogg && mv *.ogg "+ProgramsPath;
+
+            sh3.start("sh", QStringList() << "-c" << mvcmdstr);
+            sh3.waitForFinished(-1);
+            QString sh3Out = sh3.readAll();
+            QStringList filearr = sh3Out.split("\n");
+
+            for(int i=0;i<filearr.length();i++){
+
+                QString fileName = filearr[i];
+
+                qDebug()<<"Found this one to add:"<<fileName;
+
+                if(!fileName.isEmpty()){
+
+                    QString fileNameWPath = ProgramsPath+"/"+fileName;
+
+                    QStringList splitstr = fileName.split("_");
+                    QString nomeDoPrograma = splitstr[0];
+
+                    QString splitstr2 = splitstr[1];
+                    QStringList split2 = splitstr2.split(".");
+                    QString dataDoPrograma = split2[0];
+
+                    qDebug()<<"This programs name is: "<<nomeDoPrograma;
+                    qDebug()<<"The programs date is: "<<dataDoPrograma;
+
+                    QSqlQuery qry;
+                    QString thisquery = "insert into programs values(NULL,'"+nomeDoPrograma+"','"+fileNameWPath+"')";
+                    if(qry.exec(thisquery)){
+                        qDebug()<<"Query OK. Program added to programs table";
+                    } else {
+                         qDebug()<<"Query was not ok while atempting to add to the programs table";
+                    }
+
+                    QSqlQuery qryid;
+                    QString thisqueryid = "select * from programs where path like '"+fileNameWPath+"'";
+                    qDebug()<<"Select id query is: "<<thisqueryid;
+                    if(qryid.exec(thisqueryid)){
+                        while(qryid.next()){
+                            QString pID = qryid.value(0).toString();
+                            qDebug()<<"Query OK. This id is: "<<pID;
+
+                            QStringList dataarr = dataDoPrograma.split("-");
+                            QString pAno = dataarr[0];
+                            QString pMes = dataarr[1];
+                            QString pDia = dataarr[2];
+
+                            if(!pAno.isEmpty() && !pMes.isEmpty() && !pDia.isEmpty()){
+
+                                QString qryhourmin = "select hour, min from hourprograms where name like '"+nomeDoPrograma+"'";
+
+                                QSqlQuery qhm;
+
+                                if(qhm.exec(qryhourmin)){
+
+                                    while(qhm.next()){
+                                        QString pHora = qhm.value(0).toString();
+                                        QString pMin = qhm.value(1).toString();
+
+                                        QSqlQuery addsch;
+                                        QString addstr = "insert into scheduler values ('"+pID+"','"+pAno+"','"+pMes+"','"+pDia+"','"+pHora+"','"+pMin+"','1',NULL,NULL,NULL,NULL,NULL,NULL,NULL,'1')";
+
+                                        if(addsch.exec(addstr)){
+                                            qDebug()<<"Program scheduled correctly.";
+                                            qDebug()<<nomeDoPrograma<< " :: "<<pAno<<"-"<<pMes<<"-"<<pDia<<" at "<<pHora<<":"<<pMin;
+                                        } else {
+                                            qDebug()<<"It was not possible to add program to scheduler: "<<addsch.lastError();
+                                        }
+                                    }
+
+
+
+                                } else {
+
+                                    qDebug()<<"It was not possible to figure out the hour and minute for this program: "<<nomeDoPrograma;
+                                    qDebug()<<"This should be in the 'hourprograms' table.";
+
+                                }
+
+
+                            } else {
+
+                                qDebug()<<"We got a program but there was an error adding it beacuse one value of the data is empty. Please check the programs are named like 'name_YYYY-mm-dd.ogg'";
+
+                            }
+                        }
+
+
+
+
+                    } else {
+                         qDebug()<<"Query was not ok while atempting to get ID from the programs table"<<qryid.lastError();
+                    }
+
+                } else {
+                    qDebug()<<"SERVER: No programs where found to add from the FTP";
+                }
+
+            }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        /*
+            QStringList lastChars = xmls.split(" ");
+
+            if(lastChars.length()>24){
+
+                //we have playlists..
+
+                    //QString lst = lastChars[25];
+
+                    //qDebug()<<"Found: "<<lst;
+
+                    //QStringList xmls_array = lst.split(".");
+                    //xmlFileName = xmls_array[0];
+
+                    //qDebug()<<"Got playlist: "<<xmlFileName;
+
+                    sh3.start("sh", QStringList() << "-c" << "mv *.xml ../playlists/");
+                    sh3.waitForFinished();
+
+                    sh3.close();
+                    qDebug()<<"Playlists added to ../playlists/";
+
+            } else {
+
+                qDebug()<<"No Playlists found.";
+
+            }*/
+
+
+}
+
+
+
+
+
+void player::run_scheduler(){
+    checkDbOpen();
+
+    /*check if there is any thing to go on now*/
+
+QSqlQuery sched_qry;
+sched_qry.prepare("select * from scheduler");
+if(sched_qry.exec()){
+    while(sched_qry.next()){
+        QString tipo = sched_qry.value(6).toString();
+        //qDebug() << "Scheduler got a type "<<tipo<<" event rule.";
+
+        /*
+         *
+         * Var tipo determines the type of shedule
+         * 1 = an event to be played only once at a specific minute in time
+         *
+         * 2 = an event to be played every specific day of the week at a specific hour/min
+         *
+         * */
+
+        if(tipo=="1"){
+            QDateTime now = QDateTime::currentDateTime();
+
+                QString ano1 = now.toString("yyyy");
+                QString mes1 = now.toString("M");
+                QString dia1 = now.toString("d");
+                QString hora1 = now.toString("h");
+                QString min1 = now.toString("m");
+
+                QString ano2 = sched_qry.value(1).toString();
+                QString mes2 = sched_qry.value(2).toString();
+                QString dia2 = sched_qry.value(3).toString();
+                QString hora2 = sched_qry.value(4).toString();
+                QString min2 = sched_qry.value(5).toString();
+
+                QString is_program = sched_qry.value(14).toString();
+
+                /*
+                qDebug()<<"Scheduler is comparing values: ";
+                qDebug()<<ano1<<" should be equal to "<<ano2<<" -> ano";
+                qDebug()<<mes1<<" should be equal to "<<mes2<<" -> mes";
+                qDebug()<<dia1<<" should be equal to "<<dia2<<" -> dia";
+                qDebug()<<hora1<<" should be equal to "<<hora2<<" -> hora";
+                qDebug()<<min1<<" should be equal to "<<min2<<" -> minuto";
+                 */
+
+
+            //if agora values == este qry values
+                if((ano1==ano2) && (mes1==mes2) && (dia1==dia2) && (hora1==hora2) && (min1==min2)){
+                    qDebug() << "Scheduled event now fired (type 1)!";
+
+                    QString schId = sched_qry.value(0).toString();
+
+                    //add to playlist
+                    QSqlQuery getPath;
+                    if(is_program=="1"){
+                        getPath.prepare("select path from programs where id='"+schId+"'");
+                    } else {
+                        getPath.prepare("select path from pub where id='"+schId+"'");
+                    }
+
+                    if(getPath.exec()){
+                        while(getPath.next()){
+                            QString pubPath = getPath.value(0).toString();
+                            ui->playlist->insertItem(0,pubPath);
+                            qDebug()<<"Scheduled event added to the top of the playlist: "<<pubPath;
+                        }
+
+                    }
+
+                    //delete scheduler row cause its a type 1
+
+                    QSqlQuery del_qry;
+                    del_qry.prepare("delete from scheduler where id='"+schId+"' and ano='"+ano1+"' and mes='"+mes1+"' and dia='"+dia1+"' and ano='"+ano1+"' and hora='"+hora1+"' and min='"+min1+"'");
+                    if(del_qry.exec()){
+                        qDebug () << "Scheduled rule was deleted!";
+                    } else {
+                        qDebug()<<"exeption deleting scheduled rule with qry: "<<del_qry.lastQuery()<<" we got: "<<del_qry.lastError();
+                    }
+
+                    //check if pub still has other scheduler rules and delete from pub if not
+                    QSqlQuery sq;
+                    sq.prepare("select count(id) from scheduler where id='"+schId+"'");
+                    if(sq.exec()){
+
+                        while(sq.next()){
+                            qDebug()<<"We have a total of "<<sq.value(0).toString()<<" records in the scheduler table with the schId "<<schId;
+                            if(sq.value(0).toString()=="0"){
+                                //we can delete it from pub cause no more scheduled rules apply
+
+                                QSqlQuery sd;
+                                sd.prepare("delete from pub where id='"+schId+"'");
+                                if(sd.exec()){
+                                    qDebug () << "Pub rule was deleted!";
+                                    update_music_table();
+                                } else {
+                                    qDebug()<<"exeption deleting pub rule with qry: "<<del_qry.lastQuery()<<" we got: "<<del_qry.lastError();
+                                }
+
+                            }
+                        }
+
+
+                    }
+
+                }
+
+        }
+
+        if(tipo=="2"){
+            int dia = QDate::currentDate().dayOfWeek();
+
+            QString dw;
+            if(dia == 1) dw = "Monday";
+            if(dia == 2) dw = "Tuesday";
+            if(dia == 3) dw = "Wednesday";
+            if(dia == 4) dw = "Thursday";
+            if(dia == 5) dw = "Friday";
+            if(dia == 6) dw = "Saturday";
+            if(dia == 7) dw = "Sunday";
+
+            //qDebug()<<"Today it's "<< dw << "!";
+
+
+            QString is_program = sched_qry.value(14).toString();
+
+
+
+            QDateTime now = QDateTime::currentDateTime();
+
+            QString hora1 = now.toString("h");
+            QString min1 = now.toString("m");
+
+
+
+            QString dw2 = sched_qry.value(7).toString();
+            QString hora2 = sched_qry.value(4).toString();
+            QString min2 = sched_qry.value(5).toString();
+
+
+
+            //so:
+            //
+            //dw has today's day of the week
+            //hora1 has the current hour
+            //min1 has the current minute
+            //dw2 has the scheduled day of the week
+            //hora2 has the scheduled hour
+            //min2 has the scheduled minute
+            //
+            // /////////////// //
+
+            if((dw==dw2)&&(hora1==hora2)&&(min1==min2)){
+                qDebug() << "Scheduled event now fired (type 2)!";
+                QString schId = sched_qry.value(0).toString();
+
+                //add to playlist
+                QSqlQuery getPath;
+                if(is_program=="1"){
+                    getPath.prepare("select path from programs where id='"+schId+"'");
+                } else {
+                    getPath.prepare("select path from pub where id='"+schId+"'");
+                }
+
+                if(getPath.exec()){
+                    while(getPath.next()){
+                        QString pubPath = getPath.value(0).toString();
+                        ui->playlist->insertItem(0,pubPath);
+                        qDebug()<<"Scheduled event added to the top of the playlist: "<<pubPath;
+                    }
+
+                }
+
+            }
+
+
+        }
+
+    }
+}
+
+}
+
+
+
+
+
+
+
+void player::on_actionOptions_triggered()
+{
+
+
+    optionsDialog opt;
+    opt.setModal(true);
+    opt.exec();
+    update_music_table();
+
+}
+
+void player::on_actionAbout_triggered()
+{
+    aboutUs ab;
+    ab.setModal(true);
+    ab.exec();
+}
+
+void player::on_actionAdd_a_song_from_Youtube_or_Other_triggered()
+{
+    youtubedownloader* widget = new youtubedownloader;
+    widget->setAttribute(Qt::WA_DeleteOnClose);
+    widget->show();
+}
+
+void player::on_bt_search_clicked()
+{
+    //search
+    qDebug()<<"Staring a new search!";
+    QString term = ui->txt_search->text();
+
+    QSqlQueryModel *model = new QSqlQueryModel();
+    model->setQuery("select * from musics where artist like '%"+term+"%' or song like '%"+term+"%'");
+    ui->musicView->setModel(model);
+
+    ui->musicView->setSortingEnabled(true);
+    ui->musicView->hideColumn(0);
+    ui->musicView->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
+}
+
+void player::on_bt_reset_clicked()
+{
+    QSqlQueryModel *modelo = new QSqlQueryModel();
+    modelo->setQuery("select * from musics");
+    ui->musicView->setModel(modelo);
+}
+
+void player::on_bt_apply_filter_clicked()
+{
+    //filter by genres
+
+    QString addG1 = "";
+    QString addG2 = "";
+
+    bool g1_checked = ui->checkBox_filter_genre1->checkState(); //true or false
+    bool g2_checked = ui->checkBox_filter_genre2->checkState();
+
+    qDebug () << "132426032015 " << g1_checked << " : " << g2_checked;
+
+    if(g1_checked == true){
+        qDebug()<<"g1 is checked";
+        QString selectedGenre1 = ui->cBoxGenre1->currentText();
+        addG1 = " genre1='"+selectedGenre1+"' ";
+    }
+    if(g2_checked == true){
+        qDebug()<<"g2 is checked";
+        QString selectedGenre2 = ui->cBoxGenre2->currentText();
+        if(g1_checked==true){
+             qDebug()<<"both are checked...";
+             addG2 = "and genre2='"+selectedGenre2+"' ";
+        } else{
+            qDebug()<<"Only g2 is checked";
+            addG2 = " genre2='"+selectedGenre2+"' ";
+        }
+
+    }
+    qDebug()<<"addG1 is "<<addG1<<" and addG2 is "<<addG2;
+    if(addG1 != "" || addG2 != ""){
+        qDebug() << "making a new table to show with the results...";
+        QSqlQueryModel * model = new QSqlQueryModel();
+        model->setQuery("select * from musics where "+addG1+addG2);
+        ui->musicView->setModel(model);
+    }
+
+
+
+
+}
+
+void player::on_bt_updateTables_clicked()
+{
+    update_music_table();
+}
+
+void player::on_bt_youtubeDL_clicked()
+{
+    youtubedownloader* widget = new youtubedownloader;
+    widget->setAttribute(Qt::WA_DeleteOnClose);
+    widget->show();
+}
+
+void player::on_actionSave_Playlist_triggered()
+{
+    qDebug()<<"Saving the playlist...";
+
+    QString filename = QFileDialog::getSaveFileName(this,"Save playlist","../playlists/","XML files (*.xml)");
+
+    if(!filename.isEmpty()){
+        qDebug()<<"saving "<<filename;
+
+        QStringList farray = filename.split(".");
+        if(farray.count()==1){
+           filename = filename+".xml";
+        }
+
+        QFile file(filename);
+        file.open(QIODevice::WriteOnly);
+
+        QXmlStreamWriter xmlWriter(&file);
+        xmlWriter.setAutoFormatting(true);
+        xmlWriter.writeStartDocument();
+
+        xmlWriter.writeStartElement("XFBPlaylist");
+        xmlWriter.writeStartElement("www.netpack.pt");
+
+
+        //loop playlist and save every line into xml
+            int numItems = ui->playlist->count();
+            for(int i=0;i<numItems;i++){
+               //qDebug()<<"i is: "<<i;
+               QString txtItem = ui->playlist->item(i)->text();
+               qDebug()<<"Xml adding file "<<txtItem;
+
+               xmlWriter.writeTextElement("track",txtItem);
+            }
+
+        xmlWriter.writeEndElement();
+        xmlWriter.writeEndDocument();
+        file.close();
+        QMessageBox::information(this,"Playlist Saved","The playlist was saved!");
+    }
+
+
+}
+
+void player::on_actionClear_Playlist_triggered()
+{
+    QMessageBox::StandardButton reply;
+    reply=QMessageBox::question(this,"Sure?","Are you sure? This will clear all tracks listed in the playlist.",QMessageBox::Yes|QMessageBox::No);
+    if(reply==QMessageBox::Yes){
+        ui->playlist->clear();
+    }
+}
+
+void player::on_actionLoad_Playlist_triggered()
+{
+    QString filename = QFileDialog::getOpenFileName(this,"Load Playlist","../playlists/",tr("Xml files(*.xml)"));
+    QFile file(filename);
+    if(!file.open(QFile::ReadOnly | QFile::Text)){
+        QMessageBox::information(this,"Bad input","There was an error importing the file.. sorry.");
+    }
+
+    QXmlStreamReader Rxml;
+    Rxml.setDevice(&file);
+    Rxml.readNext();
+
+    while(!Rxml.atEnd()){
+
+        if (Rxml.isStartElement()) {
+
+                    if (Rxml.name() == "XFBPlaylist") {
+                        qDebug()<<"Valid XFB Playlist Found!";
+                        Rxml.readNext();
+
+                        if(Rxml.isEndElement()){
+                            qDebug()<<"Found the last element of the XML file after StarElement, leaving the while loop";
+                            Rxml.readNext();
+                            break;
+                        }
+
+                    } else {
+                        Rxml.raiseError(QObject::tr("Not an XFB playlist file"));
+                    }
+                } else {
+                    Rxml.readNext();
+
+                    //qDebug()<<"This Rxml.name() is "<<Rxml.name();
+
+                    if(Rxml.name()=="www.netpack.pt"){
+                        qDebug()<<"Token element: "<<Rxml.name();
+                        Rxml.readNext();
+                    }
+
+                    if(Rxml.name()=="track"){
+                        QString track = Rxml.readElementText();
+                        qDebug()<<"Rxml.readElementText(): "<<track;
+                        ui->playlist->addItem(track);
+                    }
+
+
+
+                }
+    }
+    file.close();
+}
+
+
+
+void player::on_bt_rec_clicked()
+{
+
+    updateConfig();
+
+    QProcess bashDelThis;
+    QString fileToRemove = "rm ../recordings/*.ogg";
+    bashDelThis.start("sh",QStringList()<<"-c"<<fileToRemove);
+    bashDelThis.waitForFinished();
+    bashDelThis.close();
+
+    qDebug()<<"Recording temp file deleted";
+
+   // qDebug()<<"The current recording device is: "<<recDevice;
+
+    audioRecorder->setAudioInput(recDevice);
+
+    if(recMode == 0){
+        recMode = 1;
+        qDebug()<<"RECORDING!";
+        ui->bt_rec->setStyleSheet("background-color: rgb(245, 101, 101)");
+
+
+        //QTimer *recTimer = new QTimer(this);
+        setRecTimeToDefaults();
+        ui->txt_recTime->show();
+
+        recTimer->start(1000);
+
+
+
+        QAudioEncoderSettings settings;
+        //settings.setCodec(codec);
+       // settings.setChannelCount(2);
+        //settings.setQuality(QMultimedia::EncodingQuality(int(QMultimedia::VeryHighQuality)));
+        //settings.setEncodingMode(QMultimedia::ConstantBitRateEncoding);
+
+        //QString container = "ogg";
+        aExtencaoDesteCoiso = "ogg";
+
+        if(contentamento=="matroska")
+            aExtencaoDesteCoiso = "mp3";
+        if(contentamento=="ogg")
+            aExtencaoDesteCoiso = "ogg";
+        if(contentamento=="mp4")
+            aExtencaoDesteCoiso = "mp4";
+            if(contentamento=="wav")
+                aExtencaoDesteCoiso = "wav";
+                if(contentamento=="quicktime")
+                    aExtencaoDesteCoiso = "mov";
+                    if(contentamento=="avi")
+                        aExtencaoDesteCoiso = "avi";
+                        if(contentamento=="3gpp")
+                            aExtencaoDesteCoiso = "3gpp";
+                            if(contentamento=="flv")
+                                aExtencaoDesteCoiso = "fvl";
+                                if(contentamento=="amr")
+                                    aExtencaoDesteCoiso = "amr";
+                                    if(contentamento=="asf")
+                                        aExtencaoDesteCoiso = "asf";
+                                        if(contentamento=="dv")
+                                            aExtencaoDesteCoiso = "dv";
+                                            if(contentamento=="mpeg")
+                                                aExtencaoDesteCoiso = "mpg";
+                                                if(contentamento=="vob")
+                                                    aExtencaoDesteCoiso = "vob";
+                                                    if(contentamento=="mpegts")
+                                                        aExtencaoDesteCoiso = "mpeg";
+                                                        if(contentamento=="3g2")
+                                                            aExtencaoDesteCoiso = "3g2";
+                                                            if(contentamento=="3gp")
+                                                                aExtencaoDesteCoiso = "3gp";
+                                                                if(contentamento=="raw")
+                                                                    aExtencaoDesteCoiso = "raw";
+
+
+        audioRecorder->setEncodingSettings(settings, QVideoEncoderSettings(), contentamento);
+        saveFile = SavePath+"/XFB."+aExtencaoDesteCoiso;
+        qDebug()<<"Recording to: "<<saveFile;
+        audioRecorder->setOutputLocation(QUrl(saveFile));
+
+
+
+        audioRecorder->record();
+
+
+
+
+    } else {
+        recMode = 0;
+        qDebug()<<"STOP RECORDING!";
+        ui->bt_rec->setStyleSheet("");
+        setRecTimeToDefaults();
+        audioRecorder->stop();
+
+    }
+
+}
+
+
+void player::run_recTimer(){
+    //qDebug()<<"Running recTimer();";
+
+
+
+    QString xsegundos;
+    QString xminutos;
+    QString xhoras;
+
+    if(recSecs<60){
+        recSecs++;
+    }
+
+    if(recSecs==60)
+    {
+        recMins++;
+        recSecs-=60;
+    }
+    if(recMins>59)
+    {
+        ++recHours;
+        recMins-=60;
+    }
+
+    if(recSecs<10)
+    {
+        xsegundos = "0"+QString::number(recSecs);
+    } else {
+        xsegundos = QString::number(recSecs);
+    }
+    if(recMins<10)
+    {
+        xminutos = "0"+QString::number(recMins);
+    } else {
+        xminutos = QString::number(recMins);
+    }
+    if(recHours<10)
+    {
+        xhoras = "0"+QString::number(recHours);
+    } else {
+        xhoras = QString::number(recHours);
+    }
+   QString txtElapsedTimeLable =  xhoras+":"+xminutos+":"+xsegundos;
+   ui->txt_recTime->setText(txtElapsedTimeLable);
+
+
+
+
+
+
+}
+
+void player::setRecTimeToDefaults(){
+    recTimer->stop();
+    recSecs = 0;
+    recMins = 0;
+    recHours = 0;
+    ui->txt_recTime->setText("");
+    ui->txt_recTime->hide();
+}
+
+
+void player::checkForUpdates(){
+
+    QProcess cmd;
+    cmd.startDetached("sh",QStringList()<<"-c"<<"add-apt-repository ppa:heyarje/libav-11 -y && apt-get update && apt-get install libav-tools && easy_install -U youtube-dl");
+    cmd.waitForFinished(-1);
+    QByteArray cmdOut = cmd.readAll();
+    qDebug()<<"easy_install -U youtube-dl :: "<<cmdOut;
+    cmd.close();
+}
+
+void player::on_actionRecord_a_new_Program_triggered()
+{
+    bool ok;
+    NomeDestePrograma = QInputDialog::getText(0, tr("Program name"),tr("What is the program's name? \n\nFormat MUST be: NAME_YYYY-MM-DD \nEx: program_2016-02-07\n\n"), QLineEdit::Normal,tr("Program_2016-02-07"), &ok);
+    if (ok && !NomeDestePrograma.isEmpty()) {
+        qDebug()<<"Program name is: "<<NomeDestePrograma;
+        ui->txt_ProgramName->setText(NomeDestePrograma);
+        ui->txt_ProgramName->show();
+        ui->bt_ProgramStopandProcess->show();
+    }
+}
+
+void player::on_bt_ProgramStopandProcess_clicked()
+{
+    QMessageBox::StandardButton saveProgram;
+
+    saveProgram = QMessageBox::question(this,tr("Save Program?"),tr("Save this program?"),QMessageBox::Yes|QMessageBox::No);
+    if(saveProgram==QMessageBox::Yes){
+            qDebug()<<"Saving the program";
+
+
+            if(saveFile.isEmpty()){
+                QMessageBox::information(this,tr("No program set or recorded"),tr("There is no program set or recorded to send"));
+            } else {
+                qDebug()<<"Processing file: "<<saveFile;
+
+                if(Role=="Client"){
+
+
+                    QString hora = QDateTime::currentDateTime().toString("hh:mm");
+
+                    QStringList CHarr = hora.split(":");
+                    QString Chora = CHarr[0];
+
+                    QStringList zHarr = ComHour.split(":");
+                    QString zhora = zHarr[0];
+
+                    int delayH = zhora.toInt()-1;
+
+
+
+                    qDebug()<<"Delay is also afecting "<<delayH;
+
+                    if(Chora!=zhora && Chora!=QString::number(delayH)){
+
+
+                        ui->txt_uploadingPrograms->show();
+                        QProcess cmd;
+                        destinationProgram = ProgramsPath+"/"+NomeDestePrograma+"."+aExtencaoDesteCoiso;
+                        QString mvcmd = "cp "+saveFile+" "+destinationProgram;
+                        qDebug()<<"Running: "<<mvcmd;
+                        cmd.startDetached("sh",QStringList()<<"-c"<<mvcmd);
+                        cmd.waitForFinished(-1);
+                        cmd.close();
+
+                        QMessageBox::StandardButton sendToServer;
+
+                        sendToServer = QMessageBox::question(this,tr("Send to server?"),tr("Send programs to the server?"),QMessageBox::Yes|QMessageBox::No);
+                        if(sendToServer==QMessageBox::Yes){
+
+
+
+
+                            QString cp2ftp = "cp "+saveFile+" "+FTPPath+"/"+NomeDestePrograma+"."+aExtencaoDesteCoiso;
+                            qDebug()<<"Running: "<<cp2ftp;
+                            cmd.startDetached("sh",QStringList()<<"-c"<<cp2ftp);
+                            cmd.waitForFinished(-1);
+                            cmd.close();
+
+
+                           // if(!Server_URL.isEmpty() && !User.isEmpty() && !Pass.isEmpty()){
+
+
+                                /*I should probably not do it like i'm about to do ... */
+
+
+                                qDebug()<<"Sending program to server. This requires ~/.netrc to be configured with the ftp options and FTP Path in the options to point to a folder called 'ftp' that MUST be located in the parent directory of XFB (due to the code of config/serverFtpCmdsPutProgram).";
+
+
+                                QProcess sh,sh2;
+                                QByteArray output, output2;
+                                QString outPath, FTPCmdPath, xmls;
+
+
+                                sh.start("sh", QStringList() << "-c" << "pwd");
+                                sh.waitForFinished();
+                                output = sh.readAll();
+                                outPath = output;
+                                QStringList path_arry = outPath.split("\n");
+                                FTPCmdPath = path_arry[0]+"/../config/serverFtpCmdsPutProgram | grep successfully";
+                                qDebug() << "running: " << FTPCmdPath;
+                                qDebug() << "If you get errors: cd config && chmod +x serverFtpCmdsPutProgram && chmod 600 ~/.netrc (the ftp is configured in .netrc correct?)";
+                                sh.close();
+
+
+
+                                sh2.start("sh", QStringList() << "-c" << FTPCmdPath);
+                                sh2.waitForFinished(-1);
+                                output2 = sh2.readAll();
+                                xmls = output2;
+                                qDebug()<<output2;
+                                sh2.close();
+
+
+
+
+
+                                qDebug()<<"Checking if the file's intergrity was perserved...";
+
+
+                                QProcess shCHK,shCHK2;
+                                QByteArray outputCHK, outputCHK2;
+                                QString outPathCHK, FTPCmdPathCHK, xmlsCHK;
+
+
+                                shCHK.start("sh", QStringList() << "-c" << "pwd");
+                                shCHK.waitForFinished();
+                                outputCHK = shCHK.readAll();
+                                outPathCHK = outputCHK;
+                                QStringList path_arryCHK = outPathCHK.split("\n");
+                                FTPCmdPathCHK = path_arryCHK[0]+"/../config/serverFtpCmdsCHKProgram | grep "+NomeDestePrograma;
+                                qDebug() << "running: " << FTPCmdPathCHK;
+                                qDebug() << "If you get errors: cd config && chmod +x serverFtpCmdsCHKProgram && chmod 600 ~/.netrc (the ftp is configured in .netrc correct?)";
+                                shCHK.close();
+
+
+
+                                shCHK2.start("sh", QStringList() << "-c" << FTPCmdPathCHK);
+                                shCHK2.waitForFinished();
+                                outputCHK2 = shCHK2.readAll();
+                                xmlsCHK = outputCHK2;
+                                qDebug()<<outputCHK2;
+                                shCHK2.close();
+
+                                if(!xmlsCHK.isEmpty()){
+                                    QStringList splitCHKout = xmlsCHK.split(" ");
+                                    for(int i=0;i<splitCHKout.count();i++){
+                                        qDebug()<<"In position "<<i<<" of the array the value is: "<<splitCHKout[i];
+                                    }
+
+                                    QString ftpSizeStr = splitCHKout[9];
+
+                                    if(ftpSizeStr.isEmpty())
+                                        ftpSizeStr = splitCHKout[10];
+                                    if(ftpSizeStr.isEmpty())
+                                        ftpSizeStr = splitCHKout[11];
+                                    if(ftpSizeStr.isEmpty())
+                                        ftpSizeStr = splitCHKout[12];
+                                    if(ftpSizeStr.isEmpty())
+                                        ftpSizeStr = splitCHKout[13];
+                                    if(ftpSizeStr.isEmpty())
+                                        ftpSizeStr = splitCHKout[14];
+                                    if(ftpSizeStr.isEmpty())
+                                        ftpSizeStr = splitCHKout[15];
+                                    if(ftpSizeStr.isEmpty())
+                                        ftpSizeStr = splitCHKout[16];
+
+
+
+
+
+                                    qDebug()<<"Size value in array: "<<ftpSizeStr;
+
+                                    int size = 0;
+                                    QString mmfile = FTPPath+"/"+NomeDestePrograma+"."+aExtencaoDesteCoiso;
+                                    QFile myFile(mmfile);
+                                    if (myFile.open(QIODevice::ReadOnly)){
+                                        size = myFile.size();  //when file does open.
+                                        QString sizeStr = QString::number(size);
+                                        qDebug()<<"Size value of local file: "<<sizeStr;
+                                        myFile.close();
+
+
+                                        if(ftpSizeStr==sizeStr){
+
+                                            qDebug()<<"The file's integrity on the FTP server was verified correctly!";
+
+                                        } else {
+                                            qDebug()<<"Faild to verify the integrity of the file in the FTP server. Size of Local and remote files do NOT match...";
+                                            QMessageBox::information(this,tr("Interity verification faild!"),tr("The file does not seam to have been sent to the server correctly since the size of the local file differs from the one on the FTP server. Please try to send the program again."));
+                                        }
+
+
+
+                                    } else {
+                                        qDebug()<<"It was not possible to get the size of the local file: "<<mmfile;
+                                    }
+
+
+
+
+                                }
+
+
+
+
+
+
+
+                                /*The answer may be somethig like this below... :*/
+    /*
+                                QNetworkConfigurationManager manager;
+                                QNetworkAccessManager networkAccessManager;
+
+                                networkAccessManager.setConfiguration(manager.defaultConfiguration());
+
+                                networkAccessManager.setConfiguration(QNetworkConfiguration());
+
+                                //networkAccessManager.connectToHost(Server_URL,21);
+
+                                QUrl uploadurl(Server_URL);
+                                uploadurl.setUserName(User);
+                                uploadurl.setPassword(Pass);
+                                uploadurl.setPort(Port);
+                                QNetworkRequest upload(uploadurl);
+                                QHttpMultiPart uploadThisFile("/home/fred/cpp/NetPackSpot0713.ogg");
+
+
+                                networkAccessManager.put(upload,uploadThisFile);*/
+
+
+                                //uploadman->put(upload, destFile);
+
+
+                                //ahhhrrrr ... it's so f*kin' hard to learn it all on your own.....
+                                // ...
+                                // just let it go, forget your under a very narrow schedule, smoke some weed, drink some coffee and let's try to write this in some other way...
+    /*
+
+                                QHttpMultiPart *multiPart = new QHttpMultiPart(QHttpMultiPart::FormDataType);
+
+                                QHttpPart part;
+                                QFile *file = new QFile(destinationProgram);
+                                file->open(QIODevice::ReadOnly);
+                                part.setBodyDevice(file);
+                                file->setParent(multiPart); // we cannot delete the file now, so delete it with the multiPart
+
+                                multiPart->append(part);
+
+                                QUrl url(Server_URL);
+                                QNetworkRequest request(url);
+
+                                QNetworkAccessManager manager;
+                                QNetworkReply *reply = manager.post(request, multiPart);
+                                //multiPart->setParent(reply); // delete the multiPart with the reply
+
+                                qDebug()<<"Network reply was: "<<reply;
+    */
+
+
+
+
+                                qDebug()<<"Program uploaded to server!";
+
+                                QProcess bashDelThis;
+                                QString fileToRemove = "rm "+FTPPath+"/"+NomeDestePrograma+".ogg";
+                                bashDelThis.start("sh",QStringList()<<"-c"<<fileToRemove);
+                                bashDelThis.waitForFinished();
+                                bashDelThis.close();
+
+                                qDebug()<<"FTP temp file deleted";
+
+                                QMessageBox::StandardButton answer;
+                                answer = QMessageBox::question(this,tr("Delete local copy?"),tr("Delete the local copy of the program? (The program was sucessfuly uploaded to the server)"), QMessageBox::Yes|QMessageBox::No);
+
+                                if(answer==QMessageBox::Yes){
+
+                                    QProcess bashDoThis;
+                                    QString fileToRemoveStr = "rm "+destinationProgram;
+                                    bashDoThis.start("sh",QStringList()<<"-c"<<fileToRemoveStr);
+                                    bashDoThis.waitForFinished();
+                                    bashDoThis.close();
+                                    QMessageBox::information(this,tr("Local file deleted"),tr("The local copy of the file was deleted."));
+                                    ui->txt_ProgramName->hide();
+                                    ui->bt_ProgramStopandProcess->hide();
+
+                                } else {
+
+                                            QSqlQuery qry;
+                                            QString thisquery = "insert into programs values(NULL,'"+NomeDestePrograma+"','"+destinationProgram+"')";
+                                            if(qry.exec(thisquery)){
+                                                qDebug()<<"Query OK. Program localy added to programs table";
+                                            } else {
+                                                 qDebug()<<"Query was not ok while atempting to localy add to the programs table";
+                                            }
+
+                                    ui->txt_ProgramName->hide();
+                                    ui->bt_ProgramStopandProcess->hide();
+
+                                }
+
+
+                           /* } else {
+                                qDebug()<<"Some required data (url, port, user or pass) is not set in the options.";
+                            }*/
+
+
+
+
+
+
+
+
+                            ui->txt_uploadingPrograms->hide();
+
+
+
+                        }
+
+
+
+                    } else {
+                        QMessageBox::information(this,tr("Comunication Hour!"),tr("Sorry but you can't send programs to the server now because it's Comunication Hour. This hour is when the server get's the new programs from the server and the client should avoid to send programs at this hour (Delay is active so the hour before is also afected by this rule)."));
+                    }
+
+
+
+
+
+                } else {
+                    QMessageBox::information(this,tr("Cannot Send"),tr("It's not possible to send the Program to the server if XFB role is set to Server"));
+                }
+
+
+
+
+
+            }
+
+
+
+
+
+    } else {
+        qDebug()<<"Sending program to server was cancelled";
+        ui->txt_ProgramName->hide();
+        ui->bt_ProgramStopandProcess->hide();
+    }
+}
+
+void player::on_actionAdd_a_program_triggered()
+{
+    add_program addp;
+    addp.setModal(true);
+    addp.exec();
+    update_music_table();
+}
+
+
+
+
+
+void player::on_actionFullScreen_triggered()
+{
+    if(tmpFullScreen==0){
+        QMainWindow::showFullScreen();
+        tmpFullScreen=1;
+    } else{
+        QMainWindow::showMaximized();
+        tmpFullScreen=0;
+    }
+}
+
+
+void player::pingServer()
+{
+
+
+}
+
+void player::on_actionForce_an_FTP_Check_triggered()
+{
+    server_ftp_check();
+}
+
+void player::on_actionMake_a_program_with_the_current_playlist_triggered()
+{
+
+    ui->txt_creatingPrograms->show();
+    qDebug()<<"Running Make_a_program_with_the_current_playlist";
+    bool ok;
+    NomeDestePrograma2 = QInputDialog::getText(0, tr("Program name"),tr("What is the program's name? \n\nFormat MUST be: NAME_YYYY-MM-DD \nEx: program_2016-02-07\n\n"), QLineEdit::Normal,tr("Program_2016-02-07"), &ok);
+    if (ok && !NomeDestePrograma2.isEmpty()) {
+        qDebug()<<"Program name is: "<<NomeDestePrograma2;
+    }
+
+    QProcess cmd2;
+    cmd2.start("sh",QStringList()<<"-c"<<"rm inputs.txt");
+    cmd2.waitForFinished(-1);
+    cmd2.close();
+
+    //get the curent items of the playlist
+
+    QString contatstr;
+
+    QString destino = ProgramsPath+"/"+NomeDestePrograma2+".ogg";
+
+    int numItems = ui->playlist->count();
+    for(int i=0;i<numItems;i++){
+
+
+        QString nome = "music"+QString::number(i);
+
+        qDebug()<<"NOME: "<<nome;
+
+        qDebug()<<"Processing "<<i;
+
+        QString txtItem = ui->playlist->item(i)->text();
+        qDebug()<<"Processing file "<<txtItem;
+
+
+        QStringList array_ext_item = txtItem.split(".");
+
+        qDebug()<<" ------------>>>>>>>>>>>>>>>>>>>> EXT :::::::::::::: "<<array_ext_item.last();
+
+        if(array_ext_item.last()!="mp3"){
+
+            QMessageBox::warning(this,tr("File not in mp3..."),"The file "+txtItem+" is not in MP3 and at this moment we can only concatenate the files if they are.. please convert this file (or all?) to mp3 for now... sorry :-( ");
+            ui->txt_creatingPrograms->hide();
+            return;
+/*
+            QString cmdcp = "../config/fmedia-0/fmedia \""+txtItem+"\" --out=../ProgramGenerator/"+nome;
+
+            qDebug()<<">> >> >> >> >> Adding and converting audio: ";
+
+            qDebug()<<cmdcp;
+
+            QProcess cmd;
+            cmd.start("sh",QStringList()<<"-c"<<cmdcp);
+            cmd.waitForFinished(-1);
+            cmd.close();
+*/
+
+        } else {
+            QString cmdcp = "cp \""+txtItem+"\" ../ProgramGenerator/"+nome;
+
+            qDebug()<<">> >> >> >> >> Adding audio: ";
+
+            qDebug()<<cmdcp;
+
+            QProcess cmd;
+            cmd.start("sh",QStringList()<<"-c"<<cmdcp);
+            cmd.waitForFinished(-1);
+            cmd.close();
+        }
+
+
+
+
+
+        contatstr = "../ProgramGenerator/"+nome;
+        QProcess cmd;
+        cmd.start("sh",QStringList()<<"-c"<<"echo \"file '"+contatstr+"'\" >> inputs.txt");
+        cmd.waitForFinished(-1);
+        cmd.close();
+
+    }
+
+
+    QString cmdconcat = "ffmpeg -f concat -i inputs.txt "+destino;
+
+    qDebug()<<">> >> >> >> >> Concatenating audio.. the full command is: >> >> >> >> >> >>";
+
+    qDebug()<<cmdconcat;
+
+    QProcess cmd;
+    cmd.start("sh",QStringList()<<"-c"<<cmdconcat);
+    cmd.waitForFinished(-1);
+    cmd.close();
+
+
+
+    ui->txt_creatingPrograms->hide();
+
+
+    QString cmddel = "rm -rf ../ProgramGenerator/*";
+
+    qDebug()<<">> >> >> >> >> Removing tmp audio: ";
+
+    qDebug()<<cmddel;
+
+    cmd.start("sh",QStringList()<<"-c"<<cmddel);
+    cmd.waitForFinished(-1);
+    cmd.close();
+
+
+
+    ui->txt_uploadingPrograms->show();
+
+
+
+
+
+
+
+    QMessageBox::StandardButton sendToServer;
+
+    sendToServer = QMessageBox::question(this,tr("Send to server?"),tr("Send programs to the server?"),QMessageBox::Yes|QMessageBox::No);
+
+    if(sendToServer==QMessageBox::Yes){
+
+
+
+
+        QString cp2ftp = "cp "+destino+" "+FTPPath+"/"+NomeDestePrograma2+".ogg";
+        qDebug()<<"Running: "<<cp2ftp;
+        QProcess cmd;
+        cmd.startDetached("sh",QStringList()<<"-c"<<cp2ftp);
+        cmd.waitForFinished(-1);
+        cmd.close();
+
+
+
+            qDebug()<<"Sending program to server. This requires ~/.netrc to be configured with the ftp options and FTP Path in the options to point to a folder called 'ftp' that MUST be located in the parent directory of XFB (due to the code of config/serverFtpCmdsPutProgram).";
+
+
+            QProcess sh,sh2;
+            QByteArray output, output2;
+            QString outPath, FTPCmdPath, xmls;
+
+
+            sh.start("sh", QStringList() << "-c" << "pwd");
+            sh.waitForFinished();
+            output = sh.readAll();
+            outPath = output;
+            QStringList path_arry = outPath.split("\n");
+            FTPCmdPath = path_arry[0]+"/../config/serverFtpCmdsPutProgram | grep successfully";
+            qDebug() << "running: " << FTPCmdPath;
+            qDebug() << "If you get errors: cd config && chmod +x serverFtpCmdsPutProgram && chmod 600 ~/.netrc (the ftp is configured in .netrc correct?)";
+            sh.close();
+
+
+
+            sh2.start("sh", QStringList() << "-c" << FTPCmdPath);
+            sh2.waitForFinished(-1);
+            output2 = sh2.readAll();
+            xmls = output2;
+            qDebug()<<output2;
+            sh2.close();
+
+
+
+
+
+            qDebug()<<"Checking if the file's intergrity was perserved...";
+
+
+            QProcess shCHK,shCHK2;
+            QByteArray outputCHK, outputCHK2;
+            QString outPathCHK, FTPCmdPathCHK, xmlsCHK;
+
+
+            shCHK.start("sh", QStringList() << "-c" << "pwd");
+            shCHK.waitForFinished();
+            outputCHK = shCHK.readAll();
+            outPathCHK = outputCHK;
+            QStringList path_arryCHK = outPathCHK.split("\n");
+            FTPCmdPathCHK = path_arryCHK[0]+"/../config/serverFtpCmdsCHKProgram | grep "+NomeDestePrograma2;
+            qDebug() << "running: " << FTPCmdPathCHK;
+            qDebug() << "If you get errors: cd config && chmod +x serverFtpCmdsCHKProgram && chmod 600 ~/.netrc (the ftp is configured in .netrc correct?)";
+            shCHK.close();
+
+
+
+            shCHK2.start("sh", QStringList() << "-c" << FTPCmdPathCHK);
+            shCHK2.waitForFinished();
+            outputCHK2 = shCHK2.readAll();
+            xmlsCHK = outputCHK2;
+            qDebug()<<outputCHK2;
+            shCHK2.close();
+
+            if(!xmlsCHK.isEmpty()){
+                QStringList splitCHKout = xmlsCHK.split(" ");
+                for(int i=0;i<splitCHKout.count();i++){
+                    qDebug()<<"In position "<<i<<" of the array the value is: "<<splitCHKout[i];
+                }
+
+                QString ftpSizeStr = splitCHKout[9];
+
+                if(ftpSizeStr.isEmpty())
+                    ftpSizeStr = splitCHKout[10];
+                if(ftpSizeStr.isEmpty())
+                    ftpSizeStr = splitCHKout[11];
+                if(ftpSizeStr.isEmpty())
+                    ftpSizeStr = splitCHKout[12];
+                if(ftpSizeStr.isEmpty())
+                    ftpSizeStr = splitCHKout[13];
+                if(ftpSizeStr.isEmpty())
+                    ftpSizeStr = splitCHKout[14];
+                if(ftpSizeStr.isEmpty())
+                    ftpSizeStr = splitCHKout[15];
+                if(ftpSizeStr.isEmpty())
+                    ftpSizeStr = splitCHKout[16];
+
+
+
+
+
+                qDebug()<<"Size value in array: "<<ftpSizeStr;
+
+                int size = 0;
+                QString mmfile = FTPPath+"/"+NomeDestePrograma2+".ogg";
+                QFile myFile(mmfile);
+                if (myFile.open(QIODevice::ReadOnly)){
+                    size = myFile.size();  //when file does open.
+                    QString sizeStr = QString::number(size);
+                    qDebug()<<"Size value of local file: "<<sizeStr;
+                    myFile.close();
+
+
+                    if(ftpSizeStr==sizeStr){
+
+                        qDebug()<<"The file's integrity on the FTP server was verified correctly!";
+
+                    } else {
+                        qDebug()<<"Faild to verify the integrity of the file in the FTP server. Size of Local and remote files do NOT match...";
+                        QMessageBox::information(this,tr("Interity verification faild!"),tr("The file does not seam to have been sent to the server correctly since the size of the local file differs from the one on the FTP server. Please try to send the program again."));
+                    }
+
+
+
+                } else {
+                    qDebug()<<"It was not possible to get the size of the local file: "<<mmfile;
+                }
+
+
+
+
+            }
+
+
+            qDebug()<<"Program uploaded to server!";
+
+            QProcess bashDelThis;
+            QString fileToRemove = "rm "+FTPPath+"/"+NomeDestePrograma2+".ogg";
+            bashDelThis.start("sh",QStringList()<<"-c"<<fileToRemove);
+            bashDelThis.waitForFinished();
+            bashDelThis.close();
+
+            qDebug()<<"FTP temp file deleted";
+
+            QMessageBox::StandardButton answer;
+            answer = QMessageBox::question(this,tr("Delete local copy?"),tr("Delete the local copy of the program? (The program was sucessfuly uploaded to the server)"), QMessageBox::Yes|QMessageBox::No);
+
+            if(answer==QMessageBox::Yes){
+
+                QProcess bashDoThis;
+                QString fileToRemoveStr = "rm "+destino;
+                bashDoThis.start("sh",QStringList()<<"-c"<<fileToRemoveStr);
+                bashDoThis.waitForFinished();
+                bashDoThis.close();
+                QMessageBox::information(this,tr("Local file deleted"),tr("The local copy of the file was deleted."));
+
+
+            } else {
+
+                        QSqlQuery qry;
+                        QString thisquery = "insert into programs values(NULL,'"+NomeDestePrograma2+"','"+destino+"')";
+                        if(qry.exec(thisquery)){
+                            qDebug()<<"Query OK. Program localy added to programs table";
+                        } else {
+                             qDebug()<<"Query was not ok while atempting to localy add to the programs table";
+                        }
+
+
+
+            }
+
+
+
+
+
+
+
+
+
+    } else {
+
+        QMessageBox::StandardButton answer;
+        answer = QMessageBox::question(this,tr("Delete local copy?"),tr("Delete the local copy of the program? (The program was sucessfuly uploaded to the server)"), QMessageBox::Yes|QMessageBox::No);
+
+        if(answer==QMessageBox::Yes){
+
+            QProcess bashDoThis;
+            QString fileToRemoveStr = "rm "+destino;
+            bashDoThis.start("sh",QStringList()<<"-c"<<fileToRemoveStr);
+            bashDoThis.waitForFinished();
+            bashDoThis.close();
+            QMessageBox::information(this,tr("Local file deleted"),tr("The local copy of the file was deleted."));
+
+
+        } else {
+
+            QSqlQuery qry;
+            QString thisquery = "insert into programs values(NULL,'"+NomeDestePrograma2+"','"+destino+"')";
+            if(qry.exec(thisquery)){
+                qDebug()<<"Query OK. Program localy added to programs table";
+            } else {
+                 qDebug()<<"Query was not ok while atempting to localy add to the programs table";
+            }
+
+
+
+}
+
+    }
+ui->txt_uploadingPrograms->hide();
+
+
+
+
+
+
+}

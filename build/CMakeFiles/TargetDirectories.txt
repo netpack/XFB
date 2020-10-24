@@ -1,0 +1,4 @@
+/home/fred/cpp/XFB/build/CMakeFiles/rebuild_cache.dir
+/home/fred/cpp/XFB/build/CMakeFiles/XFB.dir
+/home/fred/cpp/XFB/build/CMakeFiles/edit_cache.dir
+/home/fred/cpp/XFB/build/CMakeFiles/XFB_autogen.dir

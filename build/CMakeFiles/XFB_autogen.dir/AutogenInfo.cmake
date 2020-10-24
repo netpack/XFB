@@ -1,0 +1,34 @@
+# Meta
+set(AM_MULTI_CONFIG "FALSE")
+set(AM_PARALLEL "4")
+# Directories
+set(AM_CMAKE_SOURCE_DIR "/home/fred/cpp/XFB")
+set(AM_CMAKE_BINARY_DIR "/home/fred/cpp/XFB/build")
+set(AM_CMAKE_CURRENT_SOURCE_DIR "/home/fred/cpp/XFB")
+set(AM_CMAKE_CURRENT_BINARY_DIR "/home/fred/cpp/XFB/build")
+set(AM_CMAKE_INCLUDE_DIRECTORIES_PROJECT_BEFORE "")
+set(AM_BUILD_DIR "/home/fred/cpp/XFB/build/XFB_autogen")
+set(AM_INCLUDE_DIR "include")
+# Files
+set(AM_SOURCES "/home/fred/cpp/XFB/aboutus.cpp;/home/fred/cpp/XFB/add_full_dir.cpp;/home/fred/cpp/XFB/add_music_single.cpp;/home/fred/cpp/XFB/add_program.cpp;/home/fred/cpp/XFB/add_pub.cpp;/home/fred/cpp/XFB/addgenre.cpp;/home/fred/cpp/XFB/addjingle.cpp;/home/fred/cpp/XFB/audioinput.cpp;/home/fred/cpp/XFB/audiooutput.cpp;/home/fred/cpp/XFB/buymecoffee.cpp;/home/fred/cpp/XFB/commonFunctions.cpp;/home/fred/cpp/XFB/dbconn.cpp;/home/fred/cpp/XFB/dialog.cpp;/home/fred/cpp/XFB/main.cpp;/home/fred/cpp/XFB/manage_db.cpp;/home/fred/cpp/XFB/moc_aboutus.cpp;/home/fred/cpp/XFB/moc_add_full_dir.cpp;/home/fred/cpp/XFB/moc_add_music_single.cpp;/home/fred/cpp/XFB/moc_add_program.cpp;/home/fred/cpp/XFB/moc_add_pub.cpp;/home/fred/cpp/XFB/moc_addgenre.cpp;/home/fred/cpp/XFB/moc_addjingle.cpp;/home/fred/cpp/XFB/moc_audioinput.cpp;/home/fred/cpp/XFB/moc_config.cpp;/home/fred/cpp/XFB/moc_optionsdialog.cpp;/home/fred/cpp/XFB/moc_player.cpp;/home/fred/cpp/XFB/moc_qaudiolevel.cpp;/home/fred/cpp/XFB/moc_youtubedownloader.cpp;/home/fred/cpp/XFB/optionsdialog.cpp;/home/fred/cpp/XFB/player.cpp;/home/fred/cpp/XFB/qaudiolevel.cpp;/home/fred/cpp/XFB/qrc_jquery.cpp;/home/fred/cpp/XFB/qrc_resources.cpp;/home/fred/cpp/XFB/qrc_tr.cpp;/home/fred/cpp/XFB/qvumeter.cpp;/home/fred/cpp/XFB/youtubedownloader.cpp")
+set(AM_HEADERS "/home/fred/cpp/XFB/aboutus.h;/home/fred/cpp/XFB/add_full_dir.h;/home/fred/cpp/XFB/add_music_single.h;/home/fred/cpp/XFB/add_program.h;/home/fred/cpp/XFB/add_pub.h;/home/fred/cpp/XFB/addgenre.h;/home/fred/cpp/XFB/addjingle.h;/home/fred/cpp/XFB/audioinput.h;/home/fred/cpp/XFB/audiooutput.h;/home/fred/cpp/XFB/buymecoffee.h;/home/fred/cpp/XFB/commonFunctions.h;/home/fred/cpp/XFB/config.h;/home/fred/cpp/XFB/dbconn.h;/home/fred/cpp/XFB/dialog.h;/home/fred/cpp/XFB/manage_db.h;/home/fred/cpp/XFB/moc_predefs.h;/home/fred/cpp/XFB/optionsdialog.h;/home/fred/cpp/XFB/player.h;/home/fred/cpp/XFB/qaudiolevel.h;/home/fred/cpp/XFB/qvumeter.h;/home/fred/cpp/XFB/ui_aboutus.h;/home/fred/cpp/XFB/ui_add_full_dir.h;/home/fred/cpp/XFB/ui_add_music_single.h;/home/fred/cpp/XFB/ui_add_program.h;/home/fred/cpp/XFB/ui_add_pub.h;/home/fred/cpp/XFB/ui_addgenre.h;/home/fred/cpp/XFB/ui_addjingle.h;/home/fred/cpp/XFB/ui_optionsdialog.h;/home/fred/cpp/XFB/ui_player.h;/home/fred/cpp/XFB/ui_youtubedownloader.h;/home/fred/cpp/XFB/youtubedownloader.h")
+set(AM_SETTINGS_FILE "/home/fred/cpp/XFB/build/CMakeFiles/XFB_autogen.dir/AutogenOldSettings.txt")
+# Qt
+set(AM_QT_VERSION_MAJOR "5")
+set(AM_QT_MOC_EXECUTABLE "/usr/bin/moc")
+set(AM_QT_UIC_EXECUTABLE "/usr/bin/uic")
+# MOC settings
+set(AM_MOC_SKIP "/home/fred/cpp/XFB/build/XFB_autogen/mocs_compilation.cpp")
+set(AM_MOC_DEFINITIONS "QT_CORE_LIB;QT_DATAVISUALIZATION_LIB;QT_GUI_LIB;QT_MULTIMEDIA_LIB;QT_NETWORK_LIB;QT_NO_DEBUG;QT_QML_LIB;QT_QUICK_LIB;QT_SQL_LIB;QT_WIDGETS_LIB")
+set(AM_MOC_INCLUDES "/home/fred/cpp/XFB/build;/home/fred/cpp/XFB;/home/fred/cpp/XFB/build/XFB_autogen/include;/usr/include/qt;/usr/include/qt/QtCore;/usr/lib/qt/mkspecs/linux-g++;/usr/include/qt/QtQuick;/usr/include/qt/QtQml;/usr/include/qt/QtNetwork;/usr/include/qt/QtGui;/usr/include/qt/QtSql;/usr/include/qt/QtWidgets;/usr/include/qt/QtMultimedia;/usr/include/qt/QtDataVisualization;/usr/include")
+set(AM_MOC_OPTIONS "")
+set(AM_MOC_RELAXED_MODE "")
+set(AM_MOC_MACRO_NAMES "Q_OBJECT;Q_GADGET;Q_NAMESPACE")
+set(AM_MOC_DEPEND_FILTERS "")
+set(AM_MOC_PREDEFS_CMD "/usr/bin/c++;-dM;-E;-c;/usr/share/cmake-3.12/Modules/CMakeCXXCompilerABI.cpp")
+# UIC settings
+set(AM_UIC_SKIP "/home/fred/cpp/XFB/build/XFB_autogen/mocs_compilation.cpp")
+set(AM_UIC_TARGET_OPTIONS "")
+set(AM_UIC_OPTIONS_FILES "")
+set(AM_UIC_OPTIONS_OPTIONS "")
+set(AM_UIC_SEARCH_PATHS "")

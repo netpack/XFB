@@ -1,0 +1,10 @@
+#!/usr/bin/env xdg-open
+[Desktop Entry]
+Version=1.0
+Type=Application
+Terminal=false
+Name=XFB
+Exec=/home/xfb/XFB/bin/XFB
+Path=/home/xfb/XFB/bin/
+Type=Application
+Icon=/home/xfb/XFB/src/48x48.png

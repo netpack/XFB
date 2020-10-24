@@ -1,0 +1,1 @@
+sudo ./XFB -style Adwaita
