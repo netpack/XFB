@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<XFBClientTakeOver>
+    <www.netpack.pt>
+        <ip>[IP]</ip>
+        <cmd>returnTakeOver</cmd>
+    </www.netpack.pt>
+</XFBClientTakeOver>

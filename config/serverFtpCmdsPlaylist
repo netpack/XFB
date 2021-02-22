@@ -1,0 +1,13 @@
+#!/bin/bash
+ftp -v [IP] [PORT] << EOT
+prompt
+passive
+prompt
+binary
+cd Playlists
+ls
+mget *.xml
+prompt
+mdelete *.xml
+bye
+EOT

@@ -1,0 +1,14 @@
+XFB
+Developed by Netpack - Online Solutions!
+www.netpack.pt
+
+XFB is a radio automation software that you can also use in your living room :-)
+
+Dependencies:
+sh
+SoX with all format libraries
+youtube-dl
+Audacity
+mediainfo
+
+

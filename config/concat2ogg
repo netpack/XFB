@@ -1,0 +1,10 @@
+#!/bin/sh
+# Usage: ./combine2ogg destination.ogg source1.wma source2.wma ...
+# Requires: mplayer, oggenc
+destination="$1"
+shift
+pipe="$(mktemp -u)"
+mkfifo "$pipe"
+mplayer -really-quiet -slave -nolirc -vc null -vo null -ao "pcm:fast:file=$pipe" "$@" &
+oggenc --quiet -o "$destination" "$pipe"
+rm -f "$pipe"

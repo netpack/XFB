@@ -1,0 +1,256 @@
+-----------------
+HISTORY OF FMEDIA
+-----------------
+
+ "+" - new feature
+ "*" - change, update or a small improvement
+ "-" - bugfix
+
+
+fmedia v0.10 - Mar 15, 2016
+
+ + OGG: support copying OGG stream without re-encoding
+ - OGG: seeking is more accurate (the target OGG page is located)
+
+ - FLAC,OGG,MPEG: the formats couldn't be used with --record
+ - MP4: get average file bitrate from MP4 if bitrate value in ALAC header isn't set
+ - MP4: ALAC: accurate seek to an audio sample
+ - ALAC: windows: libALAC-ff.dll doesn't require libstdc++-6.dll anymore (fmedia couldn't startup with mp4.decode module enabled)
+
+ * GUI: save text of output conversion file in fmedia.gui.conf
+ * GUI: remove "convert_*" config settings
+ - GUI: fix main window flicker on startup (v0.4 bug)
+
+ - fmedia: windows: Ctrl+C didn't work (v0.9 bug)
+
+
+fmedia v0.9 - Feb 29, 2016
+
+ + MP4 (ALAC) input
+ + ALSA capture
+ + MPEG encode: write ID3v1 and ID3v2 tags
+
+ + TUI: show real-time PCM peak value in dB while recording
+ * TUI: "Stop", "Quit" commands can stop recording
+ + GUI: save playlist to M3U file
+ + GUI: add commands "Jump To Marker" and "Set Marker"
+ - GUI: main window position wasn't preserved on File->Exit command
+ - GUI: show the first fmedia instance after executing the second instance without input files
+ - GUI: "Play Mixed and Record" command didn't work
+ - GUI: record: stop all playing tracks before starting playback of new tracks
+ - GUI: issuing the second seek command to the same position didn't work (v0.8 bug)
+
+ - APE, WavPack: don't pass binary meta (e.g. cover picture)
+ - OGG: support padding in Vorbis comments
+ * Vorbis comments: support "TotalTracks"
+ - OGG: fix invalid audio position if page granulepos is not set
+ - MPEG decode: fix inaccurate bitrate value if there's a large ID3v2 tag present
+
+ * --pcm-peaks: print peak values as dB
+ - fmedia: linux: fix potential threads race when SIGIO event from ALSA device fd is received in TUI command processing thread
+ - fmedia: windows: Unicode input arguments were not supported
+ - ALSA, WASAPI: reset audio device after system error
+ - WASAPI, core: playback of mono audio didn't work in shared WASAPI mode
+ - queue: don't start playing the first track in queue after playback of the last track has failed with "unsupported format" error (v0.7 bug)
+
+
+fmedia v0.8 - Jan 27, 2016
+
+ + APE decode
+
+ + fmedia-gui: support single instance mode
+ + GUI: add playback control buttons
+ + GUI: "Stop After Current" command
+ * GUI: show playback/total time info at the top
+ * GUI: add settings for audio conversion
+ - GUI: don't react to seek or volume changes while converting audio
+ - GUI: prevent hanging when too many seek requests are made
+ - GUI: 2 seek requests were made if Right key is pressed while seek trackbar is focused
+ - GUI: "convert" window: "..." button didn't work (v0.7 bug)
+
+ * TUI, GUI: reduce delay after seek request
+ - TUI, GUI: progress bar wasn't shown right after a track is started
+
+ + OGG encode: new config option "page_size", "min_tag_size"
+ * OGG: "quality" config setting type is now "float"
+ * OGG encode: allocate disk space for the whole output file
+ - OGG encode: audio samples could be lost if input data is very small
+ - OGG: prevent hanging in case no eos page is found or unexpected data exists after eos page
+
+ + CUE: support non-Unicode text
+ - CUE: use track PERFORMER value even if global PERFORMER value exists (v0.7 bug)
+
+ + file.out: support $filepath and $filename variables for naming output file
+ + core config settings can be stored in user config file
+ + fmedia: new argument --mono: convert stereo to mono
+ * fmedia: new config option "codepage"
+ * MPEG.decode: "meta_codepage" option is removed, use global "codepage" config option
+ - TUI: fix FP exception when total_samples is 0
+ - queue: the next track is started after the current track has been removed
+ - ALSA: fix segfault on starting the next track
+ - core: fix segfault when invalid keyname is used in user config file
+ - file.in: near forward seek didn't work if target position is larger than buffer size (v0.4 bug)
+
+
+fmedia v0.7 - Dec 24, 2015
+
+ + TUI: support real-time user commands: "Play/Stop/Next/Previous", "Seek", "Volume", "Remove from playlist", "Delete file from disk"
+ * TUI: always print currently playing position (e.g. while recording)
+ + GUI: show error messages in a separate window
+ * GUI: user settings file is now located in user directory, not application directory
+ - GUI: fix potential threads race when sending commands to a track
+
+ * FLAC, OGG, WavPack: faster "--info"
+
+ + FLAC encode: support generating seek table, MD5 checksum
+ * FLAC encode: preallocate disk space for the whole output file
+ * FLAC decode: improved speed of seeking
+
+ * WavPack: improved speed of seeking
+ - WavPack: decoding might not work if APE tag is present
+ - WavPack: program could hang if a large APE tag is present
+
+ + CUE: value for --track argument may contain a list of track numbers, not just one number
+ + CUE: support one more option for --cue-gaps argument
+ * CUE: skip tracks with invalid duration (i.e. if from >= to)
+ * CUE: don't skip unknown meta tags
+ - CUE: fix potential errors with global CUE meta (those before "FILE" keyword)
+ - CUE: fix meta array memory leak
+
+ + fmedia: new command-line arguments "--meta", "--tags", "--preserve-date"
+ - fmedia: "--until" command didn't work for a track in .cue file
+ * queue: don't remove track from queue on transient or system error unless the error is "unsupported format"
+ * queue: don't play next file if error occurred, unless --silent mode is active
+ * file: support user-specified meta tags while auto-naming output file (--out)
+ * fmedia: --outdir is "." by default
+ - core: Windows: user configuration settings didn't work
+
+
+fmedia v0.6 - Oct 31, 2015
+
+ + support Linux
+ + ALSA playback
+
+ + core: support per-user configuration settings
+ * queue: quit when Ctrl+C is pressed
+ * mpeg, ogg, flac: support "meta_tracktotal"
+ + mpeg.decode: support configuration setting "meta_codepage" via fmedia.conf
+
+ * flac.encode: support PCM float input
+ - fmedia: don't hang if no input files were specified
+ - core: --list-dev command didn't work (v0.3 bug)
+ - flac, wavpack: meta info from .CUE file has a higher priority than meta from media file itself
+ - plist.m3u: absolute filenames inside M3U file were not supported
+ - conv-soxr: "pause" command from gui didn't work correctly
+ - wasapi: eliminate potential race during playback
+ - wasapi.in, dsound.in: fix segfault on starting sound capture (v0.5 bug)
+ - mixer: fix segfault when using mixer (v0.5 bug)
+
+
+fmedia v0.5 - Sep 29, 2015
+
+ + WavPack decode
+ + MPEG encode
+ + soundmod.soxr: convert PCM sample rate
+
+ * fmedia: --seek and --until accept variable length time string of format "h:m:s.ms"
+ * fmedia, core, wav.out: --pcm-format -> --wav-format
+
+ + gui: new menu commands: "Select All", "Invert Selection", "Copy to Clipboard", "Copy Filename to Clipboard", "Delete From Disk", "Play and Record", "Mix and Record"
+ + gui: simple sorting by "filename", "artist", "title" columns
+ + gui: convert multiple files
+ - core, gui: fmedia didn't exit after error in GUI loader
+ - gui: STOP didn't work after PAUSE
+ - gui, wasapi.out, dsound.out: quicker reaction to "pause", "seek" command
+ - gui: meta from flac.cue wasn't passed to output file when "Convert" command is used
+ - gui: "Open Folder" didn't work for filenames with spaces
+
+ + mixer: buffer size can be configured in fmedia.conf
+ + mixer: support mixing PCM 16le with PCM float
+ - mixer: output could hang in some cases
+
+ - file.out: flush memory buffers to a file before seeking
+ - file: seek=0 didn't work
+
+ * wasapi: request sample rate conversion if soundcard doesn't support input sample rate
+ * wasapi: output: don't reopen output buffer on each file, unless audio format or device has changed
+
+ - queue: the next item in queue wasn't played after directory or playlist was opened (v0.4 bug)
+ - plist.cue: invalid track_duration was set (v0.4 bug)
+ - soundmod.until: tracks from .cue files could hang when stopped from GUI (v0.4 bug)
+
+
+fmedia v0.4 - Aug 21, 2015
+
+ + gui: fmedia-gui binary supports command-line arguments
+ + gui: synchronize queue with the playlist view
+ + gui: accept files dragged and dropped from explorer
+ + gui: support recording audio
+ + gui: save into a file wmain.position and tvol.value on exit
+ + gui: convert 1 selected media file
+ * gui: use filename as a title if there's no title in media meta info
+ * gui: use config options
+ * gui: "show directory" command selects the file in explorer
+ * tui: print total samples
+
+ + plist.cue: control track pregaps (--cue-gaps=VAL)
+ * plist.cue: don't skip pregaps by default, but add them into the previous track
+ - plist.cue: precise (to a sample) seek positioning and track duration
+
+ - mixer: fix unsynchronized output (v0.3 bug)
+ - mixer: the first output chunk might contain invalid PCM data
+ - mixer: output to OGG Vorbis didn't work
+
+ - core: fix track's dictionary entries memory leak
+ - core: command line options "--out=.EXT --outdir=DIR" didn't work (v0.2 bug)
+ + plist.dir: open directory (find files in a directory and add them to the queue)
+ * queue: delete the item from queue if there was an error while processing track
+ + soundmod.peaks (--pcm-peaks, --pcm-crc)
+ - soundmod.until: the first chunk of PCM data was skipped (v0.3 bug, affects all audio  processing)
+ + mpeg.decode: support ID3v1 tag (note: track number and genre aren't supported)
+
+
+fmedia v0.3 - Jul 25, 2015
+
+ + added GUI
+ + support M3U playlist
+ + FLAC: support per-track playback of CUE files
+ + file: ability to automatically name output file from meta info
+ + OGG: support playing files with no eos page
+ + FLAC: support FLAC-to-FLAC convertion
+ - conf: multiple media file extensions didn't work
+ - core: fixed module name memory leak
+ - conf: media file extension matching is now case insensitive
+ - FLAC: couldn't play flac files if header size matches input file buffer size
+
+
+fmedia v0.2 - June 20 2015
+
+ + FLAC input/output
+ + OGG output
+ + MPEG decode
+ + WASAPI input with latency auto-correction
+ + "live" capture mode
+ * --record switch is now boolean, may be used with --out=FILE
+ + --outdir - Set output directory
+ + --pcm-format - Set output PCM format
+ + --gain - Set output gain in dB
+ + --overwrite - Overwrite output file
+ + conf: output_ext
+ + conf: "mod_conf": modules can be configured via fmedia.conf
+ * OGG: more precise "current_position"
+ - WASAPI: don't hang if input data is too small
+ - file.in: correctly handle read() from eof position
+ - mpeg: support ID3v2 tags with "unsync" flag
+
+
+fmedia v0.1 - May 23 2015
+
+ + OGG input
+ + WAV input/output, raw input
+ + MPEG input (meta only)
+ + file input/output
+ + Direct Sound input/output
+ + WASAPI output
+ + mixer
+ + TUI

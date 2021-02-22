@@ -1,0 +1,84 @@
+Usage:
+fmedia [OPTIONS] [INPUT...]
+
+The default action is to play input files one by one.
+
+INPUT    Input file
+
+Options:
+--gui   Run in graphical UI mode
+
+--repeat-all   Repeat all
+--seek=TIME    Seek to time
+--until=TIME   Stop at time
+--fseek=BYTE   Set input file offset
+
+--track=N1[,N2...]    Select specific track numbers in playlist
+
+--info         Just show media information
+--tags         Print all meta tags
+
+--mix          Play input files simultaneously.
+               Note: all inputs must have channels number and sample rate equal to the output.
+
+--out=[FILE].EXT  Don't play but write output to a file.
+                  Output format is chosen by "EXT".
+                  Supported variables:
+                    $filepath: path to input file
+                    $filename: name (without extension) of the input file
+                  Filename may be generated automatically using meta info,
+                    e.g.: --out "$tracknumber. $artist - $title.flac"
+                    Note: bash (sh) users must escape $, or use '' instead of "".
+
+--outdir=DIR      Set output directory
+
+--volume=VOL      Set volume (0% .. 125%)
+--gain=dB         Set output gain in dB
+
+--record       Record until stopped by user
+
+--list-dev           List available sound devices and exit
+--dev=DEVNO          Use playback device
+--dev-capture=DEVNO  Use capture device
+
+-y, --overwrite  Overwrite output file
+
+--silent       Don't print anything to stdout
+--debug        Print debug info to stdout
+-h, --help     Print help info and exit
+
+
+Other options:
+--mono=VAL        Convert stereo to mono.  Supported values:
+                  0: mix all channels together
+                  1: use left channel only
+                  2: use right channel only
+                  Note: can't be used together with sample rate conversion.
+
+--wav-format=VAL  Set output PCM format (16le | float)
+
+--ogg-quality=VAL     Set OGG Vorbis encoding quality: -1.0 .. 10.0
+
+--mpeg-quality=VAL    Set MPEG encoding quality: 9..0 (VBR) or 64..320 (CBR)
+
+--cue-gaps=VAL    Control track pregaps
+                  0: skip pregaps:
+                    track01.index01 .. track02.index00
+
+                  1: (default), gap is added to the previous track:
+                    track01.index01 .. track02.index01
+
+                  2: gap is added to the previous track (but track01's pregap is preserved):
+                    track01.index00 .. track02.index01
+                    track02.index01 .. track03.index01
+
+                  3: gap is added to the beginning of the current track:
+                    track01.index00 .. track02.index00
+
+--pcm-peaks  Analyze PCM and print some details.
+--pcm-crc    Print CRC of PCM data (must be used with --pcm-peaks).
+             Useful for checking the results of lossless audio conversion.
+
+--preserve-date  Set output file date/time equal to input file.
+
+--meta='NAME=VAL;NAME=VAL...'   Set meta data.

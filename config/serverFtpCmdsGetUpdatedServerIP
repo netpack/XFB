@@ -1,0 +1,14 @@
+#!/bin/bash
+cd ../tmp/
+rm ftpupdate.txt
+ftp -v [IP] [PORT] << EOT
+prompt
+passive
+prompt
+binary
+cd Config
+prompt
+get ftpupdate.txt
+prompt
+bye
+EOT

@@ -1,0 +1,5 @@
+[Dolphin]
+PreviewsShown=true
+Timestamp=2017,2,16,16,50,51
+Version=3
+VisibleRoles=CustomizedDetails,Details_text,Details_size,Details_date,Details_type,Details_destination
