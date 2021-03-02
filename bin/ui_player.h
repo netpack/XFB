@@ -75,35 +75,12 @@ public:
     QFrame *frame;
     QLCDNumber *txt_horas;
     QPushButton *bt_autoMode;
-    QFrame *frame_4;
-    QPushButton *btPlay;
-    QPushButton *btStop;
-    QPushButton *btPlayNext;
-    QPushButton *bt_rec;
-    QLabel *txt_recTime;
-    QLabel *txtNowPlaying;
-    QLabel *txt_ProgramName;
-    QPushButton *bt_ProgramStopandProcess;
-    QLabel *txt_uploadingPrograms;
-    QLabel *txtDuration;
-    QWidget *layoutWidget;
-    QHBoxLayout *horizontalLayout_7;
-    QLabel *label;
-    QSlider *sliderVolume;
-    QLabel *label_2;
-    QSlider *sliderProgress;
-    QLabel *txt_creatingPrograms;
-    QLabel *led_rec;
-    QLabel *txt_loading;
-    QToolButton *bt_pause_rec;
-    QToolButton *bt_pause_play;
     QTabWidget *tabWidget_2;
     QWidget *tabPlaylist;
     QGridLayout *gridLayout_3;
-    QListWidget *playlist;
     QFrame *frame_2;
     QLabel *txt_playlistTotalTime;
-    QWidget *layoutWidget1;
+    QWidget *layoutWidget;
     QVBoxLayout *verticalLayout;
     QHBoxLayout *horizontalLayout_10;
     QCheckBox *checkBox_sum_to_playlist_time;
@@ -118,6 +95,7 @@ public:
     QComboBox *comboBox_random_add_genre;
     QLabel *label_10;
     QPushButton *bt_add_some_random_songs_from_genre;
+    QListWidget *playlist;
     QWidget *tabHistorylist;
     QHBoxLayout *horizontalLayout_6;
     QListWidget *historyList;
@@ -155,7 +133,7 @@ public:
     QTableView *programsView;
     QToolBox *page_FTP_Connection;
     QWidget *page;
-    QWidget *layoutWidget2;
+    QWidget *layoutWidget1;
     QHBoxLayout *horizontalLayout;
     QLineEdit *txt_search;
     QPushButton *bt_reset;
@@ -195,6 +173,28 @@ public:
     QFrame *line_2;
     QFrame *line_3;
     QLabel *lbl_streamURL;
+    QFrame *frame_4;
+    QPushButton *btPlay;
+    QPushButton *btStop;
+    QPushButton *btPlayNext;
+    QPushButton *bt_rec;
+    QLabel *txt_recTime;
+    QLabel *txtNowPlaying;
+    QLabel *txt_ProgramName;
+    QPushButton *bt_ProgramStopandProcess;
+    QLabel *txt_uploadingPrograms;
+    QLabel *txtDuration;
+    QWidget *layoutWidget2;
+    QHBoxLayout *horizontalLayout_7;
+    QLabel *label;
+    QSlider *sliderVolume;
+    QLabel *label_2;
+    QSlider *sliderProgress;
+    QLabel *txt_creatingPrograms;
+    QLabel *led_rec;
+    QLabel *txt_loading;
+    QToolButton *bt_pause_rec;
+    QToolButton *bt_pause_play;
     QHBoxLayout *horizontalLayout_11;
     QLabel *NetpackLogo;
     QLabel *txt_bottom_info;
@@ -438,202 +438,13 @@ public:
 
         gridLayout_2->addWidget(frame, 0, 1, 5, 1);
 
-        frame_4 = new QFrame(widget);
-        frame_4->setObjectName(QString::fromUtf8("frame_4"));
-        sizePolicy3.setHeightForWidth(frame_4->sizePolicy().hasHeightForWidth());
-        frame_4->setSizePolicy(sizePolicy3);
-        frame_4->setMinimumSize(QSize(0, 129));
-        frame_4->setFrameShape(QFrame::NoFrame);
-        frame_4->setFrameShadow(QFrame::Raised);
-        btPlay = new QPushButton(frame_4);
-        btPlay->setObjectName(QString::fromUtf8("btPlay"));
-        btPlay->setGeometry(QRect(9, 10, 171, 55));
-        QSizePolicy sizePolicy5(QSizePolicy::Minimum, QSizePolicy::Expanding);
-        sizePolicy5.setHorizontalStretch(0);
-        sizePolicy5.setVerticalStretch(30);
-        sizePolicy5.setHeightForWidth(btPlay->sizePolicy().hasHeightForWidth());
-        btPlay->setSizePolicy(sizePolicy5);
-        btPlay->setMinimumSize(QSize(0, 55));
-        QIcon icon26;
-        icon26.addFile(QString::fromUtf8(":/icons/flat/Play-64.png"), QSize(), QIcon::Normal, QIcon::Off);
-        btPlay->setIcon(icon26);
-        btPlay->setIconSize(QSize(32, 32));
-        btStop = new QPushButton(frame_4);
-        btStop->setObjectName(QString::fromUtf8("btStop"));
-        btStop->setGeometry(QRect(184, 40, 160, 25));
-        QIcon icon27;
-        icon27.addFile(QString::fromUtf8(":/icons/flat/Stop Sign-32.png"), QSize(), QIcon::Normal, QIcon::Off);
-        btStop->setIcon(icon27);
-        btStop->setIconSize(QSize(32, 32));
-        btPlayNext = new QPushButton(frame_4);
-        btPlayNext->setObjectName(QString::fromUtf8("btPlayNext"));
-        btPlayNext->setGeometry(QRect(183, 10, 160, 25));
-        QIcon icon28;
-        icon28.addFile(QString::fromUtf8(":/icons/flat/Fast Forward-32.png"), QSize(), QIcon::Normal, QIcon::Off);
-        btPlayNext->setIcon(icon28);
-        btPlayNext->setIconSize(QSize(32, 32));
-        bt_rec = new QPushButton(frame_4);
-        bt_rec->setObjectName(QString::fromUtf8("bt_rec"));
-        bt_rec->setGeometry(QRect(353, 40, 171, 25));
-        QIcon icon29;
-        icon29.addFile(QString::fromUtf8(":/icons/flat/Record-32.png"), QSize(), QIcon::Normal, QIcon::Off);
-        bt_rec->setIcon(icon29);
-        bt_rec->setIconSize(QSize(32, 32));
-        txt_recTime = new QLabel(frame_4);
-        txt_recTime->setObjectName(QString::fromUtf8("txt_recTime"));
-        txt_recTime->setGeometry(QRect(360, 10, 150, 20));
-        QFont font2;
-        font2.setPointSize(11);
-        font2.setBold(true);
-        font2.setItalic(false);
-        font2.setWeight(75);
-        txt_recTime->setFont(font2);
-        txt_recTime->setStyleSheet(QString::fromUtf8("color: rgb(255, 0, 0);"));
-        txt_recTime->setAlignment(Qt::AlignCenter);
-        txtNowPlaying = new QLabel(frame_4);
-        txtNowPlaying->setObjectName(QString::fromUtf8("txtNowPlaying"));
-        txtNowPlaying->setGeometry(QRect(20, 90, 1161, 31));
-        QFont font3;
-        font3.setPointSize(12);
-        font3.setBold(true);
-        font3.setUnderline(false);
-        font3.setWeight(75);
-        txtNowPlaying->setFont(font3);
-        txtNowPlaying->setStyleSheet(QString::fromUtf8("color: rgb(124, 124, 186);border-radius:8px;"));
-        txt_ProgramName = new QLabel(frame_4);
-        txt_ProgramName->setObjectName(QString::fromUtf8("txt_ProgramName"));
-        txt_ProgramName->setGeometry(QRect(510, 10, 541, 37));
-        QFont font4;
-        font4.setBold(true);
-        font4.setItalic(true);
-        font4.setUnderline(false);
-        font4.setWeight(75);
-        txt_ProgramName->setFont(font4);
-        txt_ProgramName->setStyleSheet(QString::fromUtf8("background-color:#FFE329;padding:5px;"));
-        txt_ProgramName->setAlignment(Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter);
-        bt_ProgramStopandProcess = new QPushButton(frame_4);
-        bt_ProgramStopandProcess->setObjectName(QString::fromUtf8("bt_ProgramStopandProcess"));
-        bt_ProgramStopandProcess->setGeometry(QRect(750, 10, 301, 34));
-        bt_ProgramStopandProcess->setMinimumSize(QSize(0, 34));
-        QIcon icon30;
-        icon30.addFile(QString::fromUtf8(":/icons/googlemusicframe.png"), QSize(), QIcon::Normal, QIcon::Off);
-        bt_ProgramStopandProcess->setIcon(icon30);
-        bt_ProgramStopandProcess->setIconSize(QSize(24, 24));
-        txt_uploadingPrograms = new QLabel(frame_4);
-        txt_uploadingPrograms->setObjectName(QString::fromUtf8("txt_uploadingPrograms"));
-        txt_uploadingPrograms->setGeometry(QRect(510, 0, 541, 51));
-        QFont font5;
-        font5.setFamily(QString::fromUtf8("Noto Sans [monotype]"));
-        font5.setPointSize(20);
-        font5.setBold(false);
-        font5.setItalic(true);
-        font5.setWeight(9);
-        txt_uploadingPrograms->setFont(font5);
-        txt_uploadingPrograms->setStyleSheet(QString::fromUtf8("background-color:rgba(255,255,255,.86);\n"
-"font: 75 italic 20pt \"Noto Sans [monotype]\";"));
-        txt_uploadingPrograms->setAlignment(Qt::AlignCenter);
-        txtDuration = new QLabel(frame_4);
-        txtDuration->setObjectName(QString::fromUtf8("txtDuration"));
-        txtDuration->setGeometry(QRect(510, 45, 581, 25));
-        sizePolicy3.setHeightForWidth(txtDuration->sizePolicy().hasHeightForWidth());
-        txtDuration->setSizePolicy(sizePolicy3);
-        QFont font6;
-        font6.setPointSize(14);
-        font6.setBold(true);
-        font6.setItalic(false);
-        font6.setWeight(75);
-        txtDuration->setFont(font6);
-        txtDuration->setStyleSheet(QString::fromUtf8("color: rgb(0, 75, 167);"));
-        txtDuration->setAlignment(Qt::AlignCenter);
-        layoutWidget = new QWidget(frame_4);
-        layoutWidget->setObjectName(QString::fromUtf8("layoutWidget"));
-        layoutWidget->setGeometry(QRect(10, 66, 1041, 20));
-        horizontalLayout_7 = new QHBoxLayout(layoutWidget);
-        horizontalLayout_7->setSpacing(6);
-        horizontalLayout_7->setContentsMargins(11, 11, 11, 11);
-        horizontalLayout_7->setObjectName(QString::fromUtf8("horizontalLayout_7"));
-        horizontalLayout_7->setContentsMargins(0, 0, 0, 0);
-        label = new QLabel(layoutWidget);
-        label->setObjectName(QString::fromUtf8("label"));
-        label->setAlignment(Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter);
-
-        horizontalLayout_7->addWidget(label);
-
-        sliderVolume = new QSlider(layoutWidget);
-        sliderVolume->setObjectName(QString::fromUtf8("sliderVolume"));
-        sliderVolume->setValue(99);
-        sliderVolume->setOrientation(Qt::Horizontal);
-        sliderVolume->setTickInterval(1);
-
-        horizontalLayout_7->addWidget(sliderVolume);
-
-        label_2 = new QLabel(layoutWidget);
-        label_2->setObjectName(QString::fromUtf8("label_2"));
-        label_2->setAlignment(Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter);
-
-        horizontalLayout_7->addWidget(label_2);
-
-        sliderProgress = new QSlider(layoutWidget);
-        sliderProgress->setObjectName(QString::fromUtf8("sliderProgress"));
-        sliderProgress->setStyleSheet(QString::fromUtf8(""));
-        sliderProgress->setOrientation(Qt::Horizontal);
-
-        horizontalLayout_7->addWidget(sliderProgress);
-
-        txt_creatingPrograms = new QLabel(frame_4);
-        txt_creatingPrograms->setObjectName(QString::fromUtf8("txt_creatingPrograms"));
-        txt_creatingPrograms->setGeometry(QRect(510, 0, 541, 51));
-        txt_creatingPrograms->setFont(font5);
-        txt_creatingPrograms->setStyleSheet(QString::fromUtf8("background-color:rgba(255,255,255,.86);\n"
-"font: 75 italic 20pt \"Noto Sans [monotype]\";"));
-        txt_creatingPrograms->setAlignment(Qt::AlignCenter);
-        led_rec = new QLabel(frame_4);
-        led_rec->setObjectName(QString::fromUtf8("led_rec"));
-        led_rec->setGeometry(QRect(405, 43, 20, 20));
-        led_rec->setStyleSheet(QString::fromUtf8("background-color: rgb(255, 247, 0); border-radius:8px;"));
-        txt_loading = new QLabel(frame_4);
-        txt_loading->setObjectName(QString::fromUtf8("txt_loading"));
-        txt_loading->setGeometry(QRect(510, 0, 541, 56));
-        txt_loading->setFont(font5);
-        txt_loading->setStyleSheet(QString::fromUtf8("background-color:rgba(255,255,255,.86);\n"
-"font: 75 italic 20pt \"Noto Sans [monotype]\";"));
-        txt_loading->setAlignment(Qt::AlignCenter);
-        bt_pause_rec = new QToolButton(frame_4);
-        bt_pause_rec->setObjectName(QString::fromUtf8("bt_pause_rec"));
-        bt_pause_rec->setGeometry(QRect(498, 40, 25, 25));
-        QIcon icon31;
-        icon31.addFile(QString::fromUtf8(":/icons/flat/Pause-32.png"), QSize(), QIcon::Normal, QIcon::Off);
-        bt_pause_rec->setIcon(icon31);
-        bt_pause_play = new QToolButton(frame_4);
-        bt_pause_play->setObjectName(QString::fromUtf8("bt_pause_play"));
-        bt_pause_play->setGeometry(QRect(155, 39, 25, 25));
-        bt_pause_play->setIcon(icon31);
-        txt_ProgramName->raise();
-        btPlay->raise();
-        btStop->raise();
-        btPlayNext->raise();
-        bt_rec->raise();
-        txt_recTime->raise();
-        txtNowPlaying->raise();
-        bt_ProgramStopandProcess->raise();
-        txtDuration->raise();
-        layoutWidget->raise();
-        txt_creatingPrograms->raise();
-        led_rec->raise();
-        txt_loading->raise();
-        txt_uploadingPrograms->raise();
-        bt_pause_rec->raise();
-        bt_pause_play->raise();
-
-        gridLayout_2->addWidget(frame_4, 0, 0, 5, 1);
-
         tabWidget_2 = new QTabWidget(widget);
         tabWidget_2->setObjectName(QString::fromUtf8("tabWidget_2"));
         sizePolicy1.setHeightForWidth(tabWidget_2->sizePolicy().hasHeightForWidth());
         tabWidget_2->setSizePolicy(sizePolicy1);
-        QFont font7;
-        font7.setKerning(false);
-        tabWidget_2->setFont(font7);
+        QFont font2;
+        font2.setKerning(false);
+        tabWidget_2->setFont(font2);
         tabWidget_2->setIconSize(QSize(22, 22));
         tabWidget_2->setDocumentMode(true);
         tabWidget_2->setTabBarAutoHide(false);
@@ -646,14 +457,111 @@ public:
         gridLayout_3->setContentsMargins(11, 11, 11, 11);
         gridLayout_3->setObjectName(QString::fromUtf8("gridLayout_3"));
         gridLayout_3->setContentsMargins(0, 0, 0, 0);
+        frame_2 = new QFrame(tabPlaylist);
+        frame_2->setObjectName(QString::fromUtf8("frame_2"));
+        sizePolicy3.setHeightForWidth(frame_2->sizePolicy().hasHeightForWidth());
+        frame_2->setSizePolicy(sizePolicy3);
+        frame_2->setMaximumSize(QSize(350, 16777215));
+        frame_2->setFrameShape(QFrame::StyledPanel);
+        frame_2->setFrameShadow(QFrame::Raised);
+        txt_playlistTotalTime = new QLabel(frame_2);
+        txt_playlistTotalTime->setObjectName(QString::fromUtf8("txt_playlistTotalTime"));
+        txt_playlistTotalTime->setGeometry(QRect(10, 10, 231, 31));
+        QFont font3;
+        font3.setPointSize(10);
+        txt_playlistTotalTime->setFont(font3);
+        layoutWidget = new QWidget(frame_2);
+        layoutWidget->setObjectName(QString::fromUtf8("layoutWidget"));
+        layoutWidget->setGeometry(QRect(10, 40, 339, 96));
+        verticalLayout = new QVBoxLayout(layoutWidget);
+        verticalLayout->setSpacing(6);
+        verticalLayout->setContentsMargins(11, 11, 11, 11);
+        verticalLayout->setObjectName(QString::fromUtf8("verticalLayout"));
+        verticalLayout->setContentsMargins(0, 0, 0, 0);
+        horizontalLayout_10 = new QHBoxLayout();
+        horizontalLayout_10->setSpacing(6);
+        horizontalLayout_10->setObjectName(QString::fromUtf8("horizontalLayout_10"));
+        checkBox_sum_to_playlist_time = new QCheckBox(layoutWidget);
+        checkBox_sum_to_playlist_time->setObjectName(QString::fromUtf8("checkBox_sum_to_playlist_time"));
+        checkBox_sum_to_playlist_time->setChecked(true);
+
+        horizontalLayout_10->addWidget(checkBox_sum_to_playlist_time);
+
+        checkBox_update_last_played_values = new QCheckBox(layoutWidget);
+        checkBox_update_last_played_values->setObjectName(QString::fromUtf8("checkBox_update_last_played_values"));
+        checkBox_update_last_played_values->setChecked(true);
+
+        horizontalLayout_10->addWidget(checkBox_update_last_played_values);
+
+
+        verticalLayout->addLayout(horizontalLayout_10);
+
+        horizontalLayout_9 = new QHBoxLayout();
+        horizontalLayout_9->setSpacing(6);
+        horizontalLayout_9->setObjectName(QString::fromUtf8("horizontalLayout_9"));
+        checkBox_random_jingles = new QCheckBox(layoutWidget);
+        checkBox_random_jingles->setObjectName(QString::fromUtf8("checkBox_random_jingles"));
+
+        horizontalLayout_9->addWidget(checkBox_random_jingles);
+
+        spinBox_random_jingles_interval = new QSpinBox(layoutWidget);
+        spinBox_random_jingles_interval->setObjectName(QString::fromUtf8("spinBox_random_jingles_interval"));
+
+        horizontalLayout_9->addWidget(spinBox_random_jingles_interval);
+
+        label_9 = new QLabel(layoutWidget);
+        label_9->setObjectName(QString::fromUtf8("label_9"));
+
+        horizontalLayout_9->addWidget(label_9);
+
+
+        verticalLayout->addLayout(horizontalLayout_9);
+
+        horizontalLayout_8 = new QHBoxLayout();
+        horizontalLayout_8->setSpacing(6);
+        horizontalLayout_8->setObjectName(QString::fromUtf8("horizontalLayout_8"));
+        label_3 = new QLabel(layoutWidget);
+        label_3->setObjectName(QString::fromUtf8("label_3"));
+
+        horizontalLayout_8->addWidget(label_3);
+
+        spinBox_num_of_songs_to_add_random = new QSpinBox(layoutWidget);
+        spinBox_num_of_songs_to_add_random->setObjectName(QString::fromUtf8("spinBox_num_of_songs_to_add_random"));
+
+        horizontalLayout_8->addWidget(spinBox_num_of_songs_to_add_random);
+
+        comboBox_random_add_genre = new QComboBox(layoutWidget);
+        comboBox_random_add_genre->setObjectName(QString::fromUtf8("comboBox_random_add_genre"));
+
+        horizontalLayout_8->addWidget(comboBox_random_add_genre);
+
+        label_10 = new QLabel(layoutWidget);
+        label_10->setObjectName(QString::fromUtf8("label_10"));
+
+        horizontalLayout_8->addWidget(label_10);
+
+        bt_add_some_random_songs_from_genre = new QPushButton(layoutWidget);
+        bt_add_some_random_songs_from_genre->setObjectName(QString::fromUtf8("bt_add_some_random_songs_from_genre"));
+        QIcon icon26;
+        icon26.addFile(QString::fromUtf8(":/icons/flat/Quick Mode On-48.png"), QSize(), QIcon::Normal, QIcon::Off);
+        bt_add_some_random_songs_from_genre->setIcon(icon26);
+
+        horizontalLayout_8->addWidget(bt_add_some_random_songs_from_genre);
+
+
+        verticalLayout->addLayout(horizontalLayout_8);
+
+
+        gridLayout_3->addWidget(frame_2, 2, 1, 1, 1);
+
         playlist = new QListWidget(tabPlaylist);
         playlist->setObjectName(QString::fromUtf8("playlist"));
-        QSizePolicy sizePolicy6(QSizePolicy::Expanding, QSizePolicy::Expanding);
-        sizePolicy6.setHorizontalStretch(0);
-        sizePolicy6.setVerticalStretch(10);
-        sizePolicy6.setHeightForWidth(playlist->sizePolicy().hasHeightForWidth());
-        playlist->setSizePolicy(sizePolicy6);
-        playlist->setFont(font7);
+        QSizePolicy sizePolicy5(QSizePolicy::Expanding, QSizePolicy::Expanding);
+        sizePolicy5.setHorizontalStretch(0);
+        sizePolicy5.setVerticalStretch(10);
+        sizePolicy5.setHeightForWidth(playlist->sizePolicy().hasHeightForWidth());
+        playlist->setSizePolicy(sizePolicy5);
+        playlist->setFont(font2);
         playlist->setAcceptDrops(true);
         playlist->setFrameShape(QFrame::NoFrame);
         playlist->setFrameShadow(QFrame::Plain);
@@ -667,111 +575,14 @@ public:
 
         gridLayout_3->addWidget(playlist, 2, 0, 1, 1);
 
-        frame_2 = new QFrame(tabPlaylist);
-        frame_2->setObjectName(QString::fromUtf8("frame_2"));
-        sizePolicy3.setHeightForWidth(frame_2->sizePolicy().hasHeightForWidth());
-        frame_2->setSizePolicy(sizePolicy3);
-        frame_2->setMaximumSize(QSize(350, 16777215));
-        frame_2->setFrameShape(QFrame::StyledPanel);
-        frame_2->setFrameShadow(QFrame::Raised);
-        txt_playlistTotalTime = new QLabel(frame_2);
-        txt_playlistTotalTime->setObjectName(QString::fromUtf8("txt_playlistTotalTime"));
-        txt_playlistTotalTime->setGeometry(QRect(10, 10, 231, 31));
-        QFont font8;
-        font8.setPointSize(10);
-        txt_playlistTotalTime->setFont(font8);
-        layoutWidget1 = new QWidget(frame_2);
-        layoutWidget1->setObjectName(QString::fromUtf8("layoutWidget1"));
-        layoutWidget1->setGeometry(QRect(10, 40, 339, 96));
-        verticalLayout = new QVBoxLayout(layoutWidget1);
-        verticalLayout->setSpacing(6);
-        verticalLayout->setContentsMargins(11, 11, 11, 11);
-        verticalLayout->setObjectName(QString::fromUtf8("verticalLayout"));
-        verticalLayout->setContentsMargins(0, 0, 0, 0);
-        horizontalLayout_10 = new QHBoxLayout();
-        horizontalLayout_10->setSpacing(6);
-        horizontalLayout_10->setObjectName(QString::fromUtf8("horizontalLayout_10"));
-        checkBox_sum_to_playlist_time = new QCheckBox(layoutWidget1);
-        checkBox_sum_to_playlist_time->setObjectName(QString::fromUtf8("checkBox_sum_to_playlist_time"));
-        checkBox_sum_to_playlist_time->setChecked(true);
-
-        horizontalLayout_10->addWidget(checkBox_sum_to_playlist_time);
-
-        checkBox_update_last_played_values = new QCheckBox(layoutWidget1);
-        checkBox_update_last_played_values->setObjectName(QString::fromUtf8("checkBox_update_last_played_values"));
-        checkBox_update_last_played_values->setChecked(true);
-
-        horizontalLayout_10->addWidget(checkBox_update_last_played_values);
-
-
-        verticalLayout->addLayout(horizontalLayout_10);
-
-        horizontalLayout_9 = new QHBoxLayout();
-        horizontalLayout_9->setSpacing(6);
-        horizontalLayout_9->setObjectName(QString::fromUtf8("horizontalLayout_9"));
-        checkBox_random_jingles = new QCheckBox(layoutWidget1);
-        checkBox_random_jingles->setObjectName(QString::fromUtf8("checkBox_random_jingles"));
-
-        horizontalLayout_9->addWidget(checkBox_random_jingles);
-
-        spinBox_random_jingles_interval = new QSpinBox(layoutWidget1);
-        spinBox_random_jingles_interval->setObjectName(QString::fromUtf8("spinBox_random_jingles_interval"));
-
-        horizontalLayout_9->addWidget(spinBox_random_jingles_interval);
-
-        label_9 = new QLabel(layoutWidget1);
-        label_9->setObjectName(QString::fromUtf8("label_9"));
-
-        horizontalLayout_9->addWidget(label_9);
-
-
-        verticalLayout->addLayout(horizontalLayout_9);
-
-        horizontalLayout_8 = new QHBoxLayout();
-        horizontalLayout_8->setSpacing(6);
-        horizontalLayout_8->setObjectName(QString::fromUtf8("horizontalLayout_8"));
-        label_3 = new QLabel(layoutWidget1);
-        label_3->setObjectName(QString::fromUtf8("label_3"));
-
-        horizontalLayout_8->addWidget(label_3);
-
-        spinBox_num_of_songs_to_add_random = new QSpinBox(layoutWidget1);
-        spinBox_num_of_songs_to_add_random->setObjectName(QString::fromUtf8("spinBox_num_of_songs_to_add_random"));
-
-        horizontalLayout_8->addWidget(spinBox_num_of_songs_to_add_random);
-
-        comboBox_random_add_genre = new QComboBox(layoutWidget1);
-        comboBox_random_add_genre->setObjectName(QString::fromUtf8("comboBox_random_add_genre"));
-
-        horizontalLayout_8->addWidget(comboBox_random_add_genre);
-
-        label_10 = new QLabel(layoutWidget1);
-        label_10->setObjectName(QString::fromUtf8("label_10"));
-
-        horizontalLayout_8->addWidget(label_10);
-
-        bt_add_some_random_songs_from_genre = new QPushButton(layoutWidget1);
-        bt_add_some_random_songs_from_genre->setObjectName(QString::fromUtf8("bt_add_some_random_songs_from_genre"));
-        QIcon icon32;
-        icon32.addFile(QString::fromUtf8(":/icons/flat/Quick Mode On-48.png"), QSize(), QIcon::Normal, QIcon::Off);
-        bt_add_some_random_songs_from_genre->setIcon(icon32);
-
-        horizontalLayout_8->addWidget(bt_add_some_random_songs_from_genre);
-
-
-        verticalLayout->addLayout(horizontalLayout_8);
-
-
-        gridLayout_3->addWidget(frame_2, 2, 1, 1, 1);
-
-        QIcon icon33;
-        icon33.addFile(QString::fromUtf8(":/icons/align-vertical-top.png"), QSize(), QIcon::Normal, QIcon::Off);
-        tabWidget_2->addTab(tabPlaylist, icon33, QString());
+        QIcon icon27;
+        icon27.addFile(QString::fromUtf8(":/icons/align-vertical-top.png"), QSize(), QIcon::Normal, QIcon::Off);
+        tabWidget_2->addTab(tabPlaylist, icon27, QString());
         tabHistorylist = new QWidget();
         tabHistorylist->setObjectName(QString::fromUtf8("tabHistorylist"));
         sizePolicy3.setHeightForWidth(tabHistorylist->sizePolicy().hasHeightForWidth());
         tabHistorylist->setSizePolicy(sizePolicy3);
-        tabHistorylist->setFont(font7);
+        tabHistorylist->setFont(font2);
         horizontalLayout_6 = new QHBoxLayout(tabHistorylist);
         horizontalLayout_6->setSpacing(0);
         horizontalLayout_6->setContentsMargins(11, 11, 11, 11);
@@ -786,9 +597,9 @@ public:
 
         horizontalLayout_6->addWidget(historyList);
 
-        QIcon icon34;
-        icon34.addFile(QString::fromUtf8(":/icons/align-vertical-bottom.png"), QSize(), QIcon::Normal, QIcon::Off);
-        tabWidget_2->addTab(tabHistorylist, icon34, QString());
+        QIcon icon28;
+        icon28.addFile(QString::fromUtf8(":/icons/align-vertical-bottom.png"), QSize(), QIcon::Normal, QIcon::Off);
+        tabWidget_2->addTab(tabHistorylist, icon28, QString());
         tab_dj = new QWidget();
         tab_dj->setObjectName(QString::fromUtf8("tab_dj"));
         lp_1 = new QLabel(tab_dj);
@@ -806,57 +617,57 @@ public:
         lp_1_txt_file = new QLabel(tab_dj);
         lp_1_txt_file->setObjectName(QString::fromUtf8("lp_1_txt_file"));
         lp_1_txt_file->setGeometry(QRect(10, 0, 611, 21));
-        QFont font9;
-        font9.setPointSize(7);
-        lp_1_txt_file->setFont(font9);
+        QFont font4;
+        font4.setPointSize(7);
+        lp_1_txt_file->setFont(font4);
         lp_2_txt_file = new QLabel(tab_dj);
         lp_2_txt_file->setObjectName(QString::fromUtf8("lp_2_txt_file"));
         lp_2_txt_file->setGeometry(QRect(640, 0, 831, 21));
-        lp_2_txt_file->setFont(font9);
+        lp_2_txt_file->setFont(font4);
         lp_2_txt_file->setAlignment(Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter);
         lp_1_bt_play = new QPushButton(tab_dj);
         lp_1_bt_play->setObjectName(QString::fromUtf8("lp_1_bt_play"));
         lp_1_bt_play->setGeometry(QRect(10, 50, 111, 31));
-        QFont font10;
-        font10.setPointSize(8);
-        lp_1_bt_play->setFont(font10);
-        QIcon icon35;
-        icon35.addFile(QString::fromUtf8(":/icons/ic_menu_play_clip.png"), QSize(), QIcon::Normal, QIcon::Off);
-        lp_1_bt_play->setIcon(icon35);
+        QFont font5;
+        font5.setPointSize(8);
+        lp_1_bt_play->setFont(font5);
+        QIcon icon29;
+        icon29.addFile(QString::fromUtf8(":/icons/ic_menu_play_clip.png"), QSize(), QIcon::Normal, QIcon::Off);
+        lp_1_bt_play->setIcon(icon29);
         lp_1_bt_play_2 = new QPushButton(tab_dj);
         lp_1_bt_play_2->setObjectName(QString::fromUtf8("lp_1_bt_play_2"));
         lp_1_bt_play_2->setGeometry(QRect(950, 50, 111, 31));
-        lp_1_bt_play_2->setFont(font10);
-        lp_1_bt_play_2->setIcon(icon35);
+        lp_1_bt_play_2->setFont(font5);
+        lp_1_bt_play_2->setIcon(icon29);
         pushButton = new QPushButton(tab_dj);
         pushButton->setObjectName(QString::fromUtf8("pushButton"));
         pushButton->setGeometry(QRect(10, 130, 111, 31));
-        QIcon icon36;
-        icon36.addFile(QString::fromUtf8(":/icons/draw-rectangle.png"), QSize(), QIcon::Normal, QIcon::Off);
-        pushButton->setIcon(icon36);
+        QIcon icon30;
+        icon30.addFile(QString::fromUtf8(":/icons/draw-rectangle.png"), QSize(), QIcon::Normal, QIcon::Off);
+        pushButton->setIcon(icon30);
         pushButton_2 = new QPushButton(tab_dj);
         pushButton_2->setObjectName(QString::fromUtf8("pushButton_2"));
         pushButton_2->setGeometry(QRect(950, 130, 111, 31));
-        pushButton_2->setIcon(icon36);
+        pushButton_2->setIcon(icon30);
         lp_1_bt_pause = new QPushButton(tab_dj);
         lp_1_bt_pause->setObjectName(QString::fromUtf8("lp_1_bt_pause"));
         lp_1_bt_pause->setGeometry(QRect(10, 90, 111, 31));
-        lp_1_bt_pause->setFont(font10);
-        QIcon icon37;
-        icon37.addFile(QString::fromUtf8(":/icons/ic_pause_light.png"), QSize(), QIcon::Normal, QIcon::Off);
-        lp_1_bt_pause->setIcon(icon37);
+        lp_1_bt_pause->setFont(font5);
+        QIcon icon31;
+        icon31.addFile(QString::fromUtf8(":/icons/ic_pause_light.png"), QSize(), QIcon::Normal, QIcon::Off);
+        lp_1_bt_pause->setIcon(icon31);
         lp_2_bt_pause = new QPushButton(tab_dj);
         lp_2_bt_pause->setObjectName(QString::fromUtf8("lp_2_bt_pause"));
         lp_2_bt_pause->setGeometry(QRect(950, 90, 111, 31));
-        lp_2_bt_pause->setFont(font10);
-        lp_2_bt_pause->setIcon(icon37);
+        lp_2_bt_pause->setFont(font5);
+        lp_2_bt_pause->setIcon(icon31);
         horizontalSlider_lps_vol = new QSlider(tab_dj);
         horizontalSlider_lps_vol->setObjectName(QString::fromUtf8("horizontalSlider_lps_vol"));
         horizontalSlider_lps_vol->setGeometry(QRect(460, 145, 160, 41));
-        QFont font11;
-        font11.setBold(false);
-        font11.setWeight(50);
-        horizontalSlider_lps_vol->setFont(font11);
+        QFont font6;
+        font6.setBold(false);
+        font6.setWeight(50);
+        horizontalSlider_lps_vol->setFont(font6);
         horizontalSlider_lps_vol->setStyleSheet(QString::fromUtf8("selection-background-color: rgb(255, 255, 255);\n"
 "background-color: rgb(255, 255, 255);"));
         horizontalSlider_lps_vol->setMaximum(200);
@@ -868,48 +679,48 @@ public:
         lbl_total_time_lp1 = new QLabel(tab_dj);
         lbl_total_time_lp1->setObjectName(QString::fromUtf8("lbl_total_time_lp1"));
         lbl_total_time_lp1->setGeometry(QRect(130, 50, 121, 21));
-        QFont font12;
-        font12.setPointSize(9);
-        lbl_total_time_lp1->setFont(font12);
+        QFont font7;
+        font7.setPointSize(9);
+        lbl_total_time_lp1->setFont(font7);
         lbl_total_time_lp2 = new QLabel(tab_dj);
         lbl_total_time_lp2->setObjectName(QString::fromUtf8("lbl_total_time_lp2"));
         lbl_total_time_lp2->setGeometry(QRect(820, 50, 121, 20));
-        lbl_total_time_lp2->setFont(font12);
+        lbl_total_time_lp2->setFont(font7);
         lbl_lp1_remaining = new QLabel(tab_dj);
         lbl_lp1_remaining->setObjectName(QString::fromUtf8("lbl_lp1_remaining"));
         lbl_lp1_remaining->setGeometry(QRect(130, 80, 121, 21));
-        QFont font13;
-        font13.setPointSize(13);
-        font13.setBold(true);
-        font13.setWeight(75);
-        lbl_lp1_remaining->setFont(font13);
+        QFont font8;
+        font8.setPointSize(13);
+        font8.setBold(true);
+        font8.setWeight(75);
+        lbl_lp1_remaining->setFont(font8);
         lbl_lp1_remaining->setStyleSheet(QString::fromUtf8("color: rgb(255, 0, 0);"));
         lbl_lp2_remaining = new QLabel(tab_dj);
         lbl_lp2_remaining->setObjectName(QString::fromUtf8("lbl_lp2_remaining"));
         lbl_lp2_remaining->setGeometry(QRect(820, 70, 121, 21));
-        lbl_lp2_remaining->setFont(font13);
+        lbl_lp2_remaining->setFont(font8);
         lbl_lp2_remaining->setStyleSheet(QString::fromUtf8("color: rgb(255, 0, 0);"));
         lbl_lp1_vol_level = new QLabel(tab_dj);
         lbl_lp1_vol_level->setObjectName(QString::fromUtf8("lbl_lp1_vol_level"));
         lbl_lp1_vol_level->setGeometry(QRect(460, 130, 31, 17));
-        QFont font14;
-        font14.setPointSize(8);
-        font14.setBold(false);
-        font14.setItalic(true);
-        font14.setWeight(50);
-        lbl_lp1_vol_level->setFont(font14);
+        QFont font9;
+        font9.setPointSize(8);
+        font9.setBold(false);
+        font9.setItalic(true);
+        font9.setWeight(50);
+        lbl_lp1_vol_level->setFont(font9);
         lbl_lp2_vol_level = new QLabel(tab_dj);
         lbl_lp2_vol_level->setObjectName(QString::fromUtf8("lbl_lp2_vol_level"));
         lbl_lp2_vol_level->setGeometry(QRect(580, 130, 31, 17));
-        lbl_lp2_vol_level->setFont(font14);
+        lbl_lp2_vol_level->setFont(font9);
         lbl_lp2_vol_level->setLayoutDirection(Qt::LeftToRight);
         lbl_lp2_vol_level->setAlignment(Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter);
         bt_center_lps_vol = new QToolButton(tab_dj);
         bt_center_lps_vol->setObjectName(QString::fromUtf8("bt_center_lps_vol"));
         bt_center_lps_vol->setGeometry(QRect(535, 124, 11, 23));
-        QIcon icon38;
-        icon38.addFile(QString::fromUtf8(":/icons/record.png"), QSize(), QIcon::Normal, QIcon::Off);
-        tabWidget_2->addTab(tab_dj, icon38, QString());
+        QIcon icon32;
+        icon32.addFile(QString::fromUtf8(":/icons/record.png"), QSize(), QIcon::Normal, QIcon::Off);
+        tabWidget_2->addTab(tab_dj, icon32, QString());
 
         gridLayout_2->addWidget(tabWidget_2, 20, 0, 4, 2);
 
@@ -920,7 +731,7 @@ public:
         pubWidget->setMinimumSize(QSize(0, 0));
         pubWidget->setSizeIncrement(QSize(0, 0));
         pubWidget->setBaseSize(QSize(0, 0));
-        pubWidget->setFont(font7);
+        pubWidget->setFont(font2);
         pubWidget->setTabPosition(QTabWidget::South);
         pubWidget->setIconSize(QSize(24, 24));
         pubWidget->setElideMode(Qt::ElideNone);
@@ -1050,15 +861,15 @@ public:
         page = new QWidget();
         page->setObjectName(QString::fromUtf8("page"));
         page->setGeometry(QRect(0, 0, 350, 203));
-        layoutWidget2 = new QWidget(page);
-        layoutWidget2->setObjectName(QString::fromUtf8("layoutWidget2"));
-        layoutWidget2->setGeometry(QRect(10, 0, 281, 28));
-        horizontalLayout = new QHBoxLayout(layoutWidget2);
+        layoutWidget1 = new QWidget(page);
+        layoutWidget1->setObjectName(QString::fromUtf8("layoutWidget1"));
+        layoutWidget1->setGeometry(QRect(10, 0, 281, 28));
+        horizontalLayout = new QHBoxLayout(layoutWidget1);
         horizontalLayout->setSpacing(6);
         horizontalLayout->setContentsMargins(11, 11, 11, 11);
         horizontalLayout->setObjectName(QString::fromUtf8("horizontalLayout"));
         horizontalLayout->setContentsMargins(0, 0, 0, 0);
-        txt_search = new QLineEdit(layoutWidget2);
+        txt_search = new QLineEdit(layoutWidget1);
         txt_search->setObjectName(QString::fromUtf8("txt_search"));
 
         horizontalLayout->addWidget(txt_search);
@@ -1069,9 +880,9 @@ public:
         bt_search = new QPushButton(page);
         bt_search->setObjectName(QString::fromUtf8("bt_search"));
         bt_search->setGeometry(QRect(10, 30, 111, 25));
-        QIcon icon39;
-        icon39.addFile(QString::fromUtf8(":/icons/ic_menu_search.png"), QSize(), QIcon::Normal, QIcon::Off);
-        page_FTP_Connection->addItem(page, icon39, QString::fromUtf8("Search"));
+        QIcon icon33;
+        icon33.addFile(QString::fromUtf8(":/icons/ic_menu_search.png"), QSize(), QIcon::Normal, QIcon::Off);
+        page_FTP_Connection->addItem(page, icon33, QString::fromUtf8("Search"));
         page_2 = new QWidget();
         page_2->setObjectName(QString::fromUtf8("page_2"));
         page_2->setGeometry(QRect(0, 0, 350, 203));
@@ -1092,24 +903,24 @@ public:
         checkBox_filter_genre2 = new QCheckBox(page_2);
         checkBox_filter_genre2->setObjectName(QString::fromUtf8("checkBox_filter_genre2"));
         checkBox_filter_genre2->setGeometry(QRect(20, 50, 151, 22));
-        QIcon icon40;
-        icon40.addFile(QString::fromUtf8(":/icons/view-filter.png"), QSize(), QIcon::Normal, QIcon::Off);
-        page_FTP_Connection->addItem(page_2, icon40, QString::fromUtf8("fillters"));
+        QIcon icon34;
+        icon34.addFile(QString::fromUtf8(":/icons/view-filter.png"), QSize(), QIcon::Normal, QIcon::Off);
+        page_FTP_Connection->addItem(page_2, icon34, QString::fromUtf8("fillters"));
         page_3 = new QWidget();
         page_3->setObjectName(QString::fromUtf8("page_3"));
         page_3->setGeometry(QRect(0, 0, 350, 203));
         bt_updateTables = new QPushButton(page_3);
         bt_updateTables->setObjectName(QString::fromUtf8("bt_updateTables"));
         bt_updateTables->setGeometry(QRect(10, 0, 121, 21));
-        QIcon icon41;
-        icon41.addFile(QString::fromUtf8(":/icons/ic_menu_refresh.png"), QSize(), QIcon::Normal, QIcon::Off);
-        bt_updateTables->setIcon(icon41);
+        QIcon icon35;
+        icon35.addFile(QString::fromUtf8(":/icons/ic_menu_refresh.png"), QSize(), QIcon::Normal, QIcon::Off);
+        bt_updateTables->setIcon(icon35);
         bt_sndconv = new QPushButton(page_3);
         bt_sndconv->setObjectName(QString::fromUtf8("bt_sndconv"));
         bt_sndconv->setGeometry(QRect(140, 0, 121, 21));
-        QIcon icon42;
-        icon42.addFile(QString::fromUtf8(":/icons/soundconverter.png"), QSize(), QIcon::Normal, QIcon::Off);
-        bt_sndconv->setIcon(icon42);
+        QIcon icon36;
+        icon36.addFile(QString::fromUtf8(":/icons/soundconverter.png"), QSize(), QIcon::Normal, QIcon::Off);
+        bt_sndconv->setIcon(icon36);
         cbox_multi_select = new QComboBox(page_3);
         cbox_multi_select->addItem(QString());
         cbox_multi_select->addItem(QString());
@@ -1120,44 +931,46 @@ public:
         cbox_multi_select->addItem(QString());
         cbox_multi_select->setObjectName(QString::fromUtf8("cbox_multi_select"));
         cbox_multi_select->setGeometry(QRect(10, 40, 211, 21));
-        QSizePolicy sizePolicy7(QSizePolicy::Fixed, QSizePolicy::Fixed);
-        sizePolicy7.setHorizontalStretch(0);
-        sizePolicy7.setVerticalStretch(0);
-        sizePolicy7.setHeightForWidth(cbox_multi_select->sizePolicy().hasHeightForWidth());
-        cbox_multi_select->setSizePolicy(sizePolicy7);
+        QSizePolicy sizePolicy6(QSizePolicy::Fixed, QSizePolicy::Fixed);
+        sizePolicy6.setHorizontalStretch(0);
+        sizePolicy6.setVerticalStretch(0);
+        sizePolicy6.setHeightForWidth(cbox_multi_select->sizePolicy().hasHeightForWidth());
+        cbox_multi_select->setSizePolicy(sizePolicy6);
         cbox_multi_select->setMinimumSize(QSize(200, 0));
         cbox_multi_select->setStyleSheet(QString::fromUtf8("selection-color: rgb(87, 118, 255);"));
         bt_apply_multi_selection = new QPushButton(page_3);
         bt_apply_multi_selection->setObjectName(QString::fromUtf8("bt_apply_multi_selection"));
         bt_apply_multi_selection->setGeometry(QRect(230, 40, 50, 21));
-        QSizePolicy sizePolicy8(QSizePolicy::Minimum, QSizePolicy::Minimum);
-        sizePolicy8.setHorizontalStretch(0);
-        sizePolicy8.setVerticalStretch(0);
-        sizePolicy8.setHeightForWidth(bt_apply_multi_selection->sizePolicy().hasHeightForWidth());
-        bt_apply_multi_selection->setSizePolicy(sizePolicy8);
+        QSizePolicy sizePolicy7(QSizePolicy::Minimum, QSizePolicy::Minimum);
+        sizePolicy7.setHorizontalStretch(0);
+        sizePolicy7.setVerticalStretch(0);
+        sizePolicy7.setHeightForWidth(bt_apply_multi_selection->sizePolicy().hasHeightForWidth());
+        bt_apply_multi_selection->setSizePolicy(sizePolicy7);
         bt_apply_multi_selection->setMaximumSize(QSize(50, 16777215));
-        QIcon icon43;
-        icon43.addFile(QString::fromUtf8(":/icons/linux-logo.png"), QSize(), QIcon::Normal, QIcon::Off);
-        page_FTP_Connection->addItem(page_3, icon43, QString::fromUtf8("Extras"));
+        QIcon icon37;
+        icon37.addFile(QString::fromUtf8(":/icons/linux-logo.png"), QSize(), QIcon::Normal, QIcon::Off);
+        page_FTP_Connection->addItem(page_3, icon37, QString::fromUtf8("Extras"));
         Radio = new QWidget();
         Radio->setObjectName(QString::fromUtf8("Radio"));
         Radio->setGeometry(QRect(0, 0, 350, 203));
         Radio->setStyleSheet(QString::fromUtf8(""));
         bt_rol_streaming_play = new QPushButton(Radio);
         bt_rol_streaming_play->setObjectName(QString::fromUtf8("bt_rol_streaming_play"));
+        bt_rol_streaming_play->setEnabled(false);
         bt_rol_streaming_play->setGeometry(QRect(230, 10, 31, 21));
-        QIcon icon44;
-        icon44.addFile(QString::fromUtf8(":/icons/player_play.png"), QSize(), QIcon::Normal, QIcon::Off);
-        bt_rol_streaming_play->setIcon(icon44);
+        QIcon icon38;
+        icon38.addFile(QString::fromUtf8(":/icons/player_play.png"), QSize(), QIcon::Normal, QIcon::Off);
+        bt_rol_streaming_play->setIcon(icon38);
         label_4 = new QLabel(Radio);
         label_4->setObjectName(QString::fromUtf8("label_4"));
         label_4->setGeometry(QRect(10, 10, 191, 21));
         bt_rol_streaming_stop = new QPushButton(Radio);
         bt_rol_streaming_stop->setObjectName(QString::fromUtf8("bt_rol_streaming_stop"));
+        bt_rol_streaming_stop->setEnabled(false);
         bt_rol_streaming_stop->setGeometry(QRect(290, 10, 31, 21));
-        QIcon icon45;
-        icon45.addFile(QString::fromUtf8(":/icons/media-playback-stop.png"), QSize(), QIcon::Normal, QIcon::Off);
-        bt_rol_streaming_stop->setIcon(icon45);
+        QIcon icon39;
+        icon39.addFile(QString::fromUtf8(":/icons/media-playback-stop.png"), QSize(), QIcon::Normal, QIcon::Off);
+        bt_rol_streaming_stop->setIcon(icon39);
         page_FTP_Connection->addItem(Radio, icon, QString::fromUtf8("Streaming Client"));
         page_4 = new QWidget();
         page_4->setObjectName(QString::fromUtf8("page_4"));
@@ -1203,21 +1016,21 @@ public:
         bt_icecast = new QToolButton(page_4);
         bt_icecast->setObjectName(QString::fromUtf8("bt_icecast"));
         bt_icecast->setGeometry(QRect(20, 28, 24, 21));
-        QIcon icon46;
-        icon46.addFile(QString::fromUtf8(":/icons/quickopen-function.png"), QSize(), QIcon::Normal, QIcon::Off);
-        bt_icecast->setIcon(icon46);
+        QIcon icon40;
+        icon40.addFile(QString::fromUtf8(":/icons/quickopen-function.png"), QSize(), QIcon::Normal, QIcon::Off);
+        bt_icecast->setIcon(icon40);
         bt_butt = new QToolButton(page_4);
         bt_butt->setObjectName(QString::fromUtf8("bt_butt"));
         bt_butt->setGeometry(QRect(20, 50, 24, 21));
-        bt_butt->setIcon(icon46);
+        bt_butt->setIcon(icon40);
         bt_ddns = new QToolButton(page_4);
         bt_ddns->setObjectName(QString::fromUtf8("bt_ddns"));
         bt_ddns->setGeometry(QRect(20, 74, 24, 21));
-        bt_ddns->setIcon(icon46);
+        bt_ddns->setIcon(icon40);
         bt_portTest = new QToolButton(page_4);
         bt_portTest->setObjectName(QString::fromUtf8("bt_portTest"));
         bt_portTest->setGeometry(QRect(20, 100, 24, 21));
-        bt_portTest->setIcon(icon46);
+        bt_portTest->setIcon(icon40);
         line = new QFrame(page_4);
         line->setObjectName(QString::fromUtf8("line"));
         line->setGeometry(QRect(10, 43, 311, 16));
@@ -1236,9 +1049,9 @@ public:
         lbl_streamURL = new QLabel(page_4);
         lbl_streamURL->setObjectName(QString::fromUtf8("lbl_streamURL"));
         lbl_streamURL->setGeometry(QRect(20, 130, 301, 17));
-        QIcon icon47;
-        icon47.addFile(QString::fromUtf8(":/icons/earth.png"), QSize(), QIcon::Normal, QIcon::Off);
-        page_FTP_Connection->addItem(page_4, icon47, QString::fromUtf8("Streaming Server"));
+        QIcon icon41;
+        icon41.addFile(QString::fromUtf8(":/icons/earth.png"), QSize(), QIcon::Normal, QIcon::Off);
+        page_FTP_Connection->addItem(page_4, icon41, QString::fromUtf8("Streaming Server"));
         line_3->raise();
         line_2->raise();
         line->raise();
@@ -1261,6 +1074,195 @@ public:
 
         gridLayout_2->addWidget(page_FTP_Connection, 24, 1, 1, 1);
 
+        frame_4 = new QFrame(widget);
+        frame_4->setObjectName(QString::fromUtf8("frame_4"));
+        sizePolicy3.setHeightForWidth(frame_4->sizePolicy().hasHeightForWidth());
+        frame_4->setSizePolicy(sizePolicy3);
+        frame_4->setMinimumSize(QSize(0, 129));
+        frame_4->setFrameShape(QFrame::NoFrame);
+        frame_4->setFrameShadow(QFrame::Raised);
+        btPlay = new QPushButton(frame_4);
+        btPlay->setObjectName(QString::fromUtf8("btPlay"));
+        btPlay->setGeometry(QRect(9, 10, 221, 55));
+        QSizePolicy sizePolicy8(QSizePolicy::Minimum, QSizePolicy::Expanding);
+        sizePolicy8.setHorizontalStretch(0);
+        sizePolicy8.setVerticalStretch(30);
+        sizePolicy8.setHeightForWidth(btPlay->sizePolicy().hasHeightForWidth());
+        btPlay->setSizePolicy(sizePolicy8);
+        btPlay->setMinimumSize(QSize(0, 55));
+        QIcon icon42;
+        icon42.addFile(QString::fromUtf8(":/icons/flat/Play-64.png"), QSize(), QIcon::Normal, QIcon::Off);
+        btPlay->setIcon(icon42);
+        btPlay->setIconSize(QSize(32, 32));
+        btStop = new QPushButton(frame_4);
+        btStop->setObjectName(QString::fromUtf8("btStop"));
+        btStop->setGeometry(QRect(239, 40, 171, 25));
+        QIcon icon43;
+        icon43.addFile(QString::fromUtf8(":/icons/flat/Stop Sign-32.png"), QSize(), QIcon::Normal, QIcon::Off);
+        btStop->setIcon(icon43);
+        btStop->setIconSize(QSize(32, 32));
+        btPlayNext = new QPushButton(frame_4);
+        btPlayNext->setObjectName(QString::fromUtf8("btPlayNext"));
+        btPlayNext->setGeometry(QRect(239, 10, 171, 25));
+        QIcon icon44;
+        icon44.addFile(QString::fromUtf8(":/icons/flat/Fast Forward-32.png"), QSize(), QIcon::Normal, QIcon::Off);
+        btPlayNext->setIcon(icon44);
+        btPlayNext->setIconSize(QSize(32, 32));
+        bt_rec = new QPushButton(frame_4);
+        bt_rec->setObjectName(QString::fromUtf8("bt_rec"));
+        bt_rec->setGeometry(QRect(420, 40, 161, 25));
+        QIcon icon45;
+        icon45.addFile(QString::fromUtf8(":/icons/flat/Record-32.png"), QSize(), QIcon::Normal, QIcon::Off);
+        bt_rec->setIcon(icon45);
+        bt_rec->setIconSize(QSize(32, 32));
+        txt_recTime = new QLabel(frame_4);
+        txt_recTime->setObjectName(QString::fromUtf8("txt_recTime"));
+        txt_recTime->setGeometry(QRect(420, 10, 150, 20));
+        QFont font10;
+        font10.setPointSize(11);
+        font10.setBold(true);
+        font10.setItalic(false);
+        font10.setWeight(75);
+        txt_recTime->setFont(font10);
+        txt_recTime->setStyleSheet(QString::fromUtf8("color: rgb(255, 0, 0);"));
+        txt_recTime->setAlignment(Qt::AlignCenter);
+        txtNowPlaying = new QLabel(frame_4);
+        txtNowPlaying->setObjectName(QString::fromUtf8("txtNowPlaying"));
+        txtNowPlaying->setGeometry(QRect(20, 90, 1161, 31));
+        QFont font11;
+        font11.setPointSize(12);
+        font11.setBold(true);
+        font11.setUnderline(false);
+        font11.setWeight(75);
+        txtNowPlaying->setFont(font11);
+        txtNowPlaying->setStyleSheet(QString::fromUtf8("color: rgb(124, 124, 186);border-radius:8px;"));
+        txt_ProgramName = new QLabel(frame_4);
+        txt_ProgramName->setObjectName(QString::fromUtf8("txt_ProgramName"));
+        txt_ProgramName->setGeometry(QRect(510, 10, 541, 37));
+        QFont font12;
+        font12.setBold(true);
+        font12.setItalic(true);
+        font12.setUnderline(false);
+        font12.setWeight(75);
+        txt_ProgramName->setFont(font12);
+        txt_ProgramName->setStyleSheet(QString::fromUtf8("background-color:#FFE329;padding:5px;"));
+        txt_ProgramName->setAlignment(Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter);
+        bt_ProgramStopandProcess = new QPushButton(frame_4);
+        bt_ProgramStopandProcess->setObjectName(QString::fromUtf8("bt_ProgramStopandProcess"));
+        bt_ProgramStopandProcess->setGeometry(QRect(750, 10, 301, 34));
+        bt_ProgramStopandProcess->setMinimumSize(QSize(0, 34));
+        QIcon icon46;
+        icon46.addFile(QString::fromUtf8(":/icons/googlemusicframe.png"), QSize(), QIcon::Normal, QIcon::Off);
+        bt_ProgramStopandProcess->setIcon(icon46);
+        bt_ProgramStopandProcess->setIconSize(QSize(24, 24));
+        txt_uploadingPrograms = new QLabel(frame_4);
+        txt_uploadingPrograms->setObjectName(QString::fromUtf8("txt_uploadingPrograms"));
+        txt_uploadingPrograms->setGeometry(QRect(510, 0, 541, 51));
+        QFont font13;
+        font13.setFamily(QString::fromUtf8("Noto Sans [monotype]"));
+        font13.setPointSize(20);
+        font13.setBold(false);
+        font13.setItalic(true);
+        font13.setWeight(9);
+        txt_uploadingPrograms->setFont(font13);
+        txt_uploadingPrograms->setStyleSheet(QString::fromUtf8("background-color:rgba(255,255,255,.86);\n"
+"font: 75 italic 20pt \"Noto Sans [monotype]\";"));
+        txt_uploadingPrograms->setAlignment(Qt::AlignCenter);
+        txtDuration = new QLabel(frame_4);
+        txtDuration->setObjectName(QString::fromUtf8("txtDuration"));
+        txtDuration->setGeometry(QRect(510, 45, 581, 25));
+        sizePolicy3.setHeightForWidth(txtDuration->sizePolicy().hasHeightForWidth());
+        txtDuration->setSizePolicy(sizePolicy3);
+        QFont font14;
+        font14.setPointSize(14);
+        font14.setBold(true);
+        font14.setItalic(false);
+        font14.setWeight(75);
+        txtDuration->setFont(font14);
+        txtDuration->setStyleSheet(QString::fromUtf8("color: rgb(0, 75, 167);"));
+        txtDuration->setAlignment(Qt::AlignCenter);
+        layoutWidget2 = new QWidget(frame_4);
+        layoutWidget2->setObjectName(QString::fromUtf8("layoutWidget2"));
+        layoutWidget2->setGeometry(QRect(10, 66, 1041, 20));
+        horizontalLayout_7 = new QHBoxLayout(layoutWidget2);
+        horizontalLayout_7->setSpacing(6);
+        horizontalLayout_7->setContentsMargins(11, 11, 11, 11);
+        horizontalLayout_7->setObjectName(QString::fromUtf8("horizontalLayout_7"));
+        horizontalLayout_7->setContentsMargins(0, 0, 0, 0);
+        label = new QLabel(layoutWidget2);
+        label->setObjectName(QString::fromUtf8("label"));
+        label->setAlignment(Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter);
+
+        horizontalLayout_7->addWidget(label);
+
+        sliderVolume = new QSlider(layoutWidget2);
+        sliderVolume->setObjectName(QString::fromUtf8("sliderVolume"));
+        sliderVolume->setValue(99);
+        sliderVolume->setOrientation(Qt::Horizontal);
+        sliderVolume->setTickInterval(1);
+
+        horizontalLayout_7->addWidget(sliderVolume);
+
+        label_2 = new QLabel(layoutWidget2);
+        label_2->setObjectName(QString::fromUtf8("label_2"));
+        label_2->setAlignment(Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter);
+
+        horizontalLayout_7->addWidget(label_2);
+
+        sliderProgress = new QSlider(layoutWidget2);
+        sliderProgress->setObjectName(QString::fromUtf8("sliderProgress"));
+        sliderProgress->setStyleSheet(QString::fromUtf8(""));
+        sliderProgress->setOrientation(Qt::Horizontal);
+
+        horizontalLayout_7->addWidget(sliderProgress);
+
+        txt_creatingPrograms = new QLabel(frame_4);
+        txt_creatingPrograms->setObjectName(QString::fromUtf8("txt_creatingPrograms"));
+        txt_creatingPrograms->setGeometry(QRect(510, 0, 541, 51));
+        txt_creatingPrograms->setFont(font13);
+        txt_creatingPrograms->setStyleSheet(QString::fromUtf8("background-color:rgba(255,255,255,.86);\n"
+"font: 75 italic 20pt \"Noto Sans [monotype]\";"));
+        txt_creatingPrograms->setAlignment(Qt::AlignCenter);
+        led_rec = new QLabel(frame_4);
+        led_rec->setObjectName(QString::fromUtf8("led_rec"));
+        led_rec->setGeometry(QRect(465, 43, 22, 20));
+        led_rec->setStyleSheet(QString::fromUtf8("background-color: rgb(255, 247, 0); border-radius:8px;"));
+        txt_loading = new QLabel(frame_4);
+        txt_loading->setObjectName(QString::fromUtf8("txt_loading"));
+        txt_loading->setGeometry(QRect(510, 0, 541, 56));
+        txt_loading->setFont(font13);
+        txt_loading->setStyleSheet(QString::fromUtf8("background-color:rgba(255,255,255,.86);\n"
+"font: 75 italic 20pt \"Noto Sans [monotype]\";"));
+        txt_loading->setAlignment(Qt::AlignCenter);
+        bt_pause_rec = new QToolButton(frame_4);
+        bt_pause_rec->setObjectName(QString::fromUtf8("bt_pause_rec"));
+        bt_pause_rec->setGeometry(QRect(550, 42, 25, 19));
+        QIcon icon47;
+        icon47.addFile(QString::fromUtf8(":/icons/flat/Pause-32.png"), QSize(), QIcon::Normal, QIcon::Off);
+        bt_pause_rec->setIcon(icon47);
+        bt_pause_play = new QToolButton(frame_4);
+        bt_pause_play->setObjectName(QString::fromUtf8("bt_pause_play"));
+        bt_pause_play->setGeometry(QRect(200, 35, 25, 25));
+        bt_pause_play->setIcon(icon47);
+        txt_ProgramName->raise();
+        btPlay->raise();
+        btStop->raise();
+        btPlayNext->raise();
+        txtNowPlaying->raise();
+        bt_ProgramStopandProcess->raise();
+        txtDuration->raise();
+        layoutWidget->raise();
+        txt_creatingPrograms->raise();
+        txt_loading->raise();
+        txt_uploadingPrograms->raise();
+        bt_pause_play->raise();
+        bt_rec->raise();
+        led_rec->raise();
+        txt_recTime->raise();
+        bt_pause_rec->raise();
+
+        gridLayout_2->addWidget(frame_4, 0, 0, 5, 1);
+
 
         gridLayout->addWidget(widget, 0, 0, 1, 1);
 
@@ -1271,10 +1273,10 @@ public:
         horizontalLayout_11->setContentsMargins(9, 0, -1, 0);
         NetpackLogo = new QLabel(centralWidget);
         NetpackLogo->setObjectName(QString::fromUtf8("NetpackLogo"));
-        sizePolicy7.setHeightForWidth(NetpackLogo->sizePolicy().hasHeightForWidth());
-        NetpackLogo->setSizePolicy(sizePolicy7);
-        NetpackLogo->setMinimumSize(QSize(70, 50));
-        NetpackLogo->setMaximumSize(QSize(86, 50));
+        sizePolicy6.setHeightForWidth(NetpackLogo->sizePolicy().hasHeightForWidth());
+        NetpackLogo->setSizePolicy(sizePolicy6);
+        NetpackLogo->setMinimumSize(QSize(100, 50));
+        NetpackLogo->setMaximumSize(QSize(100, 50));
         NetpackLogo->setSizeIncrement(QSize(0, 0));
         NetpackLogo->setLayoutDirection(Qt::RightToLeft);
         NetpackLogo->setAutoFillBackground(false);
@@ -1436,23 +1438,6 @@ public:
         actionForce_monitorization->setText(QCoreApplication::translate("player", "Force monitorization", nullptr));
         actionUpdate_Dinamic_Server_s_IP->setText(QCoreApplication::translate("player", "Update Dinamic Server's IP", nullptr));
         bt_autoMode->setText(QCoreApplication::translate("player", "Auto Mode", nullptr));
-        btPlay->setText(QCoreApplication::translate("player", "Play", nullptr));
-        btStop->setText(QCoreApplication::translate("player", "Stop", nullptr));
-        btPlayNext->setText(QCoreApplication::translate("player", "Play Next", nullptr));
-        bt_rec->setText(QCoreApplication::translate("player", "Record", nullptr));
-        txt_recTime->setText(QString());
-        txtNowPlaying->setText(QCoreApplication::translate("player", "XFB - OpenSource Radio Automation Software", nullptr));
-        txt_ProgramName->setText(QString());
-        bt_ProgramStopandProcess->setText(QCoreApplication::translate("player", "Stop and process", nullptr));
-        txt_uploadingPrograms->setText(QCoreApplication::translate("player", "Uploading programs, plase wait...", nullptr));
-        txtDuration->setText(QString());
-        label->setText(QCoreApplication::translate("player", "Volume", nullptr));
-        label_2->setText(QCoreApplication::translate("player", "Progress", nullptr));
-        txt_creatingPrograms->setText(QCoreApplication::translate("player", "Creating programs, please wait...", nullptr));
-        led_rec->setText(QString());
-        txt_loading->setText(QCoreApplication::translate("player", "loading...", nullptr));
-        bt_pause_rec->setText(QString());
-        bt_pause_play->setText(QString());
         txt_playlistTotalTime->setText(QCoreApplication::translate("player", "Total time of the playlist: 00:00:00", nullptr));
         checkBox_sum_to_playlist_time->setText(QCoreApplication::translate("player", "Sum to Playlist Time", nullptr));
         checkBox_update_last_played_values->setText(QCoreApplication::translate("player", "Update last played values", nullptr));
@@ -1512,7 +1497,7 @@ public:
         bt_apply_multi_selection->setText(QCoreApplication::translate("player", "GO", nullptr));
         page_FTP_Connection->setItemText(page_FTP_Connection->indexOf(page_3), QCoreApplication::translate("player", "Extras", nullptr));
         bt_rol_streaming_play->setText(QString());
-        label_4->setText(QCoreApplication::translate("player", "R\303\241dio Online Livre :: Servidor ::", nullptr));
+        label_4->setText(QCoreApplication::translate("player", "[comming soon]", nullptr));
         bt_rol_streaming_stop->setText(QString());
         page_FTP_Connection->setItemText(page_FTP_Connection->indexOf(Radio), QCoreApplication::translate("player", "Streaming Client", nullptr));
         label_5->setText(QCoreApplication::translate("player", "StreamServer (butt):", nullptr));
@@ -1532,6 +1517,23 @@ public:
         bt_portTest->setText(QString());
         lbl_streamURL->setText(QString());
         page_FTP_Connection->setItemText(page_FTP_Connection->indexOf(page_4), QCoreApplication::translate("player", "Streaming Server", nullptr));
+        btPlay->setText(QCoreApplication::translate("player", "Play", nullptr));
+        btStop->setText(QCoreApplication::translate("player", "Stop", nullptr));
+        btPlayNext->setText(QCoreApplication::translate("player", "Play Next", nullptr));
+        bt_rec->setText(QCoreApplication::translate("player", "Record", nullptr));
+        txt_recTime->setText(QString());
+        txtNowPlaying->setText(QCoreApplication::translate("player", "XFB - OpenSource Radio Automation Software", nullptr));
+        txt_ProgramName->setText(QString());
+        bt_ProgramStopandProcess->setText(QCoreApplication::translate("player", "Stop and process", nullptr));
+        txt_uploadingPrograms->setText(QCoreApplication::translate("player", "Uploading programs, plase wait...", nullptr));
+        txtDuration->setText(QString());
+        label->setText(QCoreApplication::translate("player", "Volume", nullptr));
+        label_2->setText(QCoreApplication::translate("player", "Progress", nullptr));
+        txt_creatingPrograms->setText(QCoreApplication::translate("player", "Creating programs, please wait...", nullptr));
+        led_rec->setText(QString());
+        txt_loading->setText(QCoreApplication::translate("player", "loading...", nullptr));
+        bt_pause_rec->setText(QString());
+        bt_pause_play->setText(QString());
 #if QT_CONFIG(tooltip)
         NetpackLogo->setToolTip(QCoreApplication::translate("player", "<html><head/><body><center><p>Netpack - Online Solutions! </p><p>www.netpack.pt</p><p> :: Coding your Dreams! ::</p><p>\n"
 "\n"
@@ -1573,7 +1575,7 @@ public:
 "</p></center></body></html>", nullptr));
 #endif // QT_CONFIG(tooltip)
         NetpackLogo->setText(QString());
-        txt_bottom_info->setText(QCoreApplication::translate("player", "XFB Vers\303\243o 1.23 :: Atualizada a 15-02-2021 :: Netpack - Online Solutions! :: www.netpack.pt", nullptr));
+        txt_bottom_info->setText(QCoreApplication::translate("player", "XFB Vers\303\243o 1.23 by Netpack - Online Solutions! :: www.netpack.pt", nullptr));
         menuFile->setTitle(QCoreApplication::translate("player", "File", nullptr));
         menuPlaylists->setTitle(QCoreApplication::translate("player", "Playlists", nullptr));
         menuDatabase->setTitle(QCoreApplication::translate("player", "Database", nullptr));

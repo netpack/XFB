@@ -1399,7 +1399,7 @@ void player::on_sliderVolume_sliderMoved(int position)
 
 void player::onPositionChanged(qint64 position)
 {
-if(position!=NULL && trackTotalDuration!=NULL) {
+
 
 
 
@@ -1465,7 +1465,7 @@ if(position!=NULL && trackTotalDuration!=NULL) {
       }
      QString txtElapsedTimeLable =  xhoras+":"+xminutos+":"+xsegundos+" of "+txtDuration;
      ui->txtDuration->setText(txtElapsedTimeLable);
-}
+
 }
 
 void player::durationChanged(qint64 position)
@@ -2776,11 +2776,6 @@ void player::server_check_and_schedule_new_programs(){
         qDebug()<<"NEW UPLOADED FILE FOUND: "<<fit_prog_name;
 
         QString mv2folder = ProgramsPath+"/"+fit_prog_name+"/"+fit_name;
-
-        qDebug()<<"Removing any older program with the same name..";
-        QFile::remove(mv2folder);
-        qDebug()<<"Removing finished!";
-
 
 
 
@@ -4346,7 +4341,7 @@ void player::on_bt_ProgramStopandProcess_clicked()
 
                                 /*I should probably not do it like i'm about to do ... */
 /*
-                                QString c = "curl fred.alojamento.com/XFB/Config/ftpupdate.txt";
+                                QString c = "curl [ip]/XFB/Config/ftpupdate.txt";
                                 QProcess pc;
                                 pc.start("sh",QStringList()<<"-c"<<c);
                                 pc.waitForFinished();
@@ -5296,7 +5291,7 @@ void player::on_bt_rol_streaming_play_clicked()
 {
 
 
-    QString c = "curl fred.alojamento.com/XFB/Config/ftpupdate.txt";
+    QString c = "curl [ip]/XFB/Config/ftpupdate.txt";
     QProcess pc;
     pc.start("sh",QStringList()<<"-c"<<c);
     pc.waitForFinished();

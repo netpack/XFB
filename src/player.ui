@@ -190,480 +190,6 @@
          </widget>
         </widget>
        </item>
-       <item row="0" column="0" rowspan="5">
-        <widget class="QFrame" name="frame_4">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="minimumSize">
-          <size>
-           <width>0</width>
-           <height>129</height>
-          </size>
-         </property>
-         <property name="frameShape">
-          <enum>QFrame::NoFrame</enum>
-         </property>
-         <property name="frameShadow">
-          <enum>QFrame::Raised</enum>
-         </property>
-         <widget class="QPushButton" name="btPlay">
-          <property name="geometry">
-           <rect>
-            <x>9</x>
-            <y>10</y>
-            <width>171</width>
-            <height>55</height>
-           </rect>
-          </property>
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
-            <horstretch>0</horstretch>
-            <verstretch>30</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>55</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>Play</string>
-          </property>
-          <property name="icon">
-           <iconset resource="resources.qrc">
-            <normaloff>:/icons/flat/Play-64.png</normaloff>:/icons/flat/Play-64.png</iconset>
-          </property>
-          <property name="iconSize">
-           <size>
-            <width>32</width>
-            <height>32</height>
-           </size>
-          </property>
-         </widget>
-         <widget class="QPushButton" name="btStop">
-          <property name="geometry">
-           <rect>
-            <x>211</x>
-            <y>40</y>
-            <width>160</width>
-            <height>26</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Stop</string>
-          </property>
-          <property name="icon">
-           <iconset resource="resources.qrc">
-            <normaloff>:/icons/flat/Stop Sign-32.png</normaloff>:/icons/flat/Stop Sign-32.png</iconset>
-          </property>
-          <property name="iconSize">
-           <size>
-            <width>32</width>
-            <height>32</height>
-           </size>
-          </property>
-         </widget>
-         <widget class="QPushButton" name="btPlayNext">
-          <property name="geometry">
-           <rect>
-            <x>211</x>
-            <y>10</y>
-            <width>160</width>
-            <height>26</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Play Next</string>
-          </property>
-          <property name="icon">
-           <iconset resource="resources.qrc">
-            <normaloff>:/icons/flat/Fast Forward-32.png</normaloff>:/icons/flat/Fast Forward-32.png</iconset>
-          </property>
-          <property name="iconSize">
-           <size>
-            <width>32</width>
-            <height>32</height>
-           </size>
-          </property>
-         </widget>
-         <widget class="QPushButton" name="bt_rec">
-          <property name="geometry">
-           <rect>
-            <x>374</x>
-            <y>40</y>
-            <width>161</width>
-            <height>26</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Record</string>
-          </property>
-          <property name="icon">
-           <iconset resource="resources.qrc">
-            <normaloff>:/icons/flat/Record-32.png</normaloff>:/icons/flat/Record-32.png</iconset>
-          </property>
-          <property name="iconSize">
-           <size>
-            <width>32</width>
-            <height>32</height>
-           </size>
-          </property>
-         </widget>
-         <widget class="QLabel" name="txt_recTime">
-          <property name="geometry">
-           <rect>
-            <x>380</x>
-            <y>13</y>
-            <width>150</width>
-            <height>20</height>
-           </rect>
-          </property>
-          <property name="font">
-           <font>
-            <pointsize>11</pointsize>
-            <weight>75</weight>
-            <italic>false</italic>
-            <bold>true</bold>
-           </font>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">color: rgb(255, 0, 0);</string>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignCenter</set>
-          </property>
-         </widget>
-         <widget class="QLabel" name="txtNowPlaying">
-          <property name="geometry">
-           <rect>
-            <x>20</x>
-            <y>90</y>
-            <width>1161</width>
-            <height>31</height>
-           </rect>
-          </property>
-          <property name="font">
-           <font>
-            <pointsize>12</pointsize>
-            <weight>75</weight>
-            <bold>true</bold>
-            <underline>false</underline>
-           </font>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">color: rgb(124, 124, 186);border-radius:8px;</string>
-          </property>
-          <property name="text">
-           <string>XFB - OpenSource Radio Automation Software</string>
-          </property>
-         </widget>
-         <widget class="QLabel" name="txt_ProgramName">
-          <property name="geometry">
-           <rect>
-            <x>510</x>
-            <y>10</y>
-            <width>541</width>
-            <height>37</height>
-           </rect>
-          </property>
-          <property name="font">
-           <font>
-            <weight>75</weight>
-            <italic>true</italic>
-            <bold>true</bold>
-            <underline>false</underline>
-           </font>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">background-color:#FFE329;padding:5px;</string>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
-          </property>
-         </widget>
-         <widget class="QPushButton" name="bt_ProgramStopandProcess">
-          <property name="geometry">
-           <rect>
-            <x>750</x>
-            <y>10</y>
-            <width>301</width>
-            <height>34</height>
-           </rect>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>34</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>Stop and process</string>
-          </property>
-          <property name="icon">
-           <iconset resource="resources.qrc">
-            <normaloff>:/icons/googlemusicframe.png</normaloff>:/icons/googlemusicframe.png</iconset>
-          </property>
-          <property name="iconSize">
-           <size>
-            <width>24</width>
-            <height>24</height>
-           </size>
-          </property>
-         </widget>
-         <widget class="QLabel" name="txt_uploadingPrograms">
-          <property name="geometry">
-           <rect>
-            <x>510</x>
-            <y>0</y>
-            <width>541</width>
-            <height>51</height>
-           </rect>
-          </property>
-          <property name="font">
-           <font>
-            <family>Noto Sans [monotype]</family>
-            <pointsize>20</pointsize>
-            <weight>9</weight>
-            <italic>true</italic>
-            <bold>false</bold>
-           </font>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">background-color:rgba(255,255,255,.86);
-font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
-          </property>
-          <property name="text">
-           <string>Uploading programs, plase wait...</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignCenter</set>
-          </property>
-         </widget>
-         <widget class="QLabel" name="txtDuration">
-          <property name="geometry">
-           <rect>
-            <x>510</x>
-            <y>45</y>
-            <width>581</width>
-            <height>25</height>
-           </rect>
-          </property>
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="font">
-           <font>
-            <pointsize>14</pointsize>
-            <weight>75</weight>
-            <italic>false</italic>
-            <bold>true</bold>
-           </font>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">color: rgb(0, 75, 167);</string>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignCenter</set>
-          </property>
-         </widget>
-         <widget class="QWidget" name="layoutWidget">
-          <property name="geometry">
-           <rect>
-            <x>10</x>
-            <y>66</y>
-            <width>1041</width>
-            <height>20</height>
-           </rect>
-          </property>
-          <layout class="QHBoxLayout" name="horizontalLayout_7">
-           <item>
-            <widget class="QLabel" name="label">
-             <property name="text">
-              <string>Volume</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QSlider" name="sliderVolume">
-             <property name="value">
-              <number>99</number>
-             </property>
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="tickInterval">
-              <number>1</number>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="label_2">
-             <property name="text">
-              <string>Progress</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QSlider" name="sliderProgress">
-             <property name="styleSheet">
-              <string notr="true"/>
-             </property>
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-         <widget class="QLabel" name="txt_creatingPrograms">
-          <property name="geometry">
-           <rect>
-            <x>510</x>
-            <y>0</y>
-            <width>541</width>
-            <height>51</height>
-           </rect>
-          </property>
-          <property name="font">
-           <font>
-            <family>Noto Sans [monotype]</family>
-            <pointsize>20</pointsize>
-            <weight>9</weight>
-            <italic>true</italic>
-            <bold>false</bold>
-           </font>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">background-color:rgba(255,255,255,.86);
-font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
-          </property>
-          <property name="text">
-           <string>Creating programs, please wait...</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignCenter</set>
-          </property>
-         </widget>
-         <widget class="QLabel" name="led_rec">
-          <property name="geometry">
-           <rect>
-            <x>421</x>
-            <y>43</y>
-            <width>20</width>
-            <height>20</height>
-           </rect>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">background-color: rgb(255, 247, 0); border-radius:8px;</string>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-         </widget>
-         <widget class="QLabel" name="txt_loading">
-          <property name="geometry">
-           <rect>
-            <x>510</x>
-            <y>0</y>
-            <width>541</width>
-            <height>56</height>
-           </rect>
-          </property>
-          <property name="font">
-           <font>
-            <family>Noto Sans [monotype]</family>
-            <pointsize>20</pointsize>
-            <weight>9</weight>
-            <italic>true</italic>
-            <bold>false</bold>
-           </font>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">background-color:rgba(255,255,255,.86);
-font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
-          </property>
-          <property name="text">
-           <string>loading...</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignCenter</set>
-          </property>
-         </widget>
-         <widget class="QToolButton" name="bt_pause_rec">
-          <property name="geometry">
-           <rect>
-            <x>540</x>
-            <y>40</y>
-            <width>25</width>
-            <height>26</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="icon">
-           <iconset resource="resources.qrc">
-            <normaloff>:/icons/flat/Pause-32.png</normaloff>:/icons/flat/Pause-32.png</iconset>
-          </property>
-         </widget>
-         <widget class="QToolButton" name="bt_pause_play">
-          <property name="geometry">
-           <rect>
-            <x>183</x>
-            <y>39</y>
-            <width>25</width>
-            <height>26</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="icon">
-           <iconset resource="resources.qrc">
-            <normaloff>:/icons/flat/Pause-32.png</normaloff>:/icons/flat/Pause-32.png</iconset>
-          </property>
-         </widget>
-         <zorder>txt_ProgramName</zorder>
-         <zorder>btPlay</zorder>
-         <zorder>btStop</zorder>
-         <zorder>btPlayNext</zorder>
-         <zorder>bt_rec</zorder>
-         <zorder>txt_recTime</zorder>
-         <zorder>txtNowPlaying</zorder>
-         <zorder>bt_ProgramStopandProcess</zorder>
-         <zorder>txtDuration</zorder>
-         <zorder>layoutWidget</zorder>
-         <zorder>txt_creatingPrograms</zorder>
-         <zorder>led_rec</zorder>
-         <zorder>txt_loading</zorder>
-         <zorder>txt_uploadingPrograms</zorder>
-         <zorder>bt_pause_rec</zorder>
-         <zorder>bt_pause_play</zorder>
-        </widget>
-       </item>
        <item row="20" column="0" rowspan="4" colspan="2">
         <widget class="QTabWidget" name="tabWidget_2">
          <property name="sizePolicy">
@@ -722,57 +248,6 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
            <property name="spacing">
             <number>0</number>
            </property>
-           <item row="2" column="0">
-            <widget class="QListWidget" name="playlist">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-               <horstretch>0</horstretch>
-               <verstretch>10</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="font">
-              <font>
-               <kerning>false</kerning>
-              </font>
-             </property>
-             <property name="acceptDrops">
-              <bool>true</bool>
-             </property>
-             <property name="frameShape">
-              <enum>QFrame::NoFrame</enum>
-             </property>
-             <property name="frameShadow">
-              <enum>QFrame::Plain</enum>
-             </property>
-             <property name="lineWidth">
-              <number>1</number>
-             </property>
-             <property name="autoScrollMargin">
-              <number>16</number>
-             </property>
-             <property name="alternatingRowColors">
-              <bool>true</bool>
-             </property>
-             <property name="selectionBehavior">
-              <enum>QAbstractItemView::SelectRows</enum>
-             </property>
-             <property name="iconSize">
-              <size>
-               <width>32</width>
-               <height>32</height>
-              </size>
-             </property>
-             <property name="resizeMode">
-              <enum>QListView::Adjust</enum>
-             </property>
-             <property name="viewMode">
-              <enum>QListView::ListMode</enum>
-             </property>
-             <property name="currentRow">
-              <number>-1</number>
-             </property>
-            </widget>
-           </item>
            <item row="2" column="1">
             <widget class="QFrame" name="frame_2">
              <property name="sizePolicy">
@@ -910,6 +385,57 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
                </item>
               </layout>
              </widget>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QListWidget" name="playlist">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+               <horstretch>0</horstretch>
+               <verstretch>10</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="font">
+              <font>
+               <kerning>false</kerning>
+              </font>
+             </property>
+             <property name="acceptDrops">
+              <bool>true</bool>
+             </property>
+             <property name="frameShape">
+              <enum>QFrame::NoFrame</enum>
+             </property>
+             <property name="frameShadow">
+              <enum>QFrame::Plain</enum>
+             </property>
+             <property name="lineWidth">
+              <number>1</number>
+             </property>
+             <property name="autoScrollMargin">
+              <number>16</number>
+             </property>
+             <property name="alternatingRowColors">
+              <bool>true</bool>
+             </property>
+             <property name="selectionBehavior">
+              <enum>QAbstractItemView::SelectRows</enum>
+             </property>
+             <property name="iconSize">
+              <size>
+               <width>32</width>
+               <height>32</height>
+              </size>
+             </property>
+             <property name="resizeMode">
+              <enum>QListView::Adjust</enum>
+             </property>
+             <property name="viewMode">
+              <enum>QListView::ListMode</enum>
+             </property>
+             <property name="currentRow">
+              <number>-1</number>
+             </property>
             </widget>
            </item>
           </layout>
@@ -2050,6 +1576,9 @@ background-color: rgb(255, 255, 255);</string>
            <string>Streaming Client</string>
           </attribute>
           <widget class="QPushButton" name="bt_rol_streaming_play">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
            <property name="geometry">
             <rect>
              <x>230</x>
@@ -2076,10 +1605,13 @@ background-color: rgb(255, 255, 255);</string>
             </rect>
            </property>
            <property name="text">
-            <string>Rádio Online Livre :: Servidor ::</string>
+            <string>[comming soon]</string>
            </property>
           </widget>
           <widget class="QPushButton" name="bt_rol_streaming_stop">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
            <property name="geometry">
             <rect>
              <x>290</x>
@@ -2413,6 +1945,480 @@ background-color: rgb(255, 255, 255);</string>
          </widget>
         </widget>
        </item>
+       <item row="0" column="0" rowspan="5">
+        <widget class="QFrame" name="frame_4">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>129</height>
+          </size>
+         </property>
+         <property name="frameShape">
+          <enum>QFrame::NoFrame</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Raised</enum>
+         </property>
+         <widget class="QPushButton" name="btPlay">
+          <property name="geometry">
+           <rect>
+            <x>9</x>
+            <y>10</y>
+            <width>221</width>
+            <height>55</height>
+           </rect>
+          </property>
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+            <horstretch>0</horstretch>
+            <verstretch>30</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>55</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Play</string>
+          </property>
+          <property name="icon">
+           <iconset resource="resources.qrc">
+            <normaloff>:/icons/flat/Play-64.png</normaloff>:/icons/flat/Play-64.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>32</width>
+            <height>32</height>
+           </size>
+          </property>
+         </widget>
+         <widget class="QPushButton" name="btStop">
+          <property name="geometry">
+           <rect>
+            <x>239</x>
+            <y>40</y>
+            <width>171</width>
+            <height>25</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Stop</string>
+          </property>
+          <property name="icon">
+           <iconset resource="resources.qrc">
+            <normaloff>:/icons/flat/Stop Sign-32.png</normaloff>:/icons/flat/Stop Sign-32.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>32</width>
+            <height>32</height>
+           </size>
+          </property>
+         </widget>
+         <widget class="QPushButton" name="btPlayNext">
+          <property name="geometry">
+           <rect>
+            <x>239</x>
+            <y>10</y>
+            <width>171</width>
+            <height>25</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Play Next</string>
+          </property>
+          <property name="icon">
+           <iconset resource="resources.qrc">
+            <normaloff>:/icons/flat/Fast Forward-32.png</normaloff>:/icons/flat/Fast Forward-32.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>32</width>
+            <height>32</height>
+           </size>
+          </property>
+         </widget>
+         <widget class="QPushButton" name="bt_rec">
+          <property name="geometry">
+           <rect>
+            <x>420</x>
+            <y>40</y>
+            <width>161</width>
+            <height>25</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Record</string>
+          </property>
+          <property name="icon">
+           <iconset resource="resources.qrc">
+            <normaloff>:/icons/flat/Record-32.png</normaloff>:/icons/flat/Record-32.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>32</width>
+            <height>32</height>
+           </size>
+          </property>
+         </widget>
+         <widget class="QLabel" name="txt_recTime">
+          <property name="geometry">
+           <rect>
+            <x>420</x>
+            <y>10</y>
+            <width>150</width>
+            <height>20</height>
+           </rect>
+          </property>
+          <property name="font">
+           <font>
+            <pointsize>11</pointsize>
+            <weight>75</weight>
+            <italic>false</italic>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">color: rgb(255, 0, 0);</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+         <widget class="QLabel" name="txtNowPlaying">
+          <property name="geometry">
+           <rect>
+            <x>20</x>
+            <y>90</y>
+            <width>1161</width>
+            <height>31</height>
+           </rect>
+          </property>
+          <property name="font">
+           <font>
+            <pointsize>12</pointsize>
+            <weight>75</weight>
+            <bold>true</bold>
+            <underline>false</underline>
+           </font>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">color: rgb(124, 124, 186);border-radius:8px;</string>
+          </property>
+          <property name="text">
+           <string>XFB - OpenSource Radio Automation Software</string>
+          </property>
+         </widget>
+         <widget class="QLabel" name="txt_ProgramName">
+          <property name="geometry">
+           <rect>
+            <x>510</x>
+            <y>10</y>
+            <width>541</width>
+            <height>37</height>
+           </rect>
+          </property>
+          <property name="font">
+           <font>
+            <weight>75</weight>
+            <italic>true</italic>
+            <bold>true</bold>
+            <underline>false</underline>
+           </font>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color:#FFE329;padding:5px;</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+          </property>
+         </widget>
+         <widget class="QPushButton" name="bt_ProgramStopandProcess">
+          <property name="geometry">
+           <rect>
+            <x>750</x>
+            <y>10</y>
+            <width>301</width>
+            <height>34</height>
+           </rect>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>34</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Stop and process</string>
+          </property>
+          <property name="icon">
+           <iconset resource="resources.qrc">
+            <normaloff>:/icons/googlemusicframe.png</normaloff>:/icons/googlemusicframe.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>24</width>
+            <height>24</height>
+           </size>
+          </property>
+         </widget>
+         <widget class="QLabel" name="txt_uploadingPrograms">
+          <property name="geometry">
+           <rect>
+            <x>510</x>
+            <y>0</y>
+            <width>541</width>
+            <height>51</height>
+           </rect>
+          </property>
+          <property name="font">
+           <font>
+            <family>Noto Sans [monotype]</family>
+            <pointsize>20</pointsize>
+            <weight>9</weight>
+            <italic>true</italic>
+            <bold>false</bold>
+           </font>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color:rgba(255,255,255,.86);
+font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
+          </property>
+          <property name="text">
+           <string>Uploading programs, plase wait...</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+         <widget class="QLabel" name="txtDuration">
+          <property name="geometry">
+           <rect>
+            <x>510</x>
+            <y>45</y>
+            <width>581</width>
+            <height>25</height>
+           </rect>
+          </property>
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="font">
+           <font>
+            <pointsize>14</pointsize>
+            <weight>75</weight>
+            <italic>false</italic>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">color: rgb(0, 75, 167);</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+         <widget class="QWidget" name="layoutWidget">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>66</y>
+            <width>1041</width>
+            <height>20</height>
+           </rect>
+          </property>
+          <layout class="QHBoxLayout" name="horizontalLayout_7">
+           <item>
+            <widget class="QLabel" name="label">
+             <property name="text">
+              <string>Volume</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSlider" name="sliderVolume">
+             <property name="value">
+              <number>99</number>
+             </property>
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="tickInterval">
+              <number>1</number>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_2">
+             <property name="text">
+              <string>Progress</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSlider" name="sliderProgress">
+             <property name="styleSheet">
+              <string notr="true"/>
+             </property>
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+         <widget class="QLabel" name="txt_creatingPrograms">
+          <property name="geometry">
+           <rect>
+            <x>510</x>
+            <y>0</y>
+            <width>541</width>
+            <height>51</height>
+           </rect>
+          </property>
+          <property name="font">
+           <font>
+            <family>Noto Sans [monotype]</family>
+            <pointsize>20</pointsize>
+            <weight>9</weight>
+            <italic>true</italic>
+            <bold>false</bold>
+           </font>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color:rgba(255,255,255,.86);
+font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
+          </property>
+          <property name="text">
+           <string>Creating programs, please wait...</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+         <widget class="QLabel" name="led_rec">
+          <property name="geometry">
+           <rect>
+            <x>465</x>
+            <y>43</y>
+            <width>22</width>
+            <height>20</height>
+           </rect>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: rgb(255, 247, 0); border-radius:8px;</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+         <widget class="QLabel" name="txt_loading">
+          <property name="geometry">
+           <rect>
+            <x>510</x>
+            <y>0</y>
+            <width>541</width>
+            <height>56</height>
+           </rect>
+          </property>
+          <property name="font">
+           <font>
+            <family>Noto Sans [monotype]</family>
+            <pointsize>20</pointsize>
+            <weight>9</weight>
+            <italic>true</italic>
+            <bold>false</bold>
+           </font>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color:rgba(255,255,255,.86);
+font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
+          </property>
+          <property name="text">
+           <string>loading...</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+         <widget class="QToolButton" name="bt_pause_rec">
+          <property name="geometry">
+           <rect>
+            <x>550</x>
+            <y>42</y>
+            <width>25</width>
+            <height>19</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset resource="resources.qrc">
+            <normaloff>:/icons/flat/Pause-32.png</normaloff>:/icons/flat/Pause-32.png</iconset>
+          </property>
+         </widget>
+         <widget class="QToolButton" name="bt_pause_play">
+          <property name="geometry">
+           <rect>
+            <x>200</x>
+            <y>35</y>
+            <width>25</width>
+            <height>25</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset resource="resources.qrc">
+            <normaloff>:/icons/flat/Pause-32.png</normaloff>:/icons/flat/Pause-32.png</iconset>
+          </property>
+         </widget>
+         <zorder>txt_ProgramName</zorder>
+         <zorder>btPlay</zorder>
+         <zorder>btStop</zorder>
+         <zorder>btPlayNext</zorder>
+         <zorder>txtNowPlaying</zorder>
+         <zorder>bt_ProgramStopandProcess</zorder>
+         <zorder>txtDuration</zorder>
+         <zorder>layoutWidget</zorder>
+         <zorder>txt_creatingPrograms</zorder>
+         <zorder>txt_loading</zorder>
+         <zorder>txt_uploadingPrograms</zorder>
+         <zorder>bt_pause_play</zorder>
+         <zorder>bt_rec</zorder>
+         <zorder>led_rec</zorder>
+         <zorder>txt_recTime</zorder>
+         <zorder>bt_pause_rec</zorder>
+        </widget>
+       </item>
       </layout>
      </widget>
     </item>
@@ -2443,13 +2449,13 @@ background-color: rgb(255, 255, 255);</string>
         </property>
         <property name="minimumSize">
          <size>
-          <width>70</width>
+          <width>100</width>
           <height>50</height>
          </size>
         </property>
         <property name="maximumSize">
          <size>
-          <width>86</width>
+          <width>100</width>
           <height>50</height>
          </size>
         </property>
@@ -2536,7 +2542,7 @@ background-color: rgb(255, 255, 255);</string>
          <number>2</number>
         </property>
         <property name="text">
-         <string>XFB Versão 1.23 :: Atualizada a 15-02-2021 :: Netpack - Online Solutions! :: www.netpack.pt</string>
+         <string>XFB Versão 1.23 by Netpack - Online Solutions! :: www.netpack.pt</string>
         </property>
         <property name="alignment">
          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>

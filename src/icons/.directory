@@ -1,5 +1,9 @@
 [Dolphin]
+GroupedSorting=true
+HeaderColumnWidths=381,68,117,128,169
 PreviewsShown=true
-Timestamp=2017,2,16,16,50,51
+SortRole=destination
+Timestamp=2016,3,6,15,13,39
 Version=3
+ViewMode=1
 VisibleRoles=CustomizedDetails,Details_text,Details_size,Details_date,Details_type,Details_destination
