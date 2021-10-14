@@ -2,7 +2,7 @@
 XFB - Open Source Radio Automation Software by [Netpack Online Solutions](https://www.netpack.pt)
 
 XFB is a software that can automate a radio station. 
-It manages a database that allows you to catalogue and play music; jingles; publicities; programs; genres; and much more.
+It manages a database that allows you to catalogue and play music; jingles; publicity; programs; genres; and much more.
 
 
 ![alt text](https://netpack.pt/img/xfb-home.webp "XFB")
