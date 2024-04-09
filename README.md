@@ -23,9 +23,9 @@ To get started with XFB, follow these steps:
 ### Installing from AUR (Arch Linux or Arch-based (i.e.: Manjaro))
 
 
-#### Option 1: Using GUI (e.g., pacman)
+#### Option 1: Using GUI (e.g., pamac)
 
-1. Open your package manager GUI (e.g., `pacman`).
+1. Open your package manager GUI (e.g., `pamac` or `pamac-manager`).
 
 2. Navigate to the AUR section and ensure you have AUR repositories enabled
 
