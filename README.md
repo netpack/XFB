@@ -23,11 +23,11 @@ To get started with XFB, follow these steps:
 ### Installing from AUR (Arch Linux or Arch-based (i.e.: Manjaro))
 
 
-#### Option 1: Using GUI (e.g., pamac)
+#### Option 1: Using GUI (e.g., pacman)
 
-1. Open your package manager GUI (e.g., `pamac`).
+1. Open your package manager GUI (e.g., `pacman`).
 
-2. Navigate to the AUR section (make sure you have AUR repositories enabled)
+2. Navigate to the AUR section and ensure you have AUR repositories enabled
 
 3. Search for `xfb` and click Install.
 
@@ -66,6 +66,10 @@ To get started with XFB, follow these steps:
     cd XFB && mkpkg -si --force
     ```
 
+### Optional Dependencies
+
+1. Audacity
+2. Youtube-dl
 
 ## Support and Contributions
 
