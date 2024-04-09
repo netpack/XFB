@@ -1,22 +1,7 @@
-XFB Beta 0
-Developed by Netpack - Online Solutions!
+XFB
 www.netpack.pt
-
-Dependencies:
-sh
-SoX with all format libraries
-youtube-dl
-Audacity
-mediainfo
-
-
-
-
 
 *Some icons may come from sirubico, limav (Guilherme Lima) under the CC Attribution-Noncommercial-Share Alike 4.0 Licence (http://sirubico.deviantart.com/#/d39okaw | http://limav.deviantart.com/art/Music-Folders-394721155)
 
-
 Known limitations (or issues with low fixing priority):
 When editing the music database from the music table widget 'Genre's' should come as drop-down.. not urgent but may lead to human errors..
-
-

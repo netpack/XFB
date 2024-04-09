@@ -54,7 +54,7 @@ void add_full_dir::on_f_bt_add_clicked()
         QMessageBox::information(this,tr("Path?"),tr("Please select a folder to add."));
     }
 
-    QDirIterator it(dir, QStringList() , QDir::Files, QDirIterator::NoIteratorFlags);
+    QDirIterator it(dir, QStringList() << "*.mp3" << "*.wav" << "*.ogg" << "*.flac" << "*.aac" << "*.m4a" << "*.wma" << "*.opus", QDir::Files, QDirIterator::Subdirectories);
     while (it.hasNext()) {
 
         QString filewpath = it.next();

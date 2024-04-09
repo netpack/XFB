@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>789</width>
-    <height>386</height>
+    <height>406</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -51,7 +51,7 @@
       <item>
        <widget class="QTabWidget" name="SystemResouces">
         <property name="currentIndex">
-         <number>3</number>
+         <number>0</number>
         </property>
         <widget class="QWidget" name="tab">
          <attribute name="title">
@@ -76,7 +76,7 @@
             <x>20</x>
             <y>140</y>
             <width>381</width>
-            <height>27</height>
+            <height>34</height>
            </rect>
           </property>
           <layout class="QHBoxLayout" name="horizontalLayout">
@@ -204,7 +204,7 @@
            </rect>
           </property>
           <property name="text">
-           <string>Database Version: 1.0a jellyfish</string>
+           <string>Database Version: 1.0</string>
           </property>
          </widget>
          <widget class="QPushButton" name="pushButton_3">
@@ -280,7 +280,7 @@
             <x>100</x>
             <y>30</y>
             <width>531</width>
-            <height>27</height>
+            <height>34</height>
            </rect>
           </property>
           <layout class="QHBoxLayout" name="horizontalLayout_2">
@@ -306,7 +306,7 @@
             <x>100</x>
             <y>170</y>
             <width>531</width>
-            <height>27</height>
+            <height>36</height>
            </rect>
           </property>
           <layout class="QHBoxLayout" name="horizontalLayout_3">
@@ -335,7 +335,7 @@
             <x>100</x>
             <y>200</y>
             <width>531</width>
-            <height>27</height>
+            <height>36</height>
            </rect>
           </property>
           <layout class="QHBoxLayout" name="horizontalLayout_4">
@@ -380,7 +380,7 @@
             <x>100</x>
             <y>60</y>
             <width>531</width>
-            <height>27</height>
+            <height>34</height>
            </rect>
           </property>
           <layout class="QHBoxLayout" name="horizontalLayout_9">
@@ -406,7 +406,7 @@
             <x>100</x>
             <y>90</y>
             <width>531</width>
-            <height>27</height>
+            <height>34</height>
            </rect>
           </property>
           <layout class="QHBoxLayout" name="horizontalLayout_10">
@@ -448,7 +448,7 @@
             <x>100</x>
             <y>230</y>
             <width>531</width>
-            <height>27</height>
+            <height>36</height>
            </rect>
           </property>
           <layout class="QHBoxLayout" name="horizontalLayout_11">
@@ -477,7 +477,7 @@
             <x>100</x>
             <y>260</y>
             <width>531</width>
-            <height>27</height>
+            <height>36</height>
            </rect>
           </property>
           <layout class="QHBoxLayout" name="horizontalLayout_12">
@@ -521,8 +521,8 @@
          <widget class="QCheckBox" name="cbox_enableNetworking">
           <property name="geometry">
            <rect>
-            <x>30</x>
-            <y>30</y>
+            <x>20</x>
+            <y>10</y>
             <width>321</width>
             <height>23</height>
            </rect>
@@ -534,8 +534,8 @@
          <widget class="QWidget" name="layoutWidget">
           <property name="geometry">
            <rect>
-            <x>50</x>
-            <y>61</y>
+            <x>40</x>
+            <y>41</y>
             <width>351</width>
             <height>151</height>
            </rect>
@@ -614,17 +614,17 @@
          <widget class="QWidget" name="layoutWidget">
           <property name="geometry">
            <rect>
-            <x>50</x>
-            <y>230</y>
+            <x>40</x>
+            <y>197</y>
             <width>631</width>
-            <height>27</height>
+            <height>36</height>
            </rect>
           </property>
           <layout class="QHBoxLayout" name="horizontalLayout_5">
            <item>
             <widget class="QLabel" name="label_14">
              <property name="text">
-              <string>FTP local temp folder</string>
+              <string>FTP local temp folder </string>
              </property>
             </widget>
            </item>
@@ -643,10 +643,10 @@
          <widget class="QWidget" name="layoutWidget">
           <property name="geometry">
            <rect>
-            <x>420</x>
-            <y>60</y>
+            <x>410</x>
+            <y>40</y>
             <width>311</width>
-            <height>27</height>
+            <height>34</height>
            </rect>
           </property>
           <layout class="QHBoxLayout" name="horizontalLayout_6">
@@ -665,10 +665,10 @@
          <widget class="QWidget" name="layoutWidget">
           <property name="geometry">
            <rect>
-            <x>50</x>
-            <y>263</y>
+            <x>40</x>
+            <y>230</y>
             <width>631</width>
-            <height>27</height>
+            <height>36</height>
            </rect>
           </property>
           <layout class="QHBoxLayout" name="horizontalLayout_13">
@@ -702,7 +702,7 @@
             <x>10</x>
             <y>74</y>
             <width>721</width>
-            <height>201</height>
+            <height>221</height>
            </rect>
           </property>
           <property name="font">
@@ -725,7 +725,7 @@ color: rgb(255, 255, 255);</string>
             <x>10</x>
             <y>10</y>
             <width>721</width>
-            <height>27</height>
+            <height>36</height>
            </rect>
           </property>
           <layout class="QHBoxLayout" name="horizontalLayout_7">
@@ -777,7 +777,7 @@ color: rgb(255, 255, 255);</string>
             <x>10</x>
             <y>40</y>
             <width>721</width>
-            <height>27</height>
+            <height>36</height>
            </rect>
           </property>
           <layout class="QHBoxLayout" name="horizontalLayout_8">

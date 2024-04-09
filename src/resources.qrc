@@ -904,5 +904,6 @@
         <file>icons/flat/Pause-32.png</file>
         <file>icons/flat/Stop-32.png</file>
         <file>icons/flat/Stop Sign-32.png</file>
+        <file>images/donate.png</file>
     </qresource>
 </RCC>

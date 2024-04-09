@@ -25,8 +25,10 @@ int main(int argc, char *argv[])
     splash.show();
     a.processEvents();
 
-    Qt::Alignment topCenter = Qt::AlignVCenter | Qt::AlignHCenter;
-    splash.showMessage(QObject::tr("Setting up the main window..."),topCenter, Qt::gray);
+    Qt::Alignment alignit = Qt::AlignBottom | Qt::AlignHCenter;
+    Qt::GlobalColor color = Qt::darkBlue;
+
+    splash.showMessage(QObject::tr("Setting up the main window..."),alignit, color);
 
     a.processEvents();
     Sleep(500);
@@ -37,15 +39,15 @@ int main(int argc, char *argv[])
     QThread::currentThread()->setPriority(QThread::HighPriority);
     QTranslator tr;
 
-    splash.showMessage(QObject::tr("Moving to a high priority thread..."),topCenter, Qt::gray);
+    splash.showMessage(QObject::tr("Moving to a high priority thread..."),alignit, color);
     a.processEvents();
 
     Sleep(500);
 
-    QFile f ("../config/settings.conf");
+    QFile f ("/etc/xfb/xfb.conf");
     if(!f.open(QIODevice::ReadOnly | QIODevice::Text)){
-        qDebug() << "0 ../config/settings.conf could not be opened for read only ..???.. does it exist?";
-        splash.showMessage(QObject::tr("ERROR: FAILD TO OPEN SETTINGS.CONF !!!"),topCenter, Qt::gray);
+        qDebug() << "0 /etc/xfb/xfb.conf could not be opened for read only ..???.. does it exist?";
+        splash.showMessage(QObject::tr("ERROR: FAILD TO OPEN /etc/xfb/xfb.conf !!!"),alignit, color);
         a.processEvents();
         Sleep(10000);
     }
@@ -54,7 +56,7 @@ int main(int argc, char *argv[])
     QString idioma = "en";
     QTextStream in(&f);
     qDebug() << "Loading language settings from settings.conf";
-    splash.showMessage(QObject::tr("Loading settings..."),topCenter, Qt::gray);
+    splash.showMessage(QObject::tr("Loading settings..."),alignit, color);
     a.processEvents();
     Sleep(500);
     while (!in.atEnd()) {
@@ -66,16 +68,16 @@ int main(int argc, char *argv[])
             if(idioma=="pt"){
                 tr.load(":/portugues.qm");
                 qDebug()<<"A Carregar o idioma Portugûes para a GUI...";
-                splash.showMessage(QObject::tr("Loading Portuguese GUI..."),topCenter, Qt::gray);
+                splash.showMessage(QObject::tr("Loading Portuguese GUI..."),alignit, color);
                 Sleep(300);
             } else if(idioma=="fr"){
                 tr.load(":/frances.qm");
                 qDebug()<<"A Carregar o idioma Frances para a GUI...";
-                splash.showMessage(QObject::tr("Loading French GUI..."),topCenter, Qt::gray);
+                splash.showMessage(QObject::tr("Loading French GUI..."),alignit, color);
                 Sleep(300);
             } else {
                 qDebug()<<"Loading English GUI...";
-                splash.showMessage(QObject::tr("Loading English GUI..."),topCenter, Qt::gray);
+                splash.showMessage(QObject::tr("Loading English GUI..."),alignit, color);
                 Sleep(300);
             }
 
@@ -92,7 +94,7 @@ int main(int argc, char *argv[])
     }
 
 
-    splash.showMessage(QObject::tr("Loading settings... Done!"),topCenter, Qt::gray);
+    splash.showMessage(QObject::tr("Loading settings... Done!"),alignit, color);
     Sleep(500);
 
     if(idioma!="en"){
@@ -105,7 +107,7 @@ int main(int argc, char *argv[])
 
     player w;
 
-    splash.showMessage(QObject::tr("XFB is Loaded!"),topCenter, Qt::gray);
+    splash.showMessage(QObject::tr("XFB is Loaded!"),alignit, color);
     Sleep(1000);
     a.processEvents();
 

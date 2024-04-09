@@ -14,7 +14,7 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include "add_program.h"
 #include "optionsdialog.h"
 #include "aboutus.h"
-#include "youtubedownloader.h"
+#include "externaldownloader.h"
 #include <QMessageBox>
 #include <QInputDialog>
 #include <QFileDialog>
@@ -47,15 +47,72 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include <QMovie>
 #include <QProgressDialog>
 #include <QNetworkAccessManager>
+#include <QTextBrowser>
+#include <QMouseEvent>
+#include <QDesktopServices>
+#include <QUrl>
 
-//#include <phonon/MediaObject>
+#include <QDialog>
+#include <QVBoxLayout>
+#include <QPushButton>
+#include <QPixmap>
 
-/*
+class ClickableTextBrowser : public QTextBrowser {
+public:
+    explicit ClickableTextBrowser(QWidget* parent = nullptr) : QTextBrowser(parent) {}
 
-#include <qsynthMeter.h>
-*/
+protected:
+    void mousePressEvent(QMouseEvent* event) override {
+        QTextBrowser::mousePressEvent(event);
+        if (event->button() == Qt::LeftButton) {
+            QTextCursor cursor = cursorForPosition(event->pos());
+            cursor.select(QTextCursor::WordUnderCursor);
+            QString href = cursor.selectedText();
+            if (href.startsWith("http://") || href.startsWith("https://")) {
+                QDesktopServices::openUrl(QUrl(href));
+                event->accept(); // Indicate that the event has been handled
+            }
+        }
+    }
+};
+
+class CustomMessageBox : public QDialog {
+public:
+    CustomMessageBox(const QString& title, const QString& message, const QPixmap& pixmap, QWidget* parent = nullptr)
+        : QDialog(parent) {
+        setWindowTitle(title);
+
+        QIcon icon(":/48x48.png");
+
+        setWindowIcon(icon);
+        qreal level(0.86);
+        setWindowOpacity(level);
+        setMinimumWidth(586);
 
 
+
+        QVBoxLayout* layout = new QVBoxLayout(this);
+
+        // Add image
+        QLabel* imageLabel = new QLabel(this);
+        imageLabel->setPixmap(pixmap);
+        imageLabel->setAlignment(Qt::AlignCenter);
+        layout->addWidget(imageLabel);
+
+
+        // Add message (as a clickable QTextBrowser)
+        ClickableTextBrowser* messageBrowser = new ClickableTextBrowser(this);
+        messageBrowser->setOpenExternalLinks(true);
+        messageBrowser->setHtml(message);
+        layout->addWidget(messageBrowser);
+
+
+        // Add OK button
+        QPushButton* okButton = new QPushButton(tr("I'll donate if I can and if I find XFB useful!"), this);
+        layout->addWidget(okButton);
+        connect(okButton, &QPushButton::clicked, this, &CustomMessageBox::accept);
+    }
+};
 
 
 player::player(QWidget *parent) :
@@ -69,27 +126,16 @@ player::player(QWidget *parent) :
 
     qDebug()<<"ffmpeg soundconverter qt5-image-formats-plugins qt5-doc-html  qt5-doc  qdbus-qt5 libu1db-qt5-examples libu1db-qt5-dev libu1db-qt5-3 libtelepathy-qt5-farstream0 libtelepathy-qt5-dev libtelepathy-qt5-0 libtelepathy-qt5-dbg libtelepathy-logger-qt5-dev libtelepathy-logger-qt5-0-dbg libtelepathy-logger-qt5-0 libqt5systeminfo5 libqt5sql5-tds libqt5sql5-psql libqt5sql5-odbc libqt5sql5-mysql libqt5serviceframework5 libqt5qml-quickcontrols libqt5publishsubscribe5 libqt5nfc5 libqt5multimediaquick-p5-touch libqt5multimedia5-touch-plugins libqt5multimedia5-touch libqt5declarative5 libqt5bluetooth5 libautopilot-qt-autopilot libautopilot-qt qtmultimedia5-examples qtchooser qt5-qmake qt5-default phonon-backend-gstreamer-common libsignon-qt5-dev libsignon-qt5-1 libqt5xmlpatterns5-private-dev libqt5xmlpatterns5-dev libqt5xmlpatterns5 libqt5xml5 libqt5x11extras5-dev libqt5x11extras5 libqt5widgets5 libqt5webkit5-qmlwebkitplugin libqt5webkit5-dev libqt5webkit5-dbg libqt5webkit5 libqt5versitorganizer5 libqt5versit5 libqt5sql5-sqlite libqt5sql5 libqt5serialport5-dev libqt5serialport5 libqt5sensors5-dev libqt5sensors5 libqt5scripttools5 libqt5script5 libqt5qml5 libqt5qml5 libqt5qml-graphicaleffects libqt5network5 libqt5multimediawidgets5 libqt5multimedia5-plugins libqt5multimediaquick-p5 libqt5multimedia5 libqt5location5-plugins libqt5location5 libqt5gui5 libqt5designercomponents5 libqt5designer5 libqt5dbus5 libqt5core5a libqt5contacts5 libqt5concurrent5 libqt5clucene5 libqt53d5 libphonon4qt5-dev libphonon4qt5-4 appmenu-qt5 python-setuptools python-dev build-essential youtube-dl lame sox libsox-fmt-mp3 libimage-exiftool-perl\n";
 
-/*
-    qDebug()<<"Trying to make sh files in the config folder executable and to change ~/.netrc permitions to 600";
-    QString cmdcp = "chmod +x ../config/*.sh && sudo chmod 600 ~/.netrc";
-    QProcess cmddelP;
-    cmddelP.start("sh",QStringList()<<"-c"<<cmdcp);
-    cmddelP.waitForFinished(-1);
-    cmddelP.close();
-*/
-
     ui->setupUi(this);
 
     updateConfig();
     checkDbOpen();
     //on_actionUpdate_Dinamic_Server_s_IP_triggered();
 
-
     Xplayer = new QMediaPlayer(this);
     Xplaylist = new QMediaPlaylist();
     Xplaylist->setCurrentIndex(1);
     Xplayer->setPlaylist(Xplaylist);
-
 
     lp1_Xplayer = new QMediaPlayer(this);
     lp1_Xplaylist = new QMediaPlaylist();
@@ -101,32 +147,13 @@ player::player(QWidget *parent) :
     lp2_Xplaylist->setCurrentIndex(1);
     lp2_Xplayer->setPlaylist(lp2_Xplaylist);
 
-
-/*
-    audioOutput = new Phonon::AudioOutput(Phonon::MusicCategory, this);
-    mediaObject = new Phonon::MediaObject(this);
-
-    dataout = new Phonon::AudioDataOutput(this);
-    Phonon::createPath(mediaObject, dataout);
-
-    connect( dataout, SIGNAL(dataReady(const QMap<Phonon::AudioDataOutput::Channel, QVector<qint16> >)),
-             this, SLOT(dataReceived(const QMap<Phonon::AudioDataOutput::Channel, QVector<qint16> >)));
-    connect(mediaObject, SIGNAL(tick(qint64)), this, SLOT(tick(qint64)));
-    connect(mediaObject, SIGNAL(stateChanged(Phonon::State,Phonon::State)),this, SLOT(stateChanged(Phonon::State,Phonon::State)));
-    connect(mediaObject, SIGNAL(currentSourceChanged(Phonon::MediaSource)),this, SLOT(sourceChanged(Phonon::MediaSource)));
-    connect(mediaObject, SIGNAL(aboutToFinish()), this, SLOT(aboutToFinish()));
-*/
     indexcanal = 4;
-
-
     onAbout2Finish = 0;
     autoMode=1;
     recMode=0;
     PlayMode="stopped";
     tmpFullScreen=0;
     jingleCadaNumMusicas = 0;
-
-
 
     ui->txt_ProgramName->hide();
     ui->bt_ProgramStopandProcess->hide();
@@ -136,46 +163,6 @@ player::player(QWidget *parent) :
     ui->txt_loading->hide();
 
     audioRecorder = new QAudioRecorder(this);
-    /*
-    probe = new QAudioProbe;
-    connect(probe, SIGNAL(audioBufferProbed(QAudioBuffer)), this, SLOT(processBuffer(QAudioBuffer)));
-    probe->setSource(audioRecorder);
-*/
-//gracação
-
-    /*
-    QAudioFormat m_format;
-    m_format.setSampleRate(32000);
-    m_format.setChannelCount(2);
-    m_format.setSampleSize(32);
-    m_format.setSampleType(QAudioFormat::SignedInt);
-    m_format.setByteOrder(QAudioFormat::LittleEndian);
-    m_format.setCodec("audio/vorbis");
-
-*/
-
-    /* main phonon music objects */
-    /*
-     audioOutput = new Phonon::AudioOutput(Phonon::MusicCategory, this);
-     mediaObject = new Phonon::MediaObject(this);
-     metaInformationResolver = new Phonon::MediaObject(this);
-*/
-    /* Connect left and right audio  data outputs to vumeter slot */
-    /*
-     dataout = new Phonon::AudioDataOutput(this);
-     Phonon::createPath(mediaObject, dataout);
-     connect( dataout, SIGNAL(dataReady(const QMap<Phonon::AudioDataOutput::Channel, QVector<qint16> >)),
-             this, SLOT(dataReceived(const QMap<Phonon::AudioDataOutput::Channel, QVector<qint16> >)));
-*/
-     /* Main music object signals and slots */
-    /*
-     connect(mediaObject, SIGNAL(tick(qint64)), this, SLOT(tick(qint64)));
-     connect(mediaObject, SIGNAL(stateChanged(Phonon::State,Phonon::State)),this, SLOT(stateChanged(Phonon::State,Phonon::State)));
-     connect(mediaObject, SIGNAL(currentSourceChanged(Phonon::MediaSource)),this, SLOT(sourceChanged(Phonon::MediaSource)));
-     connect(mediaObject, SIGNAL(aboutToFinish()), this, SLOT(aboutToFinish()));
-*/
-
-
 
     //Audio devices
     foreach (const QString &device, audioRecorder->audioInputs()) {
@@ -202,32 +189,22 @@ player::player(QWidget *parent) :
         qDebug()<<"Audio Sample Rates suported: "<<QVariant(int(sampleRate));
     }
 
-
     connect(Xplayer, &QMediaPlayer::positionChanged, this, &player::onPositionChanged);
     connect(Xplayer, &QMediaPlayer::durationChanged, this, &player::durationChanged);
     connect(Xplayer, &QMediaPlayer::currentMediaChanged, this, &player::currentMediaChanged);
     connect(Xplayer, &QMediaPlayer::volumeChanged, this, &player::volumeChanged);
-
-
 
     connect(lp1_Xplayer, &QMediaPlayer::positionChanged, this, &player::lp1_onPositionChanged);
     connect(lp1_Xplayer, &QMediaPlayer::durationChanged, this, &player::lp1_durationChanged);
     connect(lp1_Xplayer, &QMediaPlayer::currentMediaChanged, this, &player::lp1_currentMediaChanged);
     connect(lp1_Xplayer, &QMediaPlayer::volumeChanged, this, &player::lp1_volumeChanged);
 
-
-
-
     connect(lp2_Xplayer, &QMediaPlayer::positionChanged, this, &player::lp2_onPositionChanged);
     connect(lp2_Xplayer, &QMediaPlayer::durationChanged, this, &player::lp2_durationChanged);
     connect(lp2_Xplayer, &QMediaPlayer::currentMediaChanged, this, &player::lp2_currentMediaChanged);
     connect(lp2_Xplayer, &QMediaPlayer::volumeChanged, this, &player::lp2_volumeChanged);
 
-
-    //connect(Xplayer, &QMediaPlayer::, this, &player::volumeChanged);
-
     connect(recTimer,SIGNAL(timeout()),this,SLOT(run_recTimer()));
-
 
     /* main clock signals and slots */
     QTimer *timer = new QTimer(this);
@@ -235,18 +212,11 @@ player::player(QWidget *parent) :
     timer->start(1000);
     showTime();
 
-
-
     if(Role=="Server"){
 
         QTimer *schedulerTimer = new QTimer(this);
         connect(schedulerTimer,SIGNAL(timeout()),this,SLOT(run_scheduler()));
         schedulerTimer->start(60000);
-
-    }
-
-
-    if(Role=="Server"){
 
         run_server_scheduler(); //run at startup
 
@@ -255,23 +225,11 @@ player::player(QWidget *parent) :
         connect(schedulerTimerh,SIGNAL(timeout()),this,SLOT(run_server_scheduler()));
         schedulerTimerh->start(3600000); //once per hour
 
-    }
-
-
-    if(Role=="Server"){
-
         QTimer *schedulerTimerMT = new QTimer(this);
         connect(schedulerTimerMT,SIGNAL(timeout()),this,SLOT(monitorTakeOver()));
         schedulerTimerMT->start(25000);
 
     }
-
-
-
-
-
-
-
 
     /*Populate music table with an editable table field on double-click*/
 
@@ -302,7 +260,6 @@ player::player(QWidget *parent) :
     ui->jinglesView->setSortingEnabled(true);
     ui->jinglesView->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
 
-
     /*Populate Pub table*/
 
     QSqlTableModel *pubmodel = new QSqlTableModel(this);
@@ -312,7 +269,6 @@ player::player(QWidget *parent) :
     ui->pubView->setSortingEnabled(true);
     ui->pubView->hideColumn(0);
     ui->pubView->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
-
 
     /*Populate Programs table*/
 
@@ -324,12 +280,11 @@ player::player(QWidget *parent) :
     ui->programsView->hideColumn(0);
     ui->programsView->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
 
-
-
     /*Drag & Drop Set*/
+
     /*player*/
      this->setAcceptDrops(true);
-    /*playlist (playlist)*/
+    /*playlist*/
      ui->playlist->setSelectionMode(QAbstractItemView::SingleSelection);
      ui->playlist->setDragEnabled(true);
      ui->playlist->viewport()->setAcceptDrops(true);
@@ -344,7 +299,6 @@ player::player(QWidget *parent) :
      ui->musicView->setDropIndicatorShown(true);
      ui->musicView->setDragDropMode(QAbstractItemView::DragOnly);
      ui->musicView->setSelectionBehavior(QAbstractItemView::SelectRows);
-     //ui->musicView->setSelectionMode(QAbstractItemView::SingleSelection);
 
      ui->musicView->setContextMenuPolicy(Qt::CustomContextMenu);
      connect(ui->musicView, SIGNAL(customContextMenuRequested(const QPoint&)),
@@ -366,12 +320,9 @@ player::player(QWidget *parent) :
      connect(ui->programsView, SIGNAL(customContextMenuRequested(const QPoint&)),
          this, SLOT(programsViewContextMenu(const QPoint&)));
 
-
      /*Populate genre1 and 2 filters*/
      QSqlQueryModel * model_genre1=new QSqlQueryModel();
-
      QSqlQuery* qry=new QSqlQuery();
-
      QString sqlq = "select name from genres1";
      qry->exec(sqlq);
      model_genre1->setQuery(*qry);
@@ -380,51 +331,13 @@ player::player(QWidget *parent) :
 
     update_music_table();
 
-
-   qDebug()<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  SKIPPING UPDATE CHECK !!!!!!!!!!!!!!!!!!!!!!!!!!  ";
-
-/*
-    qDebug()<<"PingServer "<<Server_URL;
-    QProcess cmd;
-    QString cmdtmpstr = "ping -c 1 "+Server_URL+" | grep '0% packet loss'";
-    cmd.start("sh",QStringList()<<"-c"<<cmdtmpstr);
-    cmd.waitForFinished();
-    QString cmdOut = cmd.readAll();
-    qDebug()<<"ping "<<Server_URL<<" :: "<<cmdOut;
-    cmd.close();
-
-    QStringList arraycmd = cmdOut.split(" ");
-    qDebug()<<"array obj: "<<arraycmd[3];
-
-    if(arraycmd[3]=="1"){
-
-        qDebug()<<"Server Pinged OK!";
-        checkForUpdates();
-
-
-
-    }
-*/
-
-
-/*
-   Phonon::MediaObject *music =
-       Phonon::createPlayer(Phonon::MusicCategory,
-                            Phonon::MediaSource("/home/fred/cpp/config/rol1.wav"));
-   music->play();
-*/
-
-
-
-
-
+   /*Bottom info*/
    QDir dir; QString cpath = dir.absolutePath();
    QString binfo = ui->txt_bottom_info->text()+"\n"+cpath+"\n"+Role;
    ui->txt_bottom_info->setText(binfo);
 
-
+   /*Default button states*/
    ui->bt_takeOver->setEnabled(false);
-
    ui->bt_pause_rec->setEnabled(false);
 
 
@@ -434,26 +347,25 @@ player::player(QWidget *parent) :
        autoMode = 1;
        qDebug()<<"Role is set to Server, so autoMode is ON by default";
        ui->bt_autoMode->setStyleSheet("background-color: rgb(175, 227, 59)");
-
        ui->bt_takeOver->setHidden(true);
-
        ui->menuClient_3->setEnabled(false);
 
-
-
-
-
-
    }else{
+
        qDebug("XFB is now running in client mode!");
 
        autoMode = 0;
        qDebug()<<"autoMode is OFF";
        ui->bt_autoMode->setStyleSheet("");
-
        ui->menuServer->setEnabled(false);
 
    }
+
+
+   QPixmap pixmap(":/images/donate.png");
+   CustomMessageBox msgBox(tr("Donate to the Developer!"), tr("Please support the development of XFB!<br>If you appreciate this software, kindly consider making a donation to support the developer!<br><a href=\"https://www.paypal.com/donate/?hosted_button_id=TFDSZU78WLMC6\">Donate via PayPal!</a><br>Contact for professional support and custom development!<br><br>Why did the computer get a little emotional when using WinRAR?<br>_Because even after all the \"evaluation\", it still felt unzipped!"), pixmap);
+   msgBox.exec();
+
 
 
 
@@ -476,22 +388,22 @@ void player::updateConfig(){
 
 
     /* get db settings */
-    QFile settings ("../config/settings.conf");
+    QFile settings ("/etc/xfb/xfb.conf");
     if (!settings.open(QIODevice::ReadOnly | QIODevice::Text)){
-        qDebug() << "../config/settings.conf could not be loaded. Please check that it exists";
+        qDebug() << "/etc/xfb/xfb.conf could not be loaded. Please check that it exists";
         return;
     }
 
     QTextStream in(&settings);
-    qDebug() << "Opening ../config/settings.conf";
+    qDebug() << "Opening /etc/xfb/xfb.conf";
     while (!in.atEnd()) {
         QString line = in.readLine();
         QStringList results = line.split(" = ");
 
+        //for a switch we need a hash function.. todo later..
         if(results[0]=="SavePath"){
             SavePath = results[1];
         }
-
         if(results[0]=="Server_URL"){
             Server_URL = results[1];
         }
@@ -504,7 +416,6 @@ void player::updateConfig(){
         if(results[0]=="Pass"){
             Pass = results[1];
         }
-
         if(results[0]=="ProgramsPath"){
             ProgramsPath = results[1];
         }
@@ -514,28 +425,21 @@ void player::updateConfig(){
         if(results[0]=="JinglePath"){
             JinglePath = results[1];
         }
-
         if(results[0]=="FTPPath"){
             FTPPath = results[1];
         }
-
-
         if(results[0]=="TakeOverPath"){
             TakeOverPath = results[1];
         }
-
-
         if(results[0]=="ComHour"){
             ComHour = results[1];
         }
-
         if(results[0]=="fullScreen"){
             fullScreen = results[1];
             if(fullScreen=="true"){
 
             }
         }
-
         if(results[0]=="RecDevice"){
             recDevice = results[1];
         }
@@ -567,21 +471,15 @@ void player::updateConfig(){
         if(results[0]=="Role"){
             Role = results[1];
             qDebug() << "Role settings: " << Role;
-
             if(Role=="Server"){
                 qDebug("XFB is now running in server mode!");
-
-
-
+            } else{
+                qDebug("XFB is now running in client mode!");
             }
-
 
         }
 
     }
-
-
-
 
 
 
@@ -595,16 +493,7 @@ void player::showTime()
     QString segundos = time.toString(":ss");
     if ((time.second() % 2) == 0)
         segundos[0] = ' ';
-   // display(text);
-    //qDebug() << "text is: " << text;
     ui->txt_horas->display(text+segundos);
-
-    /*
-    int dayOfTheWeek = QDate::dayOfWeek();
-    qDebug()<<"DoTW: "<<dayOfTheWeek;
-*/
-
-    //ui->txt_segundos->display(segundos);
 }
 
 void player::checkDbOpen(){
@@ -614,8 +503,10 @@ void player::checkDbOpen(){
             qDebug()<<"Opening db from checkDbOpen";
 
                 adb=QSqlDatabase::addDatabase("QSQLITE");
-                adb.setDatabaseName("../config/adb.db");
-                adb.open();
+                adb.setDatabaseName("/usr/share/xfb/config/adb.db");
+                if (!adb.open()) {
+                    qDebug() << "Error opening database:" << adb.lastError().text();
+                }
         }
 
 }
@@ -624,7 +515,6 @@ void player::on_actionOpen_triggered()
 {
 
     qDebug() << "File -> Open file";
-
 
     QFileDialog dialog(this);
     dialog.setFileMode(QFileDialog::ExistingFiles);
@@ -636,9 +526,6 @@ void player::on_actionOpen_triggered()
         fileNames = dialog.selectedFiles();
         ui->playlist->addItems(fileNames);
     }
-
-
-
 
 }
 
@@ -685,7 +572,7 @@ void::player::musicViewContextMenu(const QPoint& pos){
     QString addtoTopOfPlaylist = tr("Add to the top of the playlist");
     QString deleteThisFromDB = tr("Delete this track from database");
     QString openWithAudacity = tr("Open this in Audacity");
-    QString getInfoFromMediaInfo = tr("Retrieve the meta information from the file");
+    QString getInfoFromMediaInfo = tr("Retrieve meta information from file");
 
 
 
@@ -821,10 +708,7 @@ void::player::musicViewContextMenu(const QPoint& pos){
 
 
     }
-    else
-    {
-        // nothing was chosen
-    }
+
 }
 
 
@@ -884,10 +768,7 @@ void::player::jinglesViewContextMenu(const QPoint& pos){
 
 
     }
-    else
-    {
-        // nothing was chosen
-    }
+
 }
 
 
@@ -946,10 +827,7 @@ void::player::pubViewContextMenu(const QPoint& pos){
 
 
     }
-    else
-    {
-        // nothing was chosen
-    }
+
 }
 
 
@@ -1015,7 +893,7 @@ void::player::programsViewContextMenu(const QPoint& pos){
            QString nome = array_de_nomes.last();
 
            QProcess sh;
-           QString shcmd = "../config/serverFtpCmdsCHKProgram.sh | grep "+nome;
+           QString shcmd = "/usr/share/xfb/scripts/serverFtpCmdsCHKProgram.sh | grep "+nome;
            qDebug()<<"Running: "<<shcmd;
 
            sh.start("sh",QStringList()<<"-c"<<shcmd);
@@ -1034,22 +912,14 @@ void::player::programsViewContextMenu(const QPoint& pos){
            }
 
 
-
-
-
-
-
        }
 
        if(selectedMenuItem==resendtoserver){
 
- ui->txt_uploadingPrograms->show();
+           ui->txt_uploadingPrograms->show();
            QMessageBox::StandardButton sendToServer;
            sendToServer = QMessageBox::question(this,tr("(Re)Send to server?"),tr("Send programs to the server (and rewrite if it's already there)?"),QMessageBox::Yes|QMessageBox::No);
            if(sendToServer==QMessageBox::Yes){
-
-
-
 
                QFileInfo fileName(estevalor);
                QString filename = fileName.fileName();
@@ -1079,7 +949,7 @@ void::player::programsViewContextMenu(const QPoint& pos){
                    output = sh.readAll();
                    outPath = output;
                    QStringList path_arry = outPath.split("\n");
-                   FTPCmdPath = path_arry[0]+"/../config/serverFtpCmdsPutProgram.sh | grep 'Transfer complete'";
+                   FTPCmdPath = path_arry[0]+"/usr/share/xfb/scripts/serverFtpCmdsPutProgram.sh | grep 'Transfer complete'";
                    qDebug() << "running: " << FTPCmdPath;
                    qDebug() << "If you get errors: cd config && chmod +x serverFtpCmdsPutProgram.sh && chmod 600 ~/.netrc (the ftp is configured in .netrc correct?)";
                    sh.close();
@@ -1113,10 +983,7 @@ void::player::programsViewContextMenu(const QPoint& pos){
 
 
     }
-    else
-    {
-        // nothing was chosen
-    }
+
 }
 
 
@@ -1149,8 +1016,6 @@ void player::on_btPlay_clicked(){
     }
 
 
-
-
 }
 
 void player::playNextSong(){
@@ -1170,44 +1035,18 @@ void player::playNextSong(){
             if((lastPlayedSong!=itemDaPlaylist)||(autoMode==0)){
                 qDebug()<<"lastplayesong != itemdaplaylist";
 
-/*
-                if(ui->checkBoxPhonon4qt5->isChecked()){
-
-                    Phonon::MediaSource source(itemDaPlaylist);
-                    sources.append(source);
-                    int index = sources.indexOf(mediaObject->currentSource()) + 1;
-                    mediaObject->enqueue(sources.at(index));
-
-                } else {*/
-
-                    Xplaylist->removeMedia(0);
-                    Xplaylist->addMedia(QUrl::fromLocalFile(itemDaPlaylist));
-
-
-              /*  }*/
-
-
-
-
-                //qDebug()<<"CurrentIndex is: "<<Xplaylist->currentIndex();
+                Xplaylist->removeMedia(0);
+                Xplaylist->addMedia(QUrl::fromLocalFile(itemDaPlaylist));
 
                 lastPlayedSong = itemDaPlaylist;
-
-
-                //qDebug()<<"Xplayer output if error commes here (nothing is good :-) ): "<<Xplayer->errorString();
-
 
                 int dotsNumInString = itemDaPlaylist.count(".");
 
                 qDebug()<<"dotsNumInString has value: "<<dotsNumInString;
 
-
                 QFileInfo fileName(itemDaPlaylist);
                 QString baseName = fileName.fileName();
                 ui->txtNowPlaying->setText(baseName);
-
-
-
 
                 QDateTime now = QDateTime::currentDateTime();
                 QString text = now.toString("yyyy-MM-dd || hh:mm:ss ||");
@@ -1221,157 +1060,107 @@ void player::playNextSong(){
                     delete ui->historyList->item(0);
                 }
 
-/*
-                if(ui->checkBoxPhonon4qt5->isChecked()){
+                Xplayer->play();
 
-                     mediaObject->play();
-                } else {*/
-                    Xplayer->play();
-              /*  }*/
+                delete ui->playlist->item(0);
 
+                if(ui->checkBox_update_last_played_values->isChecked()){
 
+                    QSqlQuery* qry = new QSqlQuery();
+                    QString qrystr = "update musics set last_played = '"+now.toString("yyyy-MM-dd || hh:mm:ss")+"' where path = \""+lastPlayedSong+"\"";
+                    qry->exec(qrystr);
 
+                    qrystr = "update musics set played_times = played_times+1 where path = \""+lastPlayedSong+"\"";
+                    qry->exec(qrystr);
 
+                }
 
- delete ui->playlist->item(0);
+            if(ui->checkBox_random_jingles->isChecked()){
 
+                int num = ui->spinBox_random_jingles_interval->value();
 
-if(ui->checkBox_update_last_played_values->isChecked()){
+                qDebug()<<"Adding a new jingle every "<<num<<" songs.. (setting checkbox to false if value is zero..)";
 
-    QSqlQuery* qry = new QSqlQuery();
-    QString qrystr = "update musics set last_played = '"+now.toString("yyyy-MM-dd || hh:mm:ss")+"' where path = \""+lastPlayedSong+"\"";
-    qry->exec(qrystr);
+                if(num==0){
+                    ui->checkBox_random_jingles->setChecked(false);
 
-    qrystr = "update musics set played_times = played_times+1 where path = \""+lastPlayedSong+"\"";
-    qry->exec(qrystr);
+                } else {
 
+                    if(jingleCadaNumMusicas==num){
+                        jingleCadaNumMusicas = 0;
+                        qDebug()<<"Adding a jingle..";
 
-}
+                        int num = 1;
+                        QSqlQuery query;
+                        query.prepare("select path from jingles order by random() limit :num");
+                        query.bindValue(":num", num);
+                        if(query.exec())
+                        {
+                            qDebug() << "SQL query executed: " << query.lastQuery();
 
+                            while(query.next()){
+                                QString path = query.value(0).toString();
+                                ui->playlist->insertItem(0,path);
 
+                                qDebug() << "autoMode random jingle chooser adding: " << path;
 
+                                }
 
-//update_music_table();
+                            } else {
+                            qDebug() << "SQL ERROR: " << query.lastError();
+                            qDebug() << "SQL was: " << query.lastQuery();
 
-if(ui->checkBox_random_jingles->isChecked()){
+                        }
 
-    int num = ui->spinBox_random_jingles_interval->value();
+                    } else {
 
+                        jingleCadaNumMusicas++;
 
-    qDebug()<<"Adding a new jingle every "<<num<<" songs.. (setting checkbox to false if value is zero..)";
-
-    if(num==0){
-        ui->checkBox_random_jingles->setChecked(false);
-
-    } else {
-
-        if(jingleCadaNumMusicas==num){
-            jingleCadaNumMusicas = 0;
-            qDebug()<<"Adding a jingle..";
-
-
-            int num = 1;
-            QSqlQuery query;
-            query.prepare("select path from jingles order by random() limit :num");
-            query.bindValue(":num", num);
-            if(query.exec())
-            {
-                qDebug() << "SQL query executed: " << query.lastQuery();
-
-                while(query.next()){
-                    QString path = query.value(0).toString();
-                    ui->playlist->insertItem(0,path);
-
-                    qDebug() << "autoMode random jingle chooser adding: " << path;
-
+                        qDebug()<<"jingleCadaNumMusicas incremented to "<<jingleCadaNumMusicas;
 
                     }
 
-                } else {
-                qDebug() << "SQL ERROR: " << query.lastError();
-                qDebug() << "SQL was: " << query.lastQuery();
-
+                }
 
             }
-
-
-
-
-
 
 
         } else {
-
-            jingleCadaNumMusicas++;
-
-            qDebug()<<"jingleCadaNumMusicas incremented to "<<jingleCadaNumMusicas;
-
+            qDebug()<<"lastplayesong has the same value that itemdaplaylist...";
         }
 
+    } else {
 
-    }
-
-
-
-
-}
-
-
-
-            } else {
-                qDebug()<<"lastplayesong has the same value that itemdaplaylist...";
-            }
-
-
-
-
-
-
-
-
-
-
-
-
-        } else {
-
-            if(autoMode==1){
-                qDebug()<<"Almost giving up dude.. there's nothing to play.. but trying again since we are in autoMode..";
-                playlistAboutToFinish();
-                playNextSong();
-                return;
-            }
-
-            qDebug()<<"I'm giving up dude.. there's nothing to play..";
-            Xplayer->stop();
-            ui->btPlay->setStyleSheet("");
-            ui->btPlay->setText(tr("Play"));
-            PlayMode = "stopped";
-
+        if(autoMode==1){
+            qDebug()<<"Almost giving up dude.. there's nothing to play.. but trying again since we are in autoMode..";
+            playlistAboutToFinish();
+            playNextSong();
+            return;
         }
 
-
-
-
-    } else if(PlayMode=="Playing_StopAtNextOne"){
-        qDebug()<<"The white rabit is Playing_StopAtNextOne";
+        qDebug()<<"I'm giving up dude.. there's nothing to play..";
         Xplayer->stop();
         ui->btPlay->setStyleSheet("");
         ui->btPlay->setText(tr("Play"));
         PlayMode = "stopped";
 
-
-
-    } else if(PlayMode=="stopped"){
-        qDebug()<<"The white rabit is stopped";
-
-
-
-
     }
 
-    calculate_playlist_total_time();
 
+
+
+} else if(PlayMode=="Playing_StopAtNextOne"){
+    qDebug()<<"The white rabit is Playing_StopAtNextOne";
+    Xplayer->stop();
+    ui->btPlay->setStyleSheet("");
+    ui->btPlay->setText(tr("Play"));
+    PlayMode = "stopped";
+
+} else if(PlayMode=="stopped"){
+    qDebug()<<"The white rabit is stopped";
+}
+
+calculate_playlist_total_time();
 
 }
 
@@ -1400,71 +1189,64 @@ void player::on_sliderVolume_sliderMoved(int position)
 void player::onPositionChanged(qint64 position)
 {
 
-
-
-
-
-     //if(position%2==0)
-        //qDebug()<<"Xplayer on position changed to "<<position;
      ui->sliderProgress->setValue(position);
 
-      int valor = (position*100)/trackTotalDuration;
+    int valor = (position*100)/trackTotalDuration;
 
-      QString tamanhoDoValor = QString::number(valor);
-      //qDebug()<<"Tamanho do valor: "<<tamanhoDoValor;
+    QString tamanhoDoValor = QString::number(valor);
+    //qDebug()<<"Tamanho do valor: "<<tamanhoDoValor;
 
-      QStringList segundoValorTamanhoDoValor = tamanhoDoValor.split("");
+    QStringList segundoValorTamanhoDoValor = tamanhoDoValor.split("");
       //qDebug() << "O segundo valor de TamanhoDoValor é: " << segundoValorTamanhoDoValor;
 
 
-      if(segundoValorTamanhoDoValor[2]=="0" && valor != lastTrackPercentage)
-      {
+    if(segundoValorTamanhoDoValor[2]=="0" && valor != lastTrackPercentage)
+    {
         qDebug()<<"trackPercentage: "<<valor;
         lastTrackPercentage = valor;
+    }
 
-      }
-
-      if(valor >= 80 && onAbout2Finish == 0){
+    if(valor >= 80 && onAbout2Finish == 0){
          playlistAboutToFinish();
      }
 
-      int segundos = position / 1000;
-      int minutos = 0;
-      int horas = 0;
-      QString xsegundos;
-      QString xminutos;
-      QString xhoras;
-      while(segundos>60)
-      {
-          ++minutos;
-          segundos-=60;
-      }
-      while(minutos>60)
-      {
-          ++horas;
-          minutos-=60;
-      }
+    int segundos = position / 1000;
+    int minutos = 0;
+    int horas = 0;
+    QString xsegundos;
+    QString xminutos;
+    QString xhoras;
+    while(segundos>60)
+    {
+      ++minutos;
+      segundos-=60;
+    }
+    while(minutos>60)
+    {
+      ++horas;
+      minutos-=60;
+    }
 
-      if(segundos<10)
-      {
-          xsegundos = "0"+QString::number(segundos);
-      } else {
-          xsegundos = QString::number(segundos);
-      }
-      if(minutos<10)
-      {
-          xminutos = "0"+QString::number(minutos);
-      } else {
-          xminutos = QString::number(minutos);
-      }
-      if(horas<10)
-      {
-          xhoras = "0"+QString::number(horas);
-      } else {
-          xhoras = QString::number(horas);
-      }
-     QString txtElapsedTimeLable =  xhoras+":"+xminutos+":"+xsegundos+" of "+txtDuration;
-     ui->txtDuration->setText(txtElapsedTimeLable);
+    if(segundos<10)
+    {
+      xsegundos = "0"+QString::number(segundos);
+    } else {
+      xsegundos = QString::number(segundos);
+    }
+    if(minutos<10)
+    {
+      xminutos = "0"+QString::number(minutos);
+    } else {
+      xminutos = QString::number(minutos);
+    }
+    if(horas<10)
+    {
+      xhoras = "0"+QString::number(horas);
+    } else {
+      xhoras = QString::number(horas);
+    }
+    QString txtElapsedTimeLable =  xhoras+":"+xminutos+":"+xsegundos+" of "+txtDuration;
+    ui->txtDuration->setText(txtElapsedTimeLable);
 
 }
 
@@ -1512,12 +1294,11 @@ void player::durationChanged(qint64 position)
 
     txtDuration = xhoras+":"+xminutos+":"+xsegundos;
 
-
 }
 
 void player::currentMediaChanged(const QMediaContent &content)
 {
-
+    //qDebug()<<"On currentMediaChanged with content: "<<content;
     if(onAbout2Finish==1)
     {
         onAbout2Finish = 0;
@@ -1532,22 +1313,8 @@ void player::volumeChanged(int volume){
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
 void player::lp1_onPositionChanged(qint64 position)
 {
-
-//qDebug()<<"LP 1 Position changed to "<<position;
-
     int segundos = position/1000;
     int h = 0;
     int m = 0;
@@ -1588,10 +1355,6 @@ void player::lp1_onPositionChanged(qint64 position)
     ui->lbl_total_time_lp1->setText(time);
 
 
-
-
-
-
     int timeLeft = lp1_total_time_int - position;
 
     segundos = timeLeft/1000;
@@ -1629,8 +1392,6 @@ void player::lp1_onPositionChanged(qint64 position)
     time = fh+":"+fm+":"+fs;
 
     ui->lbl_lp1_remaining->setText(time);
-
-
 
     if(segundos==1&&m==0&&h==0){
 
@@ -1709,21 +1470,8 @@ void player::lp1_volumeChanged(int volume){
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
 void player::lp2_onPositionChanged(qint64 position)
 {
-
-//qDebug()<<"LP 2 Position changed to "<<position;
 
     int segundos = position/1000;
     int h = 0;
@@ -1765,10 +1513,6 @@ void player::lp2_onPositionChanged(qint64 position)
     ui->lbl_total_time_lp2->setText(time);
 
 
-
-
-
-
     int timeLeft = lp2_total_time_int - position;
 
     segundos = timeLeft/1000;
@@ -1806,7 +1550,6 @@ void player::lp2_onPositionChanged(qint64 position)
     time = fh+":"+fm+":"+fs;
 
     ui->lbl_lp2_remaining->setText(time);
-
 
 
     if(segundos==1&&m==0&&h==0){
@@ -1885,20 +1628,6 @@ void player::lp2_volumeChanged(int volume){
     qDebug()<<"LP 2 Volume: "<<volume;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 void player::playlistAboutToFinish()
 {
     qDebug()<<"Launched playlistAboutToFinish";
@@ -1909,23 +1638,6 @@ void player::playlistAboutToFinish()
         autoModeGetMoreSongs();
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 void player::update_music_table(){
@@ -2182,16 +1894,12 @@ void player::on_jinglesView_pressed(const QModelIndex &index)
                 }
 
 
-
-
-
-        //qDebug() << "Pressed row is: " << index.row() << " and QVariant valor is: " << valor.toString();
         QDrag *drag = new QDrag(this);
         QMimeData *mimeData = new QMimeData;
 
         mimeData->setData(text, "drag_to_music_playlist");
         drag->setMimeData(mimeData);
-        Qt::DropAction dropAction = drag->exec(Qt::CopyAction);
+        drag->exec(Qt::CopyAction);
 
 }
 
@@ -2245,7 +1953,7 @@ void player::on_pubView_pressed(const QModelIndex &index)
 
         mimeData->setData(text, "drag_to_music_playlist");
         drag->setMimeData(mimeData);
-        Qt::DropAction dropAction = drag->exec(Qt::CopyAction);
+        drag->exec(Qt::CopyAction);
 
 }
 
@@ -2299,7 +2007,7 @@ void player::on_programsView_pressed(const QModelIndex &index)
 
         mimeData->setData(text, "drag_to_music_playlist");
         drag->setMimeData(mimeData);
-        Qt::DropAction dropAction = drag->exec(Qt::CopyAction);
+        drag->exec(Qt::CopyAction);
 
 }
 
@@ -3316,7 +3024,7 @@ void player::server_ftp_check(){
             output = sh.readAll();
             outPath = output;
             QStringList path_arry = outPath.split("\n");
-            FTPCmdPath = path_arry[0]+"/../config/serverFtpCmdsGetPrograms";
+            FTPCmdPath = path_arry[0]+"/usr/share/xfb/scripts/serverFtpCmdsGetPrograms";
             qDebug() << "server_ftp_check() :: running: " << FTPCmdPath;
             qDebug() << "server_ftp_check() :: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   -> If you get errors: cd config && chmod +x serverFtpCmdsGetPrograms && chmod 600 ~/.netrc  <- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
             sh.close();
@@ -3442,9 +3150,9 @@ void player::rmConfirmTakeOver(){
 
 void player::returnTakeOver(){
 
-    QFile::remove("../ftp/takeover.xml");
+    QFile::remove("/usr/share/xfb/ftp/takeover.xml");
 
-    QString takeOverFile = "../ftp/returntakeover.xml";
+    QString takeOverFile = "/usr/share/xfb/ftp/returntakeover.xml";
     QFile file(takeOverFile);
 
     if(returntakeOver == false){
@@ -3488,7 +3196,7 @@ void player::returnTakeOver(){
         output = sh.readAll();
         outPath = output;
         QStringList path_arry = outPath.split("\n");
-        FTPCmdPath = path_arry[0]+"/../config/serverFtpCmdsPutTakeOver.sh | grep 'Transfer complete'";
+        FTPCmdPath = path_arry[0]+"/usr/share/xfb/scripts/serverFtpCmdsPutTakeOver.sh | grep 'Transfer complete'";
         qDebug() << "running: " << FTPCmdPath;
         qDebug() << "If you get errors: cd config && chmod +x serverFtpCmdsPutTakeOver.sh && chmod 600 ~/.netrc (the ftp is configured in .netrc correct?)";
         sh.close();
@@ -3514,7 +3222,7 @@ void player::returnTakeOver(){
 
             piscaLive = false;
 
-            QFile::remove("../ftp/takeover.xml");
+            QFile::remove("/usr/share/xfb/ftp/takeover.xml");
 
         }
 
@@ -3770,7 +3478,7 @@ void player::on_actionAbout_triggered()
 
 void player::on_actionAdd_a_song_from_Youtube_or_Other_triggered()
 {
-    youtubedownloader* widget = new youtubedownloader;
+    externaldownloader* widget = new externaldownloader;
     widget->setAttribute(Qt::WA_DeleteOnClose);
     widget->show();
 
@@ -3887,7 +3595,7 @@ void player::on_bt_updateTables_clicked()
 /*
 void player::on_bt_youtubeDL_clicked()
 {
-    youtubedownloader* widget = new youtubedownloader;
+    externaldownloader* widget = new externaldownloader;
     widget->setAttribute(Qt::WA_DeleteOnClose);
     widget->show();
 }
@@ -4144,59 +3852,42 @@ void player::RectimerDone(){
             aExtencaoDesteCoiso = "ogg";
         if(contentamento=="mp4")
             aExtencaoDesteCoiso = "mp4";
-            if(contentamento=="wav")
-                aExtencaoDesteCoiso = "wav";
-                if(contentamento=="quicktime")
-                    aExtencaoDesteCoiso = "mov";
-                    if(contentamento=="avi")
-                        aExtencaoDesteCoiso = "avi";
-                        if(contentamento=="3gpp")
-                            aExtencaoDesteCoiso = "3gpp";
-                            if(contentamento=="flv")
-                                aExtencaoDesteCoiso = "fvl";
-                                if(contentamento=="amr")
-                                    aExtencaoDesteCoiso = "amr";
-                                    if(contentamento=="asf")
-                                        aExtencaoDesteCoiso = "asf";
-                                        if(contentamento=="dv")
-                                            aExtencaoDesteCoiso = "dv";
-                                            if(contentamento=="mpeg")
-                                                aExtencaoDesteCoiso = "mpg";
-                                                if(contentamento=="vob")
-                                                    aExtencaoDesteCoiso = "vob";
-                                                    if(contentamento=="mpegts")
-                                                        aExtencaoDesteCoiso = "mpeg";
-                                                        if(contentamento=="3g2")
-                                                            aExtencaoDesteCoiso = "3g2";
-                                                            if(contentamento=="3gp")
-                                                                aExtencaoDesteCoiso = "3gp";
-                                                                if(contentamento=="raw")
-                                                                    aExtencaoDesteCoiso = "raw";
-
-
-
-
-
-   // settings.setCodec("audio/ogg");
-  //  settings.setQuality(QMultimedia::HighQuality);
-
-   // settings.setChannelCount(2);
-
-    //audioRecorder->setEncodingSettings(settings, QVideoEncoderSettings(), contentamento);
-
-    //audioRecorder->record();
+        if(contentamento=="wav")
+            aExtencaoDesteCoiso = "wav";
+        if(contentamento=="quicktime")
+            aExtencaoDesteCoiso = "mov";
+        if(contentamento=="avi")
+            aExtencaoDesteCoiso = "avi";
+        if(contentamento=="3gpp")
+            aExtencaoDesteCoiso = "3gpp";
+        if(contentamento=="flv")
+            aExtencaoDesteCoiso = "fvl";
+        if(contentamento=="amr")
+            aExtencaoDesteCoiso = "amr";
+        if(contentamento=="asf")
+            aExtencaoDesteCoiso = "asf";
+        if(contentamento=="dv")
+            aExtencaoDesteCoiso = "dv";
+        if(contentamento=="mpeg")
+            aExtencaoDesteCoiso = "mpg";
+        if(contentamento=="vob")
+            aExtencaoDesteCoiso = "vob";
+        if(contentamento=="mpegts")
+            aExtencaoDesteCoiso = "mpeg";
+        if(contentamento=="3g2")
+            aExtencaoDesteCoiso = "3g2";
+        if(contentamento=="3gp")
+            aExtencaoDesteCoiso = "3gp";
+        if(contentamento=="raw")
+            aExtencaoDesteCoiso = "raw";
 
 
     QAudioEncoderSettings audioSettings;
-    //audioSettings.setCodec("audio/ogg");
     audioSettings.setQuality(QMultimedia::HighQuality);
-   // audioSettings.setChannelCount(-2);
 
     audioRecorder->setEncodingSettings(audioSettings, QVideoEncoderSettings(), contentamento);
-audioRecorder->setOutputLocation(QUrl(saveFile));
+    audioRecorder->setOutputLocation(QUrl(saveFile));
     audioRecorder->record();
-
-
 
     qDebug()<<"Audio Rec Channel Count is: "<<settings.channelCount();
 
@@ -4207,9 +3898,6 @@ audioRecorder->setOutputLocation(QUrl(saveFile));
 
 
 void player::run_recTimer(){
-    //qDebug()<<"Running recTimer();";
-
-
 
     QString xsegundos;
     QString xminutos;
@@ -4254,8 +3942,6 @@ void player::run_recTimer(){
 
 
 
-
-
 }
 
 void player::setRecTimeToDefaults(){
@@ -4270,13 +3956,15 @@ void player::setRecTimeToDefaults(){
 
 
 void player::checkForUpdates(){
-
+    QMessageBox::information(this,tr("Check for updates"),tr("Please update with 'yay' under Arch-based distros, or clone from XFB github."));
+/*
     QProcess cmd;
     cmd.startDetached("sh",QStringList()<<"-c"<<"apt-get update && easy_install -U youtube-dl");
     cmd.waitForFinished(-1);
     QByteArray cmdOut = cmd.readAll();
     qDebug()<<"easy_install -U youtube-dl :: "<<cmdOut;
     cmd.close();
+    */
 }
 
 void player::on_actionRecord_a_new_Program_triggered()
@@ -4321,85 +4009,27 @@ void player::on_bt_ProgramStopandProcess_clicked()
                         sendToServer = QMessageBox::question(this,tr("Send to server?"),tr("Send programs to the server?"),QMessageBox::Yes|QMessageBox::No);
                         if(sendToServer==QMessageBox::Yes){
 
-/*
-                            QString cmdcp = "sudo chmod +x ../config/*.sh && sudo chmod 600 ~/.netrc";
-                            QProcess cmddelP;
-                            cmddelP.start("sh",QStringList()<<"-c"<<cmdcp);
-                            cmddelP.waitForFinished(-1);
-                            cmddelP.close();
-*/
-
                             QString cp2ftp = "cp "+saveFile+" "+FTPPath+"/"+NomeDestePrograma+"."+aExtencaoDesteCoiso;
                             qDebug()<<"Running: "<<cp2ftp;
                             cmd.startDetached("sh",QStringList()<<"-c"<<cp2ftp);
                             cmd.waitForFinished(-1);
                             cmd.close();
 
-
-                           // if(!Server_URL.isEmpty() && !User.isEmpty() && !Pass.isEmpty()){
-
-
-                                /*I should probably not do it like i'm about to do ... */
-/*
-                                QString c = "curl [ip]/XFB/Config/ftpupdate.txt";
-                                QProcess pc;
-                                pc.start("sh",QStringList()<<"-c"<<c);
-                                pc.waitForFinished();
-
-                                QString cOut = pc.readAll();
-
-                                QStringList ServerIP = cOut.split("\n");
-
-                                qDebug()<<"Server's IP is now:"<<ServerIP[0];
-
-                                QString str = "#!/bin/bash \ncd ../ftp/ \nftp -v "+ServerIP[0]+" 12000 << EOT \nprompt\nbinary\nprompt\ncd Programs\nprompt\nmput *.ogg\nprompt\nbye\nEOT\n";
-
-                                qDebug() << "Saving new serverFtpCmdsPutProgram.sh ... ";
-
-                                QFile settings_file("../config/serverFtpCmdsPutProgram.sh");
-                                if(!settings_file.open(QIODevice::WriteOnly)){
-                                    qDebug() << "../config/serverFtpCmdsPutProgram.sh is NOT writable... trying to fix the file permitions.";
-                                    QString c = "chmod +x ../config/serverFtpCmdsPutProgram.sh";
-                                    QProcess pc;
-                                    pc.start("sh",QStringList()<<"-c"<<c);
-                                    pc.waitForFinished();
-
-                                    if(!settings_file.open(QIODevice::WriteOnly)){
-                                        qDebug() << "It was NOT possible to change the file permitions automatically.. maybe if you try again as root or sudoer";
-                                        return;
-                                    } else {
-                                        qDebug()<<"File permitions sucessfuly changed!";
-                                    }
-                                }
-                                QTextStream out(&settings_file);
-                                out << str;
-                                settings_file.close();
-
-                                qDebug() << "New serverFtpCmdsPutProgram.sh saved!";
-
-*/
-
-
-
                                 qDebug()<<"Sending program to server. This requires ~/.netrc to be configured with the ftp options and FTP Path in the options to point to a folder called 'ftp' that MUST be located in the parent directory of XFB (due to the code of config/serverFtpCmdsPutProgram).";
-
 
                                 QProcess sh,sh2;
                                 QByteArray output, output2;
                                 QString outPath, FTPCmdPath, xmls;
-
 
                                 sh.start("sh", QStringList() << "-c" << "pwd");
                                 sh.waitForFinished();
                                 output = sh.readAll();
                                 outPath = output;
                                 QStringList path_arry = outPath.split("\n");
-                                FTPCmdPath = path_arry[0]+"/../config/serverFtpCmdsPutProgram.sh | grep 'Transfer complete'";
+                                FTPCmdPath = path_arry[0]+"/usr/share/xfb/scripts/serverFtpCmdsPutProgram.sh | grep 'Transfer complete'";
                                 qDebug() << "running: " << FTPCmdPath;
-                                qDebug() << "If you get errors: cd config && chmod +x serverFtpCmdsPutProgram.sh && chmod 600 ~/.netrc (the ftp is configured in .netrc correct?)";
+                                qDebug() << "If you get errors: cd scripts && chmod +x serverFtpCmdsPutProgram.sh && chmod 600 ~/.netrc (the ftp is configured in .netrc correct?)";
                                 sh.close();
-
-
 
                                 sh2.start("sh", QStringList() << "-c" << FTPCmdPath);
                                 sh2.waitForFinished(-1);
@@ -4407,125 +4037,6 @@ void player::on_bt_ProgramStopandProcess_clicked()
                                 xmls = output2;
                                 qDebug()<<output2;
                                 sh2.close();
-
-
-
-
-
-
-
-
-
-
-
-
-                             // QMessageBox::information(this,"XFB 1.18 BETA","NÃO É POSSÍVEL ENVIAR PARA O SERVIDOR COM ESTA VERSÃO DO XFB UMA VEZ QUE OS CONTROLADORES FTP DEVEM SER ATUALIZADOS.");
-
-
-                              //  progressDialog = new QProgressDialog(this);
-
-
-
-
-
-
-
-
-
-/*
-                                qDebug()<<"Checking if the file's intergrity was perserved...";
-
-
-                                QProcess shCHK,shCHK2;
-                                QByteArray outputCHK, outputCHK2;
-                                QString outPathCHK, FTPCmdPathCHK, xmlsCHK;
-
-
-                                shCHK.start("sh", QStringList() << "-c" << "pwd");
-                                shCHK.waitForFinished();
-                                outputCHK = shCHK.readAll();
-                                outPathCHK = outputCHK;
-                                QStringList path_arryCHK = outPathCHK.split("\n");
-                                FTPCmdPathCHK = path_arryCHK[0]+"/../config/serverFtpCmdsCHKProgram | grep "+NomeDestePrograma;
-                                qDebug() << "running: " << FTPCmdPathCHK;
-                                qDebug() << "If you get errors: cd config && chmod +x serverFtpCmdsCHKProgram && chmod 600 ~/.netrc (the ftp is configured in .netrc correct?)";
-                                shCHK.close();
-
-
-
-                                shCHK2.start("sh", QStringList() << "-c" << FTPCmdPathCHK);
-                                shCHK2.waitForFinished();
-                                outputCHK2 = shCHK2.readAll();
-                                xmlsCHK = outputCHK2;
-                                qDebug()<<outputCHK2;
-                                shCHK2.close();
-
-                                if(!xmlsCHK.isEmpty()){
-                                    QStringList splitCHKout = xmlsCHK.split(" ");
-                                    for(int i=0;i<splitCHKout.count();i++){
-                                        qDebug()<<"In position "<<i<<" of the array the value is: "<<splitCHKout[i];
-                                    }
-
-                                    QString ftpSizeStr = splitCHKout[9];
-
-                                    if(ftpSizeStr.isEmpty())
-                                        ftpSizeStr = splitCHKout[10];
-                                    if(ftpSizeStr.isEmpty())
-                                        ftpSizeStr = splitCHKout[11];
-                                    if(ftpSizeStr.isEmpty())
-                                        ftpSizeStr = splitCHKout[12];
-                                    if(ftpSizeStr.isEmpty())
-                                        ftpSizeStr = splitCHKout[13];
-                                    if(ftpSizeStr.isEmpty())
-                                        ftpSizeStr = splitCHKout[14];
-                                    if(ftpSizeStr.isEmpty())
-                                        ftpSizeStr = splitCHKout[15];
-                                    if(ftpSizeStr.isEmpty())
-                                        ftpSizeStr = splitCHKout[16];
-
-
-
-
-
-                                    qDebug()<<"Size value in array: "<<ftpSizeStr;
-
-                                    int size = 0;
-                                    QString mmfile = FTPPath+"/"+NomeDestePrograma+"."+aExtencaoDesteCoiso;
-                                    QFile myFile(mmfile);
-                                    if (myFile.open(QIODevice::ReadOnly)){
-                                        size = myFile.size();  //when file does open.
-                                        QString sizeStr = QString::number(size);
-                                        qDebug()<<"Size value of local file: "<<sizeStr;
-                                        myFile.close();
-
-
-                                        if(ftpSizeStr==sizeStr){
-
-                                            qDebug()<<"The file's integrity on the FTP server was verified correctly!";
-
-                                        } else {
-                                            qDebug()<<"Faild to verify the integrity of the file in the FTP server. Size of Local and remote files do NOT match...";
-                                            QMessageBox::information(this,tr("Interity verification faild!"),tr("The file does not seam to have been sent to the server correctly since the size of the local file differs from the one on the FTP server. Please try to send the program again."));
-                                        }
-
-
-
-                                    } else {
-                                        qDebug()<<"It was not possible to get the size of the local file: "<<mmfile;
-                                    }
-
-
-
-
-                                }
-
-
-
-
-
-*/
-
-
 
                                 qDebug()<<"Program upload finished!";
 
@@ -4567,19 +4078,7 @@ void player::on_bt_ProgramStopandProcess_clicked()
                                 }
 
 
-                           /* } else {
-                                qDebug()<<"Some required data (url, port, user or pass) is not set in the options.";
-                            }*/
-
-
-
-
-
-
-
-
                             ui->txt_uploadingPrograms->hide();
-
 
 
                         } else {
@@ -4590,24 +4089,12 @@ void player::on_bt_ProgramStopandProcess_clicked()
                         }
 
 
-
-
-
-
-
-
-
                 } else {
                     QMessageBox::information(this,tr("Cannot Send"),tr("It's not possible to send the Program to the server if XFB role is set to Server"));
                 }
 
 
-
-
-
             }
-
-
 
 
 
@@ -4644,8 +4131,7 @@ void player::on_actionFullScreen_triggered()
 
 void player::pingServer()
 {
-
-
+    QMessageBox::information(this,tr("Ping Server"),tr("Option not coded. Can you buy me a coffee? (Paypal: fred@netpack.pt ;))"));
 }
 
 void player::on_actionForce_an_FTP_Check_triggered()
@@ -4753,12 +4239,7 @@ void player::on_actionMake_a_program_from_this_playlist_triggered()
 
               qDebug()<<"Sending program to server. This requires ~/.netrc to be configured with the ftp options and FTP Path in the options to point to a folder called 'ftp' that MUST be located in the parent directory of XFB (due to the code of config/serverFtpCmdsPutProgram).";
               QProcess sh,sh2;
-/*
-              QProcess netrc;
-              netrc.start("sh", QStringList()<<"-c"<<"chmod 600 ~/.netrc");
-              netrc.waitForFinished();
-              qDebug()<<"Setting .netrc file permitions... "<<netrc.readAll();
-*/
+
               QByteArray output, output2;
               QString outPath, FTPCmdPath, xmls;
               sh.start("sh", QStringList() << "-c" << "pwd");
@@ -4766,7 +4247,7 @@ void player::on_actionMake_a_program_from_this_playlist_triggered()
               output = sh.readAll();
               outPath = output;
               QStringList path_arry = outPath.split("\n");
-              FTPCmdPath = path_arry[0]+"/../config/serverFtpCmdsPutProgram.sh | grep 'Transfer complete'";
+              FTPCmdPath = path_arry[0]+"/usr/share/xfb/scripts/serverFtpCmdsPutProgram.sh | grep 'Transfer complete'";
               qDebug() << "running: " << FTPCmdPath;
               qDebug() << "If you get errors: cd config && chmod +x serverFtpCmdsPutProgram.sh && chmod 600 ~/.netrc (the ftp is configured in .netrc correct?)";
               sh.close();
@@ -4785,7 +4266,7 @@ void player::on_actionMake_a_program_from_this_playlist_triggered()
               outputCHK = shCHK.readAll();
               outPathCHK = outputCHK;
               QStringList path_arryCHK = outPathCHK.split("\n");
-              FTPCmdPathCHK = path_arryCHK[0]+"/../config/serverFtpCmdsCHKProgram | grep "+NomeDestePrograma;
+              FTPCmdPathCHK = path_arryCHK[0]+"/usr/share/xfb/scripts/serverFtpCmdsCHKProgram | grep "+NomeDestePrograma;
               qDebug() << "running: " << FTPCmdPathCHK;
               qDebug() << "If you get errors: cd config && chmod +x serverFtpCmdsCHKProgram && chmod 600 ~/.netrc (the ftp is configured in .netrc correct?)";
               shCHK.close();
@@ -4806,8 +4287,6 @@ void player::on_actionMake_a_program_from_this_playlist_triggered()
                       if(ftpSizeStr.isEmpty() || ftpSizeStr == "0")
                           ftpSizeStr = splitCHKout[i];
                   }
-
-
 
                   qDebug()<<"Size value in array: "<<ftpSizeStr;
                   int size = 0;
@@ -4921,9 +4400,6 @@ void player::on_actionCheck_the_Database_records_triggered()
 
                     if(myFile.size()==0){
 
-
-
-
                         QMessageBox::StandardButton reply;
                         reply = QMessageBox::question(this, "The file does exist but the it's empty?", "It seams like the file does exist on the hard drive BUT HAS 0B !... Or there is a problem reading it. Should it be deleted from the database and the hard-drive?",
                                                       QMessageBox::Yes|QMessageBox::No);
@@ -4951,13 +4427,7 @@ void player::on_actionCheck_the_Database_records_triggered()
                         }
 
 
-
-
-
-
                     } else {
-
-
 
 
                      qDebug()<<"The file seams to be OK. Checking it's time...";
@@ -4977,13 +4447,7 @@ void player::on_actionCheck_the_Database_records_triggered()
 
                          QStringList splitarray = arraycmd[25].split("\n");
 
-                         /*
-                         for(int i=0;i<splitarray.count();i++){
-                             qDebug()<< "The splitarray array position "<<i<<" has: "<<splitarray[i];
-                         }
-                        */
                          qDebug()<<"Total track time is: "<<splitarray[0];
-
 
                          QSqlQuery* qry = new QSqlQuery();
                          QString qrystr = "update musics set time = '"+splitarray[0]+"' where path = \""+path+"\"";
@@ -4999,22 +4463,16 @@ void player::on_actionCheck_the_Database_records_triggered()
                          }
                      }
 
-
-
                      QSqlQuery* qry = new QSqlQuery();
                      QString qrystr = "update musics set played_times = 0 where path = \""+path+"\"";
                      qry->exec(qrystr);
 
 
-
-
-
+                    }
                 }
-}
 
             }
         }
-
 
 
     }
@@ -5040,7 +4498,6 @@ void player::calculate_playlist_total_time(){
 
         QString musica = ui->playlist->item(i)->text();
 
-
         QProcess cmd;
         QString cmdtmpstr = "exiftool \""+musica+"\" | grep Duration";
         cmd.start("sh",QStringList()<<"-c"<<cmdtmpstr);
@@ -5054,11 +4511,7 @@ void player::calculate_playlist_total_time(){
             QStringList splitarray = arraycmd[25].split("\n");
             qDebug()<<"Total track time is: "<<splitarray[0];
 
-
             QStringList hmsArray = splitarray[0].split(":");
-
-
-           // qDebug()<<"Time Array size with ':' is: "<<hmsArray.count();
 
             if(hmsArray.count()>=2){
 
@@ -5074,15 +4527,12 @@ void player::calculate_playlist_total_time(){
                   int fm = cm+m;
                   int fs = cs+s;
 
-
                   while(fs>=60){
 
                       fm+=1;
                       fs-=60;
 
                   }
-
-
 
                 while(fm>=60){
 
@@ -6244,20 +5694,7 @@ void player::on_actionUpdate_Dinamic_Server_s_IP_triggered()
 {
 
     QFile settings_ftp("~/.netrc");
-   /* if(!settings_ftp.open(QIODevice::WriteOnly)){
-        qDebug() << "~/.netrc is NOT writable... trying to change the file permitions..";
-        QString c = "chmod +x ~/.netrc";
-        QProcess pc;
-        pc.start("sh",QStringList()<<"-c"<<c);
-        pc.waitForFinished();
 
-        if(!settings_ftp.open(QIODevice::WriteOnly)){
-            qDebug() << "It was NOT possible to change the file permitions automatically.. maybe if you try again as root or sudoer";
-            return;
-        } else {
-            qDebug()<<"File permitions sucessfuly changed!";
-        }
-    }*/
     QTextStream outF(&settings_ftp);
 
     QString c2 = "curl "+Server_URL+"/XFB/Config/ftpupdate.txt";
@@ -6274,14 +5711,7 @@ void player::on_actionUpdate_Dinamic_Server_s_IP_triggered()
 
 
     outF<<"machine "<<ServerIP[0]<<" login "<<User<<" password "<<Pass<<"\n";
-/*
-    QString c = "sudo chmod 600 ~/.netrc";
-    QProcess pc;
-    pc.start("sh",QStringList()<<"-c"<<c);
-    pc.waitForFinished();
-    QString cOut = pc.readAll();
-qDebug()<<"Running :: sudo chmod 600 ~/.netrc :: "<<cOut;
-*/
+
 
     settings_ftp.close();
 }
@@ -6341,9 +5771,6 @@ void player::on_bt_icecast_clicked()
 
         icecastrunning = true;
 
-
-
-
         ui->bt_icecast->setStyleSheet("background-color:#C8EE72");
 
         connect(icetimer, SIGNAL(timeout()), this, SLOT(ice_timmer()));
@@ -6376,9 +5803,6 @@ void player::on_bt_icecast_clicked()
 }
 
 void player::ice_timmer(){
-
-    //qDebug()<<"Running ice_timmer (checking external processes...)";
-
 
     QProcess chk;
     chk.start("sh",QStringList()<<"-c"<<"ps -e | grep icecast");
@@ -6454,9 +5878,6 @@ void player::on_bt_butt_clicked()
 
 }
 void player::butt_timmer(){
-
-   // qDebug()<<"Running butt_timmer (checking external processes...)";
-
 
     QProcess chk;
     chk.start("sh",QStringList()<<"-c"<<"ps -e | grep butt");
@@ -6551,10 +5972,10 @@ void player::on_bt_takeOver_clicked()
 {
     ui->bt_takeOver->setStyleSheet("background-color:yellow");
 
-    QString rmthis = "../ftp/*.xml";
+    QString rmthis = "/usr/share/xfb/ftp/*.xml";
     QFile::remove(rmthis);
 
-    rmthis = "../TakeOver/*.xml";
+    rmthis = "/usr/share/xfb/TakeOver/*.xml";
     QFile::remove(rmthis);
 
 
@@ -6568,7 +5989,7 @@ void player::on_bt_takeOver_clicked()
 
 
 
-    QString takeOverFile = "../ftp/takeover.xml";
+    QString takeOverFile = "/usr/share/xfb/ftp/takeover.xml";
     QFile file(takeOverFile);
 
     if(takeOver == false){
@@ -6616,7 +6037,7 @@ void player::on_bt_takeOver_clicked()
         output = sh.readAll();
         outPath = output;
         QStringList path_arry = outPath.split("\n");
-        FTPCmdPath = path_arry[0]+"/../config/serverFtpCmdsPutTakeOver.sh | grep 'Transfer complete'";
+        FTPCmdPath = path_arry[0]+"/usr/share/xfb/scripts/serverFtpCmdsPutTakeOver.sh | grep 'Transfer complete'";
         qDebug() << "running: " << FTPCmdPath;
         qDebug() << "If you get errors: cd config && chmod +x serverFtpCmdsPutTakeOver.sh && chmod 600 ~/.netrc (the ftp is configured in .netrc correct?)";
         sh.close();
@@ -6637,7 +6058,7 @@ void player::on_bt_takeOver_clicked()
             ui->bt_takeOver->setStyleSheet("background-color:blue");
             ui->bt_takeOver->setText(tr("Connecting..."));
 
-            QFile::remove("../ftp/takeover.xml");
+            QFile::remove("/usr/share/xfb/ftp/takeover.xml");
 
             QTimer::singleShot(5000, this, SLOT(checkTakeOver()));
 
@@ -6694,7 +6115,7 @@ void player::checkTakeOver(){
     qDebug()<<"Checking the TakeOver...";
 
     QProcess sh;
-    QString shcmd = "../config/serverFtpCmdsCHKTakeOver.sh | grep confirmtakeover.xml";
+    QString shcmd = "/usr/share/xfb/scripts/serverFtpCmdsCHKTakeOver.sh | grep confirmtakeover.xml";
     sh.start("sh",QStringList()<<"-c"<<shcmd);
     sh.waitForFinished();
     QString shout = sh.readAll().trimmed();
@@ -6859,10 +6280,6 @@ void player::recoveryStreamTakeOverPlay(){
     QTimer::singleShot(3000, this, SLOT(MainsetVol10()));
     QTimer::singleShot(3500, this, SLOT(MainsetVol5()));
     QTimer::singleShot(4000, this, SLOT(MainStop()));
-
-
-
-
 
 
 }

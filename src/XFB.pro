@@ -8,8 +8,6 @@
 
 QT       += core gui multimedia sql webkit webkitwidgets widgets designer network
 
-#phonon4qt5
-
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 CONFIG += C++11
@@ -17,9 +15,8 @@ CONFIG += C++11
 TARGET = XFB
 TEMPLATE = app
 
-#LIBS += -L/home/fred/phonon-4.8.3/build5/phonon -lphonon4qt5
-
 SOURCES +=\
+    externaldownloader.cpp \
     player.cpp \
     main.cpp \
     add_music_single.cpp \
@@ -29,11 +26,11 @@ SOURCES +=\
     add_pub.cpp \
     optionsdialog.cpp \
     aboutus.cpp \
-    youtubedownloader.cpp \
     add_program.cpp \
     audioinput.cpp
 
 HEADERS  += \
+    externaldownloader.h \
     player.h \
     add_music_single.h \
     add_full_dir.h \
@@ -42,13 +39,13 @@ HEADERS  += \
     add_pub.h \
     optionsdialog.h \
     aboutus.h \
-    youtubedownloader.h \
     add_program.h \
     audioinput.h \
     config.h
 
 
 FORMS    += \
+    externaldownloader.ui \
     player.ui \
     add_music_single.ui \
     add_full_dir.ui \
@@ -57,7 +54,6 @@ FORMS    += \
     add_pub.ui \
     optionsdialog.ui \
     aboutus.ui \
-    youtubedownloader.ui \
     add_program.ui
 
 RESOURCES += \

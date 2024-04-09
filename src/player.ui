@@ -289,13 +289,16 @@
              <widget class="QWidget" name="layoutWidget">
               <property name="geometry">
                <rect>
-                <x>10</x>
+                <x>6</x>
                 <y>40</y>
-                <width>339</width>
-                <height>96</height>
+                <width>346</width>
+                <height>106</height>
                </rect>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout">
+               <property name="leftMargin">
+                <number>2</number>
+               </property>
                <item>
                 <layout class="QHBoxLayout" name="horizontalLayout_10">
                  <item>
@@ -1279,7 +1282,7 @@ background-color: rgb(255, 255, 255);</string>
             <x>0</x>
             <y>0</y>
             <width>350</width>
-            <height>203</height>
+            <height>196</height>
            </rect>
           </property>
           <attribute name="icon">
@@ -1295,7 +1298,7 @@ background-color: rgb(255, 255, 255);</string>
              <x>10</x>
              <y>0</y>
              <width>281</width>
-             <height>28</height>
+             <height>34</height>
             </rect>
            </property>
            <layout class="QHBoxLayout" name="horizontalLayout">
@@ -1340,8 +1343,8 @@ background-color: rgb(255, 255, 255);</string>
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>350</width>
-            <height>203</height>
+            <width>100</width>
+            <height>30</height>
            </rect>
           </property>
           <attribute name="icon">
@@ -1422,8 +1425,8 @@ background-color: rgb(255, 255, 255);</string>
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>350</width>
-            <height>203</height>
+            <width>100</width>
+            <height>30</height>
            </rect>
           </property>
           <attribute name="icon">
@@ -1561,8 +1564,8 @@ background-color: rgb(255, 255, 255);</string>
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>350</width>
-            <height>203</height>
+            <width>100</width>
+            <height>30</height>
            </rect>
           </property>
           <property name="styleSheet">
@@ -1637,8 +1640,8 @@ background-color: rgb(255, 255, 255);</string>
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>350</width>
-            <height>203</height>
+            <width>100</width>
+            <height>30</height>
            </rect>
           </property>
           <attribute name="icon">
@@ -2244,7 +2247,7 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
             <x>10</x>
             <y>66</y>
             <width>1041</width>
-            <height>20</height>
+            <height>22</height>
            </rect>
           </property>
           <layout class="QHBoxLayout" name="horizontalLayout_7">
@@ -2562,7 +2565,7 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
      <x>0</x>
      <y>0</y>
      <width>1478</width>
-     <height>23</height>
+     <height>30</height>
     </rect>
    </property>
    <property name="font">
@@ -2810,7 +2813,7 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
      <normaloff>:/icons/icon48x48.png</normaloff>:/icons/icon48x48.png</iconset>
    </property>
    <property name="text">
-    <string>Add a song from Youtube</string>
+    <string>Add a song from an external source</string>
    </property>
    <property name="font">
     <font>
@@ -2986,7 +2989,7 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
      <normaloff>:/icons/download.png</normaloff>:/icons/download.png</iconset>
    </property>
    <property name="text">
-    <string>Check for XFB and System updates</string>
+    <string>Check for updates</string>
    </property>
   </action>
   <action name="actionConvert_all_musics_in_the_database_to_mp3">

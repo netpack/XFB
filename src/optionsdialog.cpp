@@ -63,9 +63,9 @@ optionsDialog::optionsDialog(QWidget *parent) :
 
     /* get db settings */
 
-    QFile settings ("../config/settings.conf");
+    QFile settings ("/etc/xfb/xfb.conf");
     if (!settings.open(QIODevice::ReadOnly | QIODevice::Text)){
-        qDebug() << "../config/settings.conf could not be opened for read only ..???.. does it exist?";
+        qDebug() << "/etc/xfb/xfb.conf could not be opened for read only ..???.. does it exist?";
         return;
     }
 
@@ -294,9 +294,9 @@ void optionsDialog::saveSettings2Db()
 {
     qDebug() << "Saving... ";
 
-    QFile settings_file("../config/settings.conf");
+    QFile settings_file("/etc/xfb/xfb.conf");
     if(!settings_file.open(QIODevice::WriteOnly)){
-        qDebug() << "../config/settings.conf is NOT writable... check the file permitions.";
+        qDebug() << "/etc/xfb/xfb.conf is NOT writable... check the file permitions.";
         return;
     }
     QTextStream out(&settings_file);
@@ -516,7 +516,7 @@ void optionsDialog::on_bt_uname_clicked()
 void optionsDialog::on_bt_edit_settings_clicked()
 {
     QProcess process;
-    process.start("gedit", QStringList() << "../config/settings.conf");
+    process.start("gedit", QStringList() << "/etc/xfb/xfb.conf");
     process.waitForFinished(-1);
 }
 
