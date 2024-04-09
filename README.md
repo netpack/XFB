@@ -10,11 +10,10 @@ XFB is designed to automate radio station operations, providing comprehensive ma
 
 ## Features
 
-- **Database Management**: XFB includes a robust database system for cataloging and organizing music, jingles, advertisements, and other assets.
-- **Automated Scheduling**: Easily create and manage schedules for music playback, advertisement slots, and program airing.
-- **Customizable Workflow**: Tailor XFB to fit your station's unique needs with customizable settings and configurations.
-- **Remote Access (beta)**: Access and control XFB remotely, allowing for convenient management from anywhere with an internet connection.
-
+- 📊 **Database Management**: XFB includes a robust database system for cataloging and organizing music, jingles, advertisements, and other assets.
+- 🔄 **Automated Scheduling**: Easily create and manage schedules for music playback, advertisement slots, and program airing.
+- ⚙️ **Customizable Workflow**: Tailor XFB to fit your station's unique needs with customizable settings and configurations.
+- 🌐 **Remote Access (beta)**: Access and control XFB remotely, allowing for convenient management from anywhere with an internet connection.
 
 ## Getting Started
 
@@ -22,15 +21,11 @@ To get started with XFB, follow these steps:
 
 ### Installing from AUR (Arch Linux or Arch-based (i.e.: Manjaro))
 
-
 #### Option 1: Using GUI (e.g., pamac)
 
 1. Open your package manager GUI (e.g., `pamac` or `pamac-manager`).
-
 2. Navigate to the AUR section and ensure you have AUR repositories enabled
-
 3. Search for `xfb` and click Install.
-
 
 #### Option 2: Using the terminal
 
@@ -59,7 +54,6 @@ To get started with XFB, follow these steps:
 ### Manual Installation
 
 1. Clone or download the latest release of XFB from the [GitHub repository](https://github.com/netpack/XFB).
-
 2. Compile and install:
 
     ```sh
@@ -83,10 +77,8 @@ This program is free software: you can redistribute it and/or modify it under th
 
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
+You should have received a copy of the GNU General Public License along with this program. If not, see [GNU General Public License](https://www.gnu.org/licenses/).
 
+🎶 Have fun,
 
-
-
-Have fun,
-Frédéric Bogaerts
+👨‍💻 Frédéric Bogaerts
