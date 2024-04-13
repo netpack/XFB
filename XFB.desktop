@@ -2,10 +2,10 @@
 Version=1.23
 Type=Application
 Name=XFB
-GenericName=Music Player
+GenericName=Radio Automation
 Comment=Open-source radio automation software
 Exec=XFB
 Icon=/usr/share/pixmaps/xfb_icon.png
-Categories=Multimedia;AudioVideo;
+Categories=AudioVideo;Multimedia;
 Path=/usr/share/xfb/bin
 Terminal=false
