@@ -543,7 +543,7 @@ void optionsDialog::on_bt_df_clicked()
 void optionsDialog::on_bt_update_youtubedl_clicked()
 {
 
-    ui->txt_terminal->appendPlainText("If you are having problems downloading from youtube try this on a terminal:");
+    ui->txt_terminal->appendPlainText("If you are having problems downloading from External try this on a terminal:");
    ui->txt_terminal->appendPlainText("sudo easy_install -U youtube-dl");
 }
 

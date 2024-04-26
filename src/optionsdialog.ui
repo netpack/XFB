@@ -51,7 +51,7 @@
       <item>
        <widget class="QTabWidget" name="SystemResouces">
         <property name="currentIndex">
-         <number>0</number>
+         <number>4</number>
         </property>
         <widget class="QWidget" name="tab">
          <attribute name="title">
@@ -537,7 +537,7 @@
             <x>40</x>
             <y>41</y>
             <width>351</width>
-            <height>151</height>
+            <height>186</height>
            </rect>
           </property>
           <layout class="QFormLayout" name="formLayout">
@@ -784,7 +784,7 @@ color: rgb(255, 255, 255);</string>
            <item>
             <widget class="QPushButton" name="bt_update_youtubedl">
              <property name="text">
-              <string>youtube-dl troubleshoot</string>
+              <string>Troubleshoot</string>
              </property>
             </widget>
            </item>

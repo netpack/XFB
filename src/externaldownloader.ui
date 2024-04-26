@@ -361,7 +361,7 @@ background-color: rgb(83, 28, 28);</string>
     </font>
    </property>
    <property name="placeholderText">
-    <string>https://www.youtube.com/watch?v=qWG2dsXV5HI</string>
+    <string/>
    </property>
   </widget>
   <widget class="QPushButton" name="pushButton">

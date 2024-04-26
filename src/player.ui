@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1478</width>
+    <width>1472</width>
     <height>820</height>
    </rect>
   </property>
@@ -383,6 +383,19 @@
                      <normaloff>:/icons/flat/Quick Mode On-48.png</normaloff>:/icons/flat/Quick Mode On-48.png</iconset>
                    </property>
                   </widget>
+                 </item>
+                 <item>
+                  <spacer name="horizontalSpacer">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>5</width>
+                     <height>5</height>
+                    </size>
+                   </property>
+                  </spacer>
                  </item>
                 </layout>
                </item>
@@ -1274,7 +1287,7 @@ background-color: rgb(255, 255, 255);</string>
           <string>Search (only music table)</string>
          </property>
          <property name="currentIndex">
-          <number>0</number>
+          <number>2</number>
          </property>
          <widget class="QWidget" name="page">
           <property name="geometry">
@@ -1343,8 +1356,8 @@ background-color: rgb(255, 255, 255);</string>
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>100</width>
-            <height>30</height>
+            <width>350</width>
+            <height>196</height>
            </rect>
           </property>
           <attribute name="icon">
@@ -1425,8 +1438,8 @@ background-color: rgb(255, 255, 255);</string>
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>100</width>
-            <height>30</height>
+            <width>350</width>
+            <height>196</height>
            </rect>
           </property>
           <attribute name="icon">
@@ -1564,8 +1577,8 @@ background-color: rgb(255, 255, 255);</string>
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>100</width>
-            <height>30</height>
+            <width>350</width>
+            <height>196</height>
            </rect>
           </property>
           <property name="styleSheet">
@@ -1640,8 +1653,8 @@ background-color: rgb(255, 255, 255);</string>
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>100</width>
-            <height>30</height>
+            <width>350</width>
+            <height>196</height>
            </rect>
           </property>
           <attribute name="icon">
@@ -2564,7 +2577,7 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1478</width>
+     <width>1472</width>
      <height>30</height>
     </rect>
    </property>

@@ -212,7 +212,7 @@ public:
 
     void retranslateUi(QWidget *externaldownloader)
     {
-        externaldownloader->setWindowTitle(QCoreApplication::translate("externaldownloader", "Youtube Downloader", nullptr));
+        externaldownloader->setWindowTitle(QCoreApplication::translate("externaldownloader", "External Downloader", nullptr));
         label->setText(QCoreApplication::translate("externaldownloader", "External Downloader", nullptr));
         label_8->setText(QCoreApplication::translate("externaldownloader", "Moving mountains for you... please wait while our little hamsters are doing the work ;-)", nullptr));
         label_9->setText(QCoreApplication::translate("externaldownloader", "Dowloading and Converting Video...", nullptr));

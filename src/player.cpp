@@ -120,11 +120,7 @@ player::player(QWidget *parent) :
     ui(new Ui::player)
 {
 
-    qDebug()<<"\nStarting XFB :: by Netpack - Online Solutions! www.netpack.pt";
-
-    qDebug()<<"\nList of current dependencies (excluding qt5.5.0):";
-
-    qDebug()<<"ffmpeg soundconverter qt5-image-formats-plugins qt5-doc-html  qt5-doc  qdbus-qt5 libu1db-qt5-examples libu1db-qt5-dev libu1db-qt5-3 libtelepathy-qt5-farstream0 libtelepathy-qt5-dev libtelepathy-qt5-0 libtelepathy-qt5-dbg libtelepathy-logger-qt5-dev libtelepathy-logger-qt5-0-dbg libtelepathy-logger-qt5-0 libqt5systeminfo5 libqt5sql5-tds libqt5sql5-psql libqt5sql5-odbc libqt5sql5-mysql libqt5serviceframework5 libqt5qml-quickcontrols libqt5publishsubscribe5 libqt5nfc5 libqt5multimediaquick-p5-touch libqt5multimedia5-touch-plugins libqt5multimedia5-touch libqt5declarative5 libqt5bluetooth5 libautopilot-qt-autopilot libautopilot-qt qtmultimedia5-examples qtchooser qt5-qmake qt5-default phonon-backend-gstreamer-common libsignon-qt5-dev libsignon-qt5-1 libqt5xmlpatterns5-private-dev libqt5xmlpatterns5-dev libqt5xmlpatterns5 libqt5xml5 libqt5x11extras5-dev libqt5x11extras5 libqt5widgets5 libqt5webkit5-qmlwebkitplugin libqt5webkit5-dev libqt5webkit5-dbg libqt5webkit5 libqt5versitorganizer5 libqt5versit5 libqt5sql5-sqlite libqt5sql5 libqt5serialport5-dev libqt5serialport5 libqt5sensors5-dev libqt5sensors5 libqt5scripttools5 libqt5script5 libqt5qml5 libqt5qml5 libqt5qml-graphicaleffects libqt5network5 libqt5multimediawidgets5 libqt5multimedia5-plugins libqt5multimediaquick-p5 libqt5multimedia5 libqt5location5-plugins libqt5location5 libqt5gui5 libqt5designercomponents5 libqt5designer5 libqt5dbus5 libqt5core5a libqt5contacts5 libqt5concurrent5 libqt5clucene5 libqt53d5 libphonon4qt5-dev libphonon4qt5-4 appmenu-qt5 python-setuptools python-dev build-essential youtube-dl lame sox libsox-fmt-mp3 libimage-exiftool-perl\n";
+    qDebug()<<"\nStarting XFB :: Developed by Frédéric Bogaerts @ Netpack - Online Solutions! www.netpack.pt";
 
     ui->setupUi(this);
 
@@ -3957,14 +3953,6 @@ void player::setRecTimeToDefaults(){
 
 void player::checkForUpdates(){
     QMessageBox::information(this,tr("Check for updates"),tr("Please update with 'yay' under Arch-based distros, or clone from XFB github."));
-/*
-    QProcess cmd;
-    cmd.startDetached("sh",QStringList()<<"-c"<<"apt-get update && easy_install -U youtube-dl");
-    cmd.waitForFinished(-1);
-    QByteArray cmdOut = cmd.readAll();
-    qDebug()<<"easy_install -U youtube-dl :: "<<cmdOut;
-    cmd.close();
-    */
 }
 
 void player::on_actionRecord_a_new_Program_triggered()

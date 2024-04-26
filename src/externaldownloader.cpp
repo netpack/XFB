@@ -51,7 +51,7 @@ void::externaldownloader::getFile(){
 /*download the song, normalize, add to db*/
 
     ui->bt_youtube_getIt->blockSignals(true);
-    ui->txt_teminal_yd1->appendPlainText("Youtube downloader starting...");
+    ui->txt_teminal_yd1->appendPlainText("yt-dlt starting...");
 
     QString ylink;
     ylink = ui->txt_videoLink->text();
@@ -78,7 +78,7 @@ void::externaldownloader::getFile(){
     ysong = ysong.replace(")","");
 
     QString cmd;
-    cmd = "youtube-dl --extract-audio --audio-format vorbis -o '../music/"+yartist+" - "+ysong+".%(ext)s' " + ylink;
+    cmd = "yt-dlp --extract-audio --audio-format vorbis -o '../music/"+yartist+" - "+ysong+".%(ext)s' " + ylink;
     qDebug()<<"Running: "<<cmd;
     ui->txt_teminal_yd1->appendPlainText(cmd);
     ui->txt_teminal_yd1->appendPlainText("Putting hamsters on the job... hold on... *a tribute to torrentz");
@@ -97,7 +97,7 @@ void::externaldownloader::getFile(){
 
 
         QString thisfilename = yartist+" - "+ysong+".ogg";
-        qDebug()<<"Youtube Downloader is now processing "<<thisfilename;
+        qDebug()<<"External Downloader is now processing "<<thisfilename;
         qDebug()<<"The artist name is: "<<yartist;
         qDebug()<<"The name of the song is: "<<ysong;
 
@@ -190,10 +190,10 @@ void::externaldownloader::getFile(){
                 qDebug() << "last sql: " << sql.lastQuery();
             }
 
-            QMessageBox::information(this,tr("Youtube Downloader"),tr("Video downloaded, converted to ogg, moved to the music folder and added to database!\nSweet isn't it?"));
+            QMessageBox::information(this,tr("yt-dlp Downloader"),tr("Video downloaded, converted to ogg, moved to the music folder and added to database!\nSweet isn't it?"));
             //this->hide();
         } else {
-            QMessageBox::information(this,tr("Youtube Downloader"),tr("This song was already in the database..."));
+            QMessageBox::information(this,tr("yt-dlp Downloader"),tr("This song was already in the database..."));
 
         }
 
@@ -207,9 +207,7 @@ void::externaldownloader::getFile(){
 
 
 
-    ui->txt_teminal_yd1->appendPlainText("Developers NOTE: Won't work if executed from Qt run/debug!");
-    ui->txt_teminal_yd1->appendPlainText("Developers NOTE: Please open XFB executable from the source folder after build without running from Qt!");
-    ui->txt_teminal_yd1->appendPlainText("Developers NOTE: This is going to ./tmp/ (if your having problems open the AudioX/tmp folder in a terminal and do: 'sudo chmod 7777 ./' )");
+    ui->txt_teminal_yd1->appendPlainText("Developers NOTE: Won't work if executed from debug!");
 
 
     ui->txt_teminal_yd1->appendPlainText("All Done!");
@@ -240,7 +238,7 @@ void externaldownloader::on_bt_youtube_getIt_clicked()
     QString ysong = ui->txt_song->text();
 
     if(ylink.isEmpty() || yartist.isEmpty() || ysong.isEmpty()){
-        QMessageBox::information(this,tr("Youtube Downloader"),tr("The link, the artist name and the song title are mandatory..."));
+        QMessageBox::information(this,tr("yt-dlp Downloader"),tr("The link, the artist name and the song title are mandatory..."));
     } else {
         showLoadingFrame();
     }
