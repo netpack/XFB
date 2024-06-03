@@ -62,8 +62,8 @@ To get started with XFB, follow these steps:
 
 ### Optional Dependencies
 
-1. Audacity
-2. Youtube-dl
+1. audacity
+2. yt-dlp
 
 ## Support and Contributions
 
