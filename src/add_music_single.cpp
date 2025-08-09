@@ -27,6 +27,26 @@ add_music_single::add_music_single(QWidget *parent) :
     ui(new Ui::add_music_single)
 {
     ui->setupUi(this);
+    QString configFileName = "xfb.conf";
+    QString writableConfigPath = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
+    QString configFilePath = writableConfigPath + "/" + configFileName;
+    QSettings settingsnew(configFilePath, QSettings::IniFormat);
+    bool darkMode = settingsnew.value("DarkMode", false).toBool();
+    qDebug() << "[StyleFix] OptionsDialog checking dark mode:" << darkMode;
+
+
+    // 3. Apply DIRECT stylesheet for background color
+    // This overrides the default Fusion background drawing
+    if (darkMode) {
+        this->setStyleSheet("QDialog { background-color: #353535; color: #bbbbbb; }");
+        // Optional: force tab page background again if needed, though attributes should work
+        // if (theTabWidget) theTabWidget->setStyleSheet("QWidget { background-color: #353535; color: #bbbbbb; }");
+    } else {
+        this->setStyleSheet("QDialog { background-color: #ffffff; color: #333333; }");
+        // Optional: force tab page background again if needed
+        // if (theTabWidget) theTabWidget->setStyleSheet("QWidget { background-color: #ffffff; color: #333333; }");
+    }
+    // --- END C++ BACKGROUND FIX & DIRECT STYLING ---
 
     updateGenres();
 
@@ -48,11 +68,11 @@ add_music_single::add_music_single(QWidget *parent) :
 
 void add_music_single::updateGenres()
 {
-
+QSqlDatabase db = QSqlDatabase::database("xfb_connection");
     QSqlQueryModel * model=new QSqlQueryModel();
     QSqlQueryModel * model2=new QSqlQueryModel();
 
-    QSqlQuery* qry=new QSqlQuery();
+    QSqlQuery* qry=new QSqlQuery(db);
 
     qry->prepare("select name from genres1");
     qry->exec();
@@ -217,8 +237,8 @@ void add_music_single::on_pushButton_clicked()
 
 
 }
-
-        QSqlQuery sql;
+    QSqlDatabase db = QSqlDatabase::database("xfb_connection");
+    QSqlQuery sql(db);
 
 
         QString sqlquery = "insert into musics values(NULL,'"+artist+"','"+song+"','"+g1+"','"+g2+"','"+country+"','"+data_ano+"','"+file+"','"+time+"',0,'-')";

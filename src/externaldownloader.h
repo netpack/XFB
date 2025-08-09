@@ -23,12 +23,10 @@ public:
 
 private slots:
     void on_bt_youtube_getIt_clicked();
-
     void on_pushButton_clicked();
     void getFile();
     void showLoadingFrame();
     void on_bt_close_clicked();
-
     void on_bt_clear_clicked();
 
 private:

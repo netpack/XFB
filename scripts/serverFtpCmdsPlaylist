@@ -1,13 +1,5 @@
 #!/bin/bash
-ftp -v [IP] [PORT] << EOT
-prompt
-passive
-prompt
-binary
-cd Playlists
-ls
-mget *.xml
-prompt
-mdelete *.xml
+#requires .netrc file with chmod 600 in ~/
+ftp [IP]
+ls /Playlist/
 bye
-EOT

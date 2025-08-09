@@ -15,6 +15,26 @@ add_full_dir::add_full_dir(QWidget *parent) :
 {
     ui->setupUi(this);
     updateGenres();
+    QString configFileName = "xfb.conf";
+    QString writableConfigPath = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
+    QString configFilePath = writableConfigPath + "/" + configFileName;
+    QSettings settingsnew(configFilePath, QSettings::IniFormat);
+    bool darkMode = settingsnew.value("DarkMode", false).toBool();
+    qDebug() << "[StyleFix] OptionsDialog checking dark mode:" << darkMode;
+
+
+    // 3. Apply DIRECT stylesheet for background color
+    // This overrides the default Fusion background drawing
+    if (darkMode) {
+        this->setStyleSheet("QDialog { background-color: #353535; color: #bbbbbb; }");
+        // Optional: force tab page background again if needed, though attributes should work
+        // if (theTabWidget) theTabWidget->setStyleSheet("QWidget { background-color: #353535; color: #bbbbbb; }");
+    } else {
+        this->setStyleSheet("QDialog { background-color: #ffffff; color: #333333; }");
+        // Optional: force tab page background again if needed
+        // if (theTabWidget) theTabWidget->setStyleSheet("QWidget { background-color: #ffffff; color: #333333; }");
+    }
+    // --- END C++ BACKGROUND FIX & DIRECT STYLING ---
 
 
     QList<QLocale> allLocales = QLocale::matchingLocales(
@@ -93,7 +113,8 @@ void add_full_dir::on_f_bt_add_clicked()
       //check if it's already in db
 
      int dbhasmusic=0;
-     QSqlQuery query;
+         QSqlDatabase db = QSqlDatabase::database("xfb_connection");
+         QSqlQuery query(db);
      query.prepare("SELECT path FROM musics WHERE path=:path");
      query.bindValue(":path",filewpath);
      query.exec();
@@ -131,7 +152,7 @@ void add_full_dir::on_f_bt_add_clicked()
             }
          int played = 0;
          QString last = "";
-         QSqlQuery sql;
+         QSqlQuery sql(db);
          sql.prepare("insert into musics values(NULL,:artist,:song,:g1,:g2,:country,:pub_date,:file,:time,:played,:last)");
          sql.bindValue(":artist",artist);
          sql.bindValue(":song",song);
@@ -172,11 +193,11 @@ void add_full_dir::on_f_bt_manageGenres_clicked()
 }
 void add_full_dir::updateGenres()
 {
-
+    QSqlDatabase db = QSqlDatabase::database("xfb_connection");
     QSqlQueryModel * model=new QSqlQueryModel();
     QSqlQueryModel * model2=new QSqlQueryModel();
 
-    QSqlQuery* qry=new QSqlQuery();
+    QSqlQuery* qry=new QSqlQuery(db);
 
     qry->prepare("select name from genres1");
     qry->exec();

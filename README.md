@@ -1,83 +1,129 @@
-# XFB
+<div align="center">
+  <img src="https://netpack.pt/img/xfb-home.webp" alt="XFB Screenshot" width="800"/>
+  <h1>XFB - Radio Automation Software</h1>
+  <p><strong>The Open-Source Solution for Professional Radio Broadcasting, now rebuilt with Qt6.</strong></p>
+
+  <p>
+    <a href="https://github.com/netpack/XFB/releases"><img src="https://img.shields.io/github/v/release/netpack/XFB?display_name=tag&sort=semver" alt="Latest Release"></a>
+    <a href="https://aur.archlinux.org/packages/xfb"><img src="https://img.shields.io/aur/version/xfb" alt="AUR version"></a>
+    <a href="https://github.com/netpack/XFB/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3"></a>
+  </p>
+</div>
 
 XFB is an open-source radio automation software developed by [Frédéric Bogaerts](https://www.researchgate.net/profile/Frederic-Bogaerts) at [Netpack Online Solutions](https://www.netpack.pt).
 
-![XFB](https://netpack.pt/img/xfb-home.webp)
+## ✨ Features
 
-## Overview
+XFB is designed to automate radio station operations, providing comprehensive management of various assets. With its intuitive interface and powerful features, XFB simplifies the entire broadcasting process.
 
-XFB is designed to automate radio station operations, providing comprehensive management of various assets such as music, jingles, advertisements, programs, genres, and more. With its intuitive interface and powerful features, XFB simplifies the management and broadcasting process for radio stations.
+-   📊 **Database Management**: A robust system for cataloging and organizing music, jingles, advertisements, programs, and more.
+-   🔄 **Automated Scheduling**: Easily create and manage schedules for music playback, advertisement slots, and program airing.
+-   ⚙️ **Customizable Workflow**: Tailor XFB to fit your station's unique needs with customizable settings and configurations.
+-   🌐 **Remote Access (beta)**: Access and control XFB remotely, allowing for convenient management from anywhere with an internet connection.
 
-## Features
+---
 
-- 📊 **Database Management**: XFB includes a robust database system for cataloging and organizing music, jingles, advertisements, and other assets.
-- 🔄 **Automated Scheduling**: Easily create and manage schedules for music playback, advertisement slots, and program airing.
-- ⚙️ **Customizable Workflow**: Tailor XFB to fit your station's unique needs with customizable settings and configurations.
-- 🌐 **Remote Access (beta)**: Access and control XFB remotely, allowing for convenient management from anywhere with an internet connection.
+## 🚀 Getting Started: Installation
 
-## Getting Started
+The easiest way to install XFB is by using a pre-built package for your operating system.
 
-To get started with XFB, follow these steps:
+| Operating System            | Download / Source                                                                   | Installation Command                                    |
+| --------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| 🍏 **macOS** (Intel/Apple Silicon) | [**GitHub Releases**](https://github.com/netpack/XFB/releases) (Download the `.dmg` file) | Drag `XFB.app` to your Applications folder.               |
+| 🐧 **Debian / Ubuntu** (amd64)  | [**GitHub Releases**](https://github.com/netpack/XFB/releases) (Download the `.deb` file) | `sudo apt install ./xfb_*.deb`                            |
+|  Arch Linux (Manjaro, etc.) | [**AUR (Arch User Repository)**](https://aur.archlinux.org/packages/xfb)            | `yay -S xfb`                                            |
 
-### Installing from AUR (Arch Linux or Arch-based (i.e.: Manjaro))
+### Installing on Arch Linux (Details)
 
-#### Option 1: Using GUI (e.g., pamac)
+If you're new to the AUR on Arch Linux, here are the detailed steps.
 
-1. Open your package manager GUI (e.g., `pamac` or `pamac-manager`).
-2. Navigate to the AUR section and ensure you have AUR repositories enabled
-3. Search for `xfb` and click Install.
+#### Option 1: Using a GUI Helper (e.g., `pamac`)
 
-#### Option 2: Using the terminal
+1.  Open your package manager GUI (e.g., `pamac-manager`).
+2.  Navigate to the settings, find the "Third Party" or "AUR" tab, and ensure it's enabled.
+3.  Search for `xfb` and click "Install".
 
-1. Make sure you have access to the AUR repositories.
+#### Option 2: Using a CLI Helper (e.g., `yay`)
 
-    To add the AUR repositories to your `pacman` configuration file do:
-
+1.  If you don't have an AUR helper like `yay`, install it first:
     ```sh
-    echo '[aur]' | sudo tee -a /etc/pacman.conf
-    echo 'SigLevel = Never' | sudo tee -a /etc/pacman.conf
-    echo 'Server = https://repo.archlinux.org/$arch' | sudo tee -a /etc/pacman.conf
+    sudo pacman -S --needed git base-devel
+    git clone https://aur.archlinux.org/yay.git
+    cd yay
+    makepkg -si
     ```
-
-2. Update your package lists:
-
-    ```sh
-    sudo pacman -Sy
-    ```
-
-3. Install XFB using `yay`:
-
+2.  Install XFB using `yay`:
     ```sh
     yay -S xfb
     ```
 
-### Manual Installation
+---
 
-1. Clone or download the latest release of XFB from the [GitHub repository](https://github.com/netpack/XFB).
-2. Compile and install:
+<details>
+<summary>🛠️ Building from Source (for Developers)</summary>
+<br>
 
-    ```sh
-    cd XFB && mkpkg -si --force
-    ```
+If you prefer to compile the application yourself, follow these instructions.
+
+#### Prerequisites
+- A C++ compiler (g++, clang)
+- Git
+- Qt6 Development Libraries
+
+#### On Debian / Ubuntu
+1. **Install dependencies:**
+   ```sh
+   sudo apt update
+   sudo apt install build-essential qt6-base-dev qt6-multimedia-dev git
+   ```
+2. **Clone and build:**
+   ```sh
+   git clone https://github.com/netpack/XFB.git
+   cd XFB/src
+   mkdir build && cd build
+   qmake6 ../XFB.pro
+   make -j$(nproc)
+   ```
+3. **Run:**
+   ```sh
+   ./XFB
+   ```
+
+#### On Arch Linux
+1. **Install dependencies:**
+   ```sh
+   sudo pacman -S --needed git base-devel qt6-base qt6-multimedia
+   ```
+2. **Clone and build using `makepkg`:**
+   ```sh
+   git clone https://aur.archlinux.org/xfb.git # Or your own repo clone
+   cd xfb
+   makepkg -si
+   ```
+
+</details>
 
 ### Optional Dependencies
 
-1. audacity
-2. yt-dlp
+For full functionality, you may want to install these helpful tools:
+-   **Audacity**: For advanced audio editing.
+-   **yt-dlp**: For downloading media from various online sources.
 
-## Support and Contributions
+---
 
-For support or inquiries regarding XFB, feel free to reach out to [Frédéric Bogaerts](https://www.researchgate.net/profile/Frederic-Bogaerts) or the [Netpack Online Solutions](https://www.netpack.pt) team. Contributions to the project are welcome and can be submitted through GitHub pull requests.
+## ❤️ Support and Contributions
 
-## License
+For support or inquiries, please [open an issue](https://github.com/netpack/XFB/issues) on GitHub.
 
-XFB - GNU General Public License version 3 (GPL-3.0)
+Contributions to the project are welcome! Please feel free to fork the repository and submit a pull request.
 
-This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License version 3 (GPL-3.0) as published by the Free Software Foundation.
+## 📜 License
 
-This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+XFB is licensed under the **GNU General Public License v3.0**.
 
-You should have received a copy of the GNU General Public License along with this program. If not, see [GNU General Public License](https://www.gnu.org/licenses/).
+This program is free software and is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY. See the `LICENSE` file for the full text.
+
+<br>
 
 🎶 Have fun,
 

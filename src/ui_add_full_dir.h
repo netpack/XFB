@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'add_full_dir.ui'
 **
-** Created by: Qt User Interface Compiler version 5.15.12
+** Created by: Qt User Interface Compiler version 6.7.3
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
 ********************************************************************************/
@@ -46,81 +46,78 @@ public:
     void setupUi(QDialog *add_full_dir)
     {
         if (add_full_dir->objectName().isEmpty())
-            add_full_dir->setObjectName(QString::fromUtf8("add_full_dir"));
+            add_full_dir->setObjectName("add_full_dir");
         add_full_dir->resize(646, 342);
-        add_full_dir->setStyleSheet(QString::fromUtf8("background-color: rgb(255, 255, 255);"));
         label = new QLabel(add_full_dir);
-        label->setObjectName(QString::fromUtf8("label"));
+        label->setObjectName("label");
         label->setGeometry(QRect(80, 20, 521, 21));
         QFont font;
         font.setPointSize(11);
         font.setBold(true);
-        font.setWeight(75);
         label->setFont(font);
         label_2 = new QLabel(add_full_dir);
-        label_2->setObjectName(QString::fromUtf8("label_2"));
+        label_2->setObjectName("label_2");
         label_2->setGeometry(QRect(20, 70, 54, 17));
         label_3 = new QLabel(add_full_dir);
-        label_3->setObjectName(QString::fromUtf8("label_3"));
+        label_3->setObjectName("label_3");
         label_3->setGeometry(QRect(40, 110, 141, 17));
         label_4 = new QLabel(add_full_dir);
-        label_4->setObjectName(QString::fromUtf8("label_4"));
+        label_4->setObjectName("label_4");
         label_4->setGeometry(QRect(40, 140, 131, 20));
         label_5 = new QLabel(add_full_dir);
-        label_5->setObjectName(QString::fromUtf8("label_5"));
+        label_5->setObjectName("label_5");
         label_5->setGeometry(QRect(40, 170, 131, 17));
         label_6 = new QLabel(add_full_dir);
-        label_6->setObjectName(QString::fromUtf8("label_6"));
+        label_6->setObjectName("label_6");
         label_6->setGeometry(QRect(20, 300, 281, 20));
         QFont font1;
         font1.setPointSize(8);
         font1.setBold(false);
         font1.setItalic(true);
         font1.setUnderline(false);
-        font1.setWeight(50);
         label_6->setFont(font1);
         txt_path = new QLineEdit(add_full_dir);
-        txt_path->setObjectName(QString::fromUtf8("txt_path"));
+        txt_path->setObjectName("txt_path");
         txt_path->setGeometry(QRect(70, 70, 231, 20));
         txt_artistName = new QLineEdit(add_full_dir);
-        txt_artistName->setObjectName(QString::fromUtf8("txt_artistName"));
+        txt_artistName->setObjectName("txt_artistName");
         txt_artistName->setGeometry(QRect(200, 105, 241, 20));
         label_7 = new QLabel(add_full_dir);
-        label_7->setObjectName(QString::fromUtf8("label_7"));
+        label_7->setObjectName("label_7");
         label_7->setGeometry(QRect(180, 100, 16, 17));
         f_bt_browse = new QPushButton(add_full_dir);
-        f_bt_browse->setObjectName(QString::fromUtf8("f_bt_browse"));
+        f_bt_browse->setObjectName("f_bt_browse");
         f_bt_browse->setGeometry(QRect(310, 70, 91, 21));
         f_bt_add = new QPushButton(add_full_dir);
-        f_bt_add->setObjectName(QString::fromUtf8("f_bt_add"));
+        f_bt_add->setObjectName("f_bt_add");
         f_bt_add->setGeometry(QRect(460, 270, 161, 51));
         label_8 = new QLabel(add_full_dir);
-        label_8->setObjectName(QString::fromUtf8("label_8"));
+        label_8->setObjectName("label_8");
         label_8->setGeometry(QRect(40, 230, 141, 20));
         f_cbox_genre1 = new QComboBox(add_full_dir);
-        f_cbox_genre1->setObjectName(QString::fromUtf8("f_cbox_genre1"));
+        f_cbox_genre1->setObjectName("f_cbox_genre1");
         f_cbox_genre1->setGeometry(QRect(200, 140, 241, 21));
         f_cbox_genre1->setStyleSheet(QString::fromUtf8("selection-color: rgb(87, 118, 255);"));
         f_cbox_genre2 = new QComboBox(add_full_dir);
-        f_cbox_genre2->setObjectName(QString::fromUtf8("f_cbox_genre2"));
+        f_cbox_genre2->setObjectName("f_cbox_genre2");
         f_cbox_genre2->setGeometry(QRect(200, 170, 241, 21));
         f_cbox_genre2->setStyleSheet(QString::fromUtf8("selection-color: rgb(87, 118, 255);"));
         f_date = new QDateEdit(add_full_dir);
-        f_date->setObjectName(QString::fromUtf8("f_date"));
+        f_date->setObjectName("f_date");
         f_date->setGeometry(QRect(200, 230, 241, 25));
         f_bt_manageGenres = new QPushButton(add_full_dir);
-        f_bt_manageGenres->setObjectName(QString::fromUtf8("f_bt_manageGenres"));
+        f_bt_manageGenres->setObjectName("f_bt_manageGenres");
         f_bt_manageGenres->setGeometry(QRect(450, 140, 121, 25));
         label_9 = new QLabel(add_full_dir);
-        label_9->setObjectName(QString::fromUtf8("label_9"));
+        label_9->setObjectName("label_9");
         label_9->setGeometry(QRect(40, 200, 131, 17));
         f_cbox_country = new QComboBox(add_full_dir);
-        f_cbox_country->setObjectName(QString::fromUtf8("f_cbox_country"));
+        f_cbox_country->setObjectName("f_cbox_country");
         f_cbox_country->setGeometry(QRect(200, 200, 241, 25));
         f_cbox_country->setStyleSheet(QString::fromUtf8("selection-color: rgb(87, 118, 255);"));
         label_10 = new QLabel(add_full_dir);
-        label_10->setObjectName(QString::fromUtf8("label_10"));
-        label_10->setGeometry(QRect(20, 0, 51, 51));
+        label_10->setObjectName("label_10");
+        label_10->setGeometry(QRect(20, 10, 61, 51));
         label_10->setPixmap(QPixmap(QString::fromUtf8(":/icons/app-ogg.png")));
 
         retranslateUi(add_full_dir);

@@ -2,6 +2,69 @@
 <ui version="4.0">
  <class>addgenre</class>
  <widget class="QDialog" name="addgenre">
+  <property name="styleSheet">
+   <string notr="true">
+      QDialog {
+          background-color: #2b2b2b;
+          color: #bbbbbb; /* Default text color */
+      }
+      QLabel {
+          color: #bbbbbb;
+      }
+      QLineEdit, QTextEdit, QPlainTextEdit {
+          background-color: #3c3f41;
+          color: #bbbbbb;
+          border: 1px solid #555555;
+          selection-background-color: #007acc;
+          selection-color: white;
+      }
+      QPushButton, QToolButton {
+          background-color: #555555;
+          color: #bbbbbb;
+          border: 1px solid #666666;
+          padding: 5px;
+      }
+      QPushButton:hover, QToolButton:hover {
+          background-color: #666666;
+      }
+      QPushButton:pressed, QToolButton:pressed {
+          background-color: #444444;
+      }
+      QComboBox {
+          background-color: #3c3f41;
+          color: #bbbbbb;
+          border: 1px solid #555555;
+          selection-background-color: #007acc;
+          /* selection-color: white; */
+      }
+      QComboBox::drop-down {
+          border: none;
+      }
+      QComboBox QAbstractItemView {
+          background-color: #3c3f41;
+          color: #bbbbbb;
+          selection-background-color: #007acc;
+          selection-color: white;
+          border: 1px solid #555555;
+          outline: 0px;
+      }
+      QDateEdit {
+          background-color: #3c3f41;
+          color: #bbbbbb;
+          border: 1px solid #555555;
+          selection-background-color: #007acc;
+          selection-color: white;
+      }
+      QDateEdit::drop-down {
+           /* Style dropdown button if needed */
+      }
+      QDateEdit QAbstractItemView {
+          background-color: #3c3f41;
+          color: #bbbbbb;
+          selection-background-color: #007acc;
+      }
+     </string>
+  </property>
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -12,9 +75,6 @@
   </property>
   <property name="windowTitle">
    <string>Manage Genres</string>
-  </property>
-  <property name="styleSheet">
-   <string notr="true">background-color: rgb(255, 255, 255);</string>
   </property>
   <widget class="QLabel" name="label">
    <property name="geometry">

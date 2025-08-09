@@ -14,6 +14,7 @@
 #include <QPushButton>
 #include <QSlider>
 #include <QWidget>
+#include <QMediaRecorder>
 
 namespace Ui {
 class optionsDialog;
@@ -69,7 +70,7 @@ private:
     QString User;
     QString Pass;
     QString Role;
-    QAudioRecorder *audioRecorder;
+    QMediaRecorder *audioRecorder;
     QString FTPPath;
     QString ComHour;
     QString fullScreen;

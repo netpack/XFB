@@ -34,11 +34,31 @@ addgenre::addgenre(QWidget *parent) :
     ui(new Ui::addgenre)
 {
     ui->setupUi(this);
+    QString configFileName = "xfb.conf";
+    QString writableConfigPath = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
+    QString configFilePath = writableConfigPath + "/" + configFileName;
+    QSettings settingsnew(configFilePath, QSettings::IniFormat);
+    bool darkMode = settingsnew.value("DarkMode", false).toBool();
+    qDebug() << "[StyleFix] OptionsDialog checking dark mode:" << darkMode;
 
 
+    // 3. Apply DIRECT stylesheet for background color
+    // This overrides the default Fusion background drawing
+    if (darkMode) {
+        this->setStyleSheet("QDialog { background-color: #353535; color: #bbbbbb; }");
+        // Optional: force tab page background again if needed, though attributes should work
+        // if (theTabWidget) theTabWidget->setStyleSheet("QWidget { background-color: #353535; color: #bbbbbb; }");
+    } else {
+        this->setStyleSheet("QDialog { background-color: #ffffff; color: #333333; }");
+        // Optional: force tab page background again if needed
+        // if (theTabWidget) theTabWidget->setStyleSheet("QWidget { background-color: #ffffff; color: #333333; }");
+    }
+    // --- END C++ BACKGROUND FIX & DIRECT STYLING ---
+
+QSqlDatabase db = QSqlDatabase::database("xfb_connection");
     QSqlQueryModel * model=new QSqlQueryModel();
 
-    QSqlQuery* qry=new QSqlQuery();
+    QSqlQuery* qry=new QSqlQuery(db);
 
     qry->prepare("select name from genres1 union select name from genres2 order by name");
     qry->exec();
@@ -56,8 +76,8 @@ addgenre::~addgenre()
 void addgenre::on_btShowGenre_clicked()
 {
     QSqlQueryModel * model=new QSqlQueryModel();
-
-    QSqlQuery* qry=new QSqlQuery();
+QSqlDatabase db = QSqlDatabase::database("xfb_connection");
+    QSqlQuery* qry=new QSqlQuery(db);
 
     qry->prepare("select name from genres1 union select name from genres2 order by name");
     qry->exec();
@@ -72,7 +92,8 @@ void addgenre::on_btDelGenre_clicked()
     reply = QMessageBox::question(this, "Confirm file delete", "Do you really want to delete the selecte Genre?", QMessageBox::Yes|QMessageBox::No);
     if (reply == QMessageBox::Yes) {
         //delete the row
-        QSqlQuery* qry=new QSqlQuery();
+        QSqlDatabase db = QSqlDatabase::database("xfb_connection");
+        QSqlQuery* qry=new QSqlQuery(db);
         qry->prepare("delete from genres1 where name = :thname");
         qry->bindValue(":thname",valorselecionado);
 
@@ -103,8 +124,8 @@ void addgenre::on_btAddNewGenre_clicked()
     QString genreName = ui->txtNewGenre->text();
     //QString genreType = ui->comboBox->currentText();
     qDebug() << genreName ;
-
-    QSqlQuery* qry=new QSqlQuery();
+QSqlDatabase db = QSqlDatabase::database("xfb_connection");
+    QSqlQuery* qry=new QSqlQuery(db);
 
         qry->prepare("insert into genres1 values (NULL,:thgName)");
         qry->bindValue(":thgName",genreName);

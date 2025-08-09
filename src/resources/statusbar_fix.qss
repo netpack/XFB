@@ -1,0 +1,64 @@
+/* Additional status bar styling to target specific cases that cause light stripes */
+QStatusBar {
+    background-color: #353535 !important;
+    color: #ffffff !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Style all status bar elements and children */
+QStatusBar * {
+    background-color: #353535 !important;
+    color: #ffffff !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Style the size grip directly (which appears in the corner) */
+QMainWindow::corner {
+    background-color: #353535 !important;
+}
+
+/* Target widgets that could be inserted automatically */
+QStatusBar QToolButton,
+QStatusBar QPushButton,
+QStatusBar QLabel,
+QStatusBar QProgressBar {
+    background-color: #353535 !important;
+    color: #ffffff !important;
+    border: none !important;
+}
+
+/* Target potential frameless containers in status bar */
+QStatusBar QFrame {
+    background-color: #353535 !important;
+    border: none !important;
+}
+
+/* Ensure any layouts inside status bar are properly styled */
+QStatusBar QHBoxLayout,
+QStatusBar QVBoxLayout,
+QStatusBar QGridLayout {
+    background-color: #353535 !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    spacing: 0 !important;
+}
+
+/* Ensure consistent text coloring in status bar */
+QStatusBar QLabel {
+    color: #ffffff !important;
+}
+
+/* Additional corner fixes */
+QMainWindow::separator:hover {
+    background-color: #353535;
+}
+
+/* Target all widgets at the bottom of the main window */
+QMainWindow > .QWidget:last {
+    background-color: #353535 !important;
+}

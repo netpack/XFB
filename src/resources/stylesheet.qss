@@ -1,0 +1,499 @@
+/* ===== DIALOG STYLING - SIMPLIFIED ===== */
+
+
+QMainWindow {
+    background-color: #f0f0f0; /* Light gray background */
+    color: #333333; /* Dark gray text */
+}
+QWidget { /* Apply to central widget and docked widgets */
+    background-color: #f0f0f0;
+    color: #333333;
+}
+/* Add specific rules for centralWidget and its main child */
+QWidget#centralWidget {
+    background-color: #f0f0f0;
+}
+QWidget#widget { /* The nested QWidget inside centralWidget */
+    background-color: #f0f0f0;
+}
+QLabel {
+    color: #333333;
+}
+/* Add specific rules for centralWidget and its main child */
+QWidget#centralWidget {
+    background-color: #f0f0f0;
+}
+QWidget#widget { /* The nested QWidget inside centralWidget */
+    background-color: #f0f0f0;
+}
+QLineEdit, QTextEdit, QPlainTextEdit, QSpinBox {
+    background-color: #ffffff; /* White background for inputs */
+    color: #333333;
+    border: 1px solid #cccccc; /* Medium-light gray border */
+    selection-background-color: #007acc; /* Keep accent blue */
+    selection-color: white; /* White text on blue selection */
+}
+QPushButton, QToolButton {
+    background-color: #e0e0e0; /* Light gray button background */
+    color: #333333;
+    border: 1px solid #b0b0b0; /* Slightly darker border for buttons */
+    padding: 5px;
+}
+QPushButton:hover, QToolButton:hover {
+    background-color: #d0d0d0; /* Slightly darker gray on hover */
+}
+QPushButton:pressed, QToolButton:pressed {
+    background-color: #c0c0c0; /* Even darker gray when pressed */
+}
+QComboBox {
+    background-color: #ffffff; /* White background */
+    color: #333333;
+    border: 1px solid #cccccc;
+    selection-background-color: #007acc;
+    /* selection-color: white; */ /* Usually inherits text color */
+}
+QComboBox::drop-down {
+    border: none;
+}
+QComboBox QAbstractItemView {
+    background-color: #ffffff;
+    color: #333333;
+    selection-background-color: #007acc;
+    selection-color: white;
+    border: 1px solid #cccccc;
+    outline: 0px;
+}
+QDateEdit {
+    background-color: #ffffff;
+    color: #333333;
+    border: 1px solid #cccccc;
+    selection-background-color: #007acc;
+    selection-color: white;
+}
+QDateEdit::drop-down {
+     /* Style dropdown button if needed */
+}
+QDateEdit QAbstractItemView {
+    background-color: #ffffff;
+    color: #333333;
+    selection-background-color: #007acc;
+}
+QTableView, QListView, QTreeView {
+    background-color: #ffffff; /* White background for views */
+    color: #333333;
+    gridline-color: #e0e0e0; /* Lighter gray gridlines */
+    selection-background-color: #007acc;
+    selection-color: white;
+    border: 1px solid #cccccc;
+}
+QHeaderView::section {
+    background-color: #e0e0e0; /* Light gray header */
+    color: #333333;
+    padding: 4px;
+    border: 1px solid #d0d0d0; /* Slightly darker border */
+}
+QProgressBar {
+    border: 1px solid #cccccc;
+    text-align: center;
+    color: #333333;
+    background-color: #ffffff; /* White background */
+}
+QProgressBar::chunk {
+    background-color: #007acc; /* Keep accent blue */
+    width: 10px;
+    margin: 0.5px;
+}
+QTabWidget::pane { /* The tab widget frame */
+    border-top: 2px solid #cccccc;
+    background-color: #f0f0f0;
+}
+QTabBar::tab {
+    background: #e0e0e0; /* Light gray tab background */
+    border: 1px solid #cccccc;
+    border-bottom-color: #f0f0f0; /* same as pane color */
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    min-width: 8ex;
+    padding: 2px;
+    color: #333333;
+}
+/* Add specific rules for centralWidget and its main child */
+QWidget#centralWidget {
+    background-color: #f0f0f0;
+}
+QWidget#widget { /* The nested QWidget inside centralWidget */
+    background-color: #f0f0f0;
+}
+QTabBar::tab:selected, QTabBar::tab:hover {
+    background: #d0d0d0; /* Slightly darker gray */
+}
+QTabBar::tab:selected {
+    border-color: #b0b0b0; /* Darker border when selected */
+    border-bottom-color: #f0f0f0; /* same as pane color */
+}
+QTabBar::tab:!selected {
+    margin-top: 2px; /* make non-selected tabs look smaller */
+}
+QCheckBox {
+    color: #333333;
+}
+/* Add specific rules for centralWidget and its main child */
+QWidget#centralWidget {
+    background-color: #f0f0f0;
+}
+QWidget#widget { /* The nested QWidget inside centralWidget */
+    background-color: #f0f0f0;
+}
+QCheckBox::indicator {
+    width: 13px;
+    height: 13px;
+    border: 1px solid #cccccc;
+    background-color: #ffffff;
+}
+QCheckBox::indicator:checked {
+    background-color: #007acc; /* Keep accent blue */
+    border: 1px solid #005c9e; /* Slightly darker blue border */
+    /* You might want an image for the checkmark in light mode */
+    /* image: url(:/images/checkmark_light.png); */
+}
+QRadioButton {
+    color: #333333;
+}
+/* Add specific rules for centralWidget and its main child */
+QWidget#centralWidget {
+    background-color: #f0f0f0;
+}
+QWidget#widget { /* The nested QWidget inside centralWidget */
+    background-color: #f0f0f0;
+}
+QRadioButton::indicator {
+    width: 13px;
+    height: 13px;
+    border-radius: 7px; /* Keep circular */
+    border: 1px solid #cccccc;
+    background-color: #ffffff;
+}
+QRadioButton::indicator:checked {
+    background-color: #007acc; /* Keep accent blue */
+    border: 1px solid #005c9e; /* Slightly darker blue border */
+    /* You might want an inner dot image */
+    /* image: url(:/images/radio_dot_light.png); */
+}
+QSlider::groove:horizontal {
+    border: 1px solid #cccccc;
+    height: 8px;
+    background: #e0e0e0; /* Light gray groove */
+    margin: 2px 0;
+}
+QSlider::handle:horizontal {
+    background: #888888; /* Medium gray handle */
+    border: 1px solid #777777; /* Slightly darker border */
+    width: 18px;
+    margin: -2px 0;
+    border-radius: 3px;
+}
+QSlider::groove:vertical {
+    border: 1px solid #cccccc;
+    width: 8px;
+    background: #e0e0e0;
+    margin: 0 2px;
+}
+QSlider::handle:vertical {
+    background: #888888;
+    border: 1px solid #777777;
+    height: 18px;
+    margin: 0 -2px;
+    border-radius: 3px;
+}
+QMenuBar {
+    background-color: #e0e0e0; /* Light gray menubar */
+    color: #333333;
+}
+/* Add specific rules for centralWidget and its main child */
+QWidget#centralWidget {
+    background-color: #f0f0f0;
+}
+QWidget#widget { /* The nested QWidget inside centralWidget */
+    background-color: #f0f0f0;
+}
+QMenuBar::item {
+    background: transparent;
+}
+QMenuBar::item:selected {
+    background: #d0d0d0; /* Slightly darker hover */
+}
+QMenu {
+    background-color: #ffffff; /* White menu background */
+    color: #333333;
+    border: 1px solid #cccccc;
+}
+QMenu::item:selected {
+    background-color: #007acc; /* Keep accent blue */
+    color: white; /* Ensure text is white on blue */
+}
+QStatusBar {
+    background-color: #e0e0e0; /* Light gray status bar */
+    color: #333333;
+}
+/* Add specific rules for centralWidget and its main child */
+QWidget#centralWidget {
+    background-color: #f0f0f0;
+}
+QWidget#widget { /* The nested QWidget inside centralWidget */
+    background-color: #f0f0f0;
+}
+QToolBar {
+    background: #e0e0e0; /* Light gray toolbar */
+    border: 1px solid #cccccc;
+}
+
+QDialog {
+    background-color: #f0f0f0; /* Light gray background */
+    color: #333333; /* Dark gray text */
+}
+QLabel {
+    color: #333333;
+}
+QLineEdit, QTextEdit, QPlainTextEdit, QSpinBox {
+    background-color: #ffffff; /* White input background */
+    color: #333333;
+    border: 1px solid #cccccc; /* Medium-light gray border */
+    selection-background-color: #007acc; /* Keep accent blue */
+    selection-color: white;
+}
+QPushButton, QToolButton {
+    background-color: #e0e0e0; /* Light gray button background */
+    color: #333333;
+    border: 1px solid #b0b0b0; /* Slightly darker border */
+    padding: 5px;
+}
+QPushButton:hover, QToolButton:hover {
+    background-color: #d0d0d0; /* Slightly darker gray on hover */
+}
+QPushButton:pressed, QToolButton:pressed {
+    background-color: #c0c0c0; /* Even darker gray when pressed */
+}
+QComboBox {
+    background-color: #ffffff; /* White background */
+    color: #333333;
+    border: 1px solid #cccccc;
+    selection-background-color: #007acc;
+    /* selection-color: white; */ /* Inherits text color */
+}
+QComboBox::drop-down {
+    border: none;
+}
+QComboBox QAbstractItemView {
+    background-color: #ffffff;
+    color: #333333;
+    selection-background-color: #007acc;
+    selection-color: white;
+    border: 1px solid #cccccc;
+    outline: 0px;
+}
+QDateEdit {
+    background-color: #ffffff;
+    color: #333333;
+    border: 1px solid #cccccc;
+    selection-background-color: #007acc;
+    selection-color: white;
+}
+QDateEdit::drop-down {
+     /* Style dropdown button if needed */
+}
+QDateEdit QAbstractItemView {
+    background-color: #ffffff;
+    color: #333333;
+    selection-background-color: #007acc;
+}
+QTableView {
+    background-color: #ffffff; /* White background */
+    color: #333333;
+    gridline-color: #e0e0e0; /* Light gray gridlines */
+    selection-background-color: #007acc;
+    selection-color: white;
+    border: 1px solid #cccccc; /* Add border if missing from original */
+}
+QHeaderView::section {
+    background-color: #e0e0e0; /* Light gray header */
+    color: #333333;
+    padding: 4px;
+    border: 1px solid #d0d0d0; /* Slightly darker border */
+}
+QProgressBar {
+    border: 1px solid #cccccc;
+    text-align: center;
+    color: #333333;
+    background-color: #ffffff; /* White background */
+}
+QProgressBar::chunk {
+    background-color: #007acc; /* Keep accent blue */
+    width: 10px;
+    margin: 0.5px;
+}
+QTabWidget::pane { /* The tab widget frame */
+    border-top: 2px solid #cccccc;
+    background-color: #f0f0f0;
+}
+QTabBar::tab {
+    background: #e0e0e0; /* Light gray tab background */
+    border: 1px solid #cccccc;
+    border-bottom-color: #f0f0f0; /* same as pane color */
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    min-width: 8ex;
+    padding: 2px;
+    color: #333333;
+}
+QTabBar::tab:selected, QTabBar::tab:hover {
+    background: #d0d0d0; /* Slightly darker gray */
+}
+QTabBar::tab:selected {
+    border-color: #b0b0b0; /* Darker border when selected */
+    border-bottom-color: #f0f0f0; /* same as pane color */
+}
+QTabBar::tab:!selected {
+    margin-top: 2px; /* make non-selected tabs look smaller */
+}
+QCheckBox {
+    color: #333333;
+}
+QCheckBox::indicator {
+    width: 13px;
+    height: 13px;
+    border: 1px solid #cccccc;
+    background-color: #ffffff;
+}
+QCheckBox::indicator:checked {
+    background-color: #007acc; /* Keep accent blue */
+    border: 1px solid #005c9e; /* Slightly darker blue border */
+    /* image: url(:/images/checkmark_light.png); */
+}
+QRadioButton {
+    color: #333333;
+}
+QRadioButton::indicator {
+    width: 13px;
+    height: 13px;
+    border-radius: 7px; /* Keep circular */
+    border: 1px solid #cccccc;
+    background-color: #ffffff;
+}
+QRadioButton::indicator:checked {
+    background-color: #007acc; /* Keep accent blue */
+    border: 1px solid #005c9e; /* Slightly darker blue border */
+    /* image: url(:/images/radio_dot_light.png); */
+}
+
+
+/* Base dialog */
+QDialog {
+    background-color: #ffffff;
+    color: #333333;
+}
+
+/* Basic containers - rely on C++ attributes for background */
+QDialog QWidget {
+    /* No background-color here by default, let C++ attributes enable QSS inheritance/rules */
+    border: none; /* Only if you want NO borders on basic QWidgets */
+    color: #333333;
+}
+QDialog QFrame {
+     background-color: #ffffff;
+}
+QDialog QGroupBox {
+    /* background-color: transparent; Let C++ attributes handle page background */
+    border: 1px solid #cccccc;
+    margin-top: 10px;
+    padding: 5px;
+}
+QDialog QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    padding: 0 3px;
+    background-color: #ffffff; /* Match dialog background */
+    color: #333333;
+}
+
+/* Labels inside dialogs */
+QDialog QLabel {
+     background-color: transparent; /* Ensure transparency */
+     color: #333333;
+}
+
+/* --- Tab Widget Styling (Rely on C++ Attributes for Content BG) --- */
+QDialog QTabWidget {
+     background-color: transparent; /* Let dialog show through */
+     border: none;
+}
+
+QDialog QTabWidget::pane {
+    /* Background is handled by the page widget via C++ */
+    border: 1px solid #cccccc; /* Style only the border */
+}
+
+/* Target the WIDGETS INSIDE the pane explicitly */
+/* This is where the white background needs to be enforced IF needed */
+QDialog QTabWidget QWidget {
+    /* This rule applies to ALL descendants, including the tab page */
+    background-color: #ffffff; /* Set the desired background */
+    color: #333333;
+    border: none; /* Reset border for content widgets unless styled otherwise */
+}
+
+
+QDialog QTabBar {
+    qproperty-drawBase: 0;
+    background-color: #eeeeee;
+    border: none;
+}
+
+QDialog QTabBar::tab {
+    color: #333333;
+    background-color: #f0f0f0; /* Inactive */
+    border: 1px solid #cccccc;
+    border-bottom-color: #cccccc;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    padding: 4px 8px;
+    min-width: 60px;
+}
+
+QDialog QTabBar::tab:selected {
+    background-color: #eeeeee; /* Active tab matches pane */
+    border-bottom-color: #ffffff;
+    margin-bottom: -1px;
+}
+
+QDialog QTabBar::tab:!selected:hover {
+    background-color: #e0e0e0;
+}
+/* --- End Simplified Dialog/Tab Styling --- */
+
+/* ===== OTHER WIDGETS ===== */
+
+QLineEdit, QDialog QLineEdit {
+    color: #333333; background-color: #eeeeee; border: 1px solid #cccccc;
+    border-radius: 2px; selection-background-color: #007acc; selection-color: white;
+}
+QPushButton, QDialog QPushButton {
+    color: #333333; background-color: #f0f0f0; border: 1px solid #cccccc;
+    border-radius: 4px; padding: 4px 8px; min-height: 16px; min-width: 30px;
+}
+
+QDialog {
+    background-color: #eeeeee !important;
+    color: #333333 !important;
+}
+
+/* ----- Specific UI Element Overrides (Keep these last) ----- */
+#txt_horas { color: rgb(129, 129, 194); }
+#bt_autoMode { background-color: rgb(175, 227, 59); }
+#historyList { background-color: rgb(206, 217, 255); }
+#lbl_lp1_remaining, #lbl_lp2_remaining { color: rgb(255, 0, 0); }
+#txtNowPlaying { color: rgb(124, 124, 186); border-radius: 8px; }
+#txt_ProgramName { background-color: #FFE329; padding: 5px; color: #333333; }
+#txt_recTime { color: rgb(255, 0, 0); }
+#txtDuration { color: rgb(0, 75, 167); }
+#lbl_butt, #lbl_ddns, #lbl_port, #lbl_icecast { color: rgb(98, 135, 255); }
+ClickableTextBrowser { background-color: #ffffff; color: #333333; border: 1px solid #cccccc; }

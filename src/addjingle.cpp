@@ -26,6 +26,26 @@ addJingle::addJingle(QWidget *parent) :
     ui(new Ui::addJingle)
 {
     ui->setupUi(this);
+    QString configFileName = "xfb.conf";
+    QString writableConfigPath = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
+    QString configFilePath = writableConfigPath + "/" + configFileName;
+    QSettings settingsnew(configFilePath, QSettings::IniFormat);
+    bool darkMode = settingsnew.value("DarkMode", false).toBool();
+    qDebug() << "[StyleFix] OptionsDialog checking dark mode:" << darkMode;
+
+
+    // 3. Apply DIRECT stylesheet for background color
+    // This overrides the default Fusion background drawing
+    if (darkMode) {
+        this->setStyleSheet("QDialog { background-color: #353535; color: #bbbbbb; }");
+        // Optional: force tab page background again if needed, though attributes should work
+        // if (theTabWidget) theTabWidget->setStyleSheet("QWidget { background-color: #353535; color: #bbbbbb; }");
+    } else {
+        this->setStyleSheet("QDialog { background-color: #ffffff; color: #333333; }");
+        // Optional: force tab page background again if needed
+        // if (theTabWidget) theTabWidget->setStyleSheet("QWidget { background-color: #ffffff; color: #333333; }");
+    }
+    // --- END C++ BACKGROUND FIX & DIRECT STYLING ---
 
 }
 
@@ -57,7 +77,8 @@ void addJingle::on_pushButton_clicked()
 
     QString jpath = ui->txt_file->text();
     QString jname = ui->txt_name->text();
-    QSqlQuery sql;
+    QSqlDatabase db = QSqlDatabase::database("xfb_connection");
+    QSqlQuery sql(db);
 
     sql.prepare("insert into jingles values(:jname,:jpath)");
     sql.bindValue(":jname",jname);

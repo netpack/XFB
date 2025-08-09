@@ -1,0 +1,480 @@
+/* Dark Theme Stylesheet */
+
+QMainWindow {
+    background-color: #353535;
+    color: #bbbbbb; /* Default text color */
+}
+QWidget { /* Apply to central widget and docked widgets */
+    background-color: #353535;
+    color: #bbbbbb;
+}
+/* Add specific rules for centralWidget and its main child */
+QWidget#centralWidget {
+    background-color: #353535;
+}
+QWidget#widget { /* The nested QWidget inside centralWidget */
+    background-color: #353535;
+}
+QLabel {
+    color: #bbbbbb;
+}
+/* Add specific rules for centralWidget and its main child */
+QWidget#centralWidget {
+    background-color: #353535;
+}
+QWidget#widget { /* The nested QWidget inside centralWidget */
+    background-color: #353535;
+}
+QLineEdit, QTextEdit, QPlainTextEdit, QSpinBox {
+    background-color: #3c3f41;
+    color: #bbbbbb;
+    border: 1px solid #555555;
+    selection-background-color: #007acc;
+    selection-color: white;
+}
+QPushButton, QToolButton {
+    background-color: #555555;
+    color: #bbbbbb;
+    border: 1px solid #777777;
+    padding: 5px;
+}
+QPushButton:hover, QToolButton:hover {
+    background-color: #777777;
+}
+QPushButton:pressed, QToolButton:pressed {
+    background-color: #444444;
+}
+QComboBox {
+    background-color: #3c3f41;
+    color: #bbbbbb;
+    border: 1px solid #555555;
+    selection-background-color: #007acc;
+    /* selection-color: white; */
+}
+QComboBox::drop-down {
+    border: none;
+}
+QComboBox QAbstractItemView {
+    background-color: #3c3f41;
+    color: #bbbbbb;
+    selection-background-color: #007acc;
+    selection-color: white;
+    border: 1px solid #555555;
+    outline: 0px;
+}
+QDateEdit {
+    background-color: #3c3f41;
+    color: #bbbbbb;
+    border: 1px solid #555555;
+    selection-background-color: #007acc;
+    selection-color: white;
+}
+QDateEdit::drop-down {
+     /* Style dropdown button if needed */
+}
+QDateEdit QAbstractItemView {
+    background-color: #3c3f41;
+    color: #bbbbbb;
+    selection-background-color: #007acc;
+}
+QTableView, QListView, QTreeView {
+    background-color: #3c3f41;
+    color: #bbbbbb;
+    gridline-color: #555555;
+    selection-background-color: #007acc;
+    selection-color: white;
+    border: 1px solid #555555;
+}
+QHeaderView::section {
+    background-color: #555555;
+    color: #bbbbbb;
+    padding: 4px;
+    border: 1px solid #666666;
+}
+QProgressBar {
+    border: 1px solid #555555;
+    text-align: center;
+    color: #bbbbbb;
+    background-color: #3c3f41;
+}
+QProgressBar::chunk {
+    background-color: #007acc;
+    width: 10px;
+    margin: 0.5px;
+}
+QTabWidget::pane { /* The tab widget frame */
+    border-top: 2px solid #555555;
+    background-color: #353535;
+}
+QTabBar::tab {
+    background: #3c3f41;
+    border: 1px solid #555555;
+    border-bottom-color: #353535; /* same as pane color */
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    min-width: 8ex;
+    padding: 2px;
+    color: #bbbbbb;
+}
+/* Add specific rules for centralWidget and its main child */
+QWidget#centralWidget {
+    background-color: #353535;
+}
+QWidget#widget { /* The nested QWidget inside centralWidget */
+    background-color: #353535;
+}
+QTabBar::tab:selected, QTabBar::tab:hover {
+    background: #555555;
+}
+QTabBar::tab:selected {
+    border-color: #666666;
+    border-bottom-color: #353535; /* same as pane color */
+}
+QTabBar::tab:!selected {
+    margin-top: 2px; /* make non-selected tabs look smaller */
+}
+QCheckBox {
+    color: #bbbbbb;
+}
+/* Add specific rules for centralWidget and its main child */
+QWidget#centralWidget {
+    background-color: #353535;
+}
+QWidget#widget { /* The nested QWidget inside centralWidget */
+    background-color: #353535;
+}
+QCheckBox::indicator {
+    width: 13px;
+    height: 13px;
+    border: 1px solid #555555;
+    background-color: #3c3f41;
+}
+QCheckBox::indicator:checked {
+    background-color: #007acc;
+    border: 1px solid #666666;
+}
+QRadioButton {
+    color: #bbbbbb;
+}
+/* Add specific rules for centralWidget and its main child */
+QWidget#centralWidget {
+    background-color: #353535;
+}
+QWidget#widget { /* The nested QWidget inside centralWidget */
+    background-color: #353535;
+}
+QRadioButton::indicator {
+    width: 13px;
+    height: 13px;
+    border-radius: 6px;
+    border: 1px solid #555555;
+    background-color: #3c3f41;
+}
+QRadioButton::indicator:checked {
+    background-color: #007acc;
+    border: 1px solid #666666;
+}
+QSlider::groove:horizontal {
+    border: 1px solid #555555;
+    height: 8px;
+    background: #3c3f41;
+    margin: 2px 0;
+}
+QSlider::handle:horizontal {
+    background: #bbbbbb;
+    border: 1px solid #555555;
+    width: 18px;
+    margin: -2px 0;
+    border-radius: 3px;
+}
+QSlider::groove:vertical {
+    border: 1px solid #555555;
+    width: 8px;
+    background: #3c3f41;
+    margin: 0 2px;
+}
+QSlider::handle:vertical {
+    background: #bbbbbb;
+    border: 1px solid #555555;
+    height: 18px;
+    margin: 0 -2px;
+    border-radius: 3px;
+}
+QMenuBar {
+    background-color: #3c3f41;
+    color: #bbbbbb;
+}
+/* Add specific rules for centralWidget and its main child */
+QWidget#centralWidget {
+    background-color: #353535;
+}
+QWidget#widget { /* The nested QWidget inside centralWidget */
+    background-color: #353535;
+}
+QMenuBar::item {
+    background: transparent;
+}
+QMenuBar::item:selected {
+    background: #555555;
+}
+QMenu {
+    background-color: #3c3f41;
+    color: #bbbbbb;
+    border: 1px solid #555555;
+}
+QMenu::item:selected {
+    background-color: #007acc;
+}
+QStatusBar {
+    background-color: #3c3f41;
+    color: #bbbbbb;
+}
+/* Add specific rules for centralWidget and its main child */
+QWidget#centralWidget {
+    background-color: #353535;
+}
+QWidget#widget { /* The nested QWidget inside centralWidget */
+    background-color: #353535;
+}
+QToolBar {
+    background: #3c3f41;
+    border: 1px solid #555555;
+}
+
+QWidget {
+    background-color: #353535; /* Dark gray background */
+    color: #ffffff; /* White text */
+    selection-background-color: #8181c2; /* Highlight color from palette */
+    selection-color: #000000; /* Black highlighted text */
+}
+
+QLineEdit, QTextEdit, QPlainTextEdit {
+    background-color: #2a2a2a; /* Slightly darker base for input fields */
+    border: 1px solid #424242; /* Border color from palette */
+}
+
+QPushButton {
+    background-color: #353535; /* Button background same as window */
+    border: 1px solid #424242;
+    padding: 5px;
+}
+
+QPushButton:hover {
+    background-color: #424242; /* Slightly lighter on hover */
+}
+
+QPushButton:pressed {
+    background-color: #2a2a2a; /* Darker when pressed */
+}
+
+QCheckBox, QRadioButton {
+    /* Keep default indicators for now, just ensure text is white */
+}
+
+QComboBox {
+    background-color: #2a2a2a;
+    border: 1px solid #424242;
+}
+
+QComboBox QAbstractItemView {
+    background-color: #2a2a2a;
+    selection-background-color: #8181c2;
+    color: #ffffff;
+    selection-color: #000000;
+}
+
+QMenuBar {
+    background-color: #353535;
+    color: #ffffff;
+}
+
+QMenuBar::item {
+    background-color: #353535;
+    color: #ffffff;
+}
+
+QMenuBar::item:selected {
+    background-color: #424242;
+}
+
+QMenu {
+    background-color: #353535;
+    color: #ffffff;
+    border: 1px solid #424242;
+}
+
+QMenu::item:selected {
+    background-color: #8181c2;
+    color: #000000;
+}
+
+QTabWidget::pane {
+    border: 1px solid #424242;
+}
+
+QTabBar::tab {
+    background-color: #353535;
+    color: #ffffff;
+    padding: 8px;
+    border: 1px solid #424242;
+    border-bottom: none; /* Avoid double border */
+}
+
+QTabBar::tab:selected {
+    background-color: #424242;
+}
+
+QTabBar::tab:!selected {
+    background-color: #2a2a2a;
+}
+
+QStatusBar {
+    background-color: #353535 !important; /* Ensure status bar background */
+    color: #ffffff; /* White text */
+    border: none;
+    margin: 0;
+    padding: 0;
+}
+
+/* Style all items in the status bar to ensure no light stripes */
+QStatusBar::item {
+    background-color: #353535 !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+QStatusBar::separator {
+    background-color: #353535 !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+QStatusBar QSizeGrip {
+    background-color: #353535 !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 16px;
+    height: 16px;
+}
+
+/* Target any widgets inside the status bar */
+QStatusBar QWidget, QStatusBar QLabel, QStatusBar QFrame {
+    background-color: #353535 !important;
+    color: #ffffff !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Specific overrides from optionsdialog.ui that need dark mode adjustment */
+QPlainTextEdit[objectName="txt_terminal"] {
+    background-color: #1e1e1e; /* Even darker for terminal */
+    color: #d4d4d4; /* Light gray text for terminal */
+    font-family: "Ubuntu"; /* Keep font */
+    font-size: 11pt;
+}
+
+/* Specific overrides from player.ui */
+QListView[objectName="historyList"] {
+    background-color: #3a3a4a; /* Darker blue-ish background */
+}
+
+QLabel[objectName="txt_horas"] {
+    color: #a0a0ff; /* Lighter blue for clock */
+}
+
+QPushButton[objectName="bt_autoMode"] {
+    /* Remove specific background color unless active */
+}
+
+QLabel[objectName="lbl_lp1_remaining"], QLabel[objectName="lbl_lp2_remaining"] {
+    color: #ff5555; /* Lighter red */
+}
+
+QLabel[objectName="txt_recTime"] {
+    color: #ff5555; /* Lighter red */
+}
+
+QLineEdit[objectName="txtNowPlaying"] {
+    color: #a0a0ff; /* Lighter blue */
+    border-radius: 8px;
+    background-color: #2a2a2a;
+}
+
+QLineEdit[objectName="txt_ProgramName"] {
+    background-color: #444400; /* Dark yellow */
+    color: #ffffff;
+    padding: 5px;
+}
+
+QLineEdit[objectName="txtDuration"] {
+    color: #50a0ff; /* Lighter blue */
+}
+
+QLabel[objectName="led_rec"] {
+    background-color: #505000; /* Dark yellow */
+    border-radius: 8px;
+}
+
+QMenuBar {
+    color: #a0a0ff; /* Lighter blue for menu bar text */
+}
+
+QMenu {
+    color: #a0a0ff; /* Lighter blue for menu text */
+    border-right: 1px solid #424242;
+    border-left: 1px solid #424242;
+    border-bottom: 1px solid #424242;
+}
+
+/* Fix for bottom stripe - footer elements */
+QLabel[objectName="NetpackLogo"] {
+    background-color: #353535 !important;
+    border: none;
+    padding-top: 10px;
+}
+
+QLabel[objectName="txt_bottom_info"] {
+    background-color: #353535 !important;
+    color: #a0a0ff;
+    border: none;
+    margin-right: 15px;
+}
+
+/* Ensure footer area and layouts have dark backgrounds */
+#centralWidget {
+    background-color: #353535;
+}
+
+QHBoxLayout, QVBoxLayout, QGridLayout {
+    background-color: #353535;
+}
+
+/* Bottom tab bar with Musics, Jingles, etc. */
+QTabBar::tab:bottom {
+    background-color: #2a2a2a;
+    color: #ffffff;
+    border: 1px solid #424242;
+}
+
+QTabBar::tab:bottom:selected {
+    background-color: #424242;
+}
+
+/* Fix any remaining white elements at the bottom */
+QWidget[objectName="centralWidget"] > QWidget {
+    background-color: #353535;
+}
+
+QMainWindow::separator {
+    background-color: #424242;
+    width: 1px;
+    height: 1px;
+}
+
+#horizontalLayout_11 {
+    background-color: #353535;
+}

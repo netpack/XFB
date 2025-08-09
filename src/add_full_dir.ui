@@ -13,9 +13,6 @@
   <property name="windowTitle">
    <string>Add a full directory</string>
   </property>
-  <property name="styleSheet">
-   <string notr="true">background-color: rgb(255, 255, 255);</string>
-  </property>
   <widget class="QLabel" name="label">
    <property name="geometry">
     <rect>
@@ -28,7 +25,6 @@
    <property name="font">
     <font>
      <pointsize>11</pointsize>
-     <weight>75</weight>
      <bold>true</bold>
     </font>
    </property>
@@ -100,7 +96,6 @@
    <property name="font">
     <font>
      <pointsize>8</pointsize>
-     <weight>50</weight>
      <italic>true</italic>
      <bold>false</bold>
      <underline>false</underline>

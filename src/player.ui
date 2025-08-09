@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1472</width>
-    <height>820</height>
+    <height>832</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -26,9 +26,6 @@
   <property name="windowOpacity">
    <double>1.000000000000000</double>
   </property>
-  <property name="styleSheet">
-   <string notr="true">background-color: rgb(255, 255, 255);</string>
-  </property>
   <property name="iconSize">
    <size>
     <width>48</width>
@@ -36,7 +33,7 @@
    </size>
   </property>
   <property name="dockOptions">
-   <set>QMainWindow::AllowNestedDocks|QMainWindow::AllowTabbedDocks|QMainWindow::AnimatedDocks</set>
+   <set>QMainWindow::DockOption::AllowNestedDocks|QMainWindow::DockOption::AllowTabbedDocks|QMainWindow::DockOption::AnimatedDocks</set>
   </property>
   <property name="unifiedTitleAndToolBarOnMac">
    <bool>true</bool>
@@ -72,9 +69,6 @@
         <verstretch>100</verstretch>
        </sizepolicy>
       </property>
-      <property name="styleSheet">
-       <string notr="true"/>
-      </property>
       <layout class="QGridLayout" name="gridLayout_2" rowstretch="0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0">
        <property name="leftMargin">
         <number>0</number>
@@ -91,105 +85,6 @@
        <property name="spacing">
         <number>0</number>
        </property>
-       <item row="0" column="1" rowspan="5">
-        <widget class="QFrame" name="frame">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="minimumSize">
-          <size>
-           <width>350</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>251</width>
-           <height>16777215</height>
-          </size>
-         </property>
-         <property name="font">
-          <font>
-           <kerning>true</kerning>
-          </font>
-         </property>
-         <property name="frameShape">
-          <enum>QFrame::NoFrame</enum>
-         </property>
-         <property name="frameShadow">
-          <enum>QFrame::Raised</enum>
-         </property>
-         <widget class="QLCDNumber" name="txt_horas">
-          <property name="geometry">
-           <rect>
-            <x>30</x>
-            <y>20</y>
-            <width>301</width>
-            <height>61</height>
-           </rect>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">color: rgb(129, 129, 194);</string>
-          </property>
-          <property name="frameShape">
-           <enum>QFrame::NoFrame</enum>
-          </property>
-          <property name="digitCount">
-           <number>8</number>
-          </property>
-          <property name="mode">
-           <enum>QLCDNumber::Dec</enum>
-          </property>
-         </widget>
-         <widget class="QPushButton" name="bt_autoMode">
-          <property name="geometry">
-           <rect>
-            <x>30</x>
-            <y>90</y>
-            <width>301</width>
-            <height>31</height>
-           </rect>
-          </property>
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="autoFillBackground">
-           <bool>false</bool>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">background-color: rgb(175, 227, 59);</string>
-          </property>
-          <property name="text">
-           <string>Auto Mode</string>
-          </property>
-          <property name="icon">
-           <iconset resource="resources.qrc">
-            <normaloff>:/icons/flat/Einstein-48.png</normaloff>:/icons/flat/Einstein-48.png</iconset>
-          </property>
-          <property name="iconSize">
-           <size>
-            <width>32</width>
-            <height>32</height>
-           </size>
-          </property>
-          <property name="autoDefault">
-           <bool>false</bool>
-          </property>
-          <property name="default">
-           <bool>false</bool>
-          </property>
-          <property name="flat">
-           <bool>false</bool>
-          </property>
-         </widget>
-        </widget>
-       </item>
        <item row="20" column="0" rowspan="4" colspan="2">
         <widget class="QTabWidget" name="tabWidget_2">
          <property name="sizePolicy">
@@ -202,6 +97,9 @@
           <font>
            <kerning>false</kerning>
           </font>
+         </property>
+         <property name="autoFillBackground">
+          <bool>false</bool>
          </property>
          <property name="currentIndex">
           <number>0</number>
@@ -248,6 +146,57 @@
            <property name="spacing">
             <number>0</number>
            </property>
+           <item row="2" column="0">
+            <widget class="QListWidget" name="playlist">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+               <horstretch>0</horstretch>
+               <verstretch>10</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="font">
+              <font>
+               <kerning>false</kerning>
+              </font>
+             </property>
+             <property name="acceptDrops">
+              <bool>true</bool>
+             </property>
+             <property name="frameShape">
+              <enum>QFrame::Shape::NoFrame</enum>
+             </property>
+             <property name="frameShadow">
+              <enum>QFrame::Shadow::Plain</enum>
+             </property>
+             <property name="lineWidth">
+              <number>1</number>
+             </property>
+             <property name="autoScrollMargin">
+              <number>16</number>
+             </property>
+             <property name="alternatingRowColors">
+              <bool>true</bool>
+             </property>
+             <property name="selectionBehavior">
+              <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
+             </property>
+             <property name="iconSize">
+              <size>
+               <width>32</width>
+               <height>32</height>
+              </size>
+             </property>
+             <property name="resizeMode">
+              <enum>QListView::ResizeMode::Adjust</enum>
+             </property>
+             <property name="viewMode">
+              <enum>QListView::ViewMode::ListMode</enum>
+             </property>
+             <property name="currentRow">
+              <number>-1</number>
+             </property>
+            </widget>
+           </item>
            <item row="2" column="1">
             <widget class="QFrame" name="frame_2">
              <property name="sizePolicy">
@@ -263,10 +212,10 @@
               </size>
              </property>
              <property name="frameShape">
-              <enum>QFrame::StyledPanel</enum>
+              <enum>QFrame::Shape::StyledPanel</enum>
              </property>
              <property name="frameShadow">
-              <enum>QFrame::Raised</enum>
+              <enum>QFrame::Shadow::Raised</enum>
              </property>
              <widget class="QLabel" name="txt_playlistTotalTime">
               <property name="geometry">
@@ -280,6 +229,7 @@
               <property name="font">
                <font>
                 <pointsize>10</pointsize>
+                <kerning>false</kerning>
                </font>
               </property>
               <property name="text">
@@ -291,8 +241,8 @@
                <rect>
                 <x>6</x>
                 <y>40</y>
-                <width>346</width>
-                <height>106</height>
+                <width>380</width>
+                <height>145</height>
                </rect>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout">
@@ -300,28 +250,30 @@
                 <number>2</number>
                </property>
                <item>
-                <layout class="QHBoxLayout" name="horizontalLayout_10">
-                 <item>
-                  <widget class="QCheckBox" name="checkBox_sum_to_playlist_time">
-                   <property name="text">
-                    <string>Sum to Playlist Time</string>
-                   </property>
-                   <property name="checked">
-                    <bool>true</bool>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QCheckBox" name="checkBox_update_last_played_values">
-                   <property name="text">
-                    <string>Update last played values</string>
-                   </property>
-                   <property name="checked">
-                    <bool>true</bool>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
+                <widget class="QCheckBox" name="checkBox_sum_to_playlist_time">
+                 <property name="maximumSize">
+                  <size>
+                   <width>150</width>
+                   <height>16777215</height>
+                  </size>
+                 </property>
+                 <property name="text">
+                  <string>Sum to Playlist Time</string>
+                 </property>
+                 <property name="checked">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="checkBox_update_last_played_values">
+                 <property name="text">
+                  <string>Update last played values</string>
+                 </property>
+                 <property name="checked">
+                  <bool>true</bool>
+                 </property>
+                </widget>
                </item>
                <item>
                 <layout class="QHBoxLayout" name="horizontalLayout_9">
@@ -387,7 +339,7 @@
                  <item>
                   <spacer name="horizontalSpacer">
                    <property name="orientation">
-                    <enum>Qt::Horizontal</enum>
+                    <enum>Qt::Orientation::Horizontal</enum>
                    </property>
                    <property name="sizeHint" stdset="0">
                     <size>
@@ -401,57 +353,6 @@
                </item>
               </layout>
              </widget>
-            </widget>
-           </item>
-           <item row="2" column="0">
-            <widget class="QListWidget" name="playlist">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-               <horstretch>0</horstretch>
-               <verstretch>10</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="font">
-              <font>
-               <kerning>false</kerning>
-              </font>
-             </property>
-             <property name="acceptDrops">
-              <bool>true</bool>
-             </property>
-             <property name="frameShape">
-              <enum>QFrame::NoFrame</enum>
-             </property>
-             <property name="frameShadow">
-              <enum>QFrame::Plain</enum>
-             </property>
-             <property name="lineWidth">
-              <number>1</number>
-             </property>
-             <property name="autoScrollMargin">
-              <number>16</number>
-             </property>
-             <property name="alternatingRowColors">
-              <bool>true</bool>
-             </property>
-             <property name="selectionBehavior">
-              <enum>QAbstractItemView::SelectRows</enum>
-             </property>
-             <property name="iconSize">
-              <size>
-               <width>32</width>
-               <height>32</height>
-              </size>
-             </property>
-             <property name="resizeMode">
-              <enum>QListView::Adjust</enum>
-             </property>
-             <property name="viewMode">
-              <enum>QListView::ListMode</enum>
-             </property>
-             <property name="currentRow">
-              <number>-1</number>
-             </property>
             </widget>
            </item>
           </layout>
@@ -494,16 +395,16 @@
            <item>
             <widget class="QListWidget" name="historyList">
              <property name="styleSheet">
-              <string notr="true">background-color: rgb(206, 217, 255);</string>
+              <string notr="true"/>
              </property>
              <property name="editTriggers">
-              <set>QAbstractItemView::NoEditTriggers</set>
+              <set>QAbstractItemView::EditTrigger::NoEditTriggers</set>
              </property>
              <property name="showDropIndicator" stdset="0">
               <bool>false</bool>
              </property>
              <property name="selectionBehavior">
-              <enum>QAbstractItemView::SelectRows</enum>
+              <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
              </property>
             </widget>
            </item>
@@ -573,6 +474,7 @@
            <property name="font">
             <font>
              <pointsize>7</pointsize>
+             <kerning>false</kerning>
             </font>
            </property>
            <property name="text">
@@ -591,13 +493,14 @@
            <property name="font">
             <font>
              <pointsize>7</pointsize>
+             <kerning>false</kerning>
             </font>
            </property>
            <property name="text">
             <string>Netpack - Online Solutions!</string>
            </property>
            <property name="alignment">
-            <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+            <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
            </property>
           </widget>
           <widget class="QPushButton" name="lp_1_bt_play">
@@ -612,6 +515,7 @@
            <property name="font">
             <font>
              <pointsize>8</pointsize>
+             <kerning>false</kerning>
             </font>
            </property>
            <property name="text">
@@ -634,6 +538,7 @@
            <property name="font">
             <font>
              <pointsize>8</pointsize>
+             <kerning>false</kerning>
             </font>
            </property>
            <property name="text">
@@ -690,6 +595,7 @@
            <property name="font">
             <font>
              <pointsize>8</pointsize>
+             <kerning>false</kerning>
             </font>
            </property>
            <property name="text">
@@ -712,6 +618,7 @@
            <property name="font">
             <font>
              <pointsize>8</pointsize>
+             <kerning>false</kerning>
             </font>
            </property>
            <property name="text">
@@ -733,13 +640,13 @@
            </property>
            <property name="font">
             <font>
-             <weight>50</weight>
              <bold>false</bold>
+             <kerning>false</kerning>
             </font>
            </property>
            <property name="styleSheet">
             <string notr="true">selection-background-color: rgb(255, 255, 255);
-background-color: rgb(255, 255, 255);</string>
+</string>
            </property>
            <property name="maximum">
             <number>200</number>
@@ -751,7 +658,7 @@ background-color: rgb(255, 255, 255);</string>
             <number>100</number>
            </property>
            <property name="orientation">
-            <enum>Qt::Horizontal</enum>
+            <enum>Qt::Orientation::Horizontal</enum>
            </property>
            <property name="invertedAppearance">
             <bool>false</bool>
@@ -772,6 +679,7 @@ background-color: rgb(255, 255, 255);</string>
            <property name="font">
             <font>
              <pointsize>9</pointsize>
+             <kerning>false</kerning>
             </font>
            </property>
            <property name="text">
@@ -790,6 +698,7 @@ background-color: rgb(255, 255, 255);</string>
            <property name="font">
             <font>
              <pointsize>9</pointsize>
+             <kerning>false</kerning>
             </font>
            </property>
            <property name="text">
@@ -808,8 +717,8 @@ background-color: rgb(255, 255, 255);</string>
            <property name="font">
             <font>
              <pointsize>13</pointsize>
-             <weight>75</weight>
              <bold>true</bold>
+             <kerning>true</kerning>
             </font>
            </property>
            <property name="styleSheet">
@@ -831,8 +740,8 @@ background-color: rgb(255, 255, 255);</string>
            <property name="font">
             <font>
              <pointsize>13</pointsize>
-             <weight>75</weight>
              <bold>true</bold>
+             <kerning>true</kerning>
             </font>
            </property>
            <property name="styleSheet">
@@ -854,9 +763,9 @@ background-color: rgb(255, 255, 255);</string>
            <property name="font">
             <font>
              <pointsize>8</pointsize>
-             <weight>50</weight>
              <italic>true</italic>
              <bold>false</bold>
+             <kerning>false</kerning>
             </font>
            </property>
            <property name="text">
@@ -875,19 +784,19 @@ background-color: rgb(255, 255, 255);</string>
            <property name="font">
             <font>
              <pointsize>8</pointsize>
-             <weight>50</weight>
              <italic>true</italic>
              <bold>false</bold>
+             <kerning>false</kerning>
             </font>
            </property>
            <property name="layoutDirection">
-            <enum>Qt::LeftToRight</enum>
+            <enum>Qt::LayoutDirection::LeftToRight</enum>
            </property>
            <property name="text">
             <string>100</string>
            </property>
            <property name="alignment">
-            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
            </property>
           </widget>
           <widget class="QToolButton" name="bt_center_lps_vol">
@@ -937,8 +846,14 @@ background-color: rgb(255, 255, 255);</string>
            <kerning>false</kerning>
           </font>
          </property>
+         <property name="autoFillBackground">
+          <bool>false</bool>
+         </property>
+         <property name="styleSheet">
+          <string notr="true"/>
+         </property>
          <property name="tabPosition">
-          <enum>QTabWidget::South</enum>
+          <enum>QTabWidget::TabPosition::South</enum>
          </property>
          <property name="currentIndex">
           <number>0</number>
@@ -950,7 +865,7 @@ background-color: rgb(255, 255, 255);</string>
           </size>
          </property>
          <property name="elideMode">
-          <enum>Qt::ElideNone</enum>
+          <enum>Qt::TextElideMode::ElideNone</enum>
          </property>
          <property name="documentMode">
           <bool>true</bool>
@@ -994,16 +909,16 @@ background-color: rgb(255, 255, 255);</string>
               <string notr="true">text-align:center;</string>
              </property>
              <property name="frameShape">
-              <enum>QFrame::StyledPanel</enum>
+              <enum>QFrame::Shape::StyledPanel</enum>
              </property>
              <property name="frameShadow">
-              <enum>QFrame::Plain</enum>
+              <enum>QFrame::Shadow::Plain</enum>
              </property>
              <property name="lineWidth">
               <number>3</number>
              </property>
              <property name="editTriggers">
-              <set>QAbstractItemView::DoubleClicked</set>
+              <set>QAbstractItemView::EditTrigger::DoubleClicked</set>
              </property>
              <property name="dragEnabled">
               <bool>true</bool>
@@ -1012,19 +927,19 @@ background-color: rgb(255, 255, 255);</string>
               <bool>true</bool>
              </property>
              <property name="dragDropMode">
-              <enum>QAbstractItemView::DragOnly</enum>
+              <enum>QAbstractItemView::DragDropMode::DragOnly</enum>
              </property>
              <property name="defaultDropAction">
-              <enum>Qt::CopyAction</enum>
+              <enum>Qt::DropAction::CopyAction</enum>
              </property>
              <property name="alternatingRowColors">
               <bool>true</bool>
              </property>
              <property name="selectionMode">
-              <enum>QAbstractItemView::ContiguousSelection</enum>
+              <enum>QAbstractItemView::SelectionMode::ContiguousSelection</enum>
              </property>
              <property name="selectionBehavior">
-              <enum>QAbstractItemView::SelectItems</enum>
+              <enum>QAbstractItemView::SelectionBehavior::SelectItems</enum>
              </property>
              <property name="iconSize">
               <size>
@@ -1036,7 +951,7 @@ background-color: rgb(255, 255, 255);</string>
               <bool>true</bool>
              </property>
              <property name="gridStyle">
-              <enum>Qt::SolidLine</enum>
+              <enum>Qt::PenStyle::SolidLine</enum>
              </property>
              <property name="sortingEnabled">
               <bool>true</bool>
@@ -1108,7 +1023,7 @@ background-color: rgb(255, 255, 255);</string>
            <item>
             <widget class="QTableView" name="jinglesView">
              <property name="editTriggers">
-              <set>QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed</set>
+              <set>QAbstractItemView::EditTrigger::DoubleClicked|QAbstractItemView::EditTrigger::EditKeyPressed</set>
              </property>
              <property name="tabKeyNavigation">
               <bool>false</bool>
@@ -1117,16 +1032,16 @@ background-color: rgb(255, 255, 255);</string>
               <bool>true</bool>
              </property>
              <property name="dragDropMode">
-              <enum>QAbstractItemView::DragOnly</enum>
+              <enum>QAbstractItemView::DragDropMode::DragOnly</enum>
              </property>
              <property name="alternatingRowColors">
               <bool>true</bool>
              </property>
              <property name="selectionMode">
-              <enum>QAbstractItemView::SingleSelection</enum>
+              <enum>QAbstractItemView::SelectionMode::SingleSelection</enum>
              </property>
              <property name="selectionBehavior">
-              <enum>QAbstractItemView::SelectRows</enum>
+              <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
              </property>
              <attribute name="horizontalHeaderMinimumSectionSize">
               <number>48</number>
@@ -1174,16 +1089,16 @@ background-color: rgb(255, 255, 255);</string>
            <item>
             <widget class="QTableView" name="pubView">
              <property name="dragDropMode">
-              <enum>QAbstractItemView::DragOnly</enum>
+              <enum>QAbstractItemView::DragDropMode::DragOnly</enum>
              </property>
              <property name="alternatingRowColors">
               <bool>true</bool>
              </property>
              <property name="selectionMode">
-              <enum>QAbstractItemView::SingleSelection</enum>
+              <enum>QAbstractItemView::SelectionMode::SingleSelection</enum>
              </property>
              <property name="selectionBehavior">
-              <enum>QAbstractItemView::SelectRows</enum>
+              <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
              </property>
              <attribute name="horizontalHeaderMinimumSectionSize">
               <number>150</number>
@@ -1234,16 +1149,16 @@ background-color: rgb(255, 255, 255);</string>
            <item>
             <widget class="QTableView" name="programsView">
              <property name="dragDropMode">
-              <enum>QAbstractItemView::DragOnly</enum>
+              <enum>QAbstractItemView::DragDropMode::DragOnly</enum>
              </property>
              <property name="alternatingRowColors">
               <bool>true</bool>
              </property>
              <property name="selectionMode">
-              <enum>QAbstractItemView::SingleSelection</enum>
+              <enum>QAbstractItemView::SelectionMode::SingleSelection</enum>
              </property>
              <property name="selectionBehavior">
-              <enum>QAbstractItemView::SelectRows</enum>
+              <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
              </property>
              <attribute name="horizontalHeaderMinimumSectionSize">
               <number>150</number>
@@ -1261,6 +1176,572 @@ background-color: rgb(255, 255, 255);</string>
            </item>
           </layout>
          </widget>
+        </widget>
+       </item>
+       <item row="0" column="1" rowspan="5">
+        <widget class="QFrame" name="frame">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>350</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>251</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="font">
+          <font>
+           <kerning>true</kerning>
+          </font>
+         </property>
+         <property name="frameShape">
+          <enum>QFrame::Shape::NoFrame</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Shadow::Raised</enum>
+         </property>
+         <widget class="QLCDNumber" name="txt_horas">
+          <property name="geometry">
+           <rect>
+            <x>30</x>
+            <y>20</y>
+            <width>301</width>
+            <height>61</height>
+           </rect>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">color: rgb(129, 129, 194);</string>
+          </property>
+          <property name="frameShape">
+           <enum>QFrame::Shape::NoFrame</enum>
+          </property>
+          <property name="digitCount">
+           <number>8</number>
+          </property>
+          <property name="mode">
+           <enum>QLCDNumber::Mode::Dec</enum>
+          </property>
+         </widget>
+         <widget class="QPushButton" name="bt_autoMode">
+          <property name="geometry">
+           <rect>
+            <x>30</x>
+            <y>90</y>
+            <width>301</width>
+            <height>31</height>
+           </rect>
+          </property>
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="autoFillBackground">
+           <bool>false</bool>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: rgb(175, 227, 59);</string>
+          </property>
+          <property name="text">
+           <string>Auto Mode</string>
+          </property>
+          <property name="icon">
+           <iconset resource="resources.qrc">
+            <normaloff>:/icons/flat/Einstein-48.png</normaloff>:/icons/flat/Einstein-48.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>32</width>
+            <height>32</height>
+           </size>
+          </property>
+          <property name="autoDefault">
+           <bool>false</bool>
+          </property>
+          <property name="default">
+           <bool>false</bool>
+          </property>
+          <property name="flat">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </widget>
+       </item>
+       <item row="0" column="0" rowspan="5">
+        <widget class="QFrame" name="frame_4">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>129</height>
+          </size>
+         </property>
+         <property name="frameShape">
+          <enum>QFrame::Shape::NoFrame</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Shadow::Raised</enum>
+         </property>
+         <widget class="QPushButton" name="btPlay">
+          <property name="geometry">
+           <rect>
+            <x>9</x>
+            <y>10</y>
+            <width>221</width>
+            <height>55</height>
+           </rect>
+          </property>
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+            <horstretch>0</horstretch>
+            <verstretch>30</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>55</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Play</string>
+          </property>
+          <property name="icon">
+           <iconset resource="resources.qrc">
+            <normaloff>:/icons/flat/Play-64.png</normaloff>:/icons/flat/Play-64.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>32</width>
+            <height>32</height>
+           </size>
+          </property>
+         </widget>
+         <widget class="QPushButton" name="btStop">
+          <property name="geometry">
+           <rect>
+            <x>239</x>
+            <y>40</y>
+            <width>171</width>
+            <height>25</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Stop</string>
+          </property>
+          <property name="icon">
+           <iconset resource="resources.qrc">
+            <normaloff>:/icons/flat/Stop Sign-32.png</normaloff>:/icons/flat/Stop Sign-32.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>32</width>
+            <height>32</height>
+           </size>
+          </property>
+         </widget>
+         <widget class="QPushButton" name="btPlayNext">
+          <property name="geometry">
+           <rect>
+            <x>239</x>
+            <y>10</y>
+            <width>171</width>
+            <height>25</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Play Next</string>
+          </property>
+          <property name="icon">
+           <iconset resource="resources.qrc">
+            <normaloff>:/icons/flat/Fast Forward-32.png</normaloff>:/icons/flat/Fast Forward-32.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>32</width>
+            <height>32</height>
+           </size>
+          </property>
+         </widget>
+         <widget class="QPushButton" name="bt_rec">
+          <property name="geometry">
+           <rect>
+            <x>420</x>
+            <y>40</y>
+            <width>161</width>
+            <height>25</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Record</string>
+          </property>
+          <property name="icon">
+           <iconset resource="resources.qrc">
+            <normaloff>:/icons/flat/Record-32.png</normaloff>:/icons/flat/Record-32.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>32</width>
+            <height>32</height>
+           </size>
+          </property>
+         </widget>
+         <widget class="QLabel" name="txt_recTime">
+          <property name="geometry">
+           <rect>
+            <x>420</x>
+            <y>10</y>
+            <width>150</width>
+            <height>20</height>
+           </rect>
+          </property>
+          <property name="font">
+           <font>
+            <pointsize>11</pointsize>
+            <italic>false</italic>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">color: rgb(255, 0, 0);</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignmentFlag::AlignCenter</set>
+          </property>
+         </widget>
+         <widget class="QLabel" name="txtNowPlaying">
+          <property name="geometry">
+           <rect>
+            <x>20</x>
+            <y>90</y>
+            <width>1161</width>
+            <height>31</height>
+           </rect>
+          </property>
+          <property name="font">
+           <font>
+            <pointsize>12</pointsize>
+            <bold>true</bold>
+            <underline>false</underline>
+           </font>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">color: rgb(124, 124, 186);border-radius:8px;</string>
+          </property>
+          <property name="text">
+           <string>XFB - OpenSource Radio Automation Software</string>
+          </property>
+         </widget>
+         <widget class="QLabel" name="txt_ProgramName">
+          <property name="geometry">
+           <rect>
+            <x>510</x>
+            <y>10</y>
+            <width>541</width>
+            <height>37</height>
+           </rect>
+          </property>
+          <property name="font">
+           <font>
+            <italic>true</italic>
+            <bold>true</bold>
+            <underline>false</underline>
+           </font>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color:#FFE329;padding:5px;</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
+          </property>
+         </widget>
+         <widget class="QPushButton" name="bt_ProgramStopandProcess">
+          <property name="geometry">
+           <rect>
+            <x>750</x>
+            <y>10</y>
+            <width>301</width>
+            <height>34</height>
+           </rect>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>34</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Stop and process</string>
+          </property>
+          <property name="icon">
+           <iconset resource="resources.qrc">
+            <normaloff>:/icons/googlemusicframe.png</normaloff>:/icons/googlemusicframe.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>24</width>
+            <height>24</height>
+           </size>
+          </property>
+         </widget>
+         <widget class="QLabel" name="txt_uploadingPrograms">
+          <property name="geometry">
+           <rect>
+            <x>510</x>
+            <y>0</y>
+            <width>541</width>
+            <height>51</height>
+           </rect>
+          </property>
+          <property name="font">
+           <font>
+            <family>Noto Sans [monotype]</family>
+            <pointsize>20</pointsize>
+            <italic>true</italic>
+
+           </font>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color:rgba(255,255,255,.86);
+font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
+          </property>
+          <property name="text">
+           <string>Uploading programs, plase wait...</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignmentFlag::AlignCenter</set>
+          </property>
+         </widget>
+         <widget class="QLabel" name="txtDuration">
+          <property name="geometry">
+           <rect>
+            <x>510</x>
+            <y>45</y>
+            <width>581</width>
+            <height>25</height>
+           </rect>
+          </property>
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="font">
+           <font>
+            <pointsize>14</pointsize>
+            <italic>false</italic>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">color: rgb(0, 75, 167);</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignmentFlag::AlignCenter</set>
+          </property>
+         </widget>
+         <widget class="QWidget" name="layoutWidget">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>66</y>
+            <width>1041</width>
+            <height>27</height>
+           </rect>
+          </property>
+          <layout class="QHBoxLayout" name="horizontalLayout_7">
+           <item>
+            <widget class="QLabel" name="label">
+             <property name="text">
+              <string>Volume</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSlider" name="sliderVolume">
+             <property name="value">
+              <number>99</number>
+             </property>
+             <property name="orientation">
+              <enum>Qt::Orientation::Horizontal</enum>
+             </property>
+             <property name="tickInterval">
+              <number>1</number>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_2">
+             <property name="text">
+              <string>Progress</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSlider" name="sliderProgress">
+             <property name="styleSheet">
+              <string notr="true"/>
+             </property>
+             <property name="orientation">
+              <enum>Qt::Orientation::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+         <widget class="QLabel" name="txt_creatingPrograms">
+          <property name="geometry">
+           <rect>
+            <x>510</x>
+            <y>0</y>
+            <width>541</width>
+            <height>51</height>
+           </rect>
+          </property>
+          <property name="font">
+           <font>
+            <family>Noto Sans [monotype]</family>
+            <pointsize>20</pointsize>
+            <italic>true</italic>
+
+           </font>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color:rgba(255,255,255,.86);
+font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
+          </property>
+          <property name="text">
+           <string>Creating programs, please wait...</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignmentFlag::AlignCenter</set>
+          </property>
+         </widget>
+         <widget class="QLabel" name="led_rec">
+          <property name="geometry">
+           <rect>
+            <x>465</x>
+            <y>43</y>
+            <width>22</width>
+            <height>20</height>
+           </rect>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: rgb(255, 247, 0); border-radius:8px;</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+         <widget class="QLabel" name="txt_loading">
+          <property name="geometry">
+           <rect>
+            <x>510</x>
+            <y>0</y>
+            <width>541</width>
+            <height>56</height>
+           </rect>
+          </property>
+          <property name="font">
+           <font>
+            <family>Noto Sans [monotype]</family>
+            <pointsize>20</pointsize>
+            <italic>true</italic>
+
+           </font>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color:rgba(255,255,255,.86);
+font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
+          </property>
+          <property name="text">
+           <string>loading...</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignmentFlag::AlignCenter</set>
+          </property>
+         </widget>
+         <widget class="QToolButton" name="bt_pause_rec">
+          <property name="geometry">
+           <rect>
+            <x>550</x>
+            <y>42</y>
+            <width>25</width>
+            <height>19</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset resource="resources.qrc">
+            <normaloff>:/icons/flat/Pause-32.png</normaloff>:/icons/flat/Pause-32.png</iconset>
+          </property>
+         </widget>
+         <widget class="QToolButton" name="bt_pause_play">
+          <property name="geometry">
+           <rect>
+            <x>200</x>
+            <y>35</y>
+            <width>25</width>
+            <height>25</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset resource="resources.qrc">
+            <normaloff>:/icons/flat/Pause-32.png</normaloff>:/icons/flat/Pause-32.png</iconset>
+          </property>
+         </widget>
+         <zorder>txt_ProgramName</zorder>
+         <zorder>btPlay</zorder>
+         <zorder>btStop</zorder>
+         <zorder>btPlayNext</zorder>
+         <zorder>txtNowPlaying</zorder>
+         <zorder>bt_ProgramStopandProcess</zorder>
+         <zorder>txtDuration</zorder>
+         <zorder>layoutWidget</zorder>
+         <zorder>txt_creatingPrograms</zorder>
+         <zorder>txt_loading</zorder>
+         <zorder>txt_uploadingPrograms</zorder>
+         <zorder>bt_pause_play</zorder>
+         <zorder>bt_rec</zorder>
+         <zorder>led_rec</zorder>
+         <zorder>txt_recTime</zorder>
+         <zorder>bt_pause_rec</zorder>
         </widget>
        </item>
        <item row="24" column="1">
@@ -1287,7 +1768,7 @@ background-color: rgb(255, 255, 255);</string>
           <string>Search (only music table)</string>
          </property>
          <property name="currentIndex">
-          <number>2</number>
+          <number>0</number>
          </property>
          <widget class="QWidget" name="page">
           <property name="geometry">
@@ -1295,7 +1776,7 @@ background-color: rgb(255, 255, 255);</string>
             <x>0</x>
             <y>0</y>
             <width>350</width>
-            <height>196</height>
+            <height>222</height>
            </rect>
           </property>
           <attribute name="icon">
@@ -1357,7 +1838,7 @@ background-color: rgb(255, 255, 255);</string>
             <x>0</x>
             <y>0</y>
             <width>350</width>
-            <height>196</height>
+            <height>222</height>
            </rect>
           </property>
           <attribute name="icon">
@@ -1439,7 +1920,7 @@ background-color: rgb(255, 255, 255);</string>
             <x>0</x>
             <y>0</y>
             <width>350</width>
-            <height>196</height>
+            <height>222</height>
            </rect>
           </property>
           <attribute name="icon">
@@ -1578,7 +2059,7 @@ background-color: rgb(255, 255, 255);</string>
             <x>0</x>
             <y>0</y>
             <width>350</width>
-            <height>196</height>
+            <height>222</height>
            </rect>
           </property>
           <property name="styleSheet">
@@ -1654,7 +2135,7 @@ background-color: rgb(255, 255, 255);</string>
             <x>0</x>
             <y>0</y>
             <width>350</width>
-            <height>196</height>
+            <height>222</height>
            </rect>
           </property>
           <attribute name="icon">
@@ -1897,7 +2378,7 @@ background-color: rgb(255, 255, 255);</string>
             </rect>
            </property>
            <property name="orientation">
-            <enum>Qt::Horizontal</enum>
+            <enum>Qt::Orientation::Horizontal</enum>
            </property>
           </widget>
           <widget class="Line" name="line_2">
@@ -1910,7 +2391,7 @@ background-color: rgb(255, 255, 255);</string>
             </rect>
            </property>
            <property name="orientation">
-            <enum>Qt::Horizontal</enum>
+            <enum>Qt::Orientation::Horizontal</enum>
            </property>
           </widget>
           <widget class="Line" name="line_3">
@@ -1923,7 +2404,7 @@ background-color: rgb(255, 255, 255);</string>
             </rect>
            </property>
            <property name="orientation">
-            <enum>Qt::Horizontal</enum>
+            <enum>Qt::Orientation::Horizontal</enum>
            </property>
           </widget>
           <widget class="QLabel" name="lbl_streamURL">
@@ -1961,480 +2442,6 @@ background-color: rgb(255, 255, 255);</string>
          </widget>
         </widget>
        </item>
-       <item row="0" column="0" rowspan="5">
-        <widget class="QFrame" name="frame_4">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="minimumSize">
-          <size>
-           <width>0</width>
-           <height>129</height>
-          </size>
-         </property>
-         <property name="frameShape">
-          <enum>QFrame::NoFrame</enum>
-         </property>
-         <property name="frameShadow">
-          <enum>QFrame::Raised</enum>
-         </property>
-         <widget class="QPushButton" name="btPlay">
-          <property name="geometry">
-           <rect>
-            <x>9</x>
-            <y>10</y>
-            <width>221</width>
-            <height>55</height>
-           </rect>
-          </property>
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
-            <horstretch>0</horstretch>
-            <verstretch>30</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>55</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>Play</string>
-          </property>
-          <property name="icon">
-           <iconset resource="resources.qrc">
-            <normaloff>:/icons/flat/Play-64.png</normaloff>:/icons/flat/Play-64.png</iconset>
-          </property>
-          <property name="iconSize">
-           <size>
-            <width>32</width>
-            <height>32</height>
-           </size>
-          </property>
-         </widget>
-         <widget class="QPushButton" name="btStop">
-          <property name="geometry">
-           <rect>
-            <x>239</x>
-            <y>40</y>
-            <width>171</width>
-            <height>25</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Stop</string>
-          </property>
-          <property name="icon">
-           <iconset resource="resources.qrc">
-            <normaloff>:/icons/flat/Stop Sign-32.png</normaloff>:/icons/flat/Stop Sign-32.png</iconset>
-          </property>
-          <property name="iconSize">
-           <size>
-            <width>32</width>
-            <height>32</height>
-           </size>
-          </property>
-         </widget>
-         <widget class="QPushButton" name="btPlayNext">
-          <property name="geometry">
-           <rect>
-            <x>239</x>
-            <y>10</y>
-            <width>171</width>
-            <height>25</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Play Next</string>
-          </property>
-          <property name="icon">
-           <iconset resource="resources.qrc">
-            <normaloff>:/icons/flat/Fast Forward-32.png</normaloff>:/icons/flat/Fast Forward-32.png</iconset>
-          </property>
-          <property name="iconSize">
-           <size>
-            <width>32</width>
-            <height>32</height>
-           </size>
-          </property>
-         </widget>
-         <widget class="QPushButton" name="bt_rec">
-          <property name="geometry">
-           <rect>
-            <x>420</x>
-            <y>40</y>
-            <width>161</width>
-            <height>25</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Record</string>
-          </property>
-          <property name="icon">
-           <iconset resource="resources.qrc">
-            <normaloff>:/icons/flat/Record-32.png</normaloff>:/icons/flat/Record-32.png</iconset>
-          </property>
-          <property name="iconSize">
-           <size>
-            <width>32</width>
-            <height>32</height>
-           </size>
-          </property>
-         </widget>
-         <widget class="QLabel" name="txt_recTime">
-          <property name="geometry">
-           <rect>
-            <x>420</x>
-            <y>10</y>
-            <width>150</width>
-            <height>20</height>
-           </rect>
-          </property>
-          <property name="font">
-           <font>
-            <pointsize>11</pointsize>
-            <weight>75</weight>
-            <italic>false</italic>
-            <bold>true</bold>
-           </font>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">color: rgb(255, 0, 0);</string>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignCenter</set>
-          </property>
-         </widget>
-         <widget class="QLabel" name="txtNowPlaying">
-          <property name="geometry">
-           <rect>
-            <x>20</x>
-            <y>90</y>
-            <width>1161</width>
-            <height>31</height>
-           </rect>
-          </property>
-          <property name="font">
-           <font>
-            <pointsize>12</pointsize>
-            <weight>75</weight>
-            <bold>true</bold>
-            <underline>false</underline>
-           </font>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">color: rgb(124, 124, 186);border-radius:8px;</string>
-          </property>
-          <property name="text">
-           <string>XFB - OpenSource Radio Automation Software</string>
-          </property>
-         </widget>
-         <widget class="QLabel" name="txt_ProgramName">
-          <property name="geometry">
-           <rect>
-            <x>510</x>
-            <y>10</y>
-            <width>541</width>
-            <height>37</height>
-           </rect>
-          </property>
-          <property name="font">
-           <font>
-            <weight>75</weight>
-            <italic>true</italic>
-            <bold>true</bold>
-            <underline>false</underline>
-           </font>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">background-color:#FFE329;padding:5px;</string>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
-          </property>
-         </widget>
-         <widget class="QPushButton" name="bt_ProgramStopandProcess">
-          <property name="geometry">
-           <rect>
-            <x>750</x>
-            <y>10</y>
-            <width>301</width>
-            <height>34</height>
-           </rect>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>34</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>Stop and process</string>
-          </property>
-          <property name="icon">
-           <iconset resource="resources.qrc">
-            <normaloff>:/icons/googlemusicframe.png</normaloff>:/icons/googlemusicframe.png</iconset>
-          </property>
-          <property name="iconSize">
-           <size>
-            <width>24</width>
-            <height>24</height>
-           </size>
-          </property>
-         </widget>
-         <widget class="QLabel" name="txt_uploadingPrograms">
-          <property name="geometry">
-           <rect>
-            <x>510</x>
-            <y>0</y>
-            <width>541</width>
-            <height>51</height>
-           </rect>
-          </property>
-          <property name="font">
-           <font>
-            <family>Noto Sans [monotype]</family>
-            <pointsize>20</pointsize>
-            <weight>9</weight>
-            <italic>true</italic>
-            <bold>false</bold>
-           </font>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">background-color:rgba(255,255,255,.86);
-font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
-          </property>
-          <property name="text">
-           <string>Uploading programs, plase wait...</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignCenter</set>
-          </property>
-         </widget>
-         <widget class="QLabel" name="txtDuration">
-          <property name="geometry">
-           <rect>
-            <x>510</x>
-            <y>45</y>
-            <width>581</width>
-            <height>25</height>
-           </rect>
-          </property>
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="font">
-           <font>
-            <pointsize>14</pointsize>
-            <weight>75</weight>
-            <italic>false</italic>
-            <bold>true</bold>
-           </font>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">color: rgb(0, 75, 167);</string>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignCenter</set>
-          </property>
-         </widget>
-         <widget class="QWidget" name="layoutWidget">
-          <property name="geometry">
-           <rect>
-            <x>10</x>
-            <y>66</y>
-            <width>1041</width>
-            <height>22</height>
-           </rect>
-          </property>
-          <layout class="QHBoxLayout" name="horizontalLayout_7">
-           <item>
-            <widget class="QLabel" name="label">
-             <property name="text">
-              <string>Volume</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QSlider" name="sliderVolume">
-             <property name="value">
-              <number>99</number>
-             </property>
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="tickInterval">
-              <number>1</number>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="label_2">
-             <property name="text">
-              <string>Progress</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QSlider" name="sliderProgress">
-             <property name="styleSheet">
-              <string notr="true"/>
-             </property>
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-         <widget class="QLabel" name="txt_creatingPrograms">
-          <property name="geometry">
-           <rect>
-            <x>510</x>
-            <y>0</y>
-            <width>541</width>
-            <height>51</height>
-           </rect>
-          </property>
-          <property name="font">
-           <font>
-            <family>Noto Sans [monotype]</family>
-            <pointsize>20</pointsize>
-            <weight>9</weight>
-            <italic>true</italic>
-            <bold>false</bold>
-           </font>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">background-color:rgba(255,255,255,.86);
-font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
-          </property>
-          <property name="text">
-           <string>Creating programs, please wait...</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignCenter</set>
-          </property>
-         </widget>
-         <widget class="QLabel" name="led_rec">
-          <property name="geometry">
-           <rect>
-            <x>465</x>
-            <y>43</y>
-            <width>22</width>
-            <height>20</height>
-           </rect>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">background-color: rgb(255, 247, 0); border-radius:8px;</string>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-         </widget>
-         <widget class="QLabel" name="txt_loading">
-          <property name="geometry">
-           <rect>
-            <x>510</x>
-            <y>0</y>
-            <width>541</width>
-            <height>56</height>
-           </rect>
-          </property>
-          <property name="font">
-           <font>
-            <family>Noto Sans [monotype]</family>
-            <pointsize>20</pointsize>
-            <weight>9</weight>
-            <italic>true</italic>
-            <bold>false</bold>
-           </font>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">background-color:rgba(255,255,255,.86);
-font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
-          </property>
-          <property name="text">
-           <string>loading...</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignCenter</set>
-          </property>
-         </widget>
-         <widget class="QToolButton" name="bt_pause_rec">
-          <property name="geometry">
-           <rect>
-            <x>550</x>
-            <y>42</y>
-            <width>25</width>
-            <height>19</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="icon">
-           <iconset resource="resources.qrc">
-            <normaloff>:/icons/flat/Pause-32.png</normaloff>:/icons/flat/Pause-32.png</iconset>
-          </property>
-         </widget>
-         <widget class="QToolButton" name="bt_pause_play">
-          <property name="geometry">
-           <rect>
-            <x>200</x>
-            <y>35</y>
-            <width>25</width>
-            <height>25</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="icon">
-           <iconset resource="resources.qrc">
-            <normaloff>:/icons/flat/Pause-32.png</normaloff>:/icons/flat/Pause-32.png</iconset>
-          </property>
-         </widget>
-         <zorder>txt_ProgramName</zorder>
-         <zorder>btPlay</zorder>
-         <zorder>btStop</zorder>
-         <zorder>btPlayNext</zorder>
-         <zorder>txtNowPlaying</zorder>
-         <zorder>bt_ProgramStopandProcess</zorder>
-         <zorder>txtDuration</zorder>
-         <zorder>layoutWidget</zorder>
-         <zorder>txt_creatingPrograms</zorder>
-         <zorder>txt_loading</zorder>
-         <zorder>txt_uploadingPrograms</zorder>
-         <zorder>bt_pause_play</zorder>
-         <zorder>bt_rec</zorder>
-         <zorder>led_rec</zorder>
-         <zorder>txt_recTime</zorder>
-         <zorder>bt_pause_rec</zorder>
-        </widget>
-       </item>
       </layout>
      </widget>
     </item>
@@ -2444,7 +2451,7 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
        <number>0</number>
       </property>
       <property name="sizeConstraint">
-       <enum>QLayout::SetDefaultConstraint</enum>
+       <enum>QLayout::SizeConstraint::SetDefaultConstraint</enum>
       </property>
       <property name="leftMargin">
        <number>9</number>
@@ -2497,7 +2504,7 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
 &lt;/p&gt;&lt;/center&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
         <property name="layoutDirection">
-         <enum>Qt::RightToLeft</enum>
+         <enum>Qt::LayoutDirection::RightToLeft</enum>
         </property>
         <property name="autoFillBackground">
          <bool>false</bool>
@@ -2515,7 +2522,7 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
          <bool>true</bool>
         </property>
         <property name="alignment">
-         <set>Qt::AlignCenter</set>
+         <set>Qt::AlignmentFlag::AlignCenter</set>
         </property>
         <property name="margin">
          <number>2</number>
@@ -2541,15 +2548,13 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
         </property>
         <property name="font">
          <font>
-          <family>Ubuntu</family>
           <pointsize>7</pointsize>
-          <weight>50</weight>
           <italic>true</italic>
           <bold>false</bold>
          </font>
         </property>
         <property name="layoutDirection">
-         <enum>Qt::LeftToRight</enum>
+         <enum>Qt::LayoutDirection::LeftToRight</enum>
         </property>
         <property name="styleSheet">
          <string notr="true">margin-right:15px;</string>
@@ -2558,10 +2563,10 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
          <number>2</number>
         </property>
         <property name="text">
-         <string>XFB Versão 1.23 by Netpack - Online Solutions! :: www.netpack.pt</string>
+         <string>XFB Versão 1.24 by Netpack - Online Solutions! :: www.netpack.pt</string>
         </property>
         <property name="alignment">
-         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
         </property>
         <property name="wordWrap">
          <bool>true</bool>
@@ -2578,12 +2583,11 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
      <x>0</x>
      <y>0</y>
      <width>1472</width>
-     <height>30</height>
+     <height>22</height>
     </rect>
    </property>
    <property name="font">
     <font>
-     <weight>75</weight>
      <bold>true</bold>
     </font>
    </property>
@@ -2593,7 +2597,6 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
    <widget class="QMenu" name="menuFile">
     <property name="font">
      <font>
-      <weight>75</weight>
       <bold>true</bold>
       <strikeout>false</strikeout>
      </font>
@@ -2654,7 +2657,6 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
    <widget class="QMenu" name="menuXFB">
     <property name="font">
      <font>
-      <weight>75</weight>
       <bold>true</bold>
      </font>
     </property>
@@ -2678,7 +2680,6 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
     <widget class="QMenu" name="menuServer">
      <property name="font">
       <font>
-       <weight>75</weight>
        <bold>true</bold>
       </font>
      </property>
@@ -2705,7 +2706,14 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
    <addaction name="menuXFB"/>
    <addaction name="menuHelp"/>
   </widget>
-  <widget class="QStatusBar" name="statusBar"/>
+  <widget class="QStatusBar" name="statusBar">
+   <property name="styleSheet">
+    <string notr="true">background-color: #353535 !important; color: #ffffff; border: none; margin: 0; padding: 0;</string>
+   </property>
+   <property name="sizeGripEnabled">
+    <bool>true</bool>
+   </property>
+  </widget>
   <action name="actionOpen">
    <property name="icon">
     <iconset resource="resources.qrc">
@@ -2725,7 +2733,6 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
    </property>
    <property name="font">
     <font>
-     <weight>75</weight>
      <bold>true</bold>
     </font>
    </property>
@@ -2740,7 +2747,6 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
    </property>
    <property name="font">
     <font>
-     <weight>75</weight>
      <bold>true</bold>
     </font>
    </property>
@@ -2755,7 +2761,6 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
    </property>
    <property name="font">
     <font>
-     <weight>75</weight>
      <bold>true</bold>
     </font>
    </property>
@@ -2770,7 +2775,6 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
    </property>
    <property name="font">
     <font>
-     <weight>75</weight>
      <bold>true</bold>
     </font>
    </property>
@@ -2785,7 +2789,6 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
    </property>
    <property name="font">
     <font>
-     <weight>75</weight>
      <bold>true</bold>
     </font>
    </property>
@@ -2800,7 +2803,6 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
    </property>
    <property name="font">
     <font>
-     <weight>75</weight>
      <bold>true</bold>
     </font>
    </property>
@@ -2815,7 +2817,6 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
    </property>
    <property name="font">
     <font>
-     <weight>75</weight>
      <bold>true</bold>
     </font>
    </property>
@@ -2830,7 +2831,6 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
    </property>
    <property name="font">
     <font>
-     <weight>75</weight>
      <bold>true</bold>
     </font>
    </property>
@@ -2845,7 +2845,6 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
    </property>
    <property name="font">
     <font>
-     <weight>75</weight>
      <bold>true</bold>
     </font>
    </property>
@@ -2860,7 +2859,6 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
    </property>
    <property name="font">
     <font>
-     <weight>75</weight>
      <bold>true</bold>
     </font>
    </property>
@@ -2875,7 +2873,6 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
    </property>
    <property name="font">
     <font>
-     <weight>75</weight>
      <bold>true</bold>
     </font>
    </property>
@@ -2890,7 +2887,6 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
    </property>
    <property name="font">
     <font>
-     <weight>75</weight>
      <bold>true</bold>
     </font>
    </property>
@@ -2910,7 +2906,6 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
    </property>
    <property name="font">
     <font>
-     <weight>75</weight>
      <bold>true</bold>
     </font>
    </property>
@@ -2946,7 +2941,6 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
    </property>
    <property name="font">
     <font>
-     <weight>75</weight>
      <bold>true</bold>
     </font>
    </property>
@@ -2961,7 +2955,6 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
    </property>
    <property name="font">
     <font>
-     <weight>75</weight>
      <bold>true</bold>
     </font>
    </property>
@@ -2976,7 +2969,6 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
    </property>
    <property name="font">
     <font>
-     <weight>75</weight>
      <bold>true</bold>
     </font>
    </property>
@@ -2991,7 +2983,6 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
    </property>
    <property name="font">
     <font>
-     <weight>75</weight>
      <bold>true</bold>
     </font>
    </property>
@@ -3015,7 +3006,6 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
    </property>
    <property name="font">
     <font>
-     <weight>75</weight>
      <bold>true</bold>
     </font>
    </property>
@@ -3030,7 +3020,6 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
    </property>
    <property name="font">
     <font>
-     <weight>75</weight>
      <bold>true</bold>
     </font>
    </property>

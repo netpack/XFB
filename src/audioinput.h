@@ -42,12 +42,17 @@
 #define AUDIOINPUT_H
 
 #include <QAudioInput>
+#include <QAudioSource> // Qt6 class for audio recording
 #include <QByteArray>
 #include <QComboBox>
 #include <QMainWindow>
 #include <QObject>
 #include <QPixmap>
 #include <QPushButton>
+#include <QMediaDevices> // Qt6 replacement for QAudioDeviceInfo
+#include <QAudioDevice> // Qt6 audio device representation
+#include <QAudioFormat>
+#include <QIODevice> // Explicitly include QIODevice
 #include <QSlider>
 #include <QWidget>
 /*
@@ -62,7 +67,7 @@ class AudioInfo : public QIODevice
     Q_OBJECT
 
 public:
-    AudioInfo(const QAudioFormat &format, QObject *parent);
+    AudioInfo(const QAudioFormat &format, QObject *parent = nullptr);
     ~AudioInfo();
 
     void start();
@@ -130,10 +135,11 @@ private:
     QComboBox *m_deviceBox;
     QSlider *m_volumeSlider;
 
-    QAudioDeviceInfo m_device;
+    QAudioDevice m_device; // Updated from QAudioDeviceInfo for Qt6
     AudioInfo *m_audioInfo;
     QAudioFormat m_format;
     QAudioInput *m_audioInput;
+    QAudioSource *m_audioSource; // Added for Qt6 compatibility
     QIODevice *m_input;
     bool m_pullMode;
     QByteArray m_buffer;

@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'addgenre.ui'
 **
-** Created by: Qt User Interface Compiler version 5.15.12
+** Created by: Qt User Interface Compiler version 6.7.3
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
 ********************************************************************************/
@@ -40,52 +40,112 @@ public:
     void setupUi(QDialog *addgenre)
     {
         if (addgenre->objectName().isEmpty())
-            addgenre->setObjectName(QString::fromUtf8("addgenre"));
+            addgenre->setObjectName("addgenre");
+        addgenre->setStyleSheet(QString::fromUtf8("\n"
+"      QDialog {\n"
+"          background-color: #2b2b2b;\n"
+"          color: #bbbbbb; /* Default text color */\n"
+"      }\n"
+"      QLabel {\n"
+"          color: #bbbbbb;\n"
+"      }\n"
+"      QLineEdit, QTextEdit, QPlainTextEdit {\n"
+"          background-color: #3c3f41;\n"
+"          color: #bbbbbb;\n"
+"          border: 1px solid #555555;\n"
+"          selection-background-color: #007acc;\n"
+"          selection-color: white;\n"
+"      }\n"
+"      QPushButton, QToolButton {\n"
+"          background-color: #555555;\n"
+"          color: #bbbbbb;\n"
+"          border: 1px solid #666666;\n"
+"          padding: 5px;\n"
+"      }\n"
+"      QPushButton:hover, QToolButton:hover {\n"
+"          background-color: #666666;\n"
+"      }\n"
+"      QPushButton:pressed, QToolButton:pressed {\n"
+"          background-color: #444444;\n"
+"      }\n"
+"      QComboBox {\n"
+"          background-color: #3c3f41;\n"
+"          color: #bbbbbb;\n"
+"          border: 1px solid #555555;\n"
+"          selection-background-color: "
+                        "#007acc;\n"
+"          /* selection-color: white; */\n"
+"      }\n"
+"      QComboBox::drop-down {\n"
+"          border: none;\n"
+"      }\n"
+"      QComboBox QAbstractItemView {\n"
+"          background-color: #3c3f41;\n"
+"          color: #bbbbbb;\n"
+"          selection-background-color: #007acc;\n"
+"          selection-color: white;\n"
+"          border: 1px solid #555555;\n"
+"          outline: 0px;\n"
+"      }\n"
+"      QDateEdit {\n"
+"          background-color: #3c3f41;\n"
+"          color: #bbbbbb;\n"
+"          border: 1px solid #555555;\n"
+"          selection-background-color: #007acc;\n"
+"          selection-color: white;\n"
+"      }\n"
+"      QDateEdit::drop-down {\n"
+"           /* Style dropdown button if needed */\n"
+"      }\n"
+"      QDateEdit QAbstractItemView {\n"
+"          background-color: #3c3f41;\n"
+"          color: #bbbbbb;\n"
+"          selection-background-color: #007acc;\n"
+"      }\n"
+"     "));
         addgenre->resize(412, 494);
-        addgenre->setStyleSheet(QString::fromUtf8("background-color: rgb(255, 255, 255);"));
         label = new QLabel(addgenre);
-        label->setObjectName(QString::fromUtf8("label"));
+        label->setObjectName("label");
         label->setGeometry(QRect(30, 10, 51, 61));
         label->setPixmap(QPixmap(QString::fromUtf8(":/usr/share/icons/Mint-X/apps/48/radio.png")));
         label_2 = new QLabel(addgenre);
-        label_2->setObjectName(QString::fromUtf8("label_2"));
+        label_2->setObjectName("label_2");
         label_2->setGeometry(QRect(90, 20, 161, 31));
         QFont font;
         font.setPointSize(12);
         font.setBold(true);
-        font.setWeight(75);
         label_2->setFont(font);
         label_3 = new QLabel(addgenre);
-        label_3->setObjectName(QString::fromUtf8("label_3"));
+        label_3->setObjectName("label_3");
         label_3->setGeometry(QRect(30, 70, 62, 17));
         listGenres = new QListView(addgenre);
-        listGenres->setObjectName(QString::fromUtf8("listGenres"));
+        listGenres->setObjectName("listGenres");
         listGenres->setGeometry(QRect(30, 90, 331, 151));
         btAddNewGenre = new QPushButton(addgenre);
-        btAddNewGenre->setObjectName(QString::fromUtf8("btAddNewGenre"));
+        btAddNewGenre->setObjectName("btAddNewGenre");
         btAddNewGenre->setGeometry(QRect(210, 340, 151, 51));
         label_4 = new QLabel(addgenre);
-        label_4->setObjectName(QString::fromUtf8("label_4"));
+        label_4->setObjectName("label_4");
         label_4->setGeometry(QRect(30, 290, 221, 17));
         txtNewGenre = new QLineEdit(addgenre);
-        txtNewGenre->setObjectName(QString::fromUtf8("txtNewGenre"));
+        txtNewGenre->setObjectName("txtNewGenre");
         txtNewGenre->setGeometry(QRect(30, 310, 331, 27));
         close = new QPushButton(addgenre);
-        close->setObjectName(QString::fromUtf8("close"));
+        close->setObjectName("close");
         close->setGeometry(QRect(70, 420, 251, 41));
         layoutWidget = new QWidget(addgenre);
-        layoutWidget->setObjectName(QString::fromUtf8("layoutWidget"));
+        layoutWidget->setObjectName("layoutWidget");
         layoutWidget->setGeometry(QRect(30, 250, 331, 29));
         gridLayout = new QGridLayout(layoutWidget);
-        gridLayout->setObjectName(QString::fromUtf8("gridLayout"));
+        gridLayout->setObjectName("gridLayout");
         gridLayout->setContentsMargins(0, 0, 0, 0);
         btShowGenre = new QPushButton(layoutWidget);
-        btShowGenre->setObjectName(QString::fromUtf8("btShowGenre"));
+        btShowGenre->setObjectName("btShowGenre");
 
         gridLayout->addWidget(btShowGenre, 0, 0, 1, 1);
 
         btDelGenre = new QPushButton(layoutWidget);
-        btDelGenre->setObjectName(QString::fromUtf8("btDelGenre"));
+        btDelGenre->setObjectName("btDelGenre");
 
         gridLayout->addWidget(btDelGenre, 0, 1, 1, 1);
 

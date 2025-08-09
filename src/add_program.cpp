@@ -28,11 +28,31 @@ add_program::add_program(QWidget *parent) :
     ui(new Ui::add_program)
 {
     ui->setupUi(this);
+    QString configFileName = "xfb.conf";
+    QString writableConfigPath = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
+    QString configFilePath = writableConfigPath + "/" + configFileName;
+    QSettings settingsnew(configFilePath, QSettings::IniFormat);
+    bool darkMode = settingsnew.value("DarkMode", false).toBool();
+    qDebug() << "[StyleFix] OptionsDialog checking dark mode:" << darkMode;
+
+
+    // 3. Apply DIRECT stylesheet for background color
+    // This overrides the default Fusion background drawing
+    if (darkMode) {
+        this->setStyleSheet("QDialog { background-color: #353535; color: #bbbbbb; }");
+        // Optional: force tab page background again if needed, though attributes should work
+        // if (theTabWidget) theTabWidget->setStyleSheet("QWidget { background-color: #353535; color: #bbbbbb; }");
+    } else {
+        this->setStyleSheet("QDialog { background-color: #ffffff; color: #333333; }");
+        // Optional: force tab page background again if needed
+        // if (theTabWidget) theTabWidget->setStyleSheet("QWidget { background-color: #ffffff; color: #333333; }");
+    }
+    // --- END C++ BACKGROUND FIX & DIRECT STYLING ---
 
     qDebug()<<"Adding a new program...";
+    QSqlDatabase db = QSqlDatabase::database("xfb_connection");
 
-
-    QSqlQuery qry;
+    QSqlQuery qry(db);
     qry.prepare("insert into programs values(NULL,'Default','Default')");
     qry.exec();
 
@@ -48,8 +68,8 @@ add_program::~add_program()
     qDebug()<<"Exit add_program.cpp";
 
     //detele null data
-
-    QSqlQuery qr;
+QSqlDatabase db = QSqlDatabase::database("xfb_connection");
+    QSqlQuery qr(db);
     qr.prepare("delete from programs where path = 'Default'");
     qr.exec();
     qDebug()<<"Deleting temp tables";
@@ -72,7 +92,8 @@ void add_program::on_pushButton_4_clicked()
 
         //get the id of the current programs row
             QString programs_id;
-            QSqlQuery qry;
+             QSqlDatabase db = QSqlDatabase::database("xfb_connection");
+            QSqlQuery qry(db);
             qry.prepare("select id from programs order by id desc limit 0,1");
             qry.exec();
             while(qry.next()){
@@ -104,7 +125,7 @@ void add_program::on_pushButton_4_clicked()
 
         //prepare the query
 
-            QSqlQuery qry_add;
+            QSqlQuery qry_add(db);
             qry_add.prepare("insert into scheduler values ('"+programs_id+"','"+ano1+"','"+mes1+"','"+dia1+"','"+hora1+"','"+min1+"','1',NULL,NULL,NULL,NULL,NULL,NULL,NULL,'1')");
 
 
@@ -133,10 +154,10 @@ void add_program::updateScheduleTable()
 void add_program::on_pushButton_clicked()
 {
     //save
-
+QSqlDatabase db = QSqlDatabase::database("xfb_connection");
 //get the id of the current programs row
     QString programs_id;
-    QSqlQuery qry;
+QSqlQuery qry(db);
     qry.prepare("select id from programs order by id desc limit 0,1");
     qry.exec();
     while(qry.next()){
@@ -173,7 +194,8 @@ void add_program::on_pushButton_6_clicked()
     qDebug()<<"Value of hourMinute is "<<hourMinute;
 
     QString thisprogramsId;
-    QSqlQuery Q;
+    QSqlDatabase db = QSqlDatabase::database("xfb_connection");
+    QSqlQuery Q(db);
     Q.prepare("select id from programs order by id desc limit 0,1");
     Q.exec();
     while(Q.next()){
@@ -187,7 +209,7 @@ void add_program::on_pushButton_6_clicked()
 
     qDebug()<<"Array splitted hours: "<<hora<<" and minutes: "<<min;
 
-    QSqlQuery Qr_add;
+    QSqlQuery Qr_add(db);
     Qr_add.prepare("insert into scheduler values ('"+thisprogramsId+"',NULL,NULL,NULL,'"+hora+"','"+min+"','2','"+dayOfTheWeek+"',NULL,NULL,NULL,NULL,NULL,NULL,'1')");
 
     Qr_add.exec();
@@ -224,8 +246,8 @@ void add_program::on_pushButton_5_clicked()
 
         QString qqq = "delete from scheduler where dia='"+dia+"' and mes='"+mes+"' and dia='"+dia+"' and ano='"+ano+"' and hora='"+hora+"' and min='"+min+"'";
         qDebug()<<qqq;
-
-        QSqlQuery qrydel;
+        QSqlDatabase db = QSqlDatabase::database("xfb_connection");
+        QSqlQuery qrydel(db);
         qrydel.prepare(qqq);
         qrydel.exec();
 

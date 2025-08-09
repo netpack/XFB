@@ -20,11 +20,11 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include <QFileDialog>
 #include <QtSql>
 #include <QMediaPlayer>
-#include <QMediaPlaylist>
+// QMediaPlaylist removed - using QList<QUrl> instead
 #include <QAudio>
 #include <QDebug>
-#include <QMultimedia>
-#include <QAudioProbe>
+#include <QtMultimedia>
+// QAudioProbe is deprecated in Qt6
 #include <QTableWidgetItem>
 #include <QList>
 #include <QDateTime>
@@ -33,12 +33,12 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include <QDragMoveEvent>
 #include <QSqlTableModel>
 #include <QFileInfo>
-#include <QAudioRecorder>
-#include <QAudioDeviceInfo>
-#include <QAudioDecoder>
-#include <QMediaRecorder>
+// QAudioRecorder is deprecated in Qt6
+#include <QMediaDevices> // Qt6 replacement for QAudioDeviceInfo
+#include <QAudioInput> // Qt6 replacement for audio recording
+#include <QAudioOutput> // Qt6 for audio output
 #include <QNetworkAccessManager>
-#include <QNetworkConfigurationManager>
+#include <QNetworkInformation> // Qt6 replacement for QNetworkConfigurationManager
 #include <QHttpPart>
 #include <QGraphicsView>
 #include <QGraphicsScene>
@@ -56,6 +56,13 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include <QVBoxLayout>
 #include <QPushButton>
 #include <QPixmap>
+
+#include <QtCore>
+#include <QtGlobal>
+#include <QSizeGrip>
+
+#include <QtWebEngineQuick>
+#include <QQuickWidget>
 
 class ClickableTextBrowser : public QTextBrowser {
 public:
@@ -108,12 +115,11 @@ public:
 
 
         // Add OK button
-        QPushButton* okButton = new QPushButton(tr("I'll donate if I can and if I find XFB useful!"), this);
+        QPushButton* okButton = new QPushButton(tr("I'll donate if I can"), this);
         layout->addWidget(okButton);
         connect(okButton, &QPushButton::clicked, this, &CustomMessageBox::accept);
     }
 };
-
 
 player::player(QWidget *parent) :
     QMainWindow(parent),
@@ -124,24 +130,48 @@ player::player(QWidget *parent) :
 
     ui->setupUi(this);
 
+    QSqlDatabase db = QSqlDatabase::database("xfb_connection");
+    networkManager = new QNetworkAccessManager(this);
+/*
+    // Only needs to be done once per application run
+    QtWebEngineQuick::initialize();
+
+    adBanner = new QQuickWidget(this);
+    adBanner->setFixedHeight(90);
+    // Set a minimum width based on Google's requirement (or your layout needs)
+    adBanner->setMinimumWidth(728);
+    adBanner->setResizeMode(QQuickWidget::SizeRootObjectToView);
+    adBanner->setSource(QUrl("qrc:/AdView.qml")); // Load from resource
+
+    ui->gridLayout_2->addWidget(adBanner, 25, 0, 1, 1);
+
+    // Keep refresh logic if needed, but call the QML function
+    adRefreshTimer = new QTimer(this); // Assuming adRefreshTimer is a member
+    adRefreshTimer->setInterval(60000); // Refresh less often? e.g., 60 seconds
+    connect(adRefreshTimer, &QTimer::timeout, this, &player::refreshAdBanner);
+    adRefreshTimer->start();*/
+
     updateConfig();
     checkDbOpen();
     //on_actionUpdate_Dinamic_Server_s_IP_triggered();
 
+    // Initialize audio outputs for Qt6
+    XplayerOutput = new QAudioOutput(this);
+    lp1_XplayerOutput = new QAudioOutput(this);
+    lp2_XplayerOutput = new QAudioOutput(this);
+
+    // Initialize media players with audio outputs
     Xplayer = new QMediaPlayer(this);
-    Xplaylist = new QMediaPlaylist();
-    Xplaylist->setCurrentIndex(1);
-    Xplayer->setPlaylist(Xplaylist);
+    Xplayer->setAudioOutput(XplayerOutput);
+    XplaylistIndex = 0;
 
     lp1_Xplayer = new QMediaPlayer(this);
-    lp1_Xplaylist = new QMediaPlaylist();
-    lp1_Xplaylist->setCurrentIndex(1);
-    lp1_Xplayer->setPlaylist(lp1_Xplaylist);
+    lp1_Xplayer->setAudioOutput(lp1_XplayerOutput);
+    lp1_XplaylistIndex = 0;
 
     lp2_Xplayer = new QMediaPlayer(this);
-    lp2_Xplaylist = new QMediaPlaylist();
-    lp2_Xplaylist->setCurrentIndex(1);
-    lp2_Xplayer->setPlaylist(lp2_Xplaylist);
+    lp2_Xplayer->setAudioOutput(lp2_XplayerOutput);
+    lp2_XplaylistIndex = 0;
 
     indexcanal = 4;
     onAbout2Finish = 0;
@@ -158,47 +188,60 @@ player::player(QWidget *parent) :
     ui->led_rec->hide();
     ui->txt_loading->hide();
 
-    audioRecorder = new QAudioRecorder(this);
+    // Initialize Qt6 media recording components
+    captureSession = new QMediaCaptureSession(this);
+    audioRecorder = new QMediaRecorder(this);
+    audioInput = new QAudioInput(this);
 
-    //Audio devices
-    foreach (const QString &device, audioRecorder->audioInputs()) {
-            //ui->audioDeviceBox->addItem(device, QVariant(device));
-            qDebug()<<"Audio Hardware on this system: "<<QVariant(QString(device));
+    captureSession->setRecorder(audioRecorder);
+    captureSession->setAudioInput(audioInput);
 
-        }
-
-    //Audio codecs
-    foreach (const QString &codecName, audioRecorder->supportedAudioCodecs()) {
-            //ui->audioCodecBox->addItem(codecName, QVariant(codecName));
-            qDebug()<<"Audio Codecs on this system: "<<QVariant(QString(codecName));
-        }
-
-    //Containers
-    foreach (const QString &containerName, audioRecorder->supportedContainers()) {
-           // ui->containerBox->addItem(containerName, QVariant(containerName));
-            qDebug()<<"Audio Containers on this system: "<<QVariant(QString(containerName));
-        }
-
-    //Sample rates
-    foreach (int sampleRate, audioRecorder->supportedAudioSampleRates()) {
-       // ui->sampleRateBox->addItem(QString::number(sampleRate), QVariant(sampleRate));
-        qDebug()<<"Audio Sample Rates suported: "<<QVariant(int(sampleRate));
+    // List available audio input devices
+    const QList<QAudioDevice> inputDevices = QMediaDevices::audioInputs();
+    for (const QAudioDevice &device : inputDevices) {
+        qDebug() << "Audio Hardware on this system: " << device.description();
     }
+
+    // Get supported audio codecs using mediaFormat() in Qt6
+    const QList<QMediaFormat::AudioCodec> supportedCodecs = audioRecorder->mediaFormat().supportedAudioCodecs(QMediaFormat::Encode);
+    for (const QMediaFormat::AudioCodec &codec : supportedCodecs) {
+        qDebug() << "Audio Codecs on this system: " << QMediaFormat::audioCodecName(codec);
+    }
+
+    // Get supported containers (file formats) in Qt6
+    const QList<QMediaFormat::FileFormat> supportedContainers = audioRecorder->mediaFormat().supportedFileFormats(QMediaFormat::Encode);
+    for (const QMediaFormat::FileFormat &format : supportedContainers) {
+        qDebug() << "Audio Containers on this system: " << QMediaFormat::fileFormatName(format);
+    }
+
+    // Get supported sample rates - in Qt6 we need to check available quality settings
+    QMediaRecorder::EncodingMode mode = audioRecorder->encodingMode();
+    QMediaRecorder::Quality quality = audioRecorder->quality();
+    qDebug() << "Current encoding mode: " << mode << ", quality: " << quality;
+    qDebug() << "Audio Sample Rates are handled through quality settings in Qt6";
 
     connect(Xplayer, &QMediaPlayer::positionChanged, this, &player::onPositionChanged);
     connect(Xplayer, &QMediaPlayer::durationChanged, this, &player::durationChanged);
-    connect(Xplayer, &QMediaPlayer::currentMediaChanged, this, &player::currentMediaChanged);
-    connect(Xplayer, &QMediaPlayer::volumeChanged, this, &player::volumeChanged);
+    connect(Xplayer, &QMediaPlayer::sourceChanged, this, &player::currentMediaChanged);
+    connect(Xplayer->audioOutput(), &QAudioOutput::volumeChanged, this, &player::volumeChanged);
+
+    // Connect media player signals for playlist management
+    connect(Xplayer, &QMediaPlayer::playbackStateChanged, [this](QMediaPlayer::PlaybackState state) {
+        if (state == QMediaPlayer::StoppedState && PlayMode == "Playing_Segue") {
+            // When playback stops, play the next media if in segue mode
+            QTimer::singleShot(100, this, &player::playNextMedia);
+        }
+    });
 
     connect(lp1_Xplayer, &QMediaPlayer::positionChanged, this, &player::lp1_onPositionChanged);
     connect(lp1_Xplayer, &QMediaPlayer::durationChanged, this, &player::lp1_durationChanged);
-    connect(lp1_Xplayer, &QMediaPlayer::currentMediaChanged, this, &player::lp1_currentMediaChanged);
-    connect(lp1_Xplayer, &QMediaPlayer::volumeChanged, this, &player::lp1_volumeChanged);
+    connect(lp1_Xplayer, &QMediaPlayer::sourceChanged, this, &player::lp1_currentMediaChanged);
+    connect(lp1_Xplayer->audioOutput(), &QAudioOutput::volumeChanged, this, &player::lp1_volumeChanged);
 
     connect(lp2_Xplayer, &QMediaPlayer::positionChanged, this, &player::lp2_onPositionChanged);
     connect(lp2_Xplayer, &QMediaPlayer::durationChanged, this, &player::lp2_durationChanged);
-    connect(lp2_Xplayer, &QMediaPlayer::currentMediaChanged, this, &player::lp2_currentMediaChanged);
-    connect(lp2_Xplayer, &QMediaPlayer::volumeChanged, this, &player::lp2_volumeChanged);
+    connect(lp2_Xplayer, &QMediaPlayer::sourceChanged, this, &player::lp2_currentMediaChanged);
+    connect(lp2_Xplayer->audioOutput(), &QAudioOutput::volumeChanged, this, &player::lp2_volumeChanged);
 
     connect(recTimer,SIGNAL(timeout()),this,SLOT(run_recTimer()));
 
@@ -228,8 +271,8 @@ player::player(QWidget *parent) :
     }
 
     /*Populate music table with an editable table field on double-click*/
-
-    QSqlTableModel *model = new QSqlTableModel(this);
+    checkDbOpen();
+    QSqlTableModel *model = new QSqlTableModel(this,db);
     model->setTable("musics");
     model->select();
 
@@ -247,9 +290,9 @@ player::player(QWidget *parent) :
     ui->musicView->setColumnWidth(8,50);
     ui->musicView->setColumnWidth(9,80);
     ui->musicView->setColumnWidth(10,100);
-
+checkDbOpen();
     /*Populate jingles table with an editable table field on double-click*/
-    QSqlTableModel * jinglesmodel = new QSqlTableModel(this);
+    QSqlTableModel * jinglesmodel = new QSqlTableModel(this,db);
     jinglesmodel->setTable("jingles");
     jinglesmodel->select();
     ui->jinglesView->setModel(jinglesmodel);
@@ -258,7 +301,7 @@ player::player(QWidget *parent) :
 
     /*Populate Pub table*/
 
-    QSqlTableModel *pubmodel = new QSqlTableModel(this);
+    QSqlTableModel *pubmodel = new QSqlTableModel(this,db);
     pubmodel->setTable("pub");
     pubmodel->select();
     ui->pubView->setModel(pubmodel);
@@ -268,7 +311,7 @@ player::player(QWidget *parent) :
 
     /*Populate Programs table*/
 
-    QSqlTableModel *programsmodel = new QSqlTableModel(this);
+    QSqlTableModel *programsmodel = new QSqlTableModel(this,db);
     programsmodel->setTable("programs");
     programsmodel->select();
     ui->programsView->setModel(programsmodel);
@@ -317,13 +360,15 @@ player::player(QWidget *parent) :
          this, SLOT(programsViewContextMenu(const QPoint&)));
 
      /*Populate genre1 and 2 filters*/
+
      QSqlQueryModel * model_genre1=new QSqlQueryModel();
-     QSqlQuery* qry=new QSqlQuery();
+     QSqlQuery* qry=new QSqlQuery(db);
      QString sqlq = "select name from genres1";
      qry->exec(sqlq);
-     model_genre1->setQuery(*qry);
+     model_genre1->setQuery(std::move(*qry));
      ui->cBoxGenre1->setModel(model_genre1);
      ui->cBoxGenre2->setModel(model_genre1);
+
 
     update_music_table();
 
@@ -362,6 +407,18 @@ player::player(QWidget *parent) :
    CustomMessageBox msgBox(tr("Donate to the Developer!"), tr("Please support the development of XFB!<br>If you appreciate this software, kindly consider making a donation to support the developer!<br><a href=\"https://www.paypal.com/donate/?hosted_button_id=TFDSZU78WLMC6\">Donate via PayPal!</a><br>Contact for professional support and custom development!<br><br>Why did the computer get a little emotional when using WinRAR?<br>_Because even after all the \"evaluation\", it still felt unzipped!"), pixmap);
    msgBox.exec();
 
+   // Directly set style on the status bar
+   if(darkMode){
+       qDebug("Loading darkmode");
+       ui->statusBar->setStyleSheet("background-color: #353535 !important; color: #ffffff; border: none; margin: 0; padding: 0;");
+
+   } else {
+       qDebug("Loading lightmode");
+       this->setStyleSheet("background-color: #ffffff");
+       ui->statusBar->setStyleSheet("background-color: #ffffff !important; color: #303030; border: none; margin: 0; padding: 0;");
+
+
+   }
 
 
 
@@ -374,111 +431,215 @@ player::~player()
 {
     delete ui;
     delete audioRecorder;
-    delete probe;
+    delete captureSession;
+    delete audioInput;
+    delete XplayerOutput;
+    delete lp1_XplayerOutput;
+    delete lp2_XplayerOutput;
+    delete adBanner;
 }
 
-
-
-
-void player::updateConfig(){
-
-
-    /* get db settings */
-    QFile settings ("/etc/xfb/xfb.conf");
-    if (!settings.open(QIODevice::ReadOnly | QIODevice::Text)){
-        qDebug() << "/etc/xfb/xfb.conf could not be loaded. Please check that it exists";
+// Generic helper to launch an external GUI application safely
+void player::launchExternalApplication(const QString& appName, const QString& filePath) {
+    QString appPath = QStandardPaths::findExecutable(appName);
+    if (appPath.isEmpty()) {
+        qWarning() << "Cannot find executable for" << appName << "in system PATH.";
+        // Try opening with default handler as fallback?
+        bool opened = QDesktopServices::openUrl(QUrl::fromLocalFile(filePath));
+        if (!opened) {
+             QMessageBox::warning(this, tr("Application Not Found"), tr("Could not find '%1' in your system's PATH, and could not open the file '%2' with the default application.").arg(appName, QFileInfo(filePath).fileName()));
+        } else {
+             QMessageBox::information(this, tr("Opening File"), tr("'%1' not found. Opening '%2' with the default application instead.").arg(appName, QFileInfo(filePath).fileName()));
+        }
         return;
     }
 
-    QTextStream in(&settings);
-    qDebug() << "Opening /etc/xfb/xfb.conf";
-    while (!in.atEnd()) {
-        QString line = in.readLine();
-        QStringList results = line.split(" = ");
+    qInfo() << "Launching" << appName << " (" << appPath << ") with file:" << filePath;
+    QStringList args;
+    // Most GUI apps take the file path as a direct argument
+    args << filePath;
 
-        //for a switch we need a hash function.. todo later..
-        if(results[0]=="SavePath"){
-            SavePath = results[1];
-        }
-        if(results[0]=="Server_URL"){
-            Server_URL = results[1];
-        }
-        if(results[0]=="Port"){
-            Port = results[1].toInt();
-        }
-        if(results[0]=="User"){
-            User = results[1];
-        }
-        if(results[0]=="Pass"){
-            Pass = results[1];
-        }
-        if(results[0]=="ProgramsPath"){
-            ProgramsPath = results[1];
-        }
-        if(results[0]=="MusicPath"){
-            MusicPath = results[1];
-        }
-        if(results[0]=="JinglePath"){
-            JinglePath = results[1];
-        }
-        if(results[0]=="FTPPath"){
-            FTPPath = results[1];
-        }
-        if(results[0]=="TakeOverPath"){
-            TakeOverPath = results[1];
-        }
-        if(results[0]=="ComHour"){
-            ComHour = results[1];
-        }
-        if(results[0]=="fullScreen"){
-            fullScreen = results[1];
-            if(fullScreen=="true"){
+    if (!QProcess::startDetached(appPath, args)) {
+        qWarning() << "Failed to start detached process:" << appPath << args;
+        QMessageBox::critical(this, tr("Launch Error"), tr("Failed to launch '%1' with the specified file.").arg(appName));
+    }
+}
 
-            }
-        }
-        if(results[0]=="RecDevice"){
-            recDevice = results[1];
-        }
-        if(results[0]=="RecCodec"){
-            codec = results[1];
-        }
-        if(results[0]=="RecContainer"){
-            contentamento = results[1];
-        }
-        if(results[0]=="Database"){
-            txt_selected_db = results[1];
-        }
-        if(results[0]=="Disable_Seek_Bar"){
-            disableSeekBar = results[1];
-            if(disableSeekBar=="true")
-                ui->sliderProgress->setEnabled(0);
-            qDebug() << "Disable Seek bar settings: " << disableSeekBar;
-        }
-        if(results[0]=="Normalize_Soft"){
-            normalization_soft = results[1];
-            qDebug() << "normalization_soft settings: " << normalization_soft;
-        }
-        if(results[0]=="Disable_Volume"){
-            Disable_Volume = results[1];
-            if(Disable_Volume=="true")
-                ui->sliderVolume->setEnabled(0);
-            qDebug() << "Disable_Volume settings: " << Disable_Volume;
-        }
-        if(results[0]=="Role"){
-            Role = results[1];
-            qDebug() << "Role settings: " << Role;
-            if(Role=="Server"){
-                qDebug("XFB is now running in server mode!");
-            } else{
-                qDebug("XFB is now running in client mode!");
-            }
-
-        }
-
+// Generic helper to get MediaInfo (ASYNC) - Requires modification
+// TODO: Implement proper parsing of MediaInfo output (JSON is best)
+void player::getMediaInfoForFile(const QString& filePath) {
+    QString mediaInfoPath = QStandardPaths::findExecutable("mediainfo");
+    if (mediaInfoPath.isEmpty()) {
+         QMessageBox::warning(this, tr("Dependency Missing"), tr("'mediainfo' command not found. Please install it to retrieve metadata."));
+         return;
     }
 
+    QProcess *mediaInfoProcess = new QProcess(this);
+    QStringList args;
+    // Request specific tags for easier parsing, or use --Output=JSON
+    args << "--Inform=General;%Artist%\\n%Title%\\n%Album%\\n%Genre%\\n%Duration/String3%\\n%FileSize/String%\\n%Format%\\n%OverallBitRate/String%"
+         << filePath;
+
+    qInfo() << "Getting MediaInfo:" << mediaInfoPath << args;
+
+    connect(mediaInfoProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+            this, [this, mediaInfoProcess, filePath](int exitCode, QProcess::ExitStatus exitStatus){
+
+        QString output = QString::fromLocal8Bit(mediaInfoProcess->readAllStandardOutput()).trimmed();
+        QString errorOutput = QString::fromLocal8Bit(mediaInfoProcess->readAllStandardError()).trimmed();
+
+        if (exitStatus != QProcess::NormalExit || exitCode != 0) {
+            qWarning() << "mediainfo failed for" << filePath << "Exit:" << exitCode;
+            if (!errorOutput.isEmpty()) qWarning() << "mediainfo STDERR:" << errorOutput;
+             QMessageBox::warning(this, tr("Metadata Error"), tr("Failed to get metadata using 'mediainfo'.\n%1").arg(errorOutput));
+        } else {
+            qDebug() << "mediainfo output:\n" << output;
+            // ** TODO: Parse the 'output' string here! **
+            // The original parsing was extremely fragile (fixed indices).
+            // Need to parse based on the requested format or, better, use JSON.
+            // Example (NEEDS PROPER IMPLEMENTATION):
+            QStringList lines = output.split('\n');
+            if (lines.count() >= 8) { // Based on the requested format
+                 QString artist = lines[0];
+                 QString song = lines[1];
+                 QString album = lines[2];
+                 QString genre = lines[3];
+                 QString duration = lines[4];
+                 QString size = lines[5];
+                 QString format = lines[6];
+                 QString bitrate = lines[7];
+
+                 QString msg4box = tr("Artist: %1\nSong: %2\nAlbum: %3\nGenre: %4\nDuration: %5\nSize: %6\nFormat: %7\nBitrate: %8")
+                                     .arg(artist, song, album, genre, duration, size, format, bitrate);
+
+                 QMessageBox::StandardButton rpl = QMessageBox::question(this, tr("Apply this info to the database?"), msg4box, QMessageBox::Yes | QMessageBox::No);
+
+                 if (rpl == QMessageBox::Yes) {
+                     // Update Database (Use Prepared Statements!)
+                     QSqlDatabase db = QSqlDatabase::database("xfb_connection");
+                     QSqlQuery query(db);
+                     query.prepare("UPDATE musics SET artist = :artist, song = :song, genre1 = :genre, genre2 = :genre " // Assuming genre1/2 same here
+                                     "WHERE path = :path");
+                     query.bindValue(":artist", artist);
+                     query.bindValue(":song", song);
+                     query.bindValue(":genre", genre); // Or more complex genre mapping
+                     query.bindValue(":path", filePath);
+
+                     if (!query.exec()) {
+                          qWarning() << "Failed to update metadata in DB:" << query.lastError().text();
+                          QMessageBox::warning(this, tr("Database Error"), tr("Failed to update metadata in the database."));
+                     } else {
+                          qInfo() << "Metadata updated in DB for:" << filePath;
+                          update_music_table();
+                     }
+                 }
+            } else {
+                qWarning() << "Could not parse mediainfo output:" << output;
+                 QMessageBox::warning(this, tr("Metadata Error"), tr("Could not parse the metadata received from 'mediainfo'."));
+            }
+        }
+        mediaInfoProcess->deleteLater();
+    });
+
+     connect(mediaInfoProcess, &QProcess::errorOccurred, this, [this, mediaInfoProcess](QProcess::ProcessError error){
+         qWarning() << "Failed to start mediainfo. Error:" << error << "-" << mediaInfoProcess->errorString();
+         QMessageBox::critical(this, tr("Process Error"), tr("Could not start the 'mediainfo' process."));
+         mediaInfoProcess->deleteLater();
+     });
+
+    mediaInfoProcess->start(mediaInfoPath, args);
+}
 
 
+void player::updateConfig() {
+    qDebug() << "Updating player configuration using QSettings...";
+
+    // --- Use QSettings with the WRITABLE configuration file path ---
+    QString configFileName = "xfb.conf";
+    QString writableConfigPath = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
+    if (writableConfigPath.isEmpty()) {
+        qCritical() << "Could not determine writable config location in updateConfig!";
+        return; // Cannot proceed without path
+    }
+    QString configFilePath = writableConfigPath + "/" + configFileName;
+
+    QSettings settings(configFilePath, QSettings::IniFormat);
+    qDebug() << "Reading configuration from:" << settings.fileName();
+
+    // --- Read values using settings.value() and assign to member variables ---
+
+    SavePath = settings.value("SavePath").toString();
+    Server_URL = settings.value("Server_URL").toString();
+    Port = settings.value("Port", 0).toInt(); // Provide default, convert to int
+    User = settings.value("User").toString();
+    Pass = settings.value("Pass").toString(); // Still insecure storage
+    ProgramsPath = settings.value("ProgramsPath").toString();
+    MusicPath = settings.value("MusicPath").toString();
+    JinglePath = settings.value("JinglePath").toString();
+    FTPPath = settings.value("FTPPath").toString();
+    TakeOverPath = settings.value("TakeOverPath").toString();
+    ComHour = settings.value("ComHour", "00:00:00").toString(); // Provide default
+
+    // Read boolean values directly
+    fullScreen = settings.value("FullScreen", false).toBool();
+    disableSeekBar = settings.value("Disable_Seek_Bar", false).toBool();
+    normalization_soft = settings.value("Normalize_Soft", false).toBool();
+    Disable_Volume = settings.value("Disable_Volume", false).toBool();
+    darkMode = settings.value("DarkMode", false).toBool();
+
+    // Read recording info (description and potentially enum data)
+    recDevice = settings.value("RecDevice").toString(); // Store description
+    // Read enum values if you saved them that way from optionsDialog
+    recCodec = settings.value("RecCodec", QVariant::fromValue(QMediaFormat::AudioCodec::Unspecified)).value<QMediaFormat::AudioCodec>();
+    recContainer = settings.value("RecContainer", QVariant::fromValue(QMediaFormat::FileFormat())).value<QMediaFormat::FileFormat>();
+
+    // Database path
+    txt_selected_db = settings.value("Database").toString();
+
+    // Role
+    Role = settings.value("Role", "Client").toString(); // Default "Client"
+
+    // --- Apply settings to UI or internal state AFTER reading ALL settings ---
+    qDebug() << "Applying loaded configuration settings...";
+
+    // Example: Update UI elements based on loaded settings
+    if (disableSeekBar) {
+        ui->sliderProgress->setEnabled(false);
+        qDebug() << "Disable Seek bar setting: true";
+    } else {
+        ui->sliderProgress->setEnabled(true);
+        qDebug() << "Disable Seek bar setting: false";
+    }
+
+    if (Disable_Volume) {
+        ui->sliderVolume->setEnabled(false);
+        qDebug() << "Disable Volume setting: true";
+    } else {
+        ui->sliderVolume->setEnabled(true);
+        qDebug() << "Disable Volume setting: false";
+    }
+
+    // Log other settings
+    qDebug() << "Normalization Soft setting:" << normalization_soft;
+    qDebug() << "Role setting:" << Role;
+    if (Role == "Server") {
+        qDebug("XFB Role: Server mode actions can be taken now.");
+        // Add any specific logic needed when running as server
+    } else {
+        qDebug("XFB Role: Client mode actions can be taken now.");
+        // Add any specific logic needed when running as client
+    }
+    qDebug() << "DarkMode setting:" << darkMode;
+    // Note: Applying dark mode often requires more than just setting the variable.
+    // It usually involves reapplying palettes/stylesheets, potentially restarting parts of the UI.
+    // Consider how dark mode changes are triggered and applied application-wide.
+
+    // Log paths etc.
+    qDebug() << "SavePath:" << SavePath;
+    qDebug() << "ProgramsPath:" << ProgramsPath;
+    // ... log other variables as needed ...
+
+    qDebug() << "Finished updating player configuration.";
 }
 
 
@@ -492,19 +653,159 @@ void player::showTime()
     ui->txt_horas->display(text+segundos);
 }
 
-void player::checkDbOpen(){
+bool player::checkDbOpen() {
 
-        if(!adb.isOpen()){
+    QSqlDatabase db = QSqlDatabase::database("xfb_connection");
+    QString resourceDbPath = ":/adb.db";
+    QString appDataPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    if (appDataPath.isEmpty()) {
+         qWarning() << "Could not determine writable application data location.";
+         return false;
+    }
 
-            qDebug()<<"Opening db from checkDbOpen";
+    QString appDirName = QCoreApplication::applicationName(); // Or your specific app identifier "XFB"
+    if (appDirName.isEmpty()) {
+        appDirName = "XFB"; // Fallback if not set via QCoreApplication
+        qWarning() << "QCoreApplication::applicationName() is empty, using fallback:" << appDirName;
+    }
+    QString specificAppDataPath = appDataPath + "/" + appDirName;
+    QString persistentDbPath = specificAppDataPath + "/adb.db"; // Target path using app-specific subfolder
+    const QString connectionName = "xfb_connection"; // Use a distinct connection name
 
-                adb=QSqlDatabase::addDatabase("QSQLITE");
-                adb.setDatabaseName("/usr/share/xfb/config/adb.db");
-                if (!adb.open()) {
-                    qDebug() << "Error opening database:" << adb.lastError().text();
-                }
+    // --- Ensure Application Data Sub-Directory Exists ---
+    QDir dir(specificAppDataPath); // Use the specific path
+    if (!dir.exists()) {
+        qInfo() << "Creating application data directory:" << specificAppDataPath;
+        if (!dir.mkpath(".")) { // mkpath creates parent directories if needed
+            qWarning() << "Failed to create application data directory:" << specificAppDataPath;
+            return false;
         }
+    }
 
+    // --- Check and Copy Database File ---
+    QFile persistentFile(persistentDbPath);
+    QFileInfo resourceInfo(resourceDbPath);
+
+    if (!resourceInfo.exists()) {
+        qCritical() << "CRITICAL: Database resource file not found:" << resourceDbPath;
+        qCritical() << "Make sure adb.db is added to your .qrc file and the .qrc is in RESOURCES in your .pro file.";
+        return false;
+    }
+
+    bool copyRequired = !persistentFile.exists();
+    if (persistentFile.exists() && resourceInfo.lastModified() > QFileInfo(persistentFile).lastModified()) {
+        qInfo() << "Resource database is newer. Removing old persistent copy.";
+        if (!persistentFile.remove()) {
+             qWarning() << "Could not remove existing persistent database file:" << persistentFile.errorString() << "- Check if it's locked by another process.";
+             // Decide if you want to proceed or fail here. Maybe try opening anyway?
+        }
+        copyRequired = true;
+    }
+
+    if (copyRequired) {
+        qInfo() << "Attempting to copy database from resource to:" << persistentDbPath;
+        if (!QFile::copy(resourceDbPath, persistentDbPath)) {
+            QFile resFile(resourceDbPath); // For error checking
+            qCritical() << "Failed to copy database from resource (" << resourceDbPath << ", exists:" << resFile.exists() << ") to"
+                       << persistentDbPath << "- Error:" << persistentFile.errorString() << "(Check write permissions for " << specificAppDataPath << ")";
+            return false;
+        } else {
+            // Explicitly set permissions after successful copy
+            if (!persistentFile.setPermissions(QFileDevice::ReadOwner | QFileDevice::WriteOwner | QFileDevice::ReadGroup | QFileDevice::ReadOther)) {
+                 qWarning() << "Could not set permissions on the copied database file:" << persistentDbPath << "Error:" << persistentFile.errorString();
+            } else {
+                 qInfo() << "Database copied successfully and permissions set for" << persistentDbPath;
+            }
+        }
+    }
+
+    // --- Verify Readability Before Connecting ---
+    // Re-instantiate QFile object to ensure fresh state check
+    QFile checkFile(persistentDbPath);
+    if (!checkFile.exists()) {
+        qCritical() << "Database file disappeared after check/copy? Path:" << persistentDbPath;
+        return false;
+    }
+    if (!checkFile.permissions().testFlag(QFileDevice::ReadOwner)) { // Check owner read permission specifically
+         qWarning() << "Persistent database file lacks read permission for owner:" << persistentDbPath;
+         qWarning() << "Attempting to grant read permission...";
+         if (!checkFile.setPermissions(checkFile.permissions() | QFileDevice::ReadOwner | QFileDevice::WriteOwner)) {
+              qCritical() << "Failed to grant read/write permission to database file:" << persistentDbPath << "Error:" << checkFile.errorString();
+              qCritical() << "Manual permission change might be required. Check user/group ownership and permissions.";
+              return false; // Fail if we can't ensure readability
+         } else {
+              qInfo() << "Read/Write permission granted successfully.";
+         }
+    }
+
+
+    // --- Setup the QSqlDatabase connection ---
+    if (QSqlDatabase::contains(connectionName)) {
+         // Even if reusing, check if it's actually usable / still open correctly
+         if (db.isOpen() && !db.databaseName().isEmpty() ) {
+             // Optional: Ping the database to be sure it's responsive
+             QSqlQuery pingQuery(db);
+             if (!pingQuery.exec("SELECT 1")) { // Simple query
+                 qWarning() << "Ping query failed on existing open connection. Error:" << pingQuery.lastError().text();
+                 qWarning() << "Connection state might be stale. Closing it.";
+                 adb.close(); // Close the potentially stale connection
+             } else {
+                 qDebug() << "Existing connection ping successful.";
+             }
+         } else {
+              qDebug() << "Existing connection handle was found but not open or configured. Will proceed to open.";
+         }
+
+    } else {
+        adb = QSqlDatabase::addDatabase("QSQLITE", connectionName);
+         qDebug() << "Adding new database connection:" << connectionName;
+        if (!adb.isValid()) {
+            qCritical() << "Failed to add database connection. QSQLITE driver possibly missing or invalid.";
+            qCritical() << "Available drivers:" << QSqlDatabase::drivers();
+            return false;
+        }
+    }
+
+    // Set the database file path *after* getting a valid handle
+    // This is important even for existing connections if they were closed or became invalid
+    if (adb.databaseName() != persistentDbPath) {
+         qDebug() << "Setting database name for connection" << connectionName << "to" << persistentDbPath;
+         adb.setDatabaseName(persistentDbPath);
+    }
+
+
+    // Only try to open if it's not already open (or if we closed it above)
+    if (!adb.isOpen()) {
+        qInfo() << "Attempting to open database connection:" << connectionName << " Path:" << adb.databaseName();
+        if (!adb.open()) {
+            qCritical() << "Database Error: Failed to open database:" << adb.lastError().text();
+            qCritical() << "Database path was:" << adb.databaseName();
+            qCritical() << "Underlying driver error:" << adb.lastError().driverText();
+             qCritical() << "Available drivers:" << QSqlDatabase::drivers();
+             if (adb.lastError().text().contains("Driver not loaded")) {
+                 qCritical() << ">>> Potential deployment issue: Ensure the QSQLITE plugin is deployed correctly.";
+             }
+             // Specifically check for file permission related errors if possible
+             if (adb.lastError().text().contains("unable to open", Qt::CaseInsensitive)) {
+                 qCritical() << ">>> Error indicates file access problem. Verify permissions and path again.";
+                 qCritical() << ">>> Path:" << persistentDbPath << " Exists:" << QFile::exists(persistentDbPath) << " Readable:" << QFile(persistentDbPath).isReadable();
+             }
+            return false;
+        } else {
+            qInfo() << "Database connection opened successfully:" << adb.connectionName() << " Path:" << adb.databaseName();
+        }
+    } else {
+         qDebug() << "Database connection" << connectionName << "was already open and seems valid.";
+    }
+
+    // Final check
+    if (!adb.isOpen()) {
+        qCritical() << "Database connection is unexpectedly not open after initialization sequence.";
+        return false;
+    }
+
+    qInfo() << "Database initialization successful. Connection '" << connectionName << "' is open.";
+    return true;
 }
 
 void player::on_actionOpen_triggered()
@@ -521,8 +822,20 @@ void player::on_actionOpen_triggered()
     {
         fileNames = dialog.selectedFiles();
         ui->playlist->addItems(fileNames);
-    }
 
+        // If we're currently playing, we don't need to do anything else
+        // The files will be played when the current track finishes
+        // If we're not playing, we could start playing the first file
+        if (PlayMode == "stopped" && !fileNames.isEmpty()) {
+            // Add the first file to the playlist and play it
+            XplaylistUrls.clear();
+            XplaylistUrls.append(QUrl::fromLocalFile(fileNames.first()));
+            XplaylistIndex = 0;
+
+            // This will trigger playback if the user clicks Play
+            // We don't auto-start playback here to maintain the original behavior
+        }
+    }
 }
 
 void::player::playlistContextMenu(const QPoint& pos){
@@ -561,212 +874,151 @@ void::player::playlistContextMenu(const QPoint& pos){
     }
 }
 
-void::player::musicViewContextMenu(const QPoint& pos){
+void player::musicViewContextMenu(const QPoint& pos) {
     QPoint globalPos = ui->musicView->mapToGlobal(pos);
     QMenu thisMenu;
-    QString addToBottomOfPlaylist = tr("Add to the bottom of playlist");
-    QString addtoTopOfPlaylist = tr("Add to the top of the playlist");
-    QString deleteThisFromDB = tr("Delete this track from database");
-    QString openWithAudacity = tr("Open this in Audacity");
-    QString getInfoFromMediaInfo = tr("Retrieve meta information from file");
+    // Use constants or enums instead of strings for actions if preferred
+    const QString actionAddToBottom = tr("Add to the bottom of playlist");
+    const QString actionAddToTop = tr("Add to the top of the playlist");
+    const QString actionDeleteFromDB = tr("Delete this track from database");
+    const QString actionOpenAudacity = tr("Open this in Audacity");
+    const QString actionGetInfo = tr("Retrieve metadata from file (mediainfo)");
 
-
-
-    thisMenu.addAction(addToBottomOfPlaylist);
-    thisMenu.addAction(addtoTopOfPlaylist);
-    thisMenu.addAction(deleteThisFromDB);
-    thisMenu.addAction(openWithAudacity);
-    //thisMenu.addAction(getInfoFromMediaInfo);
+    thisMenu.addAction(actionAddToBottom);
+    thisMenu.addAction(actionAddToTop);
+    thisMenu.addSeparator();
+    thisMenu.addAction(actionDeleteFromDB);
+    thisMenu.addSeparator();
+    thisMenu.addAction(actionOpenAudacity);
+    thisMenu.addAction(actionGetInfo);
 
     QAction* selectedItem = thisMenu.exec(globalPos);
-    if (selectedItem)
-    {
-        //qDebug()<<"selected item in context menu was: "<<selectedItem->text();
-        QString selectedMenuItem = selectedItem->text();
-        int rowidx = ui->musicView->selectionModel()->currentIndex().row();
-        estevalor = ui->musicView->model()->data(ui->musicView->model()->index(rowidx,7)).toString();
+    if (!selectedItem) return; // No action selected
 
-        if(selectedMenuItem==addToBottomOfPlaylist){
-            qDebug()<<"Launch add this to bottom of playlist";
-            ui->playlist->addItem(estevalor);
-            calculate_playlist_total_time();
-        }
-        if(selectedMenuItem==addtoTopOfPlaylist){
-            qDebug()<<"Launch add this to top of playlist";
-         ui->playlist->insertItem(0,estevalor);
-         calculate_playlist_total_time();
-        }
-        if(selectedMenuItem==deleteThisFromDB){
+    QModelIndexList selectedIndexes = ui->musicView->selectionModel()->selectedIndexes();
+    if (selectedIndexes.isEmpty()) return; // No row selected
 
-            QMessageBox::StandardButton go;
-            go = QMessageBox::question(this,tr("Sure?"),tr("Are you sure you want to delete the track from the database?"), QMessageBox::Yes|QMessageBox::No);
-            if(go==QMessageBox::Yes){
+    int rowidx = selectedIndexes.first().row(); // Use first selected index
+    QModelIndex pathIndex = ui->musicView->model()->index(rowidx, 7); // Assuming column 7 is path
+    if (!pathIndex.isValid()) return;
+    QString selectedFilePath = ui->musicView->model()->data(pathIndex).toString();
 
-                QMessageBox::StandardButton rm;
-                rm = QMessageBox::question(this,tr("Erase the file also?"),tr("Do you want to delete the file from the hard drive also?"), QMessageBox::Yes|QMessageBox::No);
-                if(rm==QMessageBox::Yes){
+    QString selectedActionText = selectedItem->text();
 
+    if (selectedActionText == actionAddToBottom) {
+        qDebug() << "Adding to bottom of playlist:" << selectedFilePath;
+        ui->playlist->addItem(selectedFilePath);
+        calculate_playlist_total_time();
+    } else if (selectedActionText == actionAddToTop) {
+        qDebug() << "Adding to top of playlist:" << selectedFilePath;
+        ui->playlist->insertItem(0, selectedFilePath);
+        calculate_playlist_total_time();
+    } else if (selectedActionText == actionDeleteFromDB) {
+        QMessageBox::StandardButton go = QMessageBox::question(this, tr("Confirm Deletion"), tr("Are you sure you want to delete the track '%1' from the database?").arg(QFileInfo(selectedFilePath).fileName()), QMessageBox::Yes | QMessageBox::No);
+        if (go == QMessageBox::Yes) {
+            QMessageBox::StandardButton rm = QMessageBox::question(this, tr("Delete File?"), tr("Also delete the file '%1' from the hard drive?").arg(QFileInfo(selectedFilePath).fileName()), QMessageBox::Yes | QMessageBox::No);
 
-                    QProcess sh;
-                    sh.startDetached("sh",QStringList()<<"-c"<<"rm \""+estevalor+"\"");
+            bool deleteFile = (rm == QMessageBox::Yes);
+            bool fileDeleted = false;
 
-                    qDebug()<<"File DELETED :: "<<estevalor;
-
-
-                }
-
-                QSqlQuery sql;
-                sql.prepare("delete from musics where path=:path");
-                sql.bindValue(":path",estevalor);
-                if(sql.exec()){
-                    //QMessageBox::information(this,tr("Track removed"),tr("The track was removed"));
-                    update_music_table();
+            if (deleteFile) {
+                qInfo() << "Attempting to delete file from disk:" << selectedFilePath;
+                if (QFile::exists(selectedFilePath)) {
+                    if (QFile::remove(selectedFilePath)) {
+                        qInfo() << "File successfully deleted from disk.";
+                        fileDeleted = true;
+                    } else {
+                        qWarning() << "Failed to delete file from disk:" << selectedFilePath;
+                        QMessageBox::warning(this, "File Deletion Failed", tr("Could not delete the file:\n%1\nPlease check permissions.").arg(selectedFilePath));
+                        // Ask user if they still want to delete DB record? Maybe not. Let's abort.
+                         return;
+                    }
                 } else {
-                    QMessageBox::critical(this,tr("Error"),sql.lastError().text());
-                    qDebug() << "last sql: " << sql.lastQuery();
+                     qWarning() << "File not found for deletion, proceeding with DB removal.";
+                     fileDeleted = true; // Treat as success if not found
                 }
             }
-           }
 
-       if(selectedMenuItem==openWithAudacity){
-           QProcess sh;
-           sh.startDetached("sh",QStringList()<<"-c"<<"audacity \""+estevalor+"\"");
-       }
-       if(selectedMenuItem==getInfoFromMediaInfo){
-           delete ui->playlist->item(rowidx);
-           qDebug()<<"setInfoFromMediaInfo: "<<estevalor;
-           QProcess shi;
-           shi.start("sh", QStringList() << "-c" << "mediainfo \""+estevalor+"\"");
-           shi.waitForFinished();
-           
-                   QString shiout = shi.readAll();
-   
-                   QStringList pieces = shiout.split( "\n" );
-                   QString format = pieces.value( 2 );
-                   QString size = pieces.value( 3 );
-                   QString duration = pieces.value( 4 );
-                   QString bitrate = pieces.value( 6 );
-                   QString album = pieces.value( 7 );
-                   QString artist = pieces.value( 8 );
-                   QString song = pieces.value( 9 );
-                   QString genre = pieces.value( 14 );
-
-                   QStringList artist_arr = artist.split(":");
-                   QString artist_name = artist_arr[1].trimmed();
-
-                   QStringList song_arr = song.split(":");
-                   QString song_name = song_arr[1].trimmed();
-
-                   QStringList format_arr = format.split(":");
-                   QString format_name = format_arr[1].trimmed();
-
-                   QStringList album_arr = album.split(":");
-                   QString album_name = album_arr[1].trimmed();
-
-                   QStringList bitrate_arr = bitrate.split(":");
-                   QString bitrate_name = bitrate_arr[1].trimmed();
-
-                   QStringList duration_arr = duration.split(":");
-                   QString duration_name = duration_arr[1].trimmed();
-
-                   QStringList genre_arr = genre.split(":");
-                   QString genre_name = genre_arr[1].trimmed();
-
-                   QStringList size_arr = size.split(":");
-                   QString size_name = size_arr[1].trimmed();
-
-                   QString msg4box = tr("Artist: ")+artist_name+tr("; Song: ")+song_name+tr("; Album: ")+album_name+tr("; Genre: ")+genre_name+tr(" Bitrate: ")+bitrate_name+tr("; Duration:")+duration_name+tr("; size: ")+size_name+tr("; Format: ")+format_name;
-
-                   QMessageBox::StandardButton rpl;
-                   rpl = QMessageBox::question(this,tr("Apply this info to the database?"),msg4box,QMessageBox::Yes|QMessageBox::No);
-
-                   if(rpl==QMessageBox::Yes){
-                       qDebug()<<"Applying this info to the db: "<<msg4box;
-
-
-                       QSqlQuery qr;
-                       QString tmpqr = "update musics set artist ='"+artist_name+"', song = '"+song_name+"', genre1 = '"+genre_name+"', genre2 = '"+genre_name+"' where path = '"+estevalor+"'";
-
-                       qr.prepare(tmpqr);
-                               
-                       if(qr.exec()){
-                           qDebug()<<"Database updated; Query was: "<<qr.lastQuery();
-                           update_music_table();
-                       } else {
-                           qDebug()<<"Error updating database; Query was: "<<qr.lastQuery();
-                       }
-
-
-
-                   }
-
-       }
-
-
+            // Proceed with DB deletion if physical file deleted or not requested
+            QSqlDatabase db = QSqlDatabase::database("xfb_connection");
+            QSqlQuery sql(db);
+            sql.prepare("DELETE FROM musics WHERE path = :path");
+            sql.bindValue(":path", selectedFilePath);
+            if (sql.exec()) {
+                qInfo() << "Track removed from database:" << selectedFilePath;
+                update_music_table();
+                QMessageBox::information(this, tr("Success"), tr("Track removed from database.") + (deleteFile && fileDeleted ? tr("\nFile also deleted from disk.") : ""));
+            } else {
+                qCritical() << "Database Error deleting track:" << sql.lastError().text() << sql.lastQuery();
+                QMessageBox::critical(this, tr("Database Error"), tr("Failed to remove the track from the database:\n%1").arg(sql.lastError().text()));
+                // If DB delete failed after physical delete, we have an orphan file record potentially
+                if(deleteFile && fileDeleted){
+                     QMessageBox::warning(this, tr("Potential Issue"), tr("The file was deleted from disk, but removing the database record failed. Please check the database."));
+                }
+            }
+        }
+    } else if (selectedActionText == actionOpenAudacity) {
+        launchExternalApplication("audacity", selectedFilePath);
+    } else if (selectedActionText == actionGetInfo) {
+        getMediaInfoForFile(selectedFilePath);
     }
-
 }
 
 
-
-
-void::player::jinglesViewContextMenu(const QPoint& pos){
+void player::jinglesViewContextMenu(const QPoint& pos) {
     QPoint globalPos = ui->jinglesView->mapToGlobal(pos);
     QMenu thisMenu;
-    QString addToBottomOfPlaylist = tr("Add to the bottom of playlist");
-    QString addtoTopOfPlaylist = tr("Add to the top of the playlist");
-    QString deleteThisFromDB = tr("Delete this jingle from the database");
-    QString openWithAudacity = tr("Open this in Audacity");
+    const QString actionAddToBottom = tr("Add to the bottom of playlist");
+    const QString actionAddToTop = tr("Add to the top of the playlist");
+    const QString actionDeleteFromDB = tr("Delete this jingle from the database");
+    const QString actionOpenAudacity = tr("Open this in Audacity");
 
-    thisMenu.addAction(addToBottomOfPlaylist);
-    thisMenu.addAction(addtoTopOfPlaylist);
-    thisMenu.addAction(deleteThisFromDB);
-    thisMenu.addAction(openWithAudacity);
+    thisMenu.addAction(actionAddToBottom);
+    thisMenu.addAction(actionAddToTop);
+    thisMenu.addSeparator();
+    thisMenu.addAction(actionDeleteFromDB);
+    thisMenu.addSeparator();
+    thisMenu.addAction(actionOpenAudacity);
 
     QAction* selectedItem = thisMenu.exec(globalPos);
-    if (selectedItem)
-    {
-        //qDebug()<<"selected item in context menu was: "<<selectedItem->text();
-        QString selectedMenuItem = selectedItem->text();
-        int rowidx = ui->jinglesView->selectionModel()->currentIndex().row();
-        estevalor = ui->jinglesView->model()->data(ui->jinglesView->model()->index(rowidx,1)).toString();
+    if (!selectedItem) return;
 
-        if(selectedMenuItem==addToBottomOfPlaylist){
-            qDebug()<<"Launch add this to bottom of playlist";
-            ui->playlist->addItem(estevalor);
-        }
-        if(selectedMenuItem==addtoTopOfPlaylist){
-            qDebug()<<"Launch add this to top of playlist";
-         ui->playlist->insertItem(0,estevalor);
-        }
-        if(selectedMenuItem==deleteThisFromDB){
+    QModelIndexList selectedIndexes = ui->jinglesView->selectionModel()->selectedIndexes();
+    if (selectedIndexes.isEmpty()) return;
 
-            QMessageBox::StandardButton go;
-            go = QMessageBox::question(this,tr("Sure?"),tr("Are you sure you want to delete this jingle from the database?"), QMessageBox::Yes|QMessageBox::No);
-            if(go==QMessageBox::Yes){
-                QSqlQuery sql;
-                sql.prepare("delete from jingles where path=:path");
-                sql.bindValue(":path",estevalor);
-                if(sql.exec()){
-                    QMessageBox::information(this,tr("Jingle removed"),tr("The jingle was removed from the database!"));
-                    update_music_table();
-                } else {
-                    QMessageBox::critical(this,tr("Error"),sql.lastError().text());
-                    qDebug() << "last sql: " << sql.lastQuery();
-                }
+    int rowidx = selectedIndexes.first().row();
+    QModelIndex pathIndex = ui->jinglesView->model()->index(rowidx, 1); // Assuming column 1 is path
+    if (!pathIndex.isValid()) return;
+    QString selectedFilePath = ui->jinglesView->model()->data(pathIndex).toString();
+
+    QString selectedActionText = selectedItem->text();
+
+    if (selectedActionText == actionAddToBottom) {
+        ui->playlist->addItem(selectedFilePath);
+        calculate_playlist_total_time();
+    } else if (selectedActionText == actionAddToTop) {
+        ui->playlist->insertItem(0, selectedFilePath);
+        calculate_playlist_total_time();
+    } else if (selectedActionText == actionDeleteFromDB) {
+        QMessageBox::StandardButton go = QMessageBox::question(this, tr("Confirm Deletion"), tr("Are you sure you want to delete this jingle from the database?\n(File on disk will NOT be deleted)"), QMessageBox::Yes | QMessageBox::No);
+        if (go == QMessageBox::Yes) {
+            QSqlDatabase db = QSqlDatabase::database("xfb_connection");
+            QSqlQuery sql(db);
+            sql.prepare("DELETE FROM jingles WHERE path = :path");
+            sql.bindValue(":path", selectedFilePath);
+            if (sql.exec()) {
+                qInfo() << "Jingle removed from database:" << selectedFilePath;
+                update_music_table(); // This reloads all tables, including jingles
+                QMessageBox::information(this, tr("Jingle Removed"), tr("The jingle was removed from the database."));
+            } else {
+                 qCritical() << "Database Error deleting jingle:" << sql.lastError().text() << sql.lastQuery();
+                 QMessageBox::critical(this, tr("Database Error"), tr("Failed to remove the jingle from the database:\n%1").arg(sql.lastError().text()));
             }
-           }
-
-       if(selectedMenuItem==openWithAudacity){
-           QProcess sh;
-           sh.startDetached("sh",QStringList()<<"-c"<<"audacity \""+estevalor+"\"");
-       }
-
-
+        }
+    } else if (selectedActionText == actionOpenAudacity) {
+        launchExternalApplication("audacity", selectedFilePath);
     }
-
 }
-
 
 
 void::player::pubViewContextMenu(const QPoint& pos){
@@ -777,6 +1029,7 @@ void::player::pubViewContextMenu(const QPoint& pos){
     QString deleteThisFromDB = tr("Delete this pub from the database");
     QString openWithAudacity = tr("Open this in Audacity");
 
+    QSqlDatabase db = QSqlDatabase::database("xfb_connection");
     thisMenu.addAction(addToBottomOfPlaylist);
     thisMenu.addAction(addtoTopOfPlaylist);
     thisMenu.addAction(deleteThisFromDB);
@@ -803,7 +1056,8 @@ void::player::pubViewContextMenu(const QPoint& pos){
             QMessageBox::StandardButton go;
             go = QMessageBox::question(this,tr("Sure?"),tr("Are you sure you want to delete this pub from the database?"), QMessageBox::Yes|QMessageBox::No);
             if(go==QMessageBox::Yes){
-                QSqlQuery sql;
+                checkDbOpen();
+                QSqlQuery sql(db);
                 sql.prepare("delete from pub where path=:path");
                 sql.bindValue(":path",estevalor);
                 if(sql.exec()){
@@ -825,180 +1079,305 @@ void::player::pubViewContextMenu(const QPoint& pos){
     }
 
 }
+// Helper function to run a server script asynchronously
+void player::runServerCheckScript(const QString& scriptName, const QString& fileToCheck, const QString& successMessage, const QString& failureMessage) {
+    // TODO: Replace this with a robust way to find the script
+    QString scriptBaseName = scriptName; // e.g., "serverFtpCmdsCHKProgram.sh"
+    QString scriptDir = QCoreApplication::applicationDirPath() + "/usr/share/xfb/scripts"; // Example path
+    QString scriptPath = QDir(scriptDir).filePath(scriptBaseName);
 
+    qInfo() << "Attempting to execute check script:" << scriptPath << "for file:" << fileToCheck;
 
-void::player::programsViewContextMenu(const QPoint& pos){
-    QPoint globalPos = ui->programsView->mapToGlobal(pos);
-    QMenu thisMenu;
-    QString addToBottomOfPlaylist = tr("Add to the bottom of playlist");
-    QString addtoTopOfPlaylist = tr("Add to the top of the playlist");
-    QString deleteThisFromDB = tr("Delete this program from the database");
-    QString openWithAudacity = tr("Open this in Audacity");
-    QString resendtoserver = tr("(Re)Send this program to the server");
-    QString checkSent = tr("Verify that the program is in the server");
-
-    thisMenu.addAction(addToBottomOfPlaylist);
-    thisMenu.addAction(addtoTopOfPlaylist);
-    thisMenu.addAction(deleteThisFromDB);
-    thisMenu.addAction(openWithAudacity);
-    thisMenu.addAction(checkSent);
-    thisMenu.addAction(resendtoserver);
-
-    QAction* selectedItem = thisMenu.exec(globalPos);
-    if (selectedItem)
-    {
-        //qDebug()<<"selected item in context menu was: "<<selectedItem->text();
-        QString selectedMenuItem = selectedItem->text();
-        int rowidx = ui->programsView->selectionModel()->currentIndex().row();
-        estevalor = ui->programsView->model()->data(ui->programsView->model()->index(rowidx,2)).toString();
-
-        if(selectedMenuItem==addToBottomOfPlaylist){
-            qDebug()<<"Launch add this to bottom of playlist";
-            ui->playlist->addItem(estevalor);
-        }
-        if(selectedMenuItem==addtoTopOfPlaylist){
-            qDebug()<<"Launch add this to top of playlist";
-         ui->playlist->insertItem(0,estevalor);
-        }
-        if(selectedMenuItem==deleteThisFromDB){
-
-            QMessageBox::StandardButton go;
-            go = QMessageBox::question(this,tr("Sure?"),tr("Are you sure you want to delete this program from the database?"), QMessageBox::Yes|QMessageBox::No);
-            if(go==QMessageBox::Yes){
-                QSqlQuery sql;
-                sql.prepare("delete from programs where path=:path");
-                sql.bindValue(":path",estevalor);
-                if(sql.exec()){
-                    QMessageBox::information(this,tr("Jingle removed"),tr("The program was removed from the database!"));
-                    update_music_table();
-                } else {
-                    QMessageBox::critical(this,tr("Error"),sql.lastError().text());
-                    qDebug() << "last sql: " << sql.lastQuery();
-                }
-            }
-           }
-
-       if(selectedMenuItem==openWithAudacity){
-           QProcess sh;
-           sh.startDetached("sh",QStringList()<<"-c"<<"audacity \""+estevalor+"\"");
-       }
-
-       if(selectedMenuItem==checkSent){
-
-           QStringList array_de_nomes = estevalor.split("/");
-           QString nome = array_de_nomes.last();
-
-           QProcess sh;
-           QString shcmd = "/usr/share/xfb/scripts/serverFtpCmdsCHKProgram.sh | grep "+nome;
-           qDebug()<<"Running: "<<shcmd;
-
-           sh.start("sh",QStringList()<<"-c"<<shcmd);
-           sh.waitForFinished(120000);
-
-           QString shout = sh.readAll();
-
-           qDebug()<<"Check file on the server output result: "<<shout;
-
-           QString msgbtxt = tr("The program is in the server!")+"\n\n"+shout;
-
-           if(shout != ""){
-               QMessageBox::information(this,tr("OK"),msgbtxt);
-           } else {
-               QMessageBox::critical(this,tr("ERROR"),tr("The program is NOT in the server. Please try to upload again."));
-           }
-
-
-       }
-
-       if(selectedMenuItem==resendtoserver){
-
-           ui->txt_uploadingPrograms->show();
-           QMessageBox::StandardButton sendToServer;
-           sendToServer = QMessageBox::question(this,tr("(Re)Send to server?"),tr("Send programs to the server (and rewrite if it's already there)?"),QMessageBox::Yes|QMessageBox::No);
-           if(sendToServer==QMessageBox::Yes){
-
-               QFileInfo fileName(estevalor);
-               QString filename = fileName.fileName();
-
-               qDebug() << "(Re)Send to server :: Start \nProgram path: "<<estevalor
-                        << "\nFile name: "<<filename<<"\nCopying to tmp FTP local folder";
-
-
-               QString cp2ftp = "cp "+estevalor+" "+FTPPath+"/"+filename;
-               qDebug()<<"Running: "<<cp2ftp;
-               QProcess cmd;
-               cmd.startDetached("sh",QStringList()<<"-c"<<cp2ftp);
-               cmd.waitForFinished(-1);
-               cmd.close();
-
-
-                   qDebug()<<"File copied to temp FTP folder.\nSending program to server. This requires ~/.netrc to be configured with the ftp options and FTP Path in the options to point to a folder called 'ftp' that MUST be located in the parent directory of XFB (due to the code of config/serverFtpCmdsPutProgram).";
-
-
-                   QProcess sh,sh2;
-                   QByteArray output, output2;
-                   QString outPath, FTPCmdPath, xmls;
-
-
-                   sh.start("sh", QStringList() << "-c" << "pwd");
-                   sh.waitForFinished();
-                   output = sh.readAll();
-                   outPath = output;
-                   QStringList path_arry = outPath.split("\n");
-                   FTPCmdPath = path_arry[0]+"/usr/share/xfb/scripts/serverFtpCmdsPutProgram.sh | grep 'Transfer complete'";
-                   qDebug() << "running: " << FTPCmdPath;
-                   qDebug() << "If you get errors: cd config && chmod +x serverFtpCmdsPutProgram.sh && chmod 600 ~/.netrc (the ftp is configured in .netrc correct?)";
-                   sh.close();
-
-
-
-                   sh2.start("sh", QStringList() << "-c" << FTPCmdPath);
-                   sh2.waitForFinished(-1);
-                   output2 = sh2.readAll();
-                   xmls = output2;
-                   qDebug()<<output2;
-                   sh2.close();
-
-
-                   qDebug()<<"Program upload finished!";
-
-                   QProcess bashDelThis;
-                   QString fileToRemove = "rm "+FTPPath+"/"+filename;
-                   bashDelThis.start("sh",QStringList()<<"-c"<<fileToRemove);
-                   bashDelThis.waitForFinished();
-                   bashDelThis.close();
-
-                   qDebug()<<"FTP temp file deleted";
-
-                   ui->txt_uploadingPrograms->hide();
-           }
-
-
-
-       }
-
-
+    if (!QFileInfo::exists(scriptPath)) {
+        qWarning() << "Check script not found at:" << scriptPath;
+        QMessageBox::critical(this, "Script Error", QString("The required check script was not found:\n%1").arg(scriptPath));
+        return;
     }
 
+    QProgressDialog progress(tr("Checking server..."), tr("Cancel"), 0, 0, this);
+    progress.setWindowModality(Qt::WindowModal);
+    progress.show();
+    qApp->processEvents();
+
+    QProcess *checkProcess = new QProcess(this);
+    QStringList args;
+    // Pass filename as argument instead of relying on grep? Modify script if possible.
+    // For now, mimic original grep:
+    // args << "| grep" << fileToCheck; // NO! Don't pipe in C++ QProcess args
+
+    connect(checkProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+            this, [this, checkProcess, fileToCheck, successMessage, failureMessage, &progress](int exitCode, QProcess::ExitStatus exitStatus) {
+
+        progress.cancel(); // Close progress dialog
+        QString stdOutput = QString::fromLocal8Bit(checkProcess->readAllStandardOutput()).trimmed();
+        QString stdError = QString::fromLocal8Bit(checkProcess->readAllStandardError()).trimmed();
+        bool found = false;
+
+        if (exitStatus == QProcess::NormalExit && exitCode == 0) {
+            qDebug() << "Check script STDOUT:\n" << stdOutput;
+            // Check if the output contains the filename we are looking for
+            if (stdOutput.contains(fileToCheck, Qt::CaseInsensitive)) {
+                found = true;
+            } else {
+                 if (!stdError.isEmpty()) qWarning() << "Check script STDERR (exit 0):\n" << stdError;
+            }
+        } else {
+            qWarning() << "Check script failed or exited with error. ExitCode:" << exitCode;
+            if (!stdError.isEmpty()) qWarning() << "Check script STDERR:\n" << stdError;
+        }
+
+        if (found) {
+            QMessageBox::information(this, tr("Check Successful"), successMessage + "\n\nServer Output:\n" + stdOutput.left(300));
+        } else {
+            QMessageBox::critical(this, tr("Check Failed"), failureMessage);
+        }
+
+        checkProcess->deleteLater();
+    });
+
+    connect(checkProcess, &QProcess::errorOccurred, this, [this, checkProcess, scriptPath, &progress](QProcess::ProcessError error){
+         qWarning() << "Failed to start check script (" << scriptPath << "). Error:" << error << "-" << checkProcess->errorString();
+         progress.cancel();
+         QMessageBox::critical(this, "Script Error", QString("Could not start the check script:\n%1\n\nError: %2").arg(scriptPath).arg(checkProcess->errorString()));
+         checkProcess->deleteLater();
+     });
+
+    // Start the script - How to handle the grep part robustly?
+    // Option 1 (Best): Modify script to take filename as arg and return exit code 0 if found.
+    // checkProcess->start(scriptPath, QStringList() << fileToCheck); // If script modified
+    // Option 2 (Current): Run script and check output in C++.
+    checkProcess->start(scriptPath); // Run script, check full output in finished signal
+}
+// Helper function to run upload/put script asynchronously
+void player::runServerUploadScript(const QString& scriptName, const QString& fileToUpload, const QString& successMessage, const QString& failureMessage, std::function<void(bool)> callback) {
+    // TODO: Replace this with a robust way to find the script
+    QString scriptBaseName = scriptName; // e.g., "serverFtpCmdsPutProgram.sh"
+    QString scriptDir = QCoreApplication::applicationDirPath() + "/usr/share/xfb/scripts"; // Example path
+    QString scriptPath = QDir(scriptDir).filePath(scriptBaseName);
+
+    qInfo() << "Attempting to execute upload script:" << scriptPath << "for file:" << fileToUpload;
+     qDebug() << "Dependencies: Script must exist, be executable, ~/.netrc configured.";
+
+    if (!QFileInfo::exists(scriptPath)) {
+        qWarning() << "Upload script not found at:" << scriptPath;
+        QMessageBox::critical(this, "Script Error", QString("The required upload script was not found:\n%1").arg(scriptPath));
+        callback(false); // Indicate failure
+        return;
+    }
+
+    QProgressDialog progress(tr("Uploading to server..."), tr("Cancel"), 0, 0, this);
+    progress.setWindowModality(Qt::WindowModal);
+    progress.show();
+    qApp->processEvents();
+
+
+    QProcess *uploadProcess = new QProcess(this);
+    // Does the script need the filename as argument? Assume not for now based on original.
+
+    connect(uploadProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+            this, [this, uploadProcess, successMessage, failureMessage, &progress, callback](int exitCode, QProcess::ExitStatus exitStatus) {
+
+        progress.cancel();
+        QString stdOutput = QString::fromLocal8Bit(uploadProcess->readAllStandardOutput()).trimmed();
+        QString stdError = QString::fromLocal8Bit(uploadProcess->readAllStandardError()).trimmed();
+        bool success = false;
+
+        if (exitStatus == QProcess::NormalExit && exitCode == 0) {
+             qDebug() << "Upload script STDOUT:\n" << stdOutput;
+            if (stdOutput.contains("Transfer complete", Qt::CaseInsensitive)) {
+                 qInfo() << "Upload script reported success.";
+                 success = true;
+             } else {
+                  qWarning() << "Upload script finished (exit 0) but success message not found in output.";
+                  if (!stdError.isEmpty()) qWarning() << "Upload script STDERR:\n" << stdError;
+             }
+        } else {
+            qWarning() << "Upload script failed or exited with error. ExitCode:" << exitCode;
+            if (!stdError.isEmpty()) qWarning() << "Upload script STDERR:\n" << stdError;
+            else if (!stdOutput.isEmpty()) qWarning() << "Upload script STDOUT (check errors):\n" << stdOutput;
+        }
+
+        if (success) {
+             QMessageBox::information(this, tr("Upload Successful"), successMessage);
+             callback(true); // Indicate success
+        } else {
+             QMessageBox::critical(this, "Upload Failed", failureMessage + tr("\nCheck ~/.netrc, script, network, server status.\nOutput:\n%1\n%2")
+                                   .arg(stdOutput.left(200)).arg(stdError.left(200)));
+             callback(false); // Indicate failure
+        }
+        uploadProcess->deleteLater();
+    });
+
+     connect(uploadProcess, &QProcess::errorOccurred, this, [this, uploadProcess, scriptPath, failureMessage, &progress, callback](QProcess::ProcessError error){
+         qWarning() << "Failed to start upload script (" << scriptPath << "). Error:" << error << "-" << uploadProcess->errorString();
+         progress.cancel();
+         QMessageBox::critical(this, "Script Error", QString("Could not start the upload script:\n%1\n\nError: %2").arg(scriptPath).arg(uploadProcess->errorString()) + "\n" + failureMessage);
+         callback(false); // Indicate failure
+         uploadProcess->deleteLater();
+     });
+
+    // Start the script
+    uploadProcess->start(scriptPath);
 }
 
 
+void player::programsViewContextMenu(const QPoint& pos) {
+    QPoint globalPos = ui->programsView->mapToGlobal(pos);
+    QMenu thisMenu;
+    const QString actionAddToBottom = tr("Add to the bottom of playlist");
+    const QString actionAddToTop = tr("Add to the top of the playlist");
+    const QString actionDeleteFromDB = tr("Delete this program from the database");
+    const QString actionOpenAudacity = tr("Open this in Audacity");
+    const QString actionResendToServer = tr("(Re)Send this program to the server");
+    const QString actionCheckSent = tr("Verify that the program is in the server");
+
+    thisMenu.addAction(actionAddToBottom);
+    thisMenu.addAction(actionAddToTop);
+    thisMenu.addSeparator();
+    thisMenu.addAction(actionDeleteFromDB);
+    thisMenu.addSeparator();
+    thisMenu.addAction(actionOpenAudacity);
+    thisMenu.addSeparator();
+    thisMenu.addAction(actionCheckSent);
+    thisMenu.addAction(actionResendToServer);
+
+    QAction* selectedItem = thisMenu.exec(globalPos);
+    if (!selectedItem) return;
+
+    QModelIndexList selectedIndexes = ui->programsView->selectionModel()->selectedIndexes();
+    if (selectedIndexes.isEmpty()) return;
+
+    int rowidx = selectedIndexes.first().row();
+    QModelIndex pathIndex = ui->programsView->model()->index(rowidx, 2); // Assuming column 2 is path
+    if (!pathIndex.isValid()) return;
+    QString selectedFilePath = ui->programsView->model()->data(pathIndex).toString();
+    QFileInfo fileInfo(selectedFilePath);
+    QString selectedFileName = fileInfo.fileName();
 
 
+    QString selectedActionText = selectedItem->text();
+
+    if (selectedActionText == actionAddToBottom) {
+        ui->playlist->addItem(selectedFilePath);
+        calculate_playlist_total_time();
+    } else if (selectedActionText == actionAddToTop) {
+        ui->playlist->insertItem(0, selectedFilePath);
+        calculate_playlist_total_time();
+    } else if (selectedActionText == actionDeleteFromDB) {
+         QMessageBox::StandardButton go = QMessageBox::question(this, tr("Confirm Deletion"), tr("Are you sure you want to delete this program from the database?\n(File on disk will NOT be deleted)"), QMessageBox::Yes | QMessageBox::No);
+         if (go == QMessageBox::Yes) {
+             QSqlDatabase db = QSqlDatabase::database("xfb_connection");
+             QSqlQuery sql(db);
+             sql.prepare("DELETE FROM programs WHERE path = :path");
+             sql.bindValue(":path", selectedFilePath);
+             if (sql.exec()) {
+                 qInfo() << "Program removed from database:" << selectedFilePath;
+                 update_music_table();
+                 QMessageBox::information(this, tr("Program Removed"), tr("The program was removed from the database."));
+             } else {
+                 qCritical() << "Database Error deleting program:" << sql.lastError().text() << sql.lastQuery();
+                 QMessageBox::critical(this, tr("Database Error"), tr("Failed to remove the program from the database:\n%1").arg(sql.lastError().text()));
+             }
+         }
+    } else if (selectedActionText == actionOpenAudacity) {
+         launchExternalApplication("audacity", selectedFilePath);
+    } else if (selectedActionText == actionCheckSent) {
+        runServerCheckScript("serverFtpCmdsCHKProgram.sh", selectedFileName,
+                             tr("The program '%1' is present on the server!").arg(selectedFileName),
+                             tr("The program '%1' was NOT found on the server.").arg(selectedFileName));
+    } else if (selectedActionText == actionResendToServer) {
+         qInfo() << "(Re)Sending program to server:" << selectedFilePath;
+         ui->txt_uploadingPrograms->show(); // Show indicator
+
+         // 1. Copy file to temporary FTP location (FTPPath)
+         QString ftpTempPath = QDir(FTPPath).filePath(selectedFileName);
+         qInfo() << "Copying" << selectedFilePath << "to" << ftpTempPath;
+         QFile::remove(ftpTempPath); // Remove existing temp file first
+         if (!QFile::copy(selectedFilePath, ftpTempPath)) {
+             qWarning() << "Failed to copy program to temporary FTP folder:" << ftpTempPath;
+             QMessageBox::critical(this, tr("Copy Error"), tr("Failed to copy the program file to the temporary upload folder.\nCheck permissions for '%1'.").arg(FTPPath));
+             ui->txt_uploadingPrograms->hide();
+             return;
+         }
+
+         // 2. Run the upload script asynchronously
+         runServerUploadScript("serverFtpCmdsPutProgram.sh", ftpTempPath,
+                               tr("Program '%1' uploaded successfully.").arg(selectedFileName),
+                               tr("Failed to upload program '%1'.").arg(selectedFileName),
+                               // Callback function after upload attempt:
+                               [this, ftpTempPath](bool uploadSuccess) {
+                                    // 3. Clean up temporary file
+                                    qInfo() << "Cleaning up temporary FTP file:" << ftpTempPath;
+                                    if (QFile::remove(ftpTempPath)) {
+                                        qDebug() << "Removed temporary FTP file:" << ftpTempPath;
+                                    } else {
+                                        qWarning() << "Failed to remove temporary FTP file:" << ftpTempPath;
+                                    }
+                                    ui->txt_uploadingPrograms->hide(); // Hide indicator
+                                    // No further action needed here based on original code after upload attempt
+                               });
+     }
+}
+
+
+// Helper to get duration using exiftool (async)
+void player::getDurationForFile(const QString& filePath, std::function<void(const QString&, const QString&)> callback) {
+    QString exiftoolPath = QStandardPaths::findExecutable("exiftool");
+    if (exiftoolPath.isEmpty()) {
+        qWarning() << "exiftool not found for duration check.";
+        callback(filePath, ""); // Return empty duration on failure
+        return;
+    }
+
+    QProcess *process = new QProcess(this);
+    QStringList arguments;
+    arguments << "-T" << "-Duration" << filePath; // Use -T for direct value output
+
+    connect(process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+            this, [process, filePath, callback](int exitCode, QProcess::ExitStatus exitStatus){
+        QString durationValue = "";
+        if (exitStatus == QProcess::NormalExit && exitCode == 0) {
+            durationValue = QString::fromLocal8Bit(process->readAllStandardOutput()).trimmed();
+             if (durationValue == "-") durationValue = ""; // Handle case where tag not found
+        } else {
+            qWarning() << "exiftool failed for duration check on" << filePath;
+            // Log error output?
+        }
+        callback(filePath, durationValue); // Call the callback with result
+        process->deleteLater();
+    });
+
+    connect(process, &QProcess::errorOccurred, this, [process, filePath, callback](QProcess::ProcessError error){
+         qWarning() << "Failed to start exiftool for duration check. Error:" << error;
+         callback(filePath, ""); // Return empty duration
+         process->deleteLater();
+    });
+
+    process->start(exiftoolPath, arguments);
+}
 
 void player::on_btPlay_clicked(){
     qDebug()<<"Play button clicked";
 
     if(PlayMode=="stopped"){
+        if(darkMode){
+            ui->btPlay->setStyleSheet("background-color:#5e9604"); //green
+        }else{
 
-        ui->btPlay->setStyleSheet("background-color:#2CCD54"); //green
+            ui->btPlay->setStyleSheet("background-color:#2CCD54"); //green
+        }
         ui->btPlay->setText(tr("Play and Segue"));
         PlayMode = "Playing_Segue";
         playNextSong();
 
     }  else if(PlayMode=="Playing_StopAtNextOne"){
 
-        ui->btPlay->setStyleSheet("background-color:#2CCD54"); //green
+        if(darkMode){
+            ui->btPlay->setStyleSheet("background-color:#5e9604"); //green
+        }else{
+
+            ui->btPlay->setStyleSheet("background-color:#2CCD54"); //green
+        }
         ui->btPlay->setText(tr("Play and Segue"));
         PlayMode = "Playing_Segue";
 
@@ -1014,9 +1393,55 @@ void player::on_btPlay_clicked(){
 
 }
 
+void player::playNextMedia() {
+    // Increment the playlist index and play the next media
+    if (XplaylistUrls.isEmpty()) {
+        qDebug() << "Playlist is empty, cannot play next media";
+        return;
+    }
+
+    XplaylistIndex++;
+    if (XplaylistIndex >= XplaylistUrls.size()) {
+        // Reached the end of the playlist
+        XplaylistIndex = 0;
+        if (PlayMode == "Playing_Segue") {
+            // In segue mode, try to get the next song from the playlist widget
+            playNextSong();
+        } else {
+            // Otherwise, stop playback
+            Xplayer->stop();
+            ui->btPlay->setStyleSheet("");
+            ui->btPlay->setText(tr("Play"));
+            PlayMode = "stopped";
+        }
+    } else {
+        // Play the next media in the playlist
+        Xplayer->setSource(XplaylistUrls[XplaylistIndex]);
+        Xplayer->play();
+    }
+}
+
+void player::playPreviousMedia() {
+    // Decrement the playlist index and play the previous media
+    if (XplaylistUrls.isEmpty()) {
+        qDebug() << "Playlist is empty, cannot play previous media";
+        return;
+    }
+
+    XplaylistIndex--;
+    if (XplaylistIndex < 0) {
+        // Reached the beginning of the playlist, wrap around to the end
+        XplaylistIndex = XplaylistUrls.size() - 1;
+    }
+
+    Xplayer->setSource(XplaylistUrls[XplaylistIndex]);
+    Xplayer->play();
+}
+
 void player::playNextSong(){
 
 
+    QSqlDatabase db = QSqlDatabase::database("xfb_connection");
     if(PlayMode=="Playing_Segue"){
         qDebug()<<"The white rabit is Playing_segue";
 
@@ -1031,8 +1456,13 @@ void player::playNextSong(){
             if((lastPlayedSong!=itemDaPlaylist)||(autoMode==0)){
                 qDebug()<<"lastplayesong != itemdaplaylist";
 
-                Xplaylist->removeMedia(0);
-                Xplaylist->addMedia(QUrl::fromLocalFile(itemDaPlaylist));
+                // Clear current playlist and add new media
+                XplaylistUrls.clear();
+                XplaylistUrls.append(QUrl::fromLocalFile(itemDaPlaylist));
+                XplaylistIndex = 0;
+
+                // Set the media to play
+                Xplayer->setSource(XplaylistUrls[XplaylistIndex]);
 
                 lastPlayedSong = itemDaPlaylist;
 
@@ -1062,7 +1492,7 @@ void player::playNextSong(){
 
                 if(ui->checkBox_update_last_played_values->isChecked()){
 
-                    QSqlQuery* qry = new QSqlQuery();
+                    QSqlQuery* qry = new QSqlQuery(db);
                     QString qrystr = "update musics set last_played = '"+now.toString("yyyy-MM-dd || hh:mm:ss")+"' where path = \""+lastPlayedSong+"\"";
                     qry->exec(qrystr);
 
@@ -1087,7 +1517,8 @@ void player::playNextSong(){
                         qDebug()<<"Adding a jingle..";
 
                         int num = 1;
-                        QSqlQuery query;
+                        checkDbOpen();
+                        QSqlQuery query(db);
                         query.prepare("select path from jingles order by random() limit :num");
                         query.bindValue(":num", num);
                         if(query.exec())
@@ -1166,7 +1597,8 @@ void player::on_btStop_clicked()
     ui->btPlay->setStyleSheet("");
     ui->btPlay->setText(tr("Play"));
     PlayMode = "stopped";
-    Xplaylist->removeMedia(0);
+    XplaylistUrls.clear();
+    XplaylistIndex = 0;
 }
 
 void player::on_sliderProgress_sliderMoved(int position)
@@ -1178,7 +1610,7 @@ void player::on_sliderProgress_sliderMoved(int position)
 void player::on_sliderVolume_sliderMoved(int position)
 {
     //qDebug()<<"volume slider mooved "<<position;
-    Xplayer->setVolume(position);
+    XplayerOutput->setVolume(position / 100.0);
 
 }
 
@@ -1292,13 +1724,19 @@ void player::durationChanged(qint64 position)
 
 }
 
-void player::currentMediaChanged(const QMediaContent &content)
+void player::currentMediaChanged(const QUrl &content)
 {
+    // Unused parameter 'content'
+    Q_UNUSED(content);
+
     //qDebug()<<"On currentMediaChanged with content: "<<content;
     if(onAbout2Finish==1)
     {
         onAbout2Finish = 0;
-        Xplaylist->removeMedia(Xplaylist->currentIndex());
+        // Using XplaylistUrls instead of deprecated QMediaPlaylist
+        if (XplaylistIndex < XplaylistUrls.size()) {
+            XplaylistUrls.removeAt(XplaylistIndex);
+        }
         playNextSong();
     }
 
@@ -1454,11 +1892,12 @@ void player::lp1_durationChanged(qint64 position)
 
 }
 
-void player::lp1_currentMediaChanged(const QMediaContent &content)
+void player::lp1_currentMediaChanged(const QUrl &content)
 {
+   // Unused parameter 'content'
+   Q_UNUSED(content);
 
    qDebug()<<"LP 1 Current Media Changed..";
-
 }
 
 void player::lp1_volumeChanged(int volume){
@@ -1608,16 +2047,14 @@ void player::lp2_durationChanged(qint64 position)
 
    // ui->lbl_total_time_lp1->setText(time);
     lp2_total_time = time;
-
-
-
 }
 
-void player::lp2_currentMediaChanged(const QMediaContent &content)
+void player::lp2_currentMediaChanged(const QUrl &content)
 {
+    // Unused parameter 'content', but keeping method for signal connection
+    Q_UNUSED(content);
 
-   qDebug()<<"LP 2 Current Media Changed..";
-
+    qDebug()<<"LP 2 Current Media Changed..";
 }
 
 void player::lp2_volumeChanged(int volume){
@@ -1636,50 +2073,121 @@ void player::playlistAboutToFinish()
 }
 
 
-void player::update_music_table(){
+void player::update_music_table() {
+
+    QSqlDatabase db = QSqlDatabase::database("xfb_connection");
     checkDbOpen();
-    /*Populate music table with an editable table field on double-click*/
 
-    QSqlTableModel * model = new QSqlTableModel(this);
+    qInfo() << "Updating tables using connection:" << db.connectionName() << "DB Name:" << db.databaseName();
+
+    // --- Populate music table ---
+    // Always delete previous model if reloading to prevent memory leaks and issues
+    delete ui->musicView->model(); // Delete old model first
+    QSqlTableModel *model = new QSqlTableModel(this, db); // Pass the CORRECT db handle
     model->setTable("musics");
-    model->select();
-    ui->musicView->setModel(model);
+    // Optional: Set edit strategy if needed (BEFORE select)
+    // model->setEditStrategy(QSqlTableModel::OnFieldChange);
+    if (!model->select()) {
+        qWarning() << "Failed to select 'musics' table:" << model->lastError().text();
+        delete model; // Clean up failed model
+    } else {
+        ui->musicView->setModel(model);
+        // Configure view AFTER setting model (if needed)
+         qDebug() << "'musics' table model set.";
+         // Re-apply view settings if necessary as they might reset with new model
+         ui->musicView->setSortingEnabled(true);
+         ui->musicView->hideColumn(0);
+         // ... other ui->musicView settings ...
+    }
 
 
-    /*Populate jingles table with an editable table field on double-click*/
-    QSqlTableModel * jinglesmodel = new QSqlTableModel(this);
+    // --- Populate jingles table ---
+    delete ui->jinglesView->model(); // Delete old model
+    QSqlTableModel *jinglesmodel = new QSqlTableModel(this, db); // Pass the CORRECT db handle
     jinglesmodel->setTable("jingles");
-    jinglesmodel->select();
-    ui->jinglesView->setModel(jinglesmodel);
+    if (!jinglesmodel->select()) {
+        qWarning() << "Failed to select 'jingles' table:" << jinglesmodel->lastError().text();
+        delete jinglesmodel;
+    } else {
+        ui->jinglesView->setModel(jinglesmodel);
+         qDebug() << "'jingles' table model set.";
+         // Configure view if needed
+    }
 
 
-    /*Populate Pub table*/
-    QSqlTableModel *pubmodel = new QSqlTableModel(this);
+    // --- Populate Pub table ---
+    delete ui->pubView->model(); // Delete old model
+    QSqlTableModel *pubmodel = new QSqlTableModel(this, db); // Pass the CORRECT db handle
     pubmodel->setTable("pub");
-    pubmodel->select();
-    ui->pubView->setModel(pubmodel);
+    if (!pubmodel->select()) {
+        qWarning() << "Failed to select 'pub' table:" << pubmodel->lastError().text();
+        delete pubmodel;
+    } else {
+        ui->pubView->setModel(pubmodel);
+         qDebug() << "'pub' table model set.";
+        // Configure view if needed
+    }
 
-    /*Populate Programs table*/
-    QSqlTableModel *programsmodel = new QSqlTableModel(this);
+    // --- Populate Programs table ---
+    delete ui->programsView->model(); // Delete old model
+    QSqlTableModel *programsmodel = new QSqlTableModel(this, db); // Pass the CORRECT db handle
     programsmodel->setTable("programs");
-    programsmodel->select();
-    ui->programsView->setModel(programsmodel);
+    if (!programsmodel->select()) {
+        qWarning() << "Failed to select 'programs' table:" << programsmodel->lastError().text();
+        delete programsmodel;
+    } else {
+        ui->programsView->setModel(programsmodel);
+         qDebug() << "'programs' table model set.";
+        // Configure view if needed
+    }
 
 
-    /*Populate genre1 and 2 filters*/
-    QSqlQueryModel * model_genre1=new QSqlQueryModel();
-    //QSqlQueryModel * model_genre2=new QSqlQueryModel();
+    // --- Populate genre1 and 2 filters ---
+    // No need to delete QComboBox models usually unless you are replacing them frequently
+    // Create model ONCE, maybe in constructor, and just update query if needed?
+    // Or if updating here, manage previous model memory:
+    delete ui->cBoxGenre1->model(); // Delete previous model data if reloading fully
+    // Note: cBoxGenre2 shares the same model, deleting above is sufficient
 
-    QSqlQuery* qry=new QSqlQuery();
+    // Create model associated with the correct DB connection
+    QSqlQueryModel *model_genre1 = new QSqlQueryModel(this); // Parent 'this' manages memory somewhat
 
-    QString sqlq = "select name from genres1";
-    qry->exec(sqlq);
-    model_genre1->setQuery(*qry);
+    // Use a stack-based QSqlQuery - safer memory management
+    QSqlQuery qry(db); // Pass the CORRECT db handle
+
+    QString sqlq = "SELECT name FROM genres1 ORDER BY name"; // Added ORDER BY
+    if (!qry.prepare(sqlq)) { // Prepare is safer
+         qWarning() << "Failed to prepare genre query:" << qry.lastError().text();
+         delete model_genre1; // Clean up model
+         return; // Exit if query prep fails
+    }
+
+    if (!qry.exec()) { // Execute the prepared query
+        qWarning() << "Failed to execute genre query:" << qry.lastError().text();
+        delete model_genre1; // Clean up model
+        return; // Exit if query exec fails
+    }
+
+    model_genre1->setQuery(std::move(qry)); // Set query AFTER successful execution
+    if(model_genre1->lastError().isValid()){
+         qWarning() << "Error setting query on genre model:" << model_genre1->lastError().text();
+    }
+
+    // Set model for BOTH combo boxes
     ui->cBoxGenre1->setModel(model_genre1);
-    ui->cBoxGenre2->setModel(model_genre1);
+    ui->cBoxGenre1->setModelColumn(0); // Display the first column ('name')
 
+    ui->cBoxGenre2->setModel(model_genre1); // Share the same model
+    ui->cBoxGenre2->setModelColumn(0);
+
+    // Also update the random add genre combo box if it uses the same list
+    delete ui->comboBox_random_add_genre->model(); // Assuming it should also be updated
     ui->comboBox_random_add_genre->setModel(model_genre1);
+    ui->comboBox_random_add_genre->setModelColumn(0);
 
+    qInfo() << "Genre combo boxes updated.";
+
+    qInfo() << "Finished updating tables.";
 }
 
 
@@ -1803,6 +2311,7 @@ void player::on_musicView_pressed(const QModelIndex &index)
 
 indexJust3rdDropEvt=0;
 
+QSqlDatabase db = QSqlDatabase::database("xfb_connection");
     ui->musicView->selectRow(index.row());
     int rowidx = ui->musicView->selectionModel()->currentIndex().row();
     estevalor = ui->musicView->model()->data(ui->musicView->model()->index(rowidx,7)).toString();
@@ -1817,8 +2326,9 @@ indexJust3rdDropEvt=0;
                 reply = QMessageBox::question(this, "The file does NOT exist?", "It seams like the file does NOT exist on the hard drive... Or there is a problem reading it. Should it be deleted from the database?",
                                               QMessageBox::Yes|QMessageBox::No);
                 if (reply == QMessageBox::Yes) {
-                  qDebug() << "the file should be deleted from the database cause it does not exist in the hd (or path was changed)";
-                      QSqlQuery* qry=new QSqlQuery();
+                    qDebug() << "the file should be deleted from the database cause it does not exist in the hd (or path was changed)";
+                    checkDbOpen();
+                    QSqlQuery* qry=new QSqlQuery(db);
                       qry->prepare("delete from musics where path = :thpath");
                       qry->bindValue(":thpath",estevalor);
 
@@ -1853,11 +2363,12 @@ void player::on_jinglesView_pressed(const QModelIndex &index)
 {
     indexJust3rdDropEvt=0;
 
+    QSqlDatabase db = QSqlDatabase::database("xfb_connection");
         //int thisid = index.row()+1;
         ui->jinglesView->selectRow(index.row());
         int rowidx = ui->jinglesView->selectionModel()->currentIndex().row();
-
-        QSqlTableModel * model = new QSqlTableModel(this);
+        checkDbOpen();
+        QSqlTableModel * model = new QSqlTableModel(this,db);
         model->setTable("jingles");
         model->select();
         QString sqlPath = model->index(rowidx , 1).data().toString();
@@ -1872,8 +2383,9 @@ void player::on_jinglesView_pressed(const QModelIndex &index)
                     reply = QMessageBox::question(this, "The file does NOT exist?", "It seams like the file does NOT exist on the hard drive... Should it be deleted from the database?",
                                                   QMessageBox::Yes|QMessageBox::No);
                     if (reply == QMessageBox::Yes) {
+                        checkDbOpen();
                       qDebug() << "the file should be deleted from the database cause it does not exist in the hd (or path should change)";
-                          QSqlQuery* qry=new QSqlQuery();
+                          QSqlQuery* qry=new QSqlQuery(db);
                           qry->prepare("delete from jingles where path = :thpath");
                           qry->bindValue(":thpath",sqlPath);
 
@@ -1903,11 +2415,12 @@ void player::on_pubView_pressed(const QModelIndex &index)
 {
     indexJust3rdDropEvt=0;
 
+    QSqlDatabase db = QSqlDatabase::database("xfb_connection");
         //int thisid = index.row()+1;
         ui->pubView->selectRow(index.row());
         int rowidx = ui->pubView->selectionModel()->currentIndex().row();
-
-        QSqlTableModel * model = new QSqlTableModel(this);
+checkDbOpen();
+        QSqlTableModel * model = new QSqlTableModel(this,db);
         model->setTable("pub");
         model->select();
         QString sqlPath = model->index(rowidx , 2).data().toString();
@@ -1922,8 +2435,9 @@ void player::on_pubView_pressed(const QModelIndex &index)
                     reply = QMessageBox::question(this, "The file does NOT exist?", "It seams like the file does NOT exist on the hard drive... Should it be deleted from the database?",
                                                   QMessageBox::Yes|QMessageBox::No);
                     if (reply == QMessageBox::Yes) {
+                        checkDbOpen();
                       qDebug() << "the file should be deleted from the database cause it does not exist in the hd (or path should change)";
-                          QSqlQuery* qry=new QSqlQuery();
+                          QSqlQuery* qry=new QSqlQuery(db);
                           qry->prepare("delete from pub where path = :thpath");
                           qry->bindValue(":thpath",sqlPath);
 
@@ -1957,11 +2471,12 @@ void player::on_programsView_pressed(const QModelIndex &index)
 {
     indexJust3rdDropEvt=0;
 
+    QSqlDatabase db = QSqlDatabase::database("xfb_connection");
         //int thisid = index.row()+1;
         ui->programsView->selectRow(index.row());
         int rowidx = ui->programsView->selectionModel()->currentIndex().row();
-
-        QSqlTableModel * model = new QSqlTableModel(this);
+checkDbOpen();
+        QSqlTableModel * model = new QSqlTableModel(this,db);
         model->setTable("programs");
         model->select();
         QString sqlPath = model->index(rowidx , 2).data().toString();
@@ -1976,8 +2491,9 @@ void player::on_programsView_pressed(const QModelIndex &index)
                     reply = QMessageBox::question(this, "The file does NOT exist?", "It seams like the file does NOT exist on the hard drive... Should it be deleted from the database?",
                                                   QMessageBox::Yes|QMessageBox::No);
                     if (reply == QMessageBox::Yes) {
+                        checkDbOpen();
                       qDebug() << "the file should be deleted from the database cause it does not exist in the hd (or path should change)";
-                          QSqlQuery* qry=new QSqlQuery();
+                          QSqlQuery* qry=new QSqlQuery(db);
                           qry->prepare("delete from programs where path = :thpath");
                           qry->bindValue(":thpath",sqlPath);
 
@@ -2025,6 +2541,7 @@ void player::autoModeGetMoreSongs()
 
     //check if there's a programed genre for this hour in the hourgenre table
 
+    QSqlDatabase db = QSqlDatabase::database("xfb_connection");
     QDateTime now = QDateTime::currentDateTime();
     QString currentHour = now.toString("h");
     int dia = QDate::currentDate().dayOfWeek();
@@ -2040,8 +2557,8 @@ void player::autoModeGetMoreSongs()
 
     QString qry="select genre from hourgenre where hour="+currentHour+" and day="+dw;
     qDebug()<<"hourgenre query is: "<<qry;
-
-    QSqlQuery runQry;
+checkDbOpen();
+    QSqlQuery runQry(db);
     QString currentGenre = "";
 
     if(runQry.exec(qry)){
@@ -2066,7 +2583,7 @@ void player::autoModeGetMoreSongs()
            if(autoMode==1){
                //randomly select music from db
                int numMusics = 1;
-               QSqlQuery query;
+               QSqlQuery query(db);
                query.prepare("select path from musics order by random() limit :numMusics");
                query.bindValue(":numMusics", numMusics);
                if(query.exec())
@@ -2082,7 +2599,7 @@ void player::autoModeGetMoreSongs()
 
                        } else {
 
-                           QSqlQuery numOfItemsInDB;
+                           QSqlQuery numOfItemsInDB(db);
                            numOfItemsInDB.prepare("select count(path) from music where 1");
                            numOfItemsInDB.exec();
                            if(numOfItemsInDB.value(0).toInt()>1){
@@ -2108,7 +2625,7 @@ void player::autoModeGetMoreSongs()
             //randomly select music from db based on genre for this hour
 
             QString querystr = "select path from musics where genre1 like '"+currentGenre+"' order by random() limit 1";
-            QSqlQuery query;
+            QSqlQuery query(db);
             if(query.exec(querystr))
             {
                 qDebug() << "SQL query executed: " << query.lastQuery();
@@ -2122,7 +2639,7 @@ void player::autoModeGetMoreSongs()
 
                     } else {
 
-                        QSqlQuery numOfItemsInDB;
+                        QSqlQuery numOfItemsInDB(db);
                         numOfItemsInDB.prepare("select count(path) from music where 1");
                         numOfItemsInDB.exec();
                         if(numOfItemsInDB.value(0).toInt()>1){
@@ -2160,7 +2677,10 @@ void player::on_actionAdd_a_single_song_triggered()
 void player::on_btPlayNext_clicked()
 {
 
-    Xplaylist->removeMedia(0);
+    // Using XplaylistUrls instead of deprecated QMediaPlaylist
+    if (!XplaylistUrls.isEmpty()) {
+        XplaylistUrls.removeAt(0);
+    }
     playNextSong();
 
 }
@@ -2231,7 +2751,7 @@ void player::monitorTakeOver(){
 
             if (Rxml.isStartElement()) {
 
-                        if (Rxml.name() == "XFBClientTakeOver") {
+                        if (Rxml.name() == QStringLiteral("XFBClientTakeOver")) {
                             qDebug()<<"Valid XFB TakeOver Found!";
                             Rxml.readNext();
 
@@ -2247,17 +2767,17 @@ void player::monitorTakeOver(){
                     } else {
                         Rxml.readNext();
 
-                        if(Rxml.name()=="www.netpack.pt"){
+                        if(Rxml.name()==QStringLiteral("www.netpack.pt")){
                             qDebug()<<"Token element: "<<Rxml.name();
                             Rxml.readNext();
                         }
 
-                        if(Rxml.name()=="ip"){
+                        if(Rxml.name()==QStringLiteral("ip")){
                             takeOverIP = Rxml.readElementText();
                             qDebug()<<"takeOverIP: "<<takeOverIP;
                         }
 
-                        if(Rxml.name()=="stream"){
+                        if(Rxml.name()==QStringLiteral("stream")){
                             takeOverStream = Rxml.readElementText();
                             qDebug()<<"TakeOverStream: "<<takeOverStream;
 
@@ -2348,7 +2868,7 @@ void player::monitorTakeOver(){
 
             if (Rxml.isStartElement()) {
 
-                        if (Rxml.name() == "XFBClientTakeOver") {
+                        if (Rxml.name() == QStringLiteral("XFBClientTakeOver")) {
                             qDebug()<<"Valid XFB returnTakeOver Found!";
                             Rxml.readNext();
 
@@ -2364,17 +2884,17 @@ void player::monitorTakeOver(){
                     } else {
                         Rxml.readNext();
 
-                        if(Rxml.name()=="www.netpack.pt"){
+                        if(Rxml.name()==QStringLiteral("www.netpack.pt")){
                             qDebug()<<"Token element: "<<Rxml.name();
                             Rxml.readNext();
                         }
 
-                        if(Rxml.name()=="ip"){
+                        if(Rxml.name()==QStringLiteral("ip")){
                             returnTakeOverIP = Rxml.readElementText();
                             qDebug()<<"returnTakeOverIP: "<<returnTakeOverIP;
                         }
 
-                        if(Rxml.name()=="cmd"){
+                        if(Rxml.name()==QStringLiteral("cmd")){
                             takeOverStream = Rxml.readElementText();
                             qDebug()<<"ReturnTakeOver :: "<<takeOverStream;
 
@@ -2460,6 +2980,7 @@ server_check_and_schedule_new_programs();
 void player::server_check_and_schedule_new_programs(){
 
 
+    QSqlDatabase db = QSqlDatabase::database("xfb_connection");
     //check the programs folder and get the name of the programs/folders
 
     qDebug()<<"Monitoring ProgramsPath var that is set to: "<<ProgramsPath    ;
@@ -2521,17 +3042,17 @@ void player::server_check_and_schedule_new_programs(){
                 QString file = fit.next();
 
                 qDebug()<<"Found: "<<file;
-                
-                
 
-                
+
+
+
                 //for every file in this folder check if it exist in DB
-                
-                
-                
-                QSqlQuery sql;
+
+
+
+                QSqlQuery sql(db);
                 QString qry = "SELECT path from programs where path='"+file+"'";
-                
+
                 if(sql.exec(qry)){
                     qDebug()<<"Query ran fine: "<<sql.lastQuery();
 
@@ -2554,7 +3075,7 @@ void player::server_check_and_schedule_new_programs(){
 
 
 
-                        QSqlQuery sql_add;
+                        QSqlQuery sql_add(db);
                         QString qry_add = "insert into programs values(NULL,'"+filename+"','"+file+"')";
                         if(sql_add.exec(qry_add)){
                             qDebug()<<"Query OK. Program localy added to programs table";
@@ -2565,7 +3086,7 @@ void player::server_check_and_schedule_new_programs(){
 
 
 
-                            QSqlQuery qryid;
+                            QSqlQuery qryid(db);
                             QString thisqueryid = "select * from programs where path like '"+file+"'";
                             qDebug()<<"server programs monitorization :: Select id query is: "<<thisqueryid;
                             if(qryid.exec(thisqueryid)){
@@ -2588,7 +3109,7 @@ void player::server_check_and_schedule_new_programs(){
 
                                         QString qryhourmin = "select hour, min from hourprograms where name like '"+nomeDoPrograma+"'";
 
-                                        QSqlQuery qhm;
+                                        QSqlQuery qhm(db);
 
                                         if(qhm.exec(qryhourmin)){
 
@@ -2599,7 +3120,7 @@ void player::server_check_and_schedule_new_programs(){
                                                 QString pHora = qhm.value(0).toString();
                                                 QString pMin = qhm.value(1).toString();
 
-                                                QSqlQuery addsch;
+                                                QSqlQuery addsch(db);
                                                 QString addstr = "insert into scheduler values ('"+pID+"','"+pAno+"','"+pMes+"','"+pDia+"','"+pHora+"','"+pMin+"','1',NULL,NULL,NULL,NULL,NULL,NULL,NULL,'1')";
 
                                                 if(addsch.exec(addstr)){
@@ -3010,6 +3531,7 @@ void player::server_check_and_schedule_new_programs(){
 void player::server_ftp_check(){
 
 
+    QSqlDatabase db = QSqlDatabase::database("xfb_connection");
             qDebug()<<"server_ftp_check() :: Looking for new programs in the FTP server to download";
             QProcess sh,sh2, sh3;
             QByteArray output, output2;
@@ -3061,7 +3583,7 @@ void player::server_ftp_check(){
                     qDebug()<<"server_ftp_check() :: This programs name is: "<<nomeDoPrograma;
                     qDebug()<<"server_ftp_check() :: The programs date is: "<<dataDoPrograma;
 
-                    QSqlQuery qry;
+                    QSqlQuery qry(db);
                     QString thisquery = "insert into programs values(NULL,'"+nomeDoPrograma+"','"+fileNameWPath+"')";
                     if(qry.exec(thisquery)){
                         qDebug()<<"server_ftp_check() :: Query OK. Program added to programs table";
@@ -3069,7 +3591,7 @@ void player::server_ftp_check(){
                          qDebug()<<"server_ftp_check() :: Query was not ok while atempting to add to the programs table";
                     }
 
-                    QSqlQuery qryid;
+                    QSqlQuery qryid(db);
                     QString thisqueryid = "select * from programs where path like '"+fileNameWPath+"'";
                     qDebug()<<"server_ftp_check() :: Select id query is: "<<thisqueryid;
                     if(qryid.exec(thisqueryid)){
@@ -3086,7 +3608,7 @@ void player::server_ftp_check(){
 
                                 QString qryhourmin = "select hour, min from hourprograms where name like '"+nomeDoPrograma+"'";
 
-                                QSqlQuery qhm;
+                                QSqlQuery qhm(db);
 
                                 if(qhm.exec(qryhourmin)){
 
@@ -3094,7 +3616,7 @@ void player::server_ftp_check(){
                                         QString pHora = qhm.value(0).toString();
                                         QString pMin = qhm.value(1).toString();
 
-                                        QSqlQuery addsch;
+                                        QSqlQuery addsch(db);
                                         QString addstr = "insert into scheduler values ('"+pID+"','"+pAno+"','"+pMes+"','"+pDia+"','"+pHora+"','"+pMin+"','1',NULL,NULL,NULL,NULL,NULL,NULL,NULL,'1')";
 
                                         if(addsch.exec(addstr)){
@@ -3261,6 +3783,7 @@ void player::stopMplayer(){
 
 void player::run_scheduler(){
 
+    QSqlDatabase db = QSqlDatabase::database("xfb_connection");
     checkDbOpen();
 
     /*check if there is any thing to go on now*/
@@ -3269,7 +3792,7 @@ void player::run_scheduler(){
 
 
 
-QSqlQuery sched_qry;
+QSqlQuery sched_qry(db);
 sched_qry.prepare("select * from scheduler");
 if(sched_qry.exec()){
     while(sched_qry.next()){
@@ -3319,7 +3842,7 @@ if(sched_qry.exec()){
                     QString schId = sched_qry.value(0).toString();
 
                     //add to playlist
-                    QSqlQuery getPath;
+                    QSqlQuery getPath(db);
                     if(is_program=="1"){
                         getPath.prepare("select path from programs where id='"+schId+"'");
                     } else {
@@ -3337,7 +3860,7 @@ if(sched_qry.exec()){
 
                     //delete scheduler row cause its a type 1
 
-                    QSqlQuery del_qry;
+                    QSqlQuery del_qry(db);
                     del_qry.prepare("delete from scheduler where id='"+schId+"' and ano='"+ano1+"' and mes='"+mes1+"' and dia='"+dia1+"' and ano='"+ano1+"' and hora='"+hora1+"' and min='"+min1+"'");
                     if(del_qry.exec()){
                         qDebug () << "Scheduled rule was deleted!";
@@ -3346,7 +3869,7 @@ if(sched_qry.exec()){
                     }
 
                     //check if pub still has other scheduler rules and delete from pub if not
-                    QSqlQuery sq;
+                    QSqlQuery sq(db);
                     sq.prepare("select count(id) from scheduler where id='"+schId+"'");
                     if(sq.exec()){
 
@@ -3355,7 +3878,7 @@ if(sched_qry.exec()){
                             if(sq.value(0).toString()=="0"){
                                 //we can delete it from pub cause no more scheduled rules apply
 
-                                QSqlQuery sd;
+                                QSqlQuery sd(db);
                                 sd.prepare("delete from pub where id='"+schId+"'");
                                 if(sd.exec()){
                                     qDebug () << "Pub rule was deleted!";
@@ -3422,7 +3945,7 @@ if(sched_qry.exec()){
                 QString schId = sched_qry.value(0).toString();
 
                 //add to playlist
-                QSqlQuery getPath;
+                QSqlQuery getPath(db);
                 if(is_program=="1"){
                     getPath.prepare("select path from programs where id='"+schId+"'");
                 } else {
@@ -3506,6 +4029,7 @@ void player::on_bt_apply_filter_clicked()
 {
     //filter by genres
 
+    QSqlDatabase db = QSqlDatabase::database("xfb_connection");
     QString addG1 = "";
     QString addG2 = "";
 
@@ -3528,7 +4052,7 @@ void player::on_bt_apply_filter_clicked()
 
 
 
-        QSqlQuery sql;
+        QSqlQuery sql(db);
         QString qry = "select count(*) from musics where genre1 like '"+selectedGenre1+"'";
 
         if(sql.exec(qry)){
@@ -3666,11 +4190,11 @@ void player::on_actionLoad_Playlist_triggered()
 
         if (Rxml.isStartElement()) {
 
-                    if (Rxml.name() == "XFBPlaylist") {
+                    if (Rxml.name() == QStringLiteral("XFBPlaylist")) {
                         qDebug()<<"Valid XFB Playlist Found!";
                         Rxml.readNext();
 
-                        if(Rxml.isEndElement()){
+                        if(Rxml.isEndElement() && Rxml.name() == QLatin1String("XFBPlaylist")){
                             qDebug()<<"Found the last element of the XML file after StarElement, leaving the while loop";
                             Rxml.readNext();
                             break;
@@ -3684,12 +4208,12 @@ void player::on_actionLoad_Playlist_triggered()
 
                     //qDebug()<<"This Rxml.name() is "<<Rxml.name();
 
-                    if(Rxml.name()=="www.netpack.pt"){
+                    if(Rxml.name()==QStringLiteral("www.netpack.pt")){
                         qDebug()<<"Token element: "<<Rxml.name();
                         Rxml.readNext();
                     }
 
-                    if(Rxml.name()=="track"){
+                    if(Rxml.name()==QStringLiteral("track")){
                         QString track = Rxml.readElementText();
                         qDebug()<<"Rxml.readElementText(): "<<track;
                         ui->playlist->addItem(track);
@@ -3823,73 +4347,96 @@ void player::RectimerDone(){
 
     qDebug()<<"---> NEW Recording to: "<<saveFile;
 
+    // Find the requested audio input device
+    const QList<QAudioDevice> inputDevices = QMediaDevices::audioInputs();
+    QAudioDevice selectedDevice;
 
-    audioRecorder->setAudioInput(recDevice);
+    for (const QAudioDevice &device : inputDevices) {
+        if (device.description() == recDevice) {
+            selectedDevice = device;
+            break;
+        }
+    }
 
-    qDebug()<<"Selecting this audio input device: "<<recDevice;
+    if (selectedDevice.isNull()) {
+        // If the specific device wasn't found, use the default device
+        selectedDevice = QMediaDevices::defaultAudioInput();
+    }
 
+    // Set the audio input device
+    audioInput->setDevice(selectedDevice);
+    qDebug() << "Selecting this audio input device: " << selectedDevice.description();
 
+    // Configure media recorder settings
+    QMediaFormat format;
 
+    // Set container format
+    aExtencaoDesteCoiso = "ogg";
 
-
-        QAudioEncoderSettings settings;
-        //settings.setCodec(codec);
-        //settings.setChannelCount(2);
-        settings.setQuality(QMultimedia::EncodingQuality(int(QMultimedia::VeryHighQuality)));
-        settings.setEncodingMode(QMultimedia::ConstantBitRateEncoding);
-
-
-        //QString container = "ogg";
+    if(contentamento=="matroska") {
+        format.setFileFormat(QMediaFormat::FileFormat::Matroska);
+        aExtencaoDesteCoiso = "mp3";
+    } else if(contentamento=="ogg") {
+        format.setFileFormat(QMediaFormat::FileFormat::Ogg);
         aExtencaoDesteCoiso = "ogg";
+    } else if(contentamento=="mp4") {
+        format.setFileFormat(QMediaFormat::FileFormat::MPEG4);
+        aExtencaoDesteCoiso = "mp4";
+    } else if(contentamento=="wav") {
+        format.setFileFormat(QMediaFormat::FileFormat::Wave);
+        aExtencaoDesteCoiso = "wav";
+    } else if(contentamento=="quicktime") {
+        format.setFileFormat(QMediaFormat::FileFormat::QuickTime);
+        aExtencaoDesteCoiso = "mov";
+    } else {
+        // Default to Ogg if format not recognized
+        format.setFileFormat(QMediaFormat::FileFormat::Ogg);
+        aExtencaoDesteCoiso = "ogg";
+    }
 
-        if(contentamento=="matroska")
-            aExtencaoDesteCoiso = "mp3";
-        if(contentamento=="ogg")
-            aExtencaoDesteCoiso = "ogg";
-        if(contentamento=="mp4")
-            aExtencaoDesteCoiso = "mp4";
-        if(contentamento=="wav")
-            aExtencaoDesteCoiso = "wav";
-        if(contentamento=="quicktime")
-            aExtencaoDesteCoiso = "mov";
-        if(contentamento=="avi")
-            aExtencaoDesteCoiso = "avi";
-        if(contentamento=="3gpp")
-            aExtencaoDesteCoiso = "3gpp";
-        if(contentamento=="flv")
-            aExtencaoDesteCoiso = "fvl";
-        if(contentamento=="amr")
-            aExtencaoDesteCoiso = "amr";
-        if(contentamento=="asf")
-            aExtencaoDesteCoiso = "asf";
-        if(contentamento=="dv")
-            aExtencaoDesteCoiso = "dv";
-        if(contentamento=="mpeg")
-            aExtencaoDesteCoiso = "mpg";
-        if(contentamento=="vob")
-            aExtencaoDesteCoiso = "vob";
-        if(contentamento=="mpegts")
-            aExtencaoDesteCoiso = "mpeg";
-        if(contentamento=="3g2")
-            aExtencaoDesteCoiso = "3g2";
-        if(contentamento=="3gp")
-            aExtencaoDesteCoiso = "3gp";
-        if(contentamento=="raw")
-            aExtencaoDesteCoiso = "raw";
+    // Set audio codec (if needed)
+    if (!codec.isEmpty()) {
+        if (codec == "audio/vorbis") {
+            format.setAudioCodec(QMediaFormat::AudioCodec::Vorbis);
+        } else if (codec == "audio/opus") {
+            format.setAudioCodec(QMediaFormat::AudioCodec::Opus);
+        } else if (codec == "audio/mp3") {
+            format.setAudioCodec(QMediaFormat::AudioCodec::MP3);
+        } else if (codec == "audio/aac") {
+            format.setAudioCodec(QMediaFormat::AudioCodec::AAC);
+        }
+    }
 
+    // Set quality
+    audioRecorder->setQuality(QMediaRecorder::HighQuality);
+    audioRecorder->setMediaFormat(format);
+    audioRecorder->setOutputLocation(QUrl::fromLocalFile(saveFile));
 
-    QAudioEncoderSettings audioSettings;
-    audioSettings.setQuality(QMultimedia::HighQuality);
+    // Connect signals for recording state changes
+    connect(audioRecorder, &QMediaRecorder::recorderStateChanged, this, [](QMediaRecorder::RecorderState state) {
+        if (state == QMediaRecorder::RecordingState) {
+            qDebug() << "Recording state: Recording";
+        } else if (state == QMediaRecorder::PausedState) {
+            qDebug() << "Recording state: Paused";
+        } else if (state == QMediaRecorder::StoppedState) {
+            qDebug() << "Recording state: Stopped";
+        }
+    });
 
-    audioRecorder->setEncodingSettings(audioSettings, QVideoEncoderSettings(), contentamento);
-    audioRecorder->setOutputLocation(QUrl(saveFile));
+    connect(audioRecorder, &QMediaRecorder::errorOccurred, this, [this](QMediaRecorder::Error error, const QString &errorString) {
+        // Unused parameter 'error'
+        Q_UNUSED(error);
+
+        qDebug() << "Recording error: " << errorString;
+        QMessageBox::warning(this, tr("Recording Error"), errorString);
+    });
+
+    // Start recording
     audioRecorder->record();
 
-    qDebug()<<"Audio Rec Channel Count is: "<<settings.channelCount();
+    qDebug() << "Recording started with format: " << format.fileFormat();
 
     ui->bt_rec->show();
-
-
 }
 
 
@@ -3971,6 +4518,7 @@ void player::on_bt_ProgramStopandProcess_clicked()
 {
     QMessageBox::StandardButton saveProgram;
 
+    QSqlDatabase db = QSqlDatabase::database("xfb_connection");
     saveProgram = QMessageBox::question(this,tr("Save Program?"),tr("Save this program?"),QMessageBox::Yes|QMessageBox::No);
     if(saveProgram==QMessageBox::Yes){
             qDebug()<<"Saving the program";
@@ -4052,7 +4600,7 @@ void player::on_bt_ProgramStopandProcess_clicked()
 
                                 } else {
 
-                                            QSqlQuery qry;
+                                            QSqlQuery qry(db);
                                             QString thisquery = "insert into programs values(NULL,'"+NomeDestePrograma+"','"+destinationProgram+"')";
                                             if(qry.exec(thisquery)){
                                                 qDebug()<<"Query OK. Program localy added to programs table";
@@ -4129,6 +4677,8 @@ void player::on_actionForce_an_FTP_Check_triggered()
 
 void player::on_actionMake_a_program_from_this_playlist_triggered()
 {
+
+    QSqlDatabase db = QSqlDatabase::database("xfb_connection");
     ui->txt_creatingPrograms->show();
       qDebug()<<"Running Make_a_program_with_the_current_playlist";
 
@@ -4165,9 +4715,9 @@ void player::on_actionMake_a_program_from_this_playlist_triggered()
           qDebug()<<"Processing "<<i;
           QString txtItem = ui->playlist->item(i)->text();
           qDebug()<<"Processing file "<<txtItem;
-          
-          
-          
+
+
+
           QStringList array_ext_item = txtItem.split(".");
           qDebug()<<" ------------>>>>>>>>>>>>>>>>>>>> EXT :::::::::::::: "<<array_ext_item.last();
           if(array_ext_item.last()!="ogg"){
@@ -4211,10 +4761,10 @@ void player::on_actionMake_a_program_from_this_playlist_triggered()
       cmd.waitForFinished(-1);
       cmd.close();
       ui->txt_uploadingPrograms->show();
-      
-      
-      
-      
+
+
+
+
       QMessageBox::StandardButton sendToServer;
       sendToServer = QMessageBox::question(this,tr("Send to server?"),tr("Send programs to the server?"),QMessageBox::Yes|QMessageBox::No);
       if(sendToServer==QMessageBox::Yes){
@@ -4312,7 +4862,7 @@ void player::on_actionMake_a_program_from_this_playlist_triggered()
                   bashDoThis.close();
                   QMessageBox::information(this,tr("Local file deleted"),tr("The local copy of the file was deleted."));
               } else {
-                          QSqlQuery qry;
+                          QSqlQuery qry(db);
                           QString thisquery = "insert into programs values(NULL,'"+NomeDestePrograma+"','"+destino+"')";
                           if(qry.exec(thisquery)){
                               qDebug()<<"Query OK. Program localy added to programs table";
@@ -4331,7 +4881,7 @@ void player::on_actionMake_a_program_from_this_playlist_triggered()
               bashDoThis.close();
               QMessageBox::information(this,tr("Local file deleted"),tr("The local copy of the file was deleted."));
           } else {
-              QSqlQuery qry;
+              QSqlQuery qry(db);
               QString thisquery = "insert into programs values(NULL,'"+NomeDestePrograma+"','"+destino+"')";
               if(qry.exec(thisquery)){
                   qDebug()<<"Query OK. Program localy added to programs table";
@@ -4345,304 +4895,386 @@ void player::on_actionMake_a_program_from_this_playlist_triggered()
 
 void player::on_actionCheck_the_Database_records_triggered()
 {
+    QSqlDatabase db = QSqlDatabase::database("xfb_connection");
+    if (!db.isOpen()) {
+        qWarning() << "Database connection 'xfb_connection' is not open!";
+        QMessageBox::critical(this, "Database Error", "Database connection is not open.");
+        return;
+    }
 
-    QMessageBox::StandardButton run;
-    run = QMessageBox::question(this,"Sure?","Are you sure you want to: Run a check on all the records in the music table; For each check if it exist and update the time info of the song",
-                                QMessageBox::Yes|QMessageBox::No);
-    if(run==QMessageBox::Yes){
+    QMessageBox::StandardButton run = QMessageBox::question(this, "Run Database Check?",
+                                                            "Run a check on all music records?\n"
+                                                            "- Verify file existence\n"
+                                                            "- Check for empty files\n"
+                                                            "- Update duration from file metadata\n"
+                                                            "- Reset play count (if file OK)\n\n"
+                                                            "This may take some time.",
+                                                            QMessageBox::Yes | QMessageBox::No);
+    if (run == QMessageBox::No) {
+        return;
+    }
 
+    // Use stack-allocated QSqlQuery objects within the loop or prepare outside
+    QSqlQuery querySelect(db);
+    QSqlQuery queryDelete(db); // For delete operations
+    QSqlQuery queryUpdate(db); // For update operations
 
-        QSqlQuery qr;
-        QString qrstr = "select * from musics";
-        if(qr.exec(qrstr)){
-            while(qr.next()){
-
-                QString path = qr.value(7).toString();
-                qDebug()<<"Processing: "<<path;
-
-                bool ha = QFile::exists(path);
-                if(!ha){
-                    QMessageBox::StandardButton reply;
-                    reply = QMessageBox::question(this, "The file does NOT exist?", "It seams like the file does NOT exist on the hard drive... Or there is a problem reading it. Should it be deleted from the database?",
-                                                  QMessageBox::Yes|QMessageBox::No);
-                    if (reply == QMessageBox::Yes) {
-                      qDebug() << "the file should be deleted from the database cause it does not exist in the hd (or path was changed)";
-                          QSqlQuery* qry=new QSqlQuery();
-                          qry->prepare("delete from musics where path = :thpath");
-                          qry->bindValue(":thpath",path);
-
-                         if(qry->exec()){
-                              qDebug() << "Music Deleted from database! last query was:"<< qry->lastQuery();
-                              update_music_table();
-                         } else {
-                             qDebug() << "There was an error deleting the music from the database"<< qry->lastError() << qry->lastQuery();
-                         }
-                    } else {
-                      qDebug() << "keeping invalid record in db... please fix path manually..";
-                    }
-                } else {
-
-                    QFile myFile(path);
-
-                    qDebug()<<"File.size() is now: "<<myFile.size();
-
-                    if(myFile.size()==0){
-
-                        QMessageBox::StandardButton reply;
-                        reply = QMessageBox::question(this, "The file does exist but the it's empty?", "It seams like the file does exist on the hard drive BUT HAS 0B !... Or there is a problem reading it. Should it be deleted from the database and the hard-drive?",
-                                                      QMessageBox::Yes|QMessageBox::No);
-                        if (reply == QMessageBox::Yes) {
-                              QSqlQuery* qry=new QSqlQuery();
-                              qry->prepare("delete from musics where path = :thpath");
-                              qry->bindValue(":thpath",path);
-
-                             if(qry->exec()){
-                                  qDebug() << "Music Deleted from database and HD! last query was:"<< qry->lastQuery();
-
-                                  QProcess rmthis;
-                                  QString rmthistr = "rm "+path;
-                                  rmthis.start("sh",QStringList()<<"-c"<<rmthistr);
-                                  rmthis.waitForFinished(-1);
-
-
-
-                                  update_music_table();
-                             } else {
-                                 qDebug() << "There was an error deleting the music from the database"<< qry->lastError() << qry->lastQuery();
-                             }
-                        } else {
-                          qDebug() << "keeping invalid record in db... please fix path manually..";
-                        }
-
-
-                    } else {
-
-
-                     qDebug()<<"The file seams to be OK. Checking it's time...";
-
-                     QProcess cmd;
-                     QString cmdtmpstr = "exiftool \""+path+"\" | grep Duration";
-                     cmd.start("sh",QStringList()<<"-c"<<cmdtmpstr);
-                     cmd.waitForFinished(-1);
-                     QString cmdOut = cmd.readAll();
-                     qDebug()<<"Output of exiftool: "<<cmdOut;
-                     cmd.close();
-
-                     QStringList arraycmd = cmdOut.split(" ");
-
-                     if(arraycmd.count()>25){
-                     //qDebug()<<"Total track time is: "<<arraycmd[25];
-
-                         QStringList splitarray = arraycmd[25].split("\n");
-
-                         qDebug()<<"Total track time is: "<<splitarray[0];
-
-                         QSqlQuery* qry = new QSqlQuery();
-                         QString qrystr = "update musics set time = '"+splitarray[0]+"' where path = \""+path+"\"";
-                         qry->exec(qrystr);
-
-
-                         update_music_table();
-
-                     } else {
-                         qDebug()<<"-------------->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>     !!!!!!!!    An exception happend !? ... outputing details of this track: ";
-                         for(int i=0;i<arraycmd.count();i++){
-                             qDebug()<< "The array position "<<i<<" has: "<<arraycmd[i];
-                         }
-                     }
-
-                     QSqlQuery* qry = new QSqlQuery();
-                     QString qrystr = "update musics set played_times = 0 where path = \""+path+"\"";
-                     qry->exec(qrystr);
-
-
-                    }
-                }
-
-            }
-        }
-
-
+    // Prepare statements outside the loop for efficiency
+    if (!queryDelete.prepare("DELETE FROM musics WHERE path = :path")) {
+         qWarning() << "Failed to prepare DELETE statement:" << queryDelete.lastError();
+         QMessageBox::critical(this, "Database Error", "Failed to prepare database query (DELETE).");
+         return;
+    }
+    if (!queryUpdate.prepare("UPDATE musics SET time = :time WHERE path = :path")) {
+        qWarning() << "Failed to prepare time UPDATE statement:" << queryUpdate.lastError();
+        QMessageBox::critical(this, "Database Error", "Failed to prepare database query (UPDATE time).");
+        return;
+    }
+    // Separate prepare for played_times update
+    QSqlQuery queryUpdatePlayedTimes(db);
+     if (!queryUpdatePlayedTimes.prepare("UPDATE musics SET played_times = 0 WHERE path = :path")) {
+        qWarning() << "Failed to prepare played_times UPDATE statement:" << queryUpdatePlayedTimes.lastError();
+        QMessageBox::critical(this, "Database Error", "Failed to prepare database query (UPDATE played_times).");
+        return;
     }
 
 
-
-}
-
-void player::calculate_playlist_total_time(){
-
-
-    int ch = 0;
-    int cm = 0;
-    int cs = 0;
-
-    if(ui->playlist->count()==0){
-        QString finalTimeString = "Total time of the playlist: 00:00:00";
-
-        ui->txt_playlistTotalTime->setText(finalTimeString);
+    QString selectStr = "SELECT path, time FROM musics"; // Select only needed columns
+    if (!querySelect.exec(selectStr)) {
+        qWarning() << "Failed to SELECT from musics:" << querySelect.lastError();
+        QMessageBox::critical(this, "Database Error", "Failed to query the musics table.");
+        return;
     }
 
-    for(int i=0;i<ui->playlist->count();i++){
+    int processedCount = 0;
+    int errorsCount = 0;
+    int deletedCount = 0;
+    int updatedCount = 0;
 
-        QString musica = ui->playlist->item(i)->text();
+    while (querySelect.next()) {
+        QString path = querySelect.value(0).toString();
+        QString currentDbTime = querySelect.value(1).toString(); // Get current time for comparison later if needed
 
-        QProcess cmd;
-        QString cmdtmpstr = "exiftool \""+musica+"\" | grep Duration";
-        cmd.start("sh",QStringList()<<"-c"<<cmdtmpstr);
-        cmd.waitForFinished();
-        QString cmdOut = cmd.readAll();
-        qDebug()<<"Output of exiftool: "<<cmdOut;
-        cmd.close();
+        qInfo().noquote() << "Processing [" << ++processedCount << "]:" << path; // Use qInfo for less verbose default logging
 
-        QStringList arraycmd = cmdOut.split(" ");
-        if(arraycmd.count()>25){
-            QStringList splitarray = arraycmd[25].split("\n");
-            qDebug()<<"Total track time is: "<<splitarray[0];
-
-            QStringList hmsArray = splitarray[0].split(":");
-
-            if(hmsArray.count()>=2){
-
-                qDebug()<<"H: "<<hmsArray[0];
-                 qDebug()<<"M: "<<hmsArray[1];
-                  qDebug()<<"S: "<<hmsArray[2];
-
-                  int h = hmsArray[0].toInt();
-                  int m = hmsArray[1].toInt();
-                  int s = hmsArray[2].toInt();
-
-                  int fh = ch+h;
-                  int fm = cm+m;
-                  int fs = cs+s;
-
-                  while(fs>=60){
-
-                      fm+=1;
-                      fs-=60;
-
-                  }
-
-                while(fm>=60){
-
-                    fh+=1;
-                    fm-=60;
-
-                }
-
-                QString sfs,sfm,sfh;
-
-
-                if(fs<10){
-                    sfs = "0"+QString::number(fs);
+        if (!QFile::exists(path)) {
+            qWarning() << "File does not exist:" << path;
+            QMessageBox::StandardButton reply = QMessageBox::question(this, "File Missing",
+                                                                      QString("File not found:\n%1\n\nDelete this record from the database?")
+                                                                          .arg(path),
+                                                                      QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
+            if (reply == QMessageBox::Cancel) {
+                qInfo() << "User cancelled operation.";
+                break; // Exit the loop
+            } else if (reply == QMessageBox::Yes) {
+                queryDelete.bindValue(":path", path);
+                if (queryDelete.exec()) {
+                    qInfo() << "Record deleted from database (file missing):" << path;
+                    deletedCount++;
+                    update_music_table(); // Update view immediately
                 } else {
-                    sfs = QString::number(fs);
+                    qWarning() << "Failed to delete record for missing file:" << queryDelete.lastError() << queryDelete.lastQuery();
+                    errorsCount++;
+                     QMessageBox::warning(this, "Database Error", QString("Failed to delete record for missing file:\n%1\n\nError: %2").arg(path, queryDelete.lastError().text()));
                 }
-
-                if(fm<10){
-                    sfm = "0"+QString::number(fm);
-                } else {
-                    sfm = QString::number(fm);
-                }
-
-                if(fh<10){
-                    sfh = "0"+QString::number(fh);
-                } else {
-                    sfh = QString::number(fh);
-                }
-
-                QString finalTimeString = "Total time of the playlist: "+sfh+":"+sfm+":"+sfs;
-
-                ui->txt_playlistTotalTime->setText(finalTimeString);
-
-                ch = fh;
-                cm = fm;
-                cs = fs;
-
-
             } else {
-
-                hmsArray = splitarray[0].split(".");
-
-                //qDebug()<<"H: "<<hmsArray[0];
-                //qDebug()<<"M: "<<hmsArray[1];
-                qDebug()<<"S: "<<hmsArray[0];
-
-                  int h = 0;
-                  int m = 0;
-                  int s = hmsArray[0].toInt();
-
-                  int fh = ch+h;
-                  int fm = cm+m;
-                  int fs = cs+s;
-
-
-                  while(fs>=60){
-
-                      fm+=1;
-                      fs-=60;
-
-                  }
-
-
-
-                while(fm>=60){
-
-                    fh+=1;
-                    fm-=60;
-
-                }
-
-                QString sfs,sfm,sfh;
-
-
-                if(fs<10){
-                    sfs = "0"+QString::number(fs);
-                } else {
-                    sfs = QString::number(fs);
-                }
-
-                if(fm<10){
-                    sfm = "0"+QString::number(fm);
-                } else {
-                    sfm = QString::number(fm);
-                }
-
-                if(fh<10){
-                    sfh = "0"+QString::number(fh);
-                } else {
-                    sfh = QString::number(fh);
-                }
-
-                QString finalTimeString = "Total time of the playlist: "+sfh+":"+sfm+":"+sfs;
-
-                ui->txt_playlistTotalTime->setText(finalTimeString);
-
-                ch = fh;
-                cm = fm;
-                cs = fs;
+                qInfo() << "Skipping missing file record, keeping in DB:" << path;
+                errorsCount++; // Count as an issue to resolve
             }
+            continue; // Move to the next record
+        }
 
+        // File exists, check size
+        QFile file(path);
+        qint64 fileSize = file.size(); // Check size directly
+        qDebug() << "File exists, size:" << fileSize;
 
+        if (fileSize == 0) {
+            qWarning() << "File exists but is empty (0 bytes):" << path;
+            QMessageBox::StandardButton reply = QMessageBox::question(this, "Empty File",
+                                                                      QString("File exists but is empty (0 bytes):\n%1\n\nDelete record from database AND delete the empty file from disk?")
+                                                                          .arg(path),
+                                                                      QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
+             if (reply == QMessageBox::Cancel) {
+                qInfo() << "User cancelled operation.";
+                break; // Exit the loop
+            } else if (reply == QMessageBox::Yes) {
+                // 1. Delete from DB first
+                queryDelete.bindValue(":path", path);
+                if (queryDelete.exec()) {
+                    qInfo() << "Record deleted from database (empty file):" << path;
+                    deletedCount++;
+                    // 2. If DB delete successful, delete file from disk
+                    if (QFile::remove(path)) {
+                        qInfo() << "Empty file deleted from disk:" << path;
+                    } else {
+                        qWarning() << "Failed to delete empty file from disk (record was deleted from DB):" << path << file.errorString();
+                         QMessageBox::warning(this, "File System Error", QString("Record deleted from DB, but failed to delete empty file from disk:\n%1\n\nError: %2").arg(path, file.errorString()));
+                        // Don't increment errorsCount here as the primary goal (DB cleanup) succeeded.
+                    }
+                    update_music_table(); // Update view immediately
+                } else {
+                    qWarning() << "Failed to delete record for empty file:" << queryDelete.lastError() << queryDelete.lastQuery();
+                    errorsCount++;
+                    QMessageBox::warning(this, "Database Error", QString("Failed to delete record for empty file:\n%1\n\nError: %2").arg(path, queryDelete.lastError().text()));
+                }
+            } else {
+                qInfo() << "Skipping empty file record, keeping in DB and on disk:" << path;
+                errorsCount++; // Count as an issue to resolve
+            }
+            continue; // Move to the next record
+        }
 
+        // --- File seems OK, get duration using Exiftool (C++ Parsing Method) ---
+        qDebug() << "File seems OK. Checking metadata with exiftool...";
 
-        } else {
-            qDebug()<<"-------------->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>     !!!!!!!!    An exception happend !? ... outputing details of this track: ";
-            for(int i=0;i<arraycmd.count();i++){
-                qDebug()<< "The array position "<<i<<" has: "<<arraycmd[i];
+        QProcess process;
+        QString command = "exiftool"; // Just the command
+        QStringList arguments;
+        arguments << "-Duration"; // Ask only for the Duration tag for efficiency
+        arguments << path;        // QProcess handles quoting arguments
+
+        qDebug() << "Running command:" << command << arguments;
+
+        process.start(command, arguments);
+
+        // Wait for the process to finish (e.g., 10 seconds timeout)
+        if (!process.waitForFinished(10000)) {
+            qWarning() << "Exiftool process timed out for:" << path << process.errorString();
+            process.kill();
+            process.waitForFinished(1000); // Wait a bit after killing
+            errorsCount++;
+            continue; // Skip this file
+        }
+
+        // Check for exiftool execution errors
+        if (process.exitStatus() != QProcess::NormalExit || process.exitCode() != 0) {
+            qWarning() << "Exiftool process failed for:" << path
+                       << "Exit code:" << process.exitCode()
+                       << "Exit status:" << process.exitStatus();
+            QString errorOutput = QString::fromLocal8Bit(process.readAllStandardError()); // Or fromUtf8
+            qWarning() << "Exiftool Standard Error:\n" << errorOutput;
+            errorsCount++;
+             // Optionally show a non-blocking notification or log this error prominently
+            continue; // Skip this file
+        }
+
+        // Read ALL standard output from exiftool
+        QString exiftoolOutput = QString::fromLocal8Bit(process.readAllStandardOutput()); // Or fromUtf8
+        qDebug() << "Exiftool raw output:\n" << exiftoolOutput;
+
+        QString durationValue;
+        // Find the line containing "Duration" and extract the value
+        QStringList lines = exiftoolOutput.split(QRegularExpression("[\r\n]+"), Qt::SkipEmptyParts);
+        for (const QString &line : lines) {
+            if (line.simplified().startsWith("Duration", Qt::CaseInsensitive)) {
+                int colonPos = line.indexOf(':');
+                if (colonPos != -1) {
+                    durationValue = line.mid(colonPos + 1).trimmed();
+                    qInfo() << "Found Duration:" << durationValue << "for" << path;
+                    break; // Found it
+                }
             }
         }
 
+        if (durationValue.isEmpty()) {
+            qWarning() << "Could not find or parse 'Duration' tag from exiftool output for:" << path;
+             QString errorOutput = QString::fromLocal8Bit(process.readAllStandardError()); // Check stderr again
+             if (!errorOutput.trimmed().isEmpty()) {
+                 qWarning() << "Exiftool stderr for non-duration file:" << errorOutput;
+             }
+            errorsCount++;
+            // Maybe update time to NULL or a special value? For now, just skip update.
+        } else {
+            // Update the database only if the time is different or needs setting
+            if (currentDbTime != durationValue) { // Optional: Avoid unnecessary updates
+                 qInfo() << "Updating time in DB from" << currentDbTime << "to" << durationValue << "for" << path;
+                 queryUpdate.bindValue(":time", durationValue);
+                 queryUpdate.bindValue(":path", path);
+                 if (queryUpdate.exec()) {
+                     qDebug() << "Time updated successfully in DB.";
+                     updatedCount++;
+                     update_music_table(); // Update view
+                 } else {
+                     qWarning() << "Failed to update time in DB:" << queryUpdate.lastError() << queryUpdate.lastQuery();
+                     errorsCount++;
+                     QMessageBox::warning(this, "Database Error", QString("Failed to update time for:\n%1\n\nError: %2").arg(path, queryUpdate.lastError().text()));
+                 }
+            } else {
+                 qDebug() << "Duration in DB already matches exiftool output. No time update needed.";
+            }
 
-    }
+             // Reset played_times (original logic) - Do this only if time update was successful or not needed?
+             // Let's assume reset should happen if the file is valid, regardless of time update necessity.
+            qInfo() << "Resetting played_times to 0 for:" << path;
+            queryUpdatePlayedTimes.bindValue(":path", path);
+             if (!queryUpdatePlayedTimes.exec()) {
+                 qWarning() << "Failed to reset played_times:" << queryUpdatePlayedTimes.lastError() << queryUpdatePlayedTimes.lastQuery();
+                 errorsCount++;
+                 // Non-critical error, maybe don't show a message box here.
+             }
+        }
+        // --- End Exiftool Processing ---
 
+    } // End while loop
 
+    qInfo() << "-------------------------------------";
+    qInfo() << "Database check complete.";
+    qInfo() << "Processed:" << processedCount << "records.";
+    qInfo() << "Deleted:" << deletedCount << "records.";
+    qInfo() << "Updated:" << updatedCount << "times.";
+    qInfo() << "Errors/Skipped:" << errorsCount << "records (check warnings above).";
+    qInfo() << "-------------------------------------";
 
+    QMessageBox::information(this, "Check Complete",
+                             QString("Database check finished.\n\nProcessed: %1\nDeleted: %2\nTime Updated: %3\nErrors/Skipped: %4\n\nSee application output log for details.")
+                                 .arg(processedCount)
+                                 .arg(deletedCount)
+                                 .arg(updatedCount)
+                                 .arg(errorsCount));
+
+    // Final table update might be redundant if called after every change, but safe to have.
+    update_music_table();
 }
 
+void player::calculate_playlist_total_time() {
+    qint64 totalSeconds = 0; // Use qint64 for total seconds to prevent overflow
+    int failedFiles = 0;
+    int playlistCount = ui->playlist->count();
+
+    qInfo() << "Calculating total time for" << playlistCount << "items in playlist...";
+
+    if (playlistCount == 0) {
+        ui->txt_playlistTotalTime->setText("Total time: 00:00:00");
+        return;
+    }
+
+    for (int i = 0; i < playlistCount; ++i) {
+        QListWidgetItem* item = ui->playlist->item(i);
+        if (!item) continue; // Should not happen, but safety check
+
+        QString filePath = item->text(); // Assuming the item text is the full path
+        qInfo().noquote() << "Processing playlist item [" << i+1 << "/" << playlistCount << "]:" << filePath;
+
+        // --- Optional but recommended: Check if file exists ---
+        if (!QFile::exists(filePath)) {
+            qWarning() << "File listed in playlist does not exist:" << filePath;
+            failedFiles++;
+            // Optional: Visually mark the item in the playlist?
+            // item->setForeground(Qt::red); // Example
+            continue; // Skip to the next item
+        }
+        // --- End existence check ---
+
+
+        QProcess process;
+        QString command = "exiftool";
+        QStringList arguments;
+        // Use -T for Tab-separated values (easier parsing) and request only Duration
+        // This should output *just* the duration value if found.
+        arguments << "-T" << "-Duration" << filePath;
+
+        qDebug() << "Running command:" << command << arguments;
+
+        process.setProcessChannelMode(QProcess::MergedChannels); // Combine stdout and stderr for simpler reading if needed
+        process.start(command, arguments);
+
+        // Wait for the process to finish (e.g., 5 seconds timeout per file)
+        if (!process.waitForFinished(5000)) {
+            qWarning() << "Exiftool process timed out for:" << filePath << process.errorString();
+            process.kill();
+            process.waitForFinished(1000);
+            failedFiles++;
+            continue; // Skip this file
+        }
+
+        // Check for exiftool execution errors
+        if (process.exitStatus() != QProcess::NormalExit || process.exitCode() != 0) {
+            qWarning() << "Exiftool process failed for:" << filePath
+                       << "Exit code:" << process.exitCode()
+                       << "Exit status:" << process.exitStatus();
+            QString errorOutput = QString::fromLocal8Bit(process.readAll()); // Read combined output/error
+             qWarning() << "Exiftool output/error:\n" << errorOutput;
+            failedFiles++;
+            continue; // Skip this file
+        }
+
+        // Read the output (should be just the duration value now because of -T)
+        QString durationString = QString::fromLocal8Bit(process.readAllStandardOutput()).trimmed(); // Or fromUtf8
+
+        if (durationString.isEmpty() || durationString == "-") { // Exiftool might output "-" if tag not found
+            qWarning() << "Could not find 'Duration' tag via exiftool for:" << filePath;
+            failedFiles++;
+            continue; // Skip this file
+        }
+
+        qDebug() << "Found Duration string:" << durationString << "for" << filePath;
+
+        // --- Parse the duration string (HH:MM:SS.ss or SS.ss) into seconds ---
+        qint64 currentTrackSeconds = 0;
+        bool parseOk = false;
+
+        if (durationString.contains(':')) {
+            // Format HH:MM:SS.ss
+            QStringList parts = durationString.split(':');
+            if (parts.size() == 3) {
+                bool hOk, mOk, sOk;
+                int hours = parts[0].toInt(&hOk);
+                int minutes = parts[1].toInt(&mOk);
+                // Seconds might have fraction, take integer part
+                double secondsDouble = parts[2].toDouble(&sOk);
+                int seconds = static_cast<int>(secondsDouble); // Truncate fraction
+
+                if (hOk && mOk && sOk && hours >= 0 && minutes >= 0 && minutes < 60 && seconds >= 0 && seconds < 60) {
+                    currentTrackSeconds = (hours * 3600) + (minutes * 60) + seconds;
+                    parseOk = true;
+                }
+            }
+        } else {
+            // Format SS.ss (seconds only)
+            bool sOk;
+            double secondsDouble = durationString.toDouble(&sOk);
+            if (sOk && secondsDouble >= 0) {
+                currentTrackSeconds = static_cast<qint64>(secondsDouble); // Truncate fraction
+                parseOk = true;
+            }
+        }
+
+        if (parseOk) {
+            qDebug() << "Parsed seconds:" << currentTrackSeconds;
+            totalSeconds += currentTrackSeconds;
+        } else {
+            qWarning() << "Failed to parse duration string:" << durationString << "for file:" << filePath;
+            failedFiles++;
+        }
+        // --- End duration parsing ---
+
+    } // End for loop
+
+    // --- Format total time ---
+    qint64 finalHours = totalSeconds / 3600;
+    qint64 finalMinutes = (totalSeconds % 3600) / 60;
+    qint64 finalSeconds = totalSeconds % 60;
+
+    // Format as HH:MM:SS with leading zeros
+    QString finalTimeString = QStringLiteral("Total time: %1:%2:%3")
+                                  .arg(finalHours, 2, 10, QChar('0'))   // At least 2 digits, base 10, pad with '0'
+                                  .arg(finalMinutes, 2, 10, QChar('0'))
+                                  .arg(finalSeconds, 2, 10, QChar('0'));
+
+    if (failedFiles > 0) {
+        finalTimeString += QString(" (%1 item(s) failed)").arg(failedFiles);
+         qWarning() << "Finished calculating playlist time, but failed to get duration for" << failedFiles << "items.";
+    }
+
+    qInfo() << "Final calculated playlist time string:" << finalTimeString;
+    ui->txt_playlistTotalTime->setText(finalTimeString);
+}
 void player::on_actionCheck_Database_Data_and_DELETE_all_invalid_records_witouth_confirmation_triggered()
 {
 
 
+    QSqlDatabase db = QSqlDatabase::database("xfb_connection");
     QMessageBox::StandardButton run;
     run = QMessageBox::question(this,"Sure?","Are you sure you want to: Run a check on all the records in the music table; For each check if it exist AND DELETE WITHOUT ASKING FOR CONFIRMATION and update the time info of the song",
                                 QMessageBox::Yes|QMessageBox::No);
@@ -4650,7 +5282,7 @@ void player::on_actionCheck_Database_Data_and_DELETE_all_invalid_records_witouth
 
 
 
-        QSqlQuery qr;
+        QSqlQuery qr(db);
         QString qrstr = "select * from musics";
         if(qr.exec(qrstr)){
             while(qr.next()){
@@ -4664,7 +5296,7 @@ void player::on_actionCheck_Database_Data_and_DELETE_all_invalid_records_witouth
 
                     qDebug()<<"Deleting "<<path;
 
-                          QSqlQuery* qry=new QSqlQuery();
+                          QSqlQuery* qry=new QSqlQuery(db);
                           qry->prepare("delete from musics where path = :thpath");
                           qry->bindValue(":thpath",path);
 
@@ -4683,7 +5315,7 @@ void player::on_actionCheck_Database_Data_and_DELETE_all_invalid_records_witouth
 
                     if(myFile.size()==0){
 
-                              QSqlQuery* qry=new QSqlQuery();
+                              QSqlQuery* qry=new QSqlQuery(db);
                               qry->prepare("delete from musics where path = :thpath");
                               qry->bindValue(":thpath",path);
 
@@ -4768,8 +5400,10 @@ void player::on_lp_1_bt_play_clicked()
 {
     ui->lp_1_bt_play->setDisabled(true);
 
-    lp1_Xplaylist->removeMedia(0);
-    lp1_Xplaylist->addMedia(QUrl::fromLocalFile(ui->lp_1_txt_file->text()));
+    // Using lp1_XplaylistUrls instead of deprecated QMediaPlaylist
+    lp1_XplaylistUrls.clear();
+    lp1_XplaylistUrls.append(QUrl::fromLocalFile(ui->lp_1_txt_file->text()));
+    lp1_Xplayer->setSource(lp1_XplaylistUrls.first());
     lp1_Xplayer->play();
 
 
@@ -4794,8 +5428,10 @@ void player::on_lp_1_bt_play_2_clicked()
 {
     ui->lp_1_bt_play_2->setDisabled(true);
     ui->lp_2->setPixmap(QPixmap(":/images/lp_player_p1.png"));
-    lp2_Xplaylist->removeMedia(0);
-    lp2_Xplaylist->addMedia(QUrl::fromLocalFile(ui->lp_2_txt_file->text()));
+    // Using lp2_XplaylistUrls instead of deprecated QMediaPlaylist
+    lp2_XplaylistUrls.clear();
+    lp2_XplaylistUrls.append(QUrl::fromLocalFile(ui->lp_2_txt_file->text()));
+    lp2_Xplayer->setSource(lp2_XplaylistUrls.first());
     lp2_Xplayer->play();
 
     movie2 = new QMovie(":/images/lp_anim1.gif");
@@ -4860,70 +5496,240 @@ void player::on_bt_sndconv_clicked()
 
 void player::on_actionAutoTrim_the_silence_from_the_start_and_the_end_of_all_music_tracks_in_the_database_triggered()
 {
-
-    movie = new QMovie(":/images/loading.gif");
-    ui->txt_loading->setMovie(movie);
-    ui->txt_loading->setScaledContents(true);
-
-    ui->txt_loading->show();
-
-    movie->start();
-
-
-    QMessageBox::StandardButton run;
-    run = QMessageBox::question(this,"Sure?","Are you sure you want to: Trim the silence below 0.1% of sound from the start and the end of every music in the database?",
-                                QMessageBox::Yes|QMessageBox::No);
-    if(run==QMessageBox::Yes){
-
-
-
-
-        QSqlQuery qr;
-        QString qrstr = "select * from musics";
-        if(qr.exec(qrstr)){
-            while(qr.next()){
-
-                QString path = qr.value(7).toString();
-                qDebug()<<"AutoTrim Processing: "<<path;
-
-                QFileInfo musicfile(path);
-                QString fileName(musicfile.fileName());
-
-                QString dest = "../tmp/"+fileName;
-
-
-
-                    QProcess sox;
-                    QString soxcmd = "sox \""+path+"\" \""+dest+"\" silence 1 0.1 1%";
-                    qDebug()<<"Running cmd: "<<soxcmd;
-                    sox.start("sh",QStringList()<<"-c"<<soxcmd);
-                    sox.waitForFinished(-1);
-                    //qDebug()<<"Sox is done with this file..";
-
-                    QProcess Fmv;
-                    QString Fmvcmd = "mv \""+dest+"\" \""+path+"\"";
-                    Fmv.start("sh",QStringList()<<"-c"<<Fmvcmd);
-                    Fmv.waitForFinished(-1);
-                    qDebug()<<"File Trimmed!";
-
-
-
-
-
-
-
-            }
-        }
-
-
-
-
+    QSqlDatabase db = QSqlDatabase::database("xfb_connection");
+    if (!db.isOpen()) {
+        qWarning() << "Database connection 'xfb_connection' is not open!";
+        QMessageBox::critical(this, "Database Error", "Database connection is not open.");
+        return;
     }
 
-    movie->stop();
+    // --- Check for SOX executable ---
+    QString soxPath = QStandardPaths::findExecutable("sox");
+    if (soxPath.isEmpty()) {
+        qWarning() << "'sox' command not found in system PATH.";
+        QMessageBox::critical(this, "Missing Dependency",
+                              "The 'sox' command (Sound eXchange) is required for this feature "
+                              "but was not found in the system's PATH.\n\nPlease install SoX and ensure it's accessible.");
+        return;
+    }
+    qInfo() << "Found sox executable at:" << soxPath;
+    // --- End SOX check ---
+
+    QMessageBox::StandardButton run = QMessageBox::question(this, "Confirm Auto-Trim",
+                                                            "This will attempt to trim silence (below 1% threshold) from the start and end of every track in the database using 'sox'.\n\n"
+                                                            "Original files will be overwritten!\n\n"
+                                                            "This process can take a long time and is irreversible.\n"
+                                                            "Are you sure you want to proceed?",
+                                                            QMessageBox::Yes | QMessageBox::No);
+    if (run == QMessageBox::No) {
+        return;
+    }
+
+    // --- Setup Loading Indicator & Progress Dialog ---
+    QMovie loadingMovie(":/images/loading.gif"); // Use stack variable if movie is temporary
+    if(!loadingMovie.isValid()){
+         qWarning() << "Loading GIF not valid:" << ":/images/loading.gif";
+         // Continue without movie, maybe show text?
+         ui->txt_loading->setText("Processing...");
+         ui->txt_loading->show();
+    } else {
+        ui->txt_loading->setMovie(&loadingMovie);
+        ui->txt_loading->setScaledContents(true);
+        ui->txt_loading->show();
+        loadingMovie.start();
+    }
+    qApp->processEvents(); // Allow UI to update
+
+    QProgressDialog progressDialog("Trimming silence...", "Cancel", 0, 0, this);
+    progressDialog.setWindowModality(Qt::WindowModal);
+    progressDialog.setValue(0);
+    progressDialog.show();
+    qApp->processEvents();
+    // --- End Setup ---
+
+
+    QSqlQuery querySelect(db);
+    QString selectStr = "SELECT path FROM musics"; // Only need the path
+    int totalFiles = 0;
+
+    // First count the files for the progress bar
+    if (querySelect.exec("SELECT COUNT(*) FROM musics")) {
+        if (querySelect.next()) {
+            totalFiles = querySelect.value(0).toInt();
+        }
+    } else {
+         qWarning() << "Failed to count records:" << querySelect.lastError();
+         // Proceed without accurate progress max? Or abort? Let's try proceeding.
+    }
+    progressDialog.setMaximum(totalFiles > 0 ? totalFiles : 100); // Set max for progress bar
+    qApp->processEvents();
+
+
+    // Now get the paths
+    if (!querySelect.exec(selectStr)) {
+        qWarning() << "Failed to SELECT paths from musics:" << querySelect.lastError();
+        QMessageBox::critical(this, "Database Error", "Failed to query the musics table for paths.");
+        loadingMovie.stop();
+        ui->txt_loading->hide();
+        progressDialog.cancel();
+        return;
+    }
+
+    int processedCount = 0;
+    int successCount = 0;
+    int failCount = 0;
+    bool cancelled = false;
+
+    QTemporaryDir tempDir; // Creates a unique temporary directory
+    if (!tempDir.isValid()) {
+        qWarning() << "Failed to create temporary directory:" << tempDir.errorString();
+        QMessageBox::critical(this, "File System Error", "Could not create a temporary directory to process files.");
+        loadingMovie.stop();
+        ui->txt_loading->hide();
+        progressDialog.cancel();
+        return;
+    }
+    qInfo() << "Using temporary directory:" << tempDir.path();
+
+
+    while (querySelect.next() && !cancelled) {
+        processedCount++;
+        progressDialog.setValue(processedCount);
+        QString originalPath = querySelect.value(0).toString();
+        QFileInfo originalFileInfo(originalPath);
+
+        progressDialog.setLabelText(QString("Processing [%1/%2]:\n%3")
+                                        .arg(processedCount)
+                                        .arg(totalFiles)
+                                        .arg(originalFileInfo.fileName()));
+        qApp->processEvents(); // Keep UI responsive and check for Cancel button
+
+        if (progressDialog.wasCanceled()) {
+            qInfo() << "User cancelled the operation.";
+            cancelled = true;
+            break;
+        }
+
+        qInfo().noquote() << "AutoTrim Processing [" << processedCount << "/" << totalFiles << "]:" << originalPath;
+
+        if (!originalFileInfo.exists() || !originalFileInfo.isFile()) {
+            qWarning() << "File does not exist or is not a regular file:" << originalPath;
+            failCount++;
+            continue; // Skip to next file
+        }
+
+        // --- Prepare temporary output path ---
+        // Use original filename but in the temporary directory
+        QString tempOutputPath = tempDir.filePath(originalFileInfo.fileName());
+        qDebug() << "Temporary output path:" << tempOutputPath;
+
+        // --- Run SOX ---
+        QProcess soxProcess;
+        QStringList soxArgs;
+        soxArgs << originalPath                   // Input file
+                << tempOutputPath                 // Output file
+                << "silence"                      // Effect name
+                << "1"                            // Detect silence around the file (mode)
+                << "0.1"                          // Stop point (duration in seconds)
+                << "1%";                          // Threshold (e.g., 0.1% or 1%) - NOTE: You had 0.1% in question, 1% in code. Using 1% as per code.
+
+        qDebug() << "Running command:" << soxPath << soxArgs;
+
+        soxProcess.start(soxPath, soxArgs);
+
+        // Wait for SOX to finish (adjust timeout if needed, -1 means wait indefinitely)
+        // Use a reasonable timeout, e.g., 5 minutes (300000 ms) for potentially large files
+        if (!soxProcess.waitForFinished(300000)) {
+            qWarning() << "Sox process timed out for:" << originalPath << soxProcess.errorString();
+            soxProcess.kill();
+            soxProcess.waitForFinished(1000); // Wait a bit after killing
+            failCount++;
+            continue; // Skip to next file
+        }
+
+        // Check SOX execution result
+        if (soxProcess.exitStatus() != QProcess::NormalExit || soxProcess.exitCode() != 0) {
+            qWarning() << "Sox process failed for:" << originalPath
+                       << "Exit code:" << soxProcess.exitCode()
+                       << "Exit status:" << soxProcess.exitStatus();
+            QString errorOutput = QString::fromLocal8Bit(soxProcess.readAllStandardError());
+            qWarning() << "Sox Standard Error:\n" << errorOutput;
+            // Clean up potentially incomplete temp file before continuing
+            QFile::remove(tempOutputPath);
+            failCount++;
+            continue; // Skip to next file
+        }
+
+        // --- Check if temp file was created and is valid ---
+        QFileInfo tempFileInfo(tempOutputPath);
+        if (!tempFileInfo.exists() || tempFileInfo.size() == 0) {
+             qWarning() << "Sox finished successfully but the output file is missing or empty:" << tempOutputPath;
+             // Clean up potentially empty temp file
+             QFile::remove(tempOutputPath);
+             failCount++;
+             continue; // Skip to next file
+        }
+
+        qDebug() << "Sox completed successfully. Temp file size:" << tempFileInfo.size();
+
+        // --- Replace original file with trimmed version ---
+        // QFile::rename will overwrite the destination if it exists on most platforms.
+        // This is atomic on many filesystems (safer than delete then move).
+        bool renamed = QFile::rename(tempOutputPath, originalPath);
+
+        if (!renamed) {
+            // Rename failed. Maybe permissions issue, file lock, cross-device move?
+            // Try copy & delete as a fallback (less safe, not atomic)
+            qWarning() << "QFile::rename failed for" << tempOutputPath << "to" << originalPath << ". Attempting copy and delete.";
+            if (QFile::copy(tempOutputPath, originalPath)) {
+                 qDebug() << "Copy successful. Now removing temporary file.";
+                 if (!QFile::remove(tempOutputPath)) {
+                      qWarning() << "Failed to remove temporary file after successful copy:" << tempOutputPath;
+                      // Continue, main goal achieved, but temp file left behind.
+                 }
+                 successCount++;
+                 qInfo() << "File trimmed and replaced (using copy/delete):" << originalPath;
+            } else {
+                qWarning() << "Fallback copy failed for:" << tempOutputPath << "to" << originalPath;
+                // Clean up temp file if copy failed
+                QFile::remove(tempOutputPath);
+                failCount++;
+                continue; // Skip to next file
+            }
+        } else {
+            // Rename successful! The temp file is now gone (moved).
+            successCount++;
+            qInfo() << "File trimmed and replaced (using rename):" << originalPath;
+        }
+        // --- End Replace ---
+
+    } // End while loop
+
+    // --- Cleanup and Summary ---
+    loadingMovie.stop();
     ui->txt_loading->hide();
+    progressDialog.cancel(); // Close the progress dialog cleanly
 
+    // Temporary directory (`tempDir`) is automatically removed here when it goes out of scope.
 
+    QString summaryMessage;
+    if (cancelled) {
+         summaryMessage = QString("Operation Cancelled.\n\nProcessed: %1\nSuccessfully Trimmed: %2\nFailed/Skipped: %3")
+                             .arg(processedCount -1) // Don't count the one being processed when cancelled
+                             .arg(successCount)
+                             .arg(failCount);
+    } else {
+         summaryMessage = QString("Auto-Trim Complete.\n\nTotal Records: %1\nSuccessfully Trimmed: %2\nFailed/Skipped: %3")
+                             .arg(totalFiles)
+                             .arg(successCount)
+                             .arg(failCount);
+    }
+
+    qInfo() << "-------------------------------------";
+    qInfo() << summaryMessage.replace("\n\n", " | "); // Log summary concisely
+    qInfo() << "-------------------------------------";
+
+    QMessageBox::information(this, "Operation Summary", summaryMessage);
 }
 
 void player::on_actionUpdate_System_triggered()
@@ -4934,6 +5740,7 @@ void player::on_actionUpdate_System_triggered()
 void player::on_bt_apply_multi_selection_clicked()
 {
 
+    QSqlDatabase db = QSqlDatabase::database("xfb_connection");
     int accao = ui->cbox_multi_select->currentIndex();
 
     qDebug()<<"ComboBox action: "<<accao;
@@ -4989,7 +5796,7 @@ void player::on_bt_apply_multi_selection_clicked()
 
 
                                QString qry = "delete from musics where path='"+thisfilename+"'";
-                               QSqlQuery sql;
+                               QSqlQuery sql(db);
 
                                if(sql.exec(qry)){
                                    qDebug()<<"Track removed from the database: "<<thisfilename;
@@ -4999,17 +5806,40 @@ void player::on_bt_apply_multi_selection_clicked()
                                }
 
 
-                               if(rm==QMessageBox::Yes){
+                               if (rm == QMessageBox::Yes) {
+                                   qInfo() << "User confirmed deletion. Attempting to delete file from disk:" << thisfilename;
 
+                                   // --- Use Qt's QFile::remove for platform-independent deletion ---
 
-                                   qDebug()<<"Deleting file from HD: "<<thisfilename;
-                                   QProcess sh;
-                                   sh.start("sh",QStringList()<<"-c"<<"rm \""+thisfilename+"\"");
-                                   sh.waitForFinished(-1);
+                                   // Optional: Check existence first, though remove() handles non-existent files gracefully (returns false)
+                                   if (!QFile::exists(thisfilename)) {
+                                       qWarning() << "File no longer exists or path is incorrect:" << thisfilename;
+                                       // You might want to inform the user or just proceed as if deleted
+                                       QMessageBox::information(this, "File Not Found",
+                                                                QString("The file\n%1\ncould not be found. It might have been deleted already.")
+                                                                    .arg(thisfilename));
+                                   } else {
+                                       // Attempt the deletion
+                                       bool success = QFile::remove(thisfilename);
 
-                                   qDebug()<<"File DELETED!";
+                                       if (success) {
+                                           qInfo() << "File successfully deleted from disk:" << thisfilename;
+                                           // Optional: A small confirmation message if desired, often logging is enough.
+                                           // QMessageBox::information(this, "Success", QString("File deleted:\n%1").arg(thisfilename));
+                                       } else {
+                                           // Deletion failed - Log the error and inform the user
+                                           // Note: QFile::errorString() isn't always set reliably after remove(),
+                                           //       so checking the return value is the primary way.
+                                           qWarning() << "Failed to delete file from disk:" << thisfilename;
+                                           QMessageBox::warning(this, "Deletion Failed",
+                                                                QString("Could not delete the file:\n%1\n\nPlease check file permissions or if the file is currently in use.")
+                                                                    .arg(thisfilename));
+                                       }
+                                   }
+                                   // --- End of QFile::remove usage ---
 
-
+                               } else {
+                                   qDebug() << "User cancelled file deletion for:" << thisfilename;
                                }
 
 
@@ -5047,73 +5877,247 @@ void player::on_bt_apply_multi_selection_clicked()
 
    if(accao==3){
 
-       //convert 2 mp3
 
-       qDebug()<<"running 3---";
-
-       QModelIndexList indexlist = ui->musicView->selectionModel()->selectedIndexes();
-       int row = -1;
-       foreach(QModelIndex index, indexlist){
-          // qDebug()<<"index.row(): "<<index.row()<<" ;; var row: "<<row;
-           if(index.row()!=row){
-               row = index.row();
-
-               QString thisfilename = ui->musicView->model()->data(ui->musicView->model()->index(row,7)).toString(); //file path
-               qDebug()<<"File to convert: "<<thisfilename;
-
-               QProcess runcmd;
-               QFileInfo fileinfo = thisfilename;
-               QString filewoext = fileinfo.baseName();
-               QString filepath = fileinfo.absolutePath();
-
-               QString cmd = "ffmpeg -i \""+thisfilename+"\" -vn -ar 44100 -ac 2 -ab 192k -f mp3 \"../tmp/"+filewoext+".mp3\"";
-
-
-               qDebug()<<"base name: "<<filewoext;
-               qDebug()<<"file path: "<<filepath;
-               qDebug()<<"ffmpeg cmd string: "<<cmd;
-
-
-
-               runcmd.start("sh",QStringList()<<"-c"<<cmd);
-               runcmd.waitForFinished(-1);
-
-               qDebug()<<"File converted to tmp folder..";
-
-               cmd = "rm \""+thisfilename+"\"";
-               runcmd.start("sh",QStringList()<<"-c"<<cmd);
-               runcmd.waitForFinished(-1);
-
-               qDebug()<<"Original file deteled..";
-
-               cmd = "mv \"../tmp/"+filewoext+".mp3\" \""+filepath+"/"+filewoext+".mp3\"";
-               runcmd.start("sh",QStringList()<<"-c"<<cmd);
-               runcmd.waitForFinished(-1);
-
-               qDebug()<<"Converted file moved to the folder of the original file..";
-
-
-               QSqlQuery *q = new QSqlQuery();
-               QString qrs = "update musics set path = \""+filepath+"/"+filewoext+".mp3\" where path = \""+thisfilename+"\"";
-
-               if(q->exec(qrs)){
-                   qDebug()<<"Path updated in database records!";
-                   update_music_table();
-               } else {
-                   qDebug()<<"Error updating path in the database:";
-                   qDebug()<<q->lastError();
-                   qDebug()<<"The command executed was:";
-                   qDebug()<<q->lastQuery();
-               }
-
-
-               QMessageBox::information(this,tr("Done"),tr("File(s) converted!"));
-
-           }
-
+       QSqlDatabase db = QSqlDatabase::database("xfb_connection"); // Or pass it in
+       if (!db.isOpen()) {
+           qWarning() << "Database connection 'xfb_connection' is not open!";
+           QMessageBox::critical(this, "Database Error", "Database connection is not open.");
+           return;
        }
 
+       // --- Check for FFMPEG executable ---
+       QString ffmpegPath = QStandardPaths::findExecutable("ffmpeg");
+       if (ffmpegPath.isEmpty()) {
+           qWarning() << "'ffmpeg' command not found in system PATH.";
+           QMessageBox::critical(this, "Missing Dependency",
+                                 "The 'ffmpeg' command is required for audio conversion "
+                                 "but was not found in the system's PATH.\n\nPlease install ffmpeg and ensure it's accessible.");
+           return;
+       }
+       qInfo() << "Found ffmpeg executable at:" << ffmpegPath;
+       // --- End FFMPEG check ---
 
+
+       // --- Get Selected Files ---
+       QModelIndexList selectedIndexes = ui->musicView->selectionModel()->selectedIndexes();
+       QSet<int> uniqueRows; // Use a QSet to get unique row numbers easily
+       for (const QModelIndex &index : selectedIndexes) {
+           uniqueRows.insert(index.row());
+       }
+
+       if (uniqueRows.isEmpty()) {
+           QMessageBox::information(this, "No Selection", "Please select one or more tracks in the list to convert.");
+           return;
+       }
+
+       int totalFilesToProcess = uniqueRows.size();
+       qInfo() << "Found" << totalFilesToProcess << "unique rows selected for conversion.";
+
+       // --- Confirmation ---
+       QMessageBox::StandardButton confirm = QMessageBox::question(this, "Confirm Conversion",
+                                        QString("Convert %1 selected track(s) to MP3 (192kbps)?\n\n"
+                                                "Original files will be replaced with the MP3 version.\n"
+                                                "This action cannot be undone.\n\n"
+                                                "Note: Only the audio stream will be kept.")
+                                            .arg(totalFilesToProcess),
+                                        QMessageBox::Yes | QMessageBox::No);
+
+       if (confirm == QMessageBox::No) {
+           return;
+       }
+
+       // --- Setup Progress Dialog ---
+       QProgressDialog progressDialog("Converting to MP3...", "Cancel", 0, totalFilesToProcess, this);
+       progressDialog.setWindowModality(Qt::WindowModal);
+       progressDialog.setValue(0);
+       progressDialog.show();
+       qApp->processEvents(); // Allow UI to update
+
+       // --- Prepare Database Query (outside loop) ---
+       QSqlQuery queryUpdate(db);
+       if (!queryUpdate.prepare("UPDATE musics SET path = :new_path WHERE path = :old_path")) {
+           qWarning() << "Failed to prepare database UPDATE statement:" << queryUpdate.lastError();
+           QMessageBox::critical(this, "Database Error", "Failed to prepare database query for updating paths.");
+           progressDialog.cancel();
+           return;
+       }
+
+       // --- Get Temporary Directory ---
+       QString tempDirPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+       if (tempDirPath.isEmpty()) {
+            qWarning() << "Could not find a writable temporary location.";
+            QMessageBox::critical(this, "File System Error", "Cannot find a suitable temporary directory for conversion.");
+            progressDialog.cancel();
+            return;
+       }
+       QDir tempDir(tempDirPath);
+       qInfo() << "Using temporary directory:" << tempDirPath;
+
+
+       // --- Process Files ---
+       int successCount = 0;
+       int failCount = 0;
+       bool cancelled = false;
+
+       // Convert QSet to QList to iterate in a defined order (optional, but often useful)
+       QList<int> rowsToProcess = uniqueRows.values();
+       std::sort(rowsToProcess.begin(), rowsToProcess.end()); // Sort rows numerically
+
+       for (int row : rowsToProcess) {
+           if (progressDialog.wasCanceled()) {
+               cancelled = true;
+               break;
+           }
+
+           progressDialog.setValue(successCount + failCount); // Update progress
+           qApp->processEvents();
+
+           // Get original file path from model (assuming column 7)
+           QModelIndex pathIndex = ui->musicView->model()->index(row, 7);
+           QString originalPath = ui->musicView->model()->data(pathIndex).toString();
+           QFileInfo originalFileInfo(originalPath);
+
+           progressDialog.setLabelText(QString("Converting [%1/%2]:\n%3")
+                                           .arg(successCount + failCount + 1)
+                                           .arg(totalFilesToProcess)
+                                           .arg(originalFileInfo.fileName()));
+           qApp->processEvents();
+
+           qInfo().noquote() << "Processing [" << (successCount + failCount + 1) << "/" << totalFilesToProcess << "]:" << originalPath;
+
+           if (!originalFileInfo.exists() || !originalFileInfo.isFile()) {
+               qWarning() << "Original file does not exist or is not a file:" << originalPath;
+               failCount++;
+               continue; // Skip to next file
+           }
+
+           // --- Prepare Paths ---
+           QString baseName = originalFileInfo.baseName(); // Name without extension
+           QString originalDir = originalFileInfo.absolutePath(); // Directory of original file
+           QString tempMp3Path = tempDir.filePath(baseName + ".mp3"); // Full path for temporary MP3
+           QString finalMp3Path = QDir(originalDir).filePath(baseName + ".mp3"); // Final path for MP3 in original dir
+
+           // --- Run FFMPEG ---
+           QProcess ffmpegProcess;
+           QStringList ffmpegArgs;
+           ffmpegArgs << "-i" << originalPath // Input file
+                      << "-vn"               // No video output
+                      << "-ar" << "44100"    // Audio sample rate
+                      << "-ac" << "2"        // Audio channels (stereo)
+                      << "-b:a" << "192k"    // Audio bitrate (use -b:a for modern ffmpeg) - was -ab
+                      << "-f" << "mp3"       // Force output format (usually optional)
+                      << tempMp3Path;        // Output file path
+
+           qDebug() << "Running command:" << ffmpegPath << ffmpegArgs;
+
+           ffmpegProcess.start(ffmpegPath, ffmpegArgs);
+
+           // Wait for ffmpeg (e.g., 10 min timeout for potentially large files/slow conversion)
+           if (!ffmpegProcess.waitForFinished(600000)) {
+               qWarning() << "ffmpeg process timed out for:" << originalPath << ffmpegProcess.errorString();
+               ffmpegProcess.kill();
+               ffmpegProcess.waitForFinished(1000);
+               QFile::remove(tempMp3Path); // Clean up incomplete temp file
+               failCount++;
+               continue;
+           }
+
+           // Check ffmpeg result
+           if (ffmpegProcess.exitStatus() != QProcess::NormalExit || ffmpegProcess.exitCode() != 0) {
+               qWarning() << "ffmpeg process failed for:" << originalPath
+                          << "Exit code:" << ffmpegProcess.exitCode()
+                          << "Exit status:" << ffmpegProcess.exitStatus();
+               QString errorOutput = QString::fromLocal8Bit(ffmpegProcess.readAllStandardError());
+               qWarning() << "ffmpeg Standard Error:\n" << errorOutput;
+                QFile::remove(tempMp3Path); // Clean up potentially failed temp file
+               failCount++;
+               continue;
+           }
+
+           // Check if temp MP3 exists and has size
+            QFileInfo tempMp3Info(tempMp3Path);
+            if (!tempMp3Info.exists() || tempMp3Info.size() == 0) {
+                qWarning() << "ffmpeg finished successfully but the output MP3 file is missing or empty:" << tempMp3Path;
+                QFile::remove(tempMp3Path);
+                failCount++;
+                continue;
+            }
+
+           qInfo() << "ffmpeg conversion successful for:" << originalPath << " -> " << tempMp3Path;
+
+           // --- Delete Original File ---
+           qInfo() << "Attempting to delete original file:" << originalPath;
+           if (!QFile::remove(originalPath)) {
+               qWarning() << "Failed to delete original file:" << originalPath << ". Skipping move and database update.";
+               // Don't delete the temp MP3 - user might want it
+               // Consider moving temp MP3 to a known 'failed' folder? For now, just leave it in temp.
+               failCount++;
+               continue; // Skip rest of steps for this file
+           }
+           qInfo() << "Original file deleted successfully.";
+
+           // --- Move Temporary MP3 to Final Location ---
+           qInfo() << "Attempting to move" << tempMp3Path << "to" << finalMp3Path;
+           if (!QFile::rename(tempMp3Path, finalMp3Path)) {
+               qWarning() << "Failed to move temporary MP3" << tempMp3Path << "to" << finalMp3Path << ". The original file was deleted! MP3 remains in temp folder.";
+               // This is a problematic state - original is gone, MP3 is stuck in temp.
+               // Inform the user strongly.
+               QMessageBox::warning(this, "Move Failed",
+                                    QString("Failed to move the converted MP3 to its final destination:\n%1\n\n"
+                                            "The original file was deleted, but the MP3 remains in the temporary folder:\n%2\n\n"
+                                            "Please move it manually and check the database record.")
+                                        .arg(finalMp3Path).arg(tempMp3Path));
+               failCount++;
+               continue; // Cannot update DB path if move failed
+           }
+           qInfo() << "MP3 moved successfully to:" << finalMp3Path;
+
+           // --- Update Database ---
+           qInfo() << "Updating database: set path =" << finalMp3Path << "where path =" << originalPath;
+           queryUpdate.bindValue(":new_path", finalMp3Path);
+           queryUpdate.bindValue(":old_path", originalPath);
+
+           if (!queryUpdate.exec()) {
+               qWarning() << "Failed to update database path for:" << originalPath << "->" << finalMp3Path;
+               qWarning() << "DB Error:" << queryUpdate.lastError().text();
+               qWarning() << "Last Query:" << queryUpdate.lastQuery(); // See bound values if driver supports it
+               // The file was converted and moved, but the DB is out of sync.
+                QMessageBox::warning(this, "Database Update Failed",
+                                    QString("The file was successfully converted and moved to:\n%1\n\n"
+                                            "However, updating the database record failed:\n%2\n\n"
+                                            "Please check the database manually.")
+                                        .arg(finalMp3Path).arg(queryUpdate.lastError().text()));
+               failCount++; // Count as failure since DB update is critical
+           } else {
+               qInfo() << "Database path updated successfully.";
+               successCount++;
+               // update_music_table(); // Consider updating only once at the end for performance
+           }
+
+       } // End for loop
+
+       // --- Final Cleanup & Summary ---
+       progressDialog.cancel(); // Close progress dialog
+
+       update_music_table(); // Update the table view once after all operations
+
+       QString summaryMessage;
+       if (cancelled) {
+           summaryMessage = QString("Operation Cancelled.\n\nSuccessfully Converted: %1\nFailed/Skipped: %2")
+                                .arg(successCount)
+                                .arg(failCount);
+       } else {
+           summaryMessage = QString("Conversion Complete.\n\nTotal Selected: %1\nSuccessfully Converted: %2\nFailed/Skipped: %3")
+                                .arg(totalFilesToProcess)
+                                .arg(successCount)
+                                .arg(failCount);
+       }
+
+       qInfo() << "-------------------------------------";
+       qInfo() << summaryMessage.replace("\n\n", " | "); // Log summary concisely
+       qInfo() << "-------------------------------------";
+
+       QMessageBox::information(this, "Conversion Summary", summaryMessage);
    }
 
 
@@ -5121,71 +6125,244 @@ void player::on_bt_apply_multi_selection_clicked()
 
    if(accao==4){
 
-       //convert 2 mp3
+       QSqlDatabase db = QSqlDatabase::database("xfb_connection"); // Or pass it in
+          if (!db.isOpen()) {
+              qWarning() << "Database connection 'xfb_connection' is not open!";
+              QMessageBox::critical(this, "Database Error", "Database connection is not open.");
+              return;
+          }
 
-       qDebug()<<"running 4---";
-
-       QModelIndexList indexlist = ui->musicView->selectionModel()->selectedIndexes();
-       int row = -1;
-       foreach(QModelIndex index, indexlist){
-           if(index.row()!=row){
-               row = index.row();
-
-               QString thisfilename = ui->musicView->model()->data(ui->musicView->model()->index(row,7)).toString(); //file path
-               qDebug()<<"File to convert: "<<thisfilename;
-
-               QProcess runcmd;
-               QFileInfo fileinfo = thisfilename;
-               QString filewoext = fileinfo.baseName();
-               QString filepath = fileinfo.absolutePath();
-
-               QString cmd = "ffmpeg -i \""+thisfilename+"\" -c:a libvorbis -qscale:a 7 \"../tmp/"+filewoext+".ogg\"";
-
+          // --- Check for FFMPEG executable ---
+          QString ffmpegPath = QStandardPaths::findExecutable("ffmpeg");
+          if (ffmpegPath.isEmpty()) {
+              qWarning() << "'ffmpeg' command not found in system PATH.";
+              QMessageBox::critical(this, "Missing Dependency",
+                                    "The 'ffmpeg' command is required for audio conversion "
+                                    "but was not found in the system's PATH.\n\nPlease install ffmpeg and ensure it's accessible.");
+              return;
+          }
+          qInfo() << "Found ffmpeg executable at:" << ffmpegPath;
+          // --- End FFMPEG check ---
 
 
-               qDebug()<<"base name: "<<filewoext;
-               qDebug()<<"file path: "<<filepath;
-               qDebug()<<"ffmpeg cmd string: "<<cmd;
+          // --- Get Selected Files ---
+          QModelIndexList selectedIndexes = ui->musicView->selectionModel()->selectedIndexes();
+          QSet<int> uniqueRows; // Use a QSet to get unique row numbers easily
+          for (const QModelIndex &index : selectedIndexes) {
+              uniqueRows.insert(index.row());
+          }
+
+          if (uniqueRows.isEmpty()) {
+              QMessageBox::information(this, "No Selection", "Please select one or more tracks in the list to convert.");
+              return;
+          }
+
+          int totalFilesToProcess = uniqueRows.size();
+          qInfo() << "Found" << totalFilesToProcess << "unique rows selected for conversion to Ogg Vorbis.";
+
+          // --- Confirmation ---
+          // Adjusted confirmation message for Ogg Vorbis (quality scale 7)
+          QMessageBox::StandardButton confirm = QMessageBox::question(this, "Confirm Conversion",
+                                           QString("Convert %1 selected track(s) to Ogg Vorbis (Quality ~7)?\n\n"
+                                                   "Original files will be replaced with the Ogg version.\n"
+                                                   "This action cannot be undone.\n\n"
+                                                   "Note: Only the audio stream will be kept.")
+                                               .arg(totalFilesToProcess),
+                                           QMessageBox::Yes | QMessageBox::No);
+
+          if (confirm == QMessageBox::No) {
+              return;
+          }
+
+          // --- Setup Progress Dialog ---
+          // Adjusted progress dialog title
+          QProgressDialog progressDialog("Converting to Ogg Vorbis...", "Cancel", 0, totalFilesToProcess, this);
+          progressDialog.setWindowModality(Qt::WindowModal);
+          progressDialog.setValue(0);
+          progressDialog.show();
+          qApp->processEvents(); // Allow UI to update
+
+          // --- Prepare Database Query (outside loop) ---
+          QSqlQuery queryUpdate(db);
+          // Using single quotes for string literals in SQL might be less portable
+          // but stick to original if required by specific DB. Prepared statements handle this better.
+          if (!queryUpdate.prepare("UPDATE musics SET path = :new_path WHERE path = :old_path")) {
+              qWarning() << "Failed to prepare database UPDATE statement:" << queryUpdate.lastError();
+              QMessageBox::critical(this, "Database Error", "Failed to prepare database query for updating paths.");
+              progressDialog.cancel();
+              return;
+          }
+
+          // --- Get Temporary Directory ---
+          QString tempDirPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+          if (tempDirPath.isEmpty()) {
+               qWarning() << "Could not find a writable temporary location.";
+               QMessageBox::critical(this, "File System Error", "Cannot find a suitable temporary directory for conversion.");
+               progressDialog.cancel();
+               return;
+          }
+          QDir tempDir(tempDirPath);
+          qInfo() << "Using temporary directory:" << tempDirPath;
 
 
+          // --- Process Files ---
+          int successCount = 0;
+          int failCount = 0;
+          bool cancelled = false;
 
-               runcmd.start("sh",QStringList()<<"-c"<<cmd);
-               runcmd.waitForFinished(-1);
+          QList<int> rowsToProcess = uniqueRows.values();
+          std::sort(rowsToProcess.begin(), rowsToProcess.end());
 
-               qDebug()<<"File converted to tmp folder..";
+          for (int row : rowsToProcess) {
+              if (progressDialog.wasCanceled()) {
+                  cancelled = true;
+                  break;
+              }
 
-               cmd = "rm \""+thisfilename+"\"";
-               runcmd.start("sh",QStringList()<<"-c"<<cmd);
-               runcmd.waitForFinished(-1);
+              progressDialog.setValue(successCount + failCount); // Update progress
+              qApp->processEvents();
 
-               qDebug()<<"Original file deteled..";
+              // Get original file path from model (assuming column 7)
+              QModelIndex pathIndex = ui->musicView->model()->index(row, 7);
+              QString originalPath = ui->musicView->model()->data(pathIndex).toString();
+              QFileInfo originalFileInfo(originalPath);
 
-               cmd = "mv \"../tmp/"+filewoext+".ogg\" \""+filepath+"/"+filewoext+".ogg\"";
-               runcmd.start("sh",QStringList()<<"-c"<<cmd);
-               runcmd.waitForFinished(-1);
+              // Adjust progress label text
+              progressDialog.setLabelText(QString("Converting [%1/%2]:\n%3")
+                                              .arg(successCount + failCount + 1)
+                                              .arg(totalFilesToProcess)
+                                              .arg(originalFileInfo.fileName()));
+              qApp->processEvents();
 
-               qDebug()<<"Converted file moved to the folder of the original file..";
+              qInfo().noquote() << "Processing [" << (successCount + failCount + 1) << "/" << totalFilesToProcess << "]:" << originalPath;
 
+              if (!originalFileInfo.exists() || !originalFileInfo.isFile()) {
+                  qWarning() << "Original file does not exist or is not a file:" << originalPath;
+                  failCount++;
+                  continue; // Skip to next file
+              }
 
-               QSqlQuery *q = new QSqlQuery();
-               QString qrs = "update musics set path = '"+filepath+"/"+filewoext+".ogg' where path = '"+thisfilename+"'";
+              // --- Prepare Paths ---
+              QString baseName = originalFileInfo.baseName();
+              QString originalDir = originalFileInfo.absolutePath();
+              // Construct Ogg paths
+              QString tempOggPath = tempDir.filePath(baseName + ".ogg");
+              QString finalOggPath = QDir(originalDir).filePath(baseName + ".ogg");
 
-               if(q->exec(qrs)){
-                   qDebug()<<"Path updated in database recordsposition!";
-                   update_music_table();
-               } else {
-                   qDebug()<<"Error updating path in the database:";
-                   qDebug()<<q->lastError();
-                   qDebug()<<"The command executed was:";
-                   qDebug()<<q->lastQuery();
+              // --- Run FFMPEG ---
+              QProcess ffmpegProcess;
+              QStringList ffmpegArgs;
+              // Adjusted ffmpeg arguments for Ogg Vorbis
+              ffmpegArgs << "-i" << originalPath           // Input file
+                         << "-c:a" << "libvorbis"        // Audio codec: libvorbis
+                         << "-qscale:a" << "7"           // Quality scale (adjust as needed, 5-7 is common)
+                         << tempOggPath;                 // Output file path
+
+              qDebug() << "Running command:" << ffmpegPath << ffmpegArgs;
+
+              ffmpegProcess.start(ffmpegPath, ffmpegArgs);
+
+              // Wait for ffmpeg (adjust timeout if needed)
+              if (!ffmpegProcess.waitForFinished(600000)) { // 10 min timeout
+                  qWarning() << "ffmpeg process timed out for:" << originalPath << ffmpegProcess.errorString();
+                  ffmpegProcess.kill();
+                  ffmpegProcess.waitForFinished(1000);
+                  QFile::remove(tempOggPath); // Clean up incomplete temp file
+                  failCount++;
+                  continue;
+              }
+
+              // Check ffmpeg result
+              if (ffmpegProcess.exitStatus() != QProcess::NormalExit || ffmpegProcess.exitCode() != 0) {
+                  qWarning() << "ffmpeg process failed for:" << originalPath
+                             << "Exit code:" << ffmpegProcess.exitCode()
+                             << "Exit status:" << ffmpegProcess.exitStatus();
+                  QString errorOutput = QString::fromLocal8Bit(ffmpegProcess.readAllStandardError());
+                  qWarning() << "ffmpeg Standard Error:\n" << errorOutput;
+                   QFile::remove(tempOggPath); // Clean up potentially failed temp file
+                  failCount++;
+                  continue;
+              }
+
+              // Check if temp Ogg exists and has size
+               QFileInfo tempOggInfo(tempOggPath);
+               if (!tempOggInfo.exists() || tempOggInfo.size() == 0) {
+                   qWarning() << "ffmpeg finished successfully but the output Ogg file is missing or empty:" << tempOggPath;
+                   QFile::remove(tempOggPath);
+                   failCount++;
+                   continue;
                }
 
+              qInfo() << "ffmpeg conversion successful for:" << originalPath << " -> " << tempOggPath;
 
-               QMessageBox::information(this,tr("Done"),tr("File(s) converted!"));
+              // --- Delete Original File ---
+              qInfo() << "Attempting to delete original file:" << originalPath;
+              if (!QFile::remove(originalPath)) {
+                  qWarning() << "Failed to delete original file:" << originalPath << ". Skipping move and database update.";
+                  failCount++;
+                  continue; // Skip rest of steps for this file
+              }
+              qInfo() << "Original file deleted successfully.";
 
-           }
+              // --- Move Temporary Ogg to Final Location ---
+              qInfo() << "Attempting to move" << tempOggPath << "to" << finalOggPath;
+              if (!QFile::rename(tempOggPath, finalOggPath)) {
+                  qWarning() << "Failed to move temporary Ogg" << tempOggPath << "to" << finalOggPath << ". The original file was deleted! Ogg remains in temp folder.";
+                  QMessageBox::warning(this, "Move Failed",
+                                       QString("Failed to move the converted Ogg file to its final destination:\n%1\n\n"
+                                               "The original file was deleted, but the Ogg file remains in the temporary folder:\n%2\n\n"
+                                               "Please move it manually and check the database record.")
+                                           .arg(finalOggPath).arg(tempOggPath));
+                  failCount++;
+                  continue; // Cannot update DB path if move failed
+              }
+              qInfo() << "Ogg file moved successfully to:" << finalOggPath;
 
-       }
+              // --- Update Database ---
+              qInfo() << "Updating database: set path =" << finalOggPath << "where path =" << originalPath;
+              queryUpdate.bindValue(":new_path", finalOggPath);
+              queryUpdate.bindValue(":old_path", originalPath);
+
+              if (!queryUpdate.exec()) {
+                  qWarning() << "Failed to update database path for:" << originalPath << "->" << finalOggPath;
+                  qWarning() << "DB Error:" << queryUpdate.lastError().text();
+                  qWarning() << "Last Query:" << queryUpdate.lastQuery();
+                  QMessageBox::warning(this, "Database Update Failed",
+                                       QString("The file was successfully converted and moved to:\n%1\n\n"
+                                               "However, updating the database record failed:\n%2\n\n"
+                                               "Please check the database manually.")
+                                           .arg(finalOggPath).arg(queryUpdate.lastError().text()));
+                  failCount++; // Count as failure since DB update is critical
+              } else {
+                  qInfo() << "Database path updated successfully.";
+                  successCount++;
+              }
+
+          } // End for loop
+
+          // --- Final Cleanup & Summary ---
+          progressDialog.cancel(); // Close progress dialog
+
+          update_music_table(); // Update the table view once after all operations
+
+          // Adjust summary message
+          QString summaryMessage;
+          if (cancelled) {
+              summaryMessage = QString("Operation Cancelled.\n\nSuccessfully Converted to Ogg: %1\nFailed/Skipped: %2")
+                                   .arg(successCount)
+                                   .arg(failCount);
+          } else {
+              summaryMessage = QString("Ogg Conversion Complete.\n\nTotal Selected: %1\nSuccessfully Converted: %2\nFailed/Skipped: %3")
+                                   .arg(totalFilesToProcess)
+                                   .arg(successCount)
+                                   .arg(failCount);
+          }
+
+          qInfo() << "-------------------------------------";
+          qInfo() << summaryMessage.replace("\n\n", " | "); // Log summary concisely
+          qInfo() << "-------------------------------------";
+
+          QMessageBox::information(this, "Conversion Summary", summaryMessage);
 
 
    }
@@ -5196,45 +6373,219 @@ void player::on_bt_apply_multi_selection_clicked()
 
        //trim
 
-       QModelIndexList indexlist = ui->musicView->selectionModel()->selectedIndexes();
-       int row;
-       foreach(QModelIndex index, indexlist){
-           if(index.row()!=row){
-               row = index.row();
-               //qDebug()<<"This row is selected: "<<row;
+       // --- Check for SOX executable ---
+          QString soxPath = QStandardPaths::findExecutable("sox");
+          if (soxPath.isEmpty()) {
+              qWarning() << "'sox' command not found in system PATH.";
+              QMessageBox::critical(this, "Missing Dependency",
+                                    "The 'sox' command (Sound eXchange) is required for this feature "
+                                    "but was not found in the system's PATH.\n\nPlease install SoX and ensure it's accessible.");
+              return;
+          }
+          qInfo() << "Found sox executable at:" << soxPath;
+          // --- End SOX check ---
 
-               QString path = ui->musicView->model()->data(ui->musicView->model()->index(row,7)).toString();
+          // --- Get Selected Files ---
+          QItemSelectionModel *selectionModel = ui->musicView->selectionModel();
+          if (!selectionModel) {
+              qWarning() << "Music view selection model is null.";
+              return;
+          }
+          QModelIndexList selectedIndexes = selectionModel->selectedIndexes();
+          QSet<int> uniqueRows; // Use a QSet to get unique row numbers easily
+          for (const QModelIndex &index : selectedIndexes) {
+              uniqueRows.insert(index.row());
+          }
 
-               qDebug()<<"AutoTrim Processing: "<<path;
+          if (uniqueRows.isEmpty()) {
+              QMessageBox::information(this, "No Selection", "Please select one or more tracks in the list to trim silence.");
+              return;
+          }
 
-               QFileInfo musicfile(path);
-               QString fileName(musicfile.fileName());
+          int totalFilesToProcess = uniqueRows.size();
+          qInfo() << "Found" << totalFilesToProcess << "unique rows selected for silence trimming.";
 
-               QString dest = "../tmp/"+fileName;
+          // --- Confirmation ---
+          QMessageBox::StandardButton confirm = QMessageBox::question(this, "Confirm Silence Trim",
+                                           QString("Trim silence (below 1% threshold) from the start and end of %1 selected track(s)?\n\n"
+                                                   "Original files will be overwritten!\n\n"
+                                                   "This action cannot be undone.")
+                                               .arg(totalFilesToProcess),
+                                           QMessageBox::Yes | QMessageBox::No);
+
+          if (confirm == QMessageBox::No) {
+              return;
+          }
+
+          // --- Setup Progress Dialog ---
+          QProgressDialog progressDialog("Trimming silence...", "Cancel", 0, totalFilesToProcess, this);
+          progressDialog.setWindowModality(Qt::WindowModal);
+          progressDialog.setValue(0);
+          progressDialog.show();
+          qApp->processEvents(); // Allow UI to update
+
+          // --- Get Temporary Directory ---
+          // Use QTemporaryDir for automatic cleanup if preferred, or standard temp location
+          QString tempDirPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+          if (tempDirPath.isEmpty()) {
+               qWarning() << "Could not find a writable temporary location.";
+               QMessageBox::critical(this, "File System Error", "Cannot find a suitable temporary directory for processing.");
+               progressDialog.cancel();
+               return;
+          }
+          QDir tempDir(tempDirPath);
+          qInfo() << "Using temporary directory:" << tempDirPath;
+
+          // --- Process Files ---
+          int successCount = 0;
+          int failCount = 0;
+          bool cancelled = false;
+          QAbstractItemModel *model = ui->musicView->model();
+          if (!model) {
+              qWarning() << "Music view model is null.";
+              QMessageBox::critical(this, "Internal Error", "Cannot access the data model.");
+              progressDialog.cancel();
+              return;
+          }
 
 
+          // Convert QSet to QList to iterate in a defined order (optional)
+          QList<int> rowsToProcess = uniqueRows.values();
+          std::sort(rowsToProcess.begin(), rowsToProcess.end()); // Sort rows numerically
 
-                   QProcess sox;
-                   QString soxcmd = "sox \""+path+"\" \""+dest+"\" silence 1 0.1 1%";
-                   qDebug()<<"Running cmd: "<<soxcmd;
-                   sox.start("sh",QStringList()<<"-c"<<soxcmd);
-                   sox.waitForFinished(-1);
-                   //qDebug()<<"Sox is done with this file..";
+          for (int row : rowsToProcess) {
+              if (progressDialog.wasCanceled()) {
+                  cancelled = true;
+                  break;
+              }
 
-                   QProcess Fmv;
-                   QString Fmvcmd = "mv \""+dest+"\" \""+path+"\"";
-                   Fmv.start("sh",QStringList()<<"-c"<<Fmvcmd);
-                   Fmv.waitForFinished(-1);
-                   qDebug()<<"File Trimmed!";
+              progressDialog.setValue(successCount + failCount); // Update progress
+              qApp->processEvents();
 
+              // Get original file path from model (assuming column 7)
+              QModelIndex pathIndex = model->index(row, 7); // Assuming column 7 holds the path
+              if (!pathIndex.isValid()) {
+                   qWarning() << "Invalid model index for row" << row << ", column 7.";
+                   failCount++;
+                   continue;
+              }
+              QString originalPath = model->data(pathIndex).toString();
+              QFileInfo originalFileInfo(originalPath);
 
+              progressDialog.setLabelText(QString("Trimming [%1/%2]:\n%3")
+                                              .arg(successCount + failCount + 1)
+                                              .arg(totalFilesToProcess)
+                                              .arg(originalFileInfo.fileName()));
+              qApp->processEvents();
 
+              qInfo().noquote() << "Processing [" << (successCount + failCount + 1) << "/" << totalFilesToProcess << "]:" << originalPath;
 
+              if (!originalFileInfo.exists() || !originalFileInfo.isFile()) {
+                  qWarning() << "Original file does not exist or is not a file:" << originalPath;
+                  failCount++;
+                  continue; // Skip to next file
+              }
 
+              // --- Prepare Paths ---
+              QString baseName = originalFileInfo.fileName(); // Keep full filename for temp
+              QString tempOutputPath = tempDir.filePath(baseName); // Construct full path in temp dir
+              // Ensure temp filename is unique in case multiple selections have the same filename (though unlikely if paths are unique)
+              // A more robust approach might add a unique ID or use QTemporaryFile, but simple temp path often suffices here.
+              qDebug() << "Temporary output path:" << tempOutputPath;
 
-           }
+              // --- Run SOX ---
+              QProcess soxProcess;
+              QStringList soxArgs;
+              soxArgs << originalPath                   // Input file
+                      << tempOutputPath                 // Output file
+                      << "silence"                      // Effect name
+                      << "1"                            // Detect silence around the file (mode)
+                      << "0.1"                          // Stop point (duration in seconds) - from original code
+                      << "1%";                          // Threshold (e.g., 0.1% or 1%) - from original code
 
-       }
+              qDebug() << "Running command:" << soxPath << soxArgs;
+
+              soxProcess.start(soxPath, soxArgs);
+
+              // Wait for SOX (adjust timeout if needed, -1 means wait indefinitely)
+              if (!soxProcess.waitForFinished(300000)) { // 5 min timeout
+                  qWarning() << "Sox process timed out for:" << originalPath << soxProcess.errorString();
+                  soxProcess.kill();
+                  soxProcess.waitForFinished(1000);
+                  QFile::remove(tempOutputPath); // Clean up incomplete temp file
+                  failCount++;
+                  continue;
+              }
+
+              // Check SOX execution result
+              if (soxProcess.exitStatus() != QProcess::NormalExit || soxProcess.exitCode() != 0) {
+                  qWarning() << "Sox process failed for:" << originalPath
+                             << "Exit code:" << soxProcess.exitCode()
+                             << "Exit status:" << soxProcess.exitStatus();
+                  QString errorOutput = QString::fromLocal8Bit(soxProcess.readAllStandardError());
+                  qWarning() << "Sox Standard Error:\n" << errorOutput;
+                  QFile::remove(tempOutputPath); // Clean up potentially failed temp file
+                  failCount++;
+                  continue;
+              }
+
+              // --- Check if temp file was created and is valid ---
+              QFileInfo tempFileInfo(tempOutputPath);
+              if (!tempFileInfo.exists() || tempFileInfo.size() == 0) {
+                   qWarning() << "Sox finished successfully but the output file is missing or empty:" << tempOutputPath;
+                   QFile::remove(tempOutputPath);
+                   failCount++;
+                   continue;
+              }
+              // Optional: Check if temp file size is drastically different? Maybe not reliable.
+
+              qInfo() << "Sox completed successfully for:" << originalPath << " -> " << tempOutputPath;
+
+              // --- Replace original file with trimmed version ---
+              qInfo() << "Attempting to replace" << originalPath << "with" << tempOutputPath;
+              if (!QFile::rename(tempOutputPath, originalPath)) {
+                   qWarning() << "Failed to replace original file using rename:" << originalPath << "with temp file:" << tempOutputPath;
+                   // Attempt fallback copy/delete might be risky if original perms are the issue
+                   // Best to leave the temp file and warn the user.
+                   QMessageBox::warning(this, "Replacement Failed",
+                                       QString("Could not replace the original file:\n%1\n\n"
+                                               "The trimmed version remains in the temporary folder:\n%2\n\n"
+                                               "Please check file permissions and replace it manually if desired.")
+                                           .arg(originalPath).arg(tempOutputPath));
+                  failCount++;
+                  // Do NOT delete the temp file in this case - user might want it.
+              } else {
+                  qInfo() << "File trimmed and replaced successfully:" << originalPath;
+                  successCount++;
+                  // Temp file is gone (renamed)
+              }
+              // --- End Replace ---
+
+          } // End for loop
+
+          // --- Final Cleanup & Summary ---
+          progressDialog.cancel(); // Close progress dialog
+
+          // Note: If using QTemporaryDir, it cleans up here. If using standard temp location,
+          // successfully moved files are gone, failed temp files might remain as per logic above.
+
+          QString summaryMessage;
+          if (cancelled) {
+              summaryMessage = QString("Operation Cancelled.\n\nSuccessfully Trimmed: %1\nFailed/Skipped: %2")
+                                   .arg(successCount)
+                                   .arg(failCount);
+          } else {
+              summaryMessage = QString("Silence Trim Complete.\n\nTotal Selected: %1\nSuccessfully Trimmed: %2\nFailed/Skipped: %3")
+                                   .arg(totalFilesToProcess)
+                                   .arg(successCount)
+                                   .arg(failCount);
+          }
+
+          qInfo() << "-------------------------------------";
+          qInfo() << summaryMessage.replace("\n\n", " | "); // Log summary concisely
+          qInfo() << "-------------------------------------";
+
+          QMessageBox::information(this, "Operation Summary", summaryMessage);
 
 
    }
@@ -5244,46 +6595,208 @@ void player::on_bt_apply_multi_selection_clicked()
    if(accao==6){
 
        //trim eXtreme 1
+       // --- Check for SOX executable ---
+          QString soxPath = QStandardPaths::findExecutable("sox");
+          if (soxPath.isEmpty()) {
+              qWarning() << "'sox' command not found in system PATH.";
+              QMessageBox::critical(this, "Missing Dependency",
+                                    "The 'sox' command (Sound eXchange) is required for this feature "
+                                    "but was not found in the system's PATH.\n\nPlease install SoX and ensure it's accessible.");
+              return;
+          }
+          qInfo() << "Found sox executable at:" << soxPath;
+          // --- End SOX check ---
 
-       QModelIndexList indexlist = ui->musicView->selectionModel()->selectedIndexes();
-       int row;
-       foreach(QModelIndex index, indexlist){
-           if(index.row()!=row){
-               row = index.row();
-               //qDebug()<<"This row is selected: "<<row;
+          // --- Get Selected Files ---
+          QItemSelectionModel *selectionModel = ui->musicView->selectionModel();
+          if (!selectionModel) {
+              qWarning() << "Music view selection model is null.";
+              return;
+          }
+          QModelIndexList selectedIndexes = selectionModel->selectedIndexes();
+          QSet<int> uniqueRows; // Use a QSet to get unique row numbers easily
+          for (const QModelIndex &index : selectedIndexes) {
+              uniqueRows.insert(index.row());
+          }
 
-               QString path = ui->musicView->model()->data(ui->musicView->model()->index(row,7)).toString();
+          if (uniqueRows.isEmpty()) {
+              QMessageBox::information(this, "No Selection", "Please select one or more tracks in the list to trim silence.");
+              return;
+          }
 
-               qDebug()<<"AutoTrim Processing: "<<path;
+          int totalFilesToProcess = uniqueRows.size();
+          qInfo() << "Found" << totalFilesToProcess << "unique rows selected for silence trimming (0.2s threshold).";
 
-               QFileInfo musicfile(path);
-               QString fileName(musicfile.fileName());
+          // --- Confirmation ---
+          // Updated confirmation message slightly
+          QMessageBox::StandardButton confirm = QMessageBox::question(this, "Confirm Silence Trim",
+                                           QString("Trim silence (0.2s duration, below 1% threshold) from the start and end of %1 selected track(s)?\n\n"
+                                                   "Original files will be overwritten!\n\n"
+                                                   "This action cannot be undone.")
+                                               .arg(totalFilesToProcess),
+                                           QMessageBox::Yes | QMessageBox::No);
 
-               QString dest = "../tmp/"+fileName;
+          if (confirm == QMessageBox::No) {
+              return;
+          }
 
+          // --- Setup Progress Dialog ---
+          QProgressDialog progressDialog("Trimming silence (0.2s threshold)...", "Cancel", 0, totalFilesToProcess, this);
+          progressDialog.setWindowModality(Qt::WindowModal);
+          progressDialog.setValue(0);
+          progressDialog.show();
+          qApp->processEvents(); // Allow UI to update
 
+          // --- Get Temporary Directory ---
+          QString tempDirPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+          if (tempDirPath.isEmpty()) {
+               qWarning() << "Could not find a writable temporary location.";
+               QMessageBox::critical(this, "File System Error", "Cannot find a suitable temporary directory for processing.");
+               progressDialog.cancel();
+               return;
+          }
+          QDir tempDir(tempDirPath);
+          qInfo() << "Using temporary directory:" << tempDirPath;
 
-                   QProcess sox;
-                   QString soxcmd = "sox \""+path+"\" \""+dest+"\" silence 1 0.2 1%";
-                   qDebug()<<"Running cmd: "<<soxcmd;
-                   sox.start("sh",QStringList()<<"-c"<<soxcmd);
-                   sox.waitForFinished(-1);
-                   //qDebug()<<"Sox is done with this file..";
+          // --- Process Files ---
+          int successCount = 0;
+          int failCount = 0;
+          bool cancelled = false;
+          QAbstractItemModel *model = ui->musicView->model();
+          if (!model) {
+              qWarning() << "Music view model is null.";
+              QMessageBox::critical(this, "Internal Error", "Cannot access the data model.");
+              progressDialog.cancel();
+              return;
+          }
 
-                   QProcess Fmv;
-                   QString Fmvcmd = "mv \""+dest+"\" \""+path+"\"";
-                   Fmv.start("sh",QStringList()<<"-c"<<Fmvcmd);
-                   Fmv.waitForFinished(-1);
-                   qDebug()<<"File Trimmed!";
+          QList<int> rowsToProcess = uniqueRows.values();
+          std::sort(rowsToProcess.begin(), rowsToProcess.end());
 
+          for (int row : rowsToProcess) {
+              if (progressDialog.wasCanceled()) {
+                  cancelled = true;
+                  break;
+              }
 
+              progressDialog.setValue(successCount + failCount);
+              qApp->processEvents();
 
+              QModelIndex pathIndex = model->index(row, 7); // Assuming column 7 holds the path
+              if (!pathIndex.isValid()) {
+                   qWarning() << "Invalid model index for row" << row << ", column 7.";
+                   failCount++;
+                   continue;
+              }
+              QString originalPath = model->data(pathIndex).toString();
+              QFileInfo originalFileInfo(originalPath);
 
+              progressDialog.setLabelText(QString("Trimming [%1/%2]:\n%3")
+                                              .arg(successCount + failCount + 1)
+                                              .arg(totalFilesToProcess)
+                                              .arg(originalFileInfo.fileName()));
+              qApp->processEvents();
 
+              qInfo().noquote() << "Processing [" << (successCount + failCount + 1) << "/" << totalFilesToProcess << "]:" << originalPath;
 
-           }
+              if (!originalFileInfo.exists() || !originalFileInfo.isFile()) {
+                  qWarning() << "Original file does not exist or is not a file:" << originalPath;
+                  failCount++;
+                  continue;
+              }
 
-       }
+              // --- Prepare Paths ---
+              QString baseName = originalFileInfo.fileName();
+              QString tempOutputPath = tempDir.filePath(baseName);
+              qDebug() << "Temporary output path:" << tempOutputPath;
+
+              // --- Run SOX ---
+              QProcess soxProcess;
+              QStringList soxArgs;
+              // ***** THE ONLY CHANGE IS HERE *****
+              soxArgs << originalPath                   // Input file
+                      << tempOutputPath                 // Output file
+                      << "silence"                      // Effect name
+                      << "1"                            // Detect silence around the file (mode)
+                      << "0.2"                          // Stop point (duration in seconds) - MODIFIED
+                      << "1%";                          // Threshold (e.g., 0.1% or 1%)
+
+              qDebug() << "Running command:" << soxPath << soxArgs;
+
+              soxProcess.start(soxPath, soxArgs);
+
+              if (!soxProcess.waitForFinished(300000)) { // 5 min timeout
+                  qWarning() << "Sox process timed out for:" << originalPath << soxProcess.errorString();
+                  soxProcess.kill();
+                  soxProcess.waitForFinished(1000);
+                  QFile::remove(tempOutputPath);
+                  failCount++;
+                  continue;
+              }
+
+              if (soxProcess.exitStatus() != QProcess::NormalExit || soxProcess.exitCode() != 0) {
+                  qWarning() << "Sox process failed for:" << originalPath
+                             << "Exit code:" << soxProcess.exitCode()
+                             << "Exit status:" << soxProcess.exitStatus();
+                  QString errorOutput = QString::fromLocal8Bit(soxProcess.readAllStandardError());
+                  qWarning() << "Sox Standard Error:\n" << errorOutput;
+                  QFile::remove(tempOutputPath);
+                  failCount++;
+                  continue;
+              }
+
+              // --- Check if temp file was created and is valid ---
+              QFileInfo tempFileInfo(tempOutputPath);
+              if (!tempFileInfo.exists() || tempFileInfo.size() == 0) {
+                   qWarning() << "Sox finished successfully but the output file is missing or empty:" << tempOutputPath;
+                   QFile::remove(tempOutputPath);
+                   failCount++;
+                   continue;
+              }
+
+              qInfo() << "Sox completed successfully for:" << originalPath << " -> " << tempOutputPath;
+
+              // --- Replace original file with trimmed version ---
+              qInfo() << "Attempting to replace" << originalPath << "with" << tempOutputPath;
+              if (!QFile::rename(tempOutputPath, originalPath)) {
+                   qWarning() << "Failed to replace original file using rename:" << originalPath << "with temp file:" << tempOutputPath;
+                   QMessageBox::warning(this, "Replacement Failed",
+                                       QString("Could not replace the original file:\n%1\n\n"
+                                               "The trimmed version remains in the temporary folder:\n%2\n\n"
+                                               "Please check file permissions and replace it manually if desired.")
+                                           .arg(originalPath).arg(tempOutputPath));
+                  failCount++;
+                  // Do NOT delete the temp file in this case
+              } else {
+                  qInfo() << "File trimmed and replaced successfully:" << originalPath;
+                  successCount++;
+                  // Temp file is gone (renamed)
+              }
+              // --- End Replace ---
+
+          } // End for loop
+
+          // --- Final Cleanup & Summary ---
+          progressDialog.cancel(); // Close progress dialog
+
+          // Adjust summary message slightly
+          QString summaryMessage;
+          if (cancelled) {
+              summaryMessage = QString("Operation Cancelled.\n\nSuccessfully Trimmed (0.2s): %1\nFailed/Skipped: %2")
+                                   .arg(successCount)
+                                   .arg(failCount);
+          } else {
+              summaryMessage = QString("Silence Trim Complete (0.2s threshold).\n\nTotal Selected: %1\nSuccessfully Trimmed: %2\nFailed/Skipped: %3")
+                                   .arg(totalFilesToProcess)
+                                   .arg(successCount)
+                                   .arg(failCount);
+          }
+
+          qInfo() << "-------------------------------------";
+          qInfo() << summaryMessage.replace("\n\n", " | "); // Log summary concisely
+          qInfo() << "-------------------------------------";
+
+          QMessageBox::information(this, "Operation Summary", summaryMessage);
 
 
    }
@@ -5296,198 +6809,545 @@ void player::on_bt_apply_multi_selection_clicked()
 
 void player::on_actionConvert_all_musics_in_the_database_to_mp3_triggered()
 {
-
-    movie = new QMovie(":/images/loading.gif");
-    ui->txt_loading->setMovie(movie);
-    ui->txt_loading->setScaledContents(true);
-
-    ui->txt_loading->show();
-
-    movie->start();
-
-
-    QMessageBox::StandardButton run;
-    run = QMessageBox::question(this,"Sure?","Are you sure you want to: convert all the musics in the database to MP3 (Defaults: Stereo 192kbs 44100)?",
-                                QMessageBox::Yes|QMessageBox::No);
-    if(run==QMessageBox::Yes){
-
-
-
-
-        QSqlQuery qr;
-        QString qrstr = "select * from musics";
-        if(qr.exec(qrstr)){
-            while(qr.next()){
-
-                QString path = qr.value(7).toString();
-                qDebug()<<"AutoTrim Processing: "<<path;
-
-                QFileInfo musicfile(path);
-                QString fileName(musicfile.baseName());
-                QString filepath(musicfile.absolutePath());
-
-
-
-                QProcess runcmd;
-
-                QString cmd = "ffmpeg -i \""+path+"\" -vn -ar 44100 -ac 2 -ab 192k -f mp3 \"../tmp/"+fileName+".mp3\"";
-
-
-                qDebug()<<"base name: "<<fileName;
-                qDebug()<<"file path: "<<filepath;
-                qDebug()<<"ffmpeg cmd string: "<<cmd;
-
-
-
-                runcmd.start("sh",QStringList()<<"-c"<<cmd);
-                runcmd.waitForFinished(-1);
-
-                qDebug()<<"File converted to tmp folder..";
-
-                cmd = "rm \""+path+"\"";
-                runcmd.start("sh",QStringList()<<"-c"<<cmd);
-                runcmd.waitForFinished(-1);
-
-                qDebug()<<"Original file deteled..";
-
-                cmd = "mv \"../tmp/"+fileName+".mp3\" \""+filepath+"/"+fileName+".mp3\"";
-                runcmd.start("sh",QStringList()<<"-c"<<cmd);
-                runcmd.waitForFinished(-1);
-
-                qDebug()<<"Converted file moved to the folder of the original file..";
-
-
-                QSqlQuery *q = new QSqlQuery();
-                QString qrs = "update musics set path = '"+filepath+"/"+fileName+".mp3' where path = '"+path+"'";
-
-                if(q->exec(qrs)){
-                    qDebug()<<"Path updated in database records!";
-                    update_music_table();
-                } else {
-                    qDebug()<<"Error updating path in the database:";
-                    qDebug()<<q->lastError();
-                    qDebug()<<"The command executed was:";
-                    qDebug()<<q->lastQuery();
-                }
-
-
-
-
-
-            }
-        }
-
-
-
-
+    QSqlDatabase db = QSqlDatabase::database("xfb_connection"); // Or pass it in
+    if (!db.isOpen()) {
+        qWarning() << "Database connection 'xfb_connection' is not open!";
+        QMessageBox::critical(this, "Database Error", "Database connection is not open.");
+        return;
     }
 
+    // --- Check for FFMPEG executable ---
+    QString ffmpegPath = QStandardPaths::findExecutable("ffmpeg");
+    if (ffmpegPath.isEmpty()) {
+        qWarning() << "'ffmpeg' command not found in system PATH.";
+        QMessageBox::critical(this, "Missing Dependency",
+                              "The 'ffmpeg' command is required for audio conversion "
+                              "but was not found in the system's PATH.\n\nPlease install ffmpeg and ensure it's accessible.");
+        return;
+    }
+    qInfo() << "Found ffmpeg executable at:" << ffmpegPath;
+    // --- End FFMPEG check ---
 
-    QMessageBox::information(this,tr("Done"),tr("File(s) converted!"));
+    // --- Confirmation ---
+    QMessageBox::StandardButton confirm = QMessageBox::question(this, "Confirm Full Conversion",
+                                     "Convert ALL tracks in the database to MP3 (192kbps)?\n\n"
+                                     "Original files will be replaced with the MP3 version.\n"
+                                     "This action cannot be undone and may take a very long time!\n\n"
+                                     "Note: Only the audio stream will be kept.",
+                                     QMessageBox::Yes | QMessageBox::No);
 
-    movie->stop();
+    if (confirm == QMessageBox::No) {
+        return;
+    }
+
+    // --- Setup Loading Indicator & Progress Dialog ---
+    // Use stack variable for QMovie if its lifetime is limited to this function
+    QMovie loadingMovie(":/images/loading.gif");
+    if(!loadingMovie.isValid()){
+         qWarning() << "Loading GIF not valid:" << ":/images/loading.gif";
+         ui->txt_loading->setText("Processing..."); // Fallback text
+         ui->txt_loading->show();
+    } else {
+        ui->txt_loading->setMovie(&loadingMovie);
+        ui->txt_loading->setScaledContents(true);
+        ui->txt_loading->show();
+        loadingMovie.start();
+    }
+    qApp->processEvents(); // Allow UI to update
+
+    QProgressDialog progressDialog("Converting all tracks to MP3...", "Cancel", 0, 0, this);
+    progressDialog.setWindowModality(Qt::WindowModal);
+    progressDialog.setValue(0);
+    progressDialog.show();
+    qApp->processEvents();
+    // --- End Setup ---
+
+    // --- Prepare Database Queries (outside loop) ---
+    QSqlQuery querySelect(db);
+    QSqlQuery queryUpdate(db);
+    QSqlQuery queryCount(db); // For counting total records
+
+    // Prepare UPDATE statement
+    if (!queryUpdate.prepare("UPDATE musics SET path = :new_path WHERE path = :old_path")) {
+        qWarning() << "Failed to prepare database UPDATE statement:" << queryUpdate.lastError();
+        QMessageBox::critical(this, "Database Error", "Failed to prepare database query for updating paths.");
+        loadingMovie.stop();
+        ui->txt_loading->hide();
+        progressDialog.cancel();
+        return;
+    }
+
+    // Count total files for progress bar
+    int totalFiles = 0;
+    if (queryCount.exec("SELECT COUNT(*) FROM musics")) {
+        if (queryCount.next()) {
+            totalFiles = queryCount.value(0).toInt();
+            progressDialog.setMaximum(totalFiles);
+        }
+    } else {
+        qWarning() << "Failed to count records:" << queryCount.lastError();
+        // Proceed without accurate progress max? Or abort? Let's proceed.
+        progressDialog.setMaximum(100); // Set an arbitrary max
+    }
+    qApp->processEvents();
+
+
+    // Select only the path
+    QString selectStr = "SELECT path FROM musics";
+    if (!querySelect.exec(selectStr)) {
+        qWarning() << "Failed to SELECT paths from musics:" << querySelect.lastError();
+        QMessageBox::critical(this, "Database Error", "Failed to query the musics table for paths.");
+        loadingMovie.stop();
+        ui->txt_loading->hide();
+        progressDialog.cancel();
+        return;
+    }
+
+    // --- Get Temporary Directory ---
+    QString tempDirPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+    if (tempDirPath.isEmpty()) {
+         qWarning() << "Could not find a writable temporary location.";
+         QMessageBox::critical(this, "File System Error", "Cannot find a suitable temporary directory for conversion.");
+         loadingMovie.stop();
+         ui->txt_loading->hide();
+         progressDialog.cancel();
+         return;
+    }
+    QDir tempDir(tempDirPath);
+    qInfo() << "Using temporary directory:" << tempDirPath;
+
+
+    // --- Process Files ---
+    int processedCount = 0;
+    int successCount = 0;
+    int failCount = 0;
+    bool cancelled = false;
+
+    while (querySelect.next() && !cancelled) {
+        processedCount++;
+        progressDialog.setValue(processedCount);
+        qApp->processEvents(); // Keep UI responsive and check for Cancel button
+
+        if (progressDialog.wasCanceled()) {
+            qInfo() << "User cancelled the operation.";
+            cancelled = true;
+            break;
+        }
+
+        QString originalPath = querySelect.value(0).toString();
+        QFileInfo originalFileInfo(originalPath);
+
+        progressDialog.setLabelText(QString("Converting [%1/%2]:\n%3")
+                                        .arg(processedCount)
+                                        .arg(totalFiles > 0 ? totalFiles : processedCount) // Show total if known
+                                        .arg(originalFileInfo.fileName()));
+        qApp->processEvents();
+
+        qInfo().noquote() << "Processing [" << processedCount << "/" << (totalFiles > 0 ? QString::number(totalFiles): "?") << "]:" << originalPath;
+
+        if (!originalFileInfo.exists() || !originalFileInfo.isFile()) {
+            qWarning() << "Original file does not exist or is not a file:" << originalPath;
+            failCount++;
+            continue; // Skip to next file
+        }
+
+        // --- Prepare Paths ---
+        QString baseName = originalFileInfo.baseName(); // Name without extension
+        QString originalDir = originalFileInfo.absolutePath(); // Directory of original file
+        QString tempMp3Path = tempDir.filePath(baseName + ".mp3"); // Full path for temporary MP3
+        QString finalMp3Path = QDir(originalDir).filePath(baseName + ".mp3"); // Final path for MP3 in original dir
+
+        // --- Run FFMPEG ---
+        QProcess ffmpegProcess;
+        QStringList ffmpegArgs;
+        ffmpegArgs << "-i" << originalPath // Input file
+                   << "-vn"               // No video output
+                   << "-ar" << "44100"    // Audio sample rate
+                   << "-ac" << "2"        // Audio channels (stereo)
+                   << "-b:a" << "192k"    // Audio bitrate (use -b:a)
+                   << "-f" << "mp3"       // Force output format (optional)
+                   << tempMp3Path;        // Output file path
+
+        qDebug() << "Running command:" << ffmpegPath << ffmpegArgs;
+
+        ffmpegProcess.start(ffmpegPath, ffmpegArgs);
+
+        // Wait for ffmpeg (e.g., 10 min timeout)
+        if (!ffmpegProcess.waitForFinished(600000)) {
+            qWarning() << "ffmpeg process timed out for:" << originalPath << ffmpegProcess.errorString();
+            ffmpegProcess.kill();
+            ffmpegProcess.waitForFinished(1000);
+            QFile::remove(tempMp3Path); // Clean up incomplete temp file
+            failCount++;
+            continue;
+        }
+
+        // Check ffmpeg result
+        if (ffmpegProcess.exitStatus() != QProcess::NormalExit || ffmpegProcess.exitCode() != 0) {
+            qWarning() << "ffmpeg process failed for:" << originalPath
+                       << "Exit code:" << ffmpegProcess.exitCode()
+                       << "Exit status:" << ffmpegProcess.exitStatus();
+            QString errorOutput = QString::fromLocal8Bit(ffmpegProcess.readAllStandardError());
+            qWarning() << "ffmpeg Standard Error:\n" << errorOutput;
+             QFile::remove(tempMp3Path); // Clean up potentially failed temp file
+            failCount++;
+            continue;
+        }
+
+        // Check if temp MP3 exists and has size
+         QFileInfo tempMp3Info(tempMp3Path);
+         if (!tempMp3Info.exists() || tempMp3Info.size() == 0) {
+             qWarning() << "ffmpeg finished successfully but the output MP3 file is missing or empty:" << tempMp3Path;
+             QFile::remove(tempMp3Path);
+             failCount++;
+             continue;
+         }
+
+        qInfo() << "ffmpeg conversion successful for:" << originalPath << " -> " << tempMp3Path;
+
+        // --- Delete Original File ---
+        qInfo() << "Attempting to delete original file:" << originalPath;
+        if (!QFile::remove(originalPath)) {
+            qWarning() << "Failed to delete original file:" << originalPath << ". Skipping move and database update.";
+            failCount++;
+            continue; // Skip rest of steps for this file
+        }
+        qInfo() << "Original file deleted successfully.";
+
+        // --- Move Temporary MP3 to Final Location ---
+        qInfo() << "Attempting to move" << tempMp3Path << "to" << finalMp3Path;
+        if (!QFile::rename(tempMp3Path, finalMp3Path)) {
+            qWarning() << "Failed to move temporary MP3" << tempMp3Path << "to" << finalMp3Path << ". The original file was deleted! MP3 remains in temp folder.";
+            QMessageBox::warning(this, "Move Failed",
+                                 QString("Failed to move the converted MP3 to its final destination:\n%1\n\n"
+                                         "The original file was deleted, but the MP3 remains in the temporary folder:\n%2\n\n"
+                                         "Please move it manually and check the database record.")
+                                     .arg(finalMp3Path).arg(tempMp3Path));
+            failCount++;
+            continue; // Cannot update DB path if move failed
+        }
+        qInfo() << "MP3 moved successfully to:" << finalMp3Path;
+
+        // --- Update Database ---
+        qInfo() << "Updating database: set path =" << finalMp3Path << "where path =" << originalPath;
+        queryUpdate.bindValue(":new_path", finalMp3Path);
+        queryUpdate.bindValue(":old_path", originalPath);
+
+        if (!queryUpdate.exec()) {
+            qWarning() << "Failed to update database path for:" << originalPath << "->" << finalMp3Path;
+            qWarning() << "DB Error:" << queryUpdate.lastError().text();
+            qWarning() << "Last Query (Bound values might not show):" << queryUpdate.lastQuery();
+            QMessageBox::warning(this, "Database Update Failed",
+                                 QString("The file was successfully converted and moved to:\n%1\n\n"
+                                         "However, updating the database record failed:\n%2\n\n"
+                                         "Please check the database manually.")
+                                     .arg(finalMp3Path).arg(queryUpdate.lastError().text()));
+            failCount++; // Count as failure since DB update is critical
+        } else {
+            qInfo() << "Database path updated successfully.";
+            successCount++;
+            // update_music_table(); // Update only once at the end
+        }
+
+    } // End while loop
+
+    // --- Final Cleanup & Summary ---
+    loadingMovie.stop();
     ui->txt_loading->hide();
+    progressDialog.cancel(); // Close progress dialog
 
+    update_music_table(); // Update the table view once after all operations
 
+    QString summaryMessage;
+    if (cancelled) {
+        summaryMessage = QString("Operation Cancelled.\n\nProcessed: %1\nSuccessfully Converted: %2\nFailed/Skipped: %3")
+                             .arg(processedCount -1) // Don't count the one being processed when cancelled
+                             .arg(successCount)
+                             .arg(failCount);
+    } else {
+        summaryMessage = QString("MP3 Conversion Complete.\n\nTotal Records: %1\nSuccessfully Converted: %2\nFailed/Skipped: %3")
+                             .arg(totalFiles) // Use the count obtained earlier
+                             .arg(successCount)
+                             .arg(failCount);
+    }
+
+    qInfo() << "-------------------------------------";
+    qInfo() << summaryMessage.replace("\n\n", " | "); // Log summary concisely
+    qInfo() << "-------------------------------------";
+
+    QMessageBox::information(this, "Conversion Summary", summaryMessage);
 }
-
 void player::on_actionConvert_all_musics_in_the_database_to_ogg_triggered()
 {
-
-    movie = new QMovie(":/images/loading.gif");
-    ui->txt_loading->setMovie(movie);
-    ui->txt_loading->setScaledContents(true);
-
-    ui->txt_loading->show();
-
-    movie->start();
-
-
-    QMessageBox::StandardButton run;
-    run = QMessageBox::question(this,"Sure?","Are you sure you want to: convert all the musics in the database to OGG (Defaults: Stereo ScaleQuality 7)?",
-                                QMessageBox::Yes|QMessageBox::No);
-    if(run==QMessageBox::Yes){
-
-
-
-
-        QSqlQuery qr;
-        QString qrstr = "select * from musics";
-        if(qr.exec(qrstr)){
-            while(qr.next()){
-
-                QString path = qr.value(7).toString();
-                qDebug()<<"AutoTrim Processing: "<<path;
-
-                QFileInfo musicfile(path);
-                QString fileName(musicfile.baseName());
-                QString filepath(musicfile.absolutePath());
-
-
-
-                QProcess runcmd;
-
-                QString cmd = "ffmpeg -i \""+path+"\" -c:a libvorbis -qscale:a 7 \"../tmp/"+fileName+".ogg\"";
-
-
-                qDebug()<<"base name: "<<fileName;
-                qDebug()<<"file path: "<<filepath;
-                qDebug()<<"ffmpeg cmd string: "<<cmd;
-
-
-
-                runcmd.start("sh",QStringList()<<"-c"<<cmd);
-                runcmd.waitForFinished(-1);
-
-                qDebug()<<"File converted to tmp folder..";
-
-                cmd = "rm \""+path+"\"";
-                runcmd.start("sh",QStringList()<<"-c"<<cmd);
-                runcmd.waitForFinished(-1);
-
-                qDebug()<<"Original file deteled..";
-
-                cmd = "mv \"../tmp/"+fileName+".ogg\" \""+filepath+"/"+fileName+".ogg\"";
-                runcmd.start("sh",QStringList()<<"-c"<<cmd);
-                runcmd.waitForFinished(-1);
-
-                qDebug()<<"Converted file moved to the folder of the original file..";
-
-
-                QSqlQuery *q = new QSqlQuery();
-                QString qrs = "update musics set path = '"+filepath+"/"+fileName+".ogg' where path = '"+path+"'";
-
-                if(q->exec(qrs)){
-                    qDebug()<<"Path updated in database records!";
-                    update_music_table();
-                } else {
-                    qDebug()<<"Error updating path in the database:";
-                    qDebug()<<q->lastError();
-                    qDebug()<<"The command executed was:";
-                    qDebug()<<q->lastQuery();
-                }
-
-
-
-
-
-            }
-        }
-
-
-
-
+    QSqlDatabase db = QSqlDatabase::database("xfb_connection"); // Or pass it in
+    if (!db.isOpen()) {
+        qWarning() << "Database connection 'xfb_connection' is not open!";
+        QMessageBox::critical(this, "Database Error", "Database connection is not open.");
+        return;
     }
 
+    // --- Check for FFMPEG executable ---
+    QString ffmpegPath = QStandardPaths::findExecutable("ffmpeg");
+    if (ffmpegPath.isEmpty()) {
+        qWarning() << "'ffmpeg' command not found in system PATH.";
+        QMessageBox::critical(this, "Missing Dependency",
+                              "The 'ffmpeg' command is required for audio conversion "
+                              "but was not found in the system's PATH.\n\nPlease install ffmpeg and ensure it's accessible.");
+        return;
+    }
+    qInfo() << "Found ffmpeg executable at:" << ffmpegPath;
+    // --- End FFMPEG check ---
 
-    QMessageBox::information(this,tr("Done"),tr("File(s) converted!"));
+    // --- Confirmation ---
+    // Updated confirmation message for Ogg
+    QMessageBox::StandardButton confirm = QMessageBox::question(this, "Confirm Full Conversion",
+                                     "Convert ALL tracks in the database to Ogg Vorbis (Quality ~7)?\n\n"
+                                     "Original files will be replaced with the Ogg version.\n"
+                                     "This action cannot be undone and may take a very long time!\n\n"
+                                     "Note: Only the audio stream will be kept.",
+                                     QMessageBox::Yes | QMessageBox::No);
 
-    movie->stop();
+    if (confirm == QMessageBox::No) {
+        return;
+    }
+
+    // --- Setup Loading Indicator & Progress Dialog ---
+    QMovie loadingMovie(":/images/loading.gif");
+    if(!loadingMovie.isValid()){
+         qWarning() << "Loading GIF not valid:" << ":/images/loading.gif";
+         ui->txt_loading->setText("Processing..."); // Fallback text
+         ui->txt_loading->show();
+    } else {
+        ui->txt_loading->setMovie(&loadingMovie);
+        ui->txt_loading->setScaledContents(true);
+        ui->txt_loading->show();
+        loadingMovie.start();
+    }
+    qApp->processEvents(); // Allow UI to update
+
+    // Updated progress dialog title
+    QProgressDialog progressDialog("Converting all tracks to Ogg Vorbis...", "Cancel", 0, 0, this);
+    progressDialog.setWindowModality(Qt::WindowModal);
+    progressDialog.setValue(0);
+    progressDialog.show();
+    qApp->processEvents();
+    // --- End Setup ---
+
+    // --- Prepare Database Queries (outside loop) ---
+    QSqlQuery querySelect(db);
+    QSqlQuery queryUpdate(db);
+    QSqlQuery queryCount(db); // For counting total records
+
+    // Prepare UPDATE statement
+    if (!queryUpdate.prepare("UPDATE musics SET path = :new_path WHERE path = :old_path")) {
+        qWarning() << "Failed to prepare database UPDATE statement:" << queryUpdate.lastError();
+        QMessageBox::critical(this, "Database Error", "Failed to prepare database query for updating paths.");
+        loadingMovie.stop();
+        ui->txt_loading->hide();
+        progressDialog.cancel();
+        return;
+    }
+
+    // Count total files for progress bar
+    int totalFiles = 0;
+    if (queryCount.exec("SELECT COUNT(*) FROM musics")) {
+        if (queryCount.next()) {
+            totalFiles = queryCount.value(0).toInt();
+            progressDialog.setMaximum(totalFiles);
+        }
+    } else {
+        qWarning() << "Failed to count records:" << queryCount.lastError();
+        progressDialog.setMaximum(100); // Set an arbitrary max
+    }
+    qApp->processEvents();
+
+
+    // Select only the path
+    QString selectStr = "SELECT path FROM musics";
+    if (!querySelect.exec(selectStr)) {
+        qWarning() << "Failed to SELECT paths from musics:" << querySelect.lastError();
+        QMessageBox::critical(this, "Database Error", "Failed to query the musics table for paths.");
+        loadingMovie.stop();
+        ui->txt_loading->hide();
+        progressDialog.cancel();
+        return;
+    }
+
+    // --- Get Temporary Directory ---
+    QString tempDirPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+    if (tempDirPath.isEmpty()) {
+         qWarning() << "Could not find a writable temporary location.";
+         QMessageBox::critical(this, "File System Error", "Cannot find a suitable temporary directory for conversion.");
+         loadingMovie.stop();
+         ui->txt_loading->hide();
+         progressDialog.cancel();
+         return;
+    }
+    QDir tempDir(tempDirPath);
+    qInfo() << "Using temporary directory:" << tempDirPath;
+
+
+    // --- Process Files ---
+    int processedCount = 0;
+    int successCount = 0;
+    int failCount = 0;
+    bool cancelled = false;
+
+    while (querySelect.next() && !cancelled) {
+        processedCount++;
+        progressDialog.setValue(processedCount);
+        qApp->processEvents(); // Keep UI responsive and check for Cancel button
+
+        if (progressDialog.wasCanceled()) {
+            qInfo() << "User cancelled the operation.";
+            cancelled = true;
+            break;
+        }
+
+        QString originalPath = querySelect.value(0).toString();
+        QFileInfo originalFileInfo(originalPath);
+
+        // Updated progress label
+        progressDialog.setLabelText(QString("Converting [%1/%2]:\n%3")
+                                        .arg(processedCount)
+                                        .arg(totalFiles > 0 ? totalFiles : processedCount) // Show total if known
+                                        .arg(originalFileInfo.fileName()));
+        qApp->processEvents();
+
+        qInfo().noquote() << "Processing [" << processedCount << "/" << (totalFiles > 0 ? QString::number(totalFiles): "?") << "]:" << originalPath;
+
+        if (!originalFileInfo.exists() || !originalFileInfo.isFile()) {
+            qWarning() << "Original file does not exist or is not a file:" << originalPath;
+            failCount++;
+            continue; // Skip to next file
+        }
+
+        // --- Prepare Paths ---
+        QString baseName = originalFileInfo.baseName(); // Name without extension
+        QString originalDir = originalFileInfo.absolutePath(); // Directory of original file
+        // Ogg paths
+        QString tempOggPath = tempDir.filePath(baseName + ".ogg"); // Full path for temporary Ogg
+        QString finalOggPath = QDir(originalDir).filePath(baseName + ".ogg"); // Final path for Ogg in original dir
+
+        // --- Run FFMPEG ---
+        QProcess ffmpegProcess;
+        QStringList ffmpegArgs;
+        // Args for Ogg Vorbis
+        ffmpegArgs << "-i" << originalPath           // Input file
+                   << "-c:a" << "libvorbis"        // Audio codec: libvorbis
+                   << "-qscale:a" << "7"           // Quality scale (adjust as needed)
+                   << tempOggPath;                 // Output file path
+
+        qDebug() << "Running command:" << ffmpegPath << ffmpegArgs;
+
+        ffmpegProcess.start(ffmpegPath, ffmpegArgs);
+
+        // Wait for ffmpeg (e.g., 10 min timeout)
+        if (!ffmpegProcess.waitForFinished(600000)) {
+            qWarning() << "ffmpeg process timed out for:" << originalPath << ffmpegProcess.errorString();
+            ffmpegProcess.kill();
+            ffmpegProcess.waitForFinished(1000);
+            QFile::remove(tempOggPath); // Clean up incomplete temp file
+            failCount++;
+            continue;
+        }
+
+        // Check ffmpeg result
+        if (ffmpegProcess.exitStatus() != QProcess::NormalExit || ffmpegProcess.exitCode() != 0) {
+            qWarning() << "ffmpeg process failed for:" << originalPath
+                       << "Exit code:" << ffmpegProcess.exitCode()
+                       << "Exit status:" << ffmpegProcess.exitStatus();
+            QString errorOutput = QString::fromLocal8Bit(ffmpegProcess.readAllStandardError());
+            qWarning() << "ffmpeg Standard Error:\n" << errorOutput;
+             QFile::remove(tempOggPath); // Clean up potentially failed temp file
+            failCount++;
+            continue;
+        }
+
+        // Check if temp Ogg exists and has size
+         QFileInfo tempOggInfo(tempOggPath);
+         if (!tempOggInfo.exists() || tempOggInfo.size() == 0) {
+             qWarning() << "ffmpeg finished successfully but the output Ogg file is missing or empty:" << tempOggPath;
+             QFile::remove(tempOggPath);
+             failCount++;
+             continue;
+         }
+
+        qInfo() << "ffmpeg conversion successful for:" << originalPath << " -> " << tempOggPath;
+
+        // --- Delete Original File ---
+        qInfo() << "Attempting to delete original file:" << originalPath;
+        if (!QFile::remove(originalPath)) {
+            qWarning() << "Failed to delete original file:" << originalPath << ". Skipping move and database update.";
+            failCount++;
+            continue; // Skip rest of steps for this file
+        }
+        qInfo() << "Original file deleted successfully.";
+
+        // --- Move Temporary Ogg to Final Location ---
+        qInfo() << "Attempting to move" << tempOggPath << "to" << finalOggPath;
+        if (!QFile::rename(tempOggPath, finalOggPath)) {
+            qWarning() << "Failed to move temporary Ogg" << tempOggPath << "to" << finalOggPath << ". The original file was deleted! Ogg remains in temp folder.";
+            QMessageBox::warning(this, "Move Failed",
+                                 QString("Failed to move the converted Ogg file to its final destination:\n%1\n\n"
+                                         "The original file was deleted, but the Ogg file remains in the temporary folder:\n%2\n\n"
+                                         "Please move it manually and check the database record.")
+                                     .arg(finalOggPath).arg(tempOggPath));
+            failCount++;
+            continue; // Cannot update DB path if move failed
+        }
+        qInfo() << "Ogg file moved successfully to:" << finalOggPath;
+
+        // --- Update Database ---
+        qInfo() << "Updating database: set path =" << finalOggPath << "where path =" << originalPath;
+        queryUpdate.bindValue(":new_path", finalOggPath);
+        queryUpdate.bindValue(":old_path", originalPath);
+
+        if (!queryUpdate.exec()) {
+            qWarning() << "Failed to update database path for:" << originalPath << "->" << finalOggPath;
+            qWarning() << "DB Error:" << queryUpdate.lastError().text();
+            qWarning() << "Last Query (Bound values might not show):" << queryUpdate.lastQuery();
+            QMessageBox::warning(this, "Database Update Failed",
+                                 QString("The file was successfully converted and moved to:\n%1\n\n"
+                                         "However, updating the database record failed:\n%2\n\n"
+                                         "Please check the database manually.")
+                                     .arg(finalOggPath).arg(queryUpdate.lastError().text()));
+            failCount++; // Count as failure since DB update is critical
+        } else {
+            qInfo() << "Database path updated successfully.";
+            successCount++;
+            // update_music_table(); // Update only once at the end
+        }
+
+    } // End while loop
+
+    // --- Final Cleanup & Summary ---
+    loadingMovie.stop();
     ui->txt_loading->hide();
+    progressDialog.cancel(); // Close progress dialog
 
+    update_music_table(); // Update the table view once after all operations
 
+    // Updated summary message
+    QString summaryMessage;
+    if (cancelled) {
+        summaryMessage = QString("Operation Cancelled.\n\nProcessed: %1\nSuccessfully Converted to Ogg: %2\nFailed/Skipped: %3")
+                             .arg(processedCount -1)
+                             .arg(successCount)
+                             .arg(failCount);
+    } else {
+        summaryMessage = QString("Ogg Conversion Complete.\n\nTotal Records: %1\nSuccessfully Converted: %2\nFailed/Skipped: %3")
+                             .arg(totalFiles) // Use the count obtained earlier
+                             .arg(successCount)
+                             .arg(failCount);
+    }
+
+    qInfo() << "-------------------------------------";
+    qInfo() << summaryMessage.replace("\n\n", " | "); // Log summary concisely
+    qInfo() << "-------------------------------------";
+
+    QMessageBox::information(this, "Conversion Summary", summaryMessage);
 }
-
 void player::on_bt_start_streaming_clicked()
 {
     qDebug()<<"Starting the streaming!";
@@ -5509,93 +7369,230 @@ ice_timmer();
 }
 void player::on_bt_stop_streaming_clicked()
 {
-    stimer->stop();
-    icetimer->stop();
-    butt_timer->stop();
+    if(stimer) stimer->stop();
+    if(icetimer) icetimer->stop();
+    if(butt_timer) butt_timer->stop();
 
+    qInfo() << "Attempting to stop streaming processes...";
 
+    // --- Stop Icecast ---
+    QProcess killer_icecast;
+    QString icecast_cmd;
+    QStringList icecast_args;
+    bool kill_success_icecast = false;
 
-    QProcess kb;
-    kb.startDetached("sh",QStringList()<<"-c"<<"killall icecast");
-    kb.waitForFinished();
+#ifdef Q_OS_WIN
+    icecast_cmd = "taskkill";
+    icecast_args << "/F" << "/IM" << "icecast.exe"; // Adjust executable name if needed
+#else // Linux, macOS, other Unix-like
+    // Prefer pkill if available, fallback to killall might be needed if pkill isn't standard
+    icecast_cmd = "pkill"; // Or "killall" as a fallback
+    icecast_args << "icecast"; // Process name
+#endif
+
+    qDebug() << "Running kill command for icecast:" << icecast_cmd << icecast_args;
+    killer_icecast.start(icecast_cmd, icecast_args);
+    if (killer_icecast.waitForFinished(3000)) { // Wait up to 3 seconds
+        if (killer_icecast.exitStatus() == QProcess::NormalExit && killer_icecast.exitCode() == 0) {
+            qInfo() << "Icecast process killed successfully (or was not running).";
+            kill_success_icecast = true; // Assume success if command ran ok
+        } else {
+            qWarning() << "Kill command for icecast failed or process not found. Exit code:" << killer_icecast.exitCode();
+            // Might log stderr: QString err = killer_icecast.readAllStandardError(); qDebug() << err;
+        }
+    } else {
+        qWarning() << "Kill command for icecast timed out.";
+        killer_icecast.kill(); // Kill the killer process itself
+    }
+
+    // Update UI regardless of success? Or only on success? Let's update anyway.
     ui->lbl_icecast->setText("Stopped");
-    ui->lbl_icecast->setStyleSheet("color:blue");
+    ui->lbl_icecast->setStyleSheet("color:blue;"); // Ensure CSS syntax is correct
     ui->bt_icecast->setStyleSheet("");
 
-    kb.start("sh",QStringList()<<"-c"<<"killall butt");
-    kb.waitForFinished();
+
+    // --- Stop Butt ---
+    QProcess killer_butt;
+    QString butt_cmd;
+    QStringList butt_args;
+    bool kill_success_butt = false;
+
+#ifdef Q_OS_WIN
+    butt_cmd = "taskkill";
+    butt_args << "/F" << "/IM" << "butt.exe"; // Adjust executable name if needed
+#else // Linux, macOS, other Unix-like
+    butt_cmd = "pkill"; // Or "killall"
+    butt_args << "butt"; // Process name
+#endif
+
+    qDebug() << "Running kill command for butt:" << butt_cmd << butt_args;
+    killer_butt.start(butt_cmd, butt_args);
+    if (killer_butt.waitForFinished(3000)) { // Wait up to 3 seconds
+        if (killer_butt.exitStatus() == QProcess::NormalExit && killer_butt.exitCode() == 0) {
+            qInfo() << "Butt process killed successfully (or was not running).";
+            kill_success_butt = true;
+        } else {
+            qWarning() << "Kill command for butt failed or process not found. Exit code:" << killer_butt.exitCode();
+        }
+    } else {
+        qWarning() << "Kill command for butt timed out.";
+        killer_butt.kill();
+    }
+
     ui->lbl_butt->setText("Stopped");
-    ui->lbl_butt->setStyleSheet("color:blue");
+    ui->lbl_butt->setStyleSheet("color:blue;");
     ui->bt_butt->setStyleSheet("");
 
+    // --- Update Other UI ---
     ui->lbl_port->setText("Stopped");
-    ui->lbl_port->setStyleSheet("color:blue");
+    ui->lbl_port->setStyleSheet("color:blue;");
 
     ui->bt_takeOver->setStyleSheet("");
     ui->bt_takeOver->setEnabled(false);
 
-    ui->txt_ProgramName->setStyleSheet("background-color:#FFE329;padding:5px;");
+    // Assuming txt_ProgramName is meant to be hidden when stopped
+    ui->txt_ProgramName->setStyleSheet(""); // Clear specific style
     ui->txt_ProgramName->hide();
 
-    piscaLive = false;
-
+    piscaLive = false; // Assuming piscaLive is a member variable bool
 }
-
-
 void player::streaming_timmer(){
 
     qDebug()<<"Running streaming_timmer (checking external processes...)";
 
+    // --- Check Icecast ---
+    QProcess check_icecast;
+    QString icecast_check_cmd;
+    QStringList icecast_check_args;
+    bool icecast_running = false;
 
-    QProcess chk;
-    chk.start("sh",QStringList()<<"-c"<<"ps -e | grep icecast");
-    chk.waitForFinished();
-    QString found = chk.readAll();
+#ifdef Q_OS_WIN
+    icecast_check_cmd = "tasklist";
+    icecast_check_args << "/NH" << "/FI" << "IMAGENAME eq icecast.exe"; // Adjust image name
+#else // Linux, macOS, other Unix-like
+    icecast_check_cmd = "pgrep";
+    icecast_check_args << "-x" << "icecast"; // Match exact process name
+#endif
 
-    if(found!=""){
+    check_icecast.start(icecast_check_cmd, icecast_check_args);
+    if (check_icecast.waitForFinished(1000)) { // Short timeout
+#ifdef Q_OS_WIN
+        // Tasklist often returns 0 even if not found, check output
+        QString output = check_icecast.readAllStandardOutput();
+        if (output.contains("icecast.exe", Qt::CaseInsensitive)) {
+            icecast_running = true;
+        }
+#else // pgrep check
+        if (check_icecast.exitStatus() == QProcess::NormalExit && check_icecast.exitCode() == 0) {
+            // pgrep returns 0 if process(es) found
+            icecast_running = true;
+        }
+#endif
+    } else {
+         qWarning() << "Check command for icecast timed out or failed.";
+    }
+
+    // Update Icecast UI
+    if(icecast_running){
         ui->lbl_icecast->setText("Running");
-        ui->lbl_icecast->setStyleSheet("color:green");
+        ui->lbl_icecast->setStyleSheet("color:green;");
     } else {
         ui->lbl_icecast->setText("Stopped");
-        ui->lbl_icecast->setStyleSheet("color:red");
-         ui->bt_takeOver->setEnabled(false);
+        ui->lbl_icecast->setStyleSheet("color:red;");
+         ui->bt_takeOver->setEnabled(false); // Disable takeover if icecast stopped
     }
 
 
-    chk.start("sh",QStringList()<<"-c"<<"ps -e | grep butt");
-    chk.waitForFinished();
-    found = chk.readAll();
+    // --- Check Butt ---
+    QProcess check_butt;
+    QString butt_check_cmd;
+    QStringList butt_check_args;
+    bool butt_running = false;
 
-    if(found!=""){
+#ifdef Q_OS_WIN
+    butt_check_cmd = "tasklist";
+    butt_check_args << "/NH" << "/FI" << "IMAGENAME eq butt.exe"; // Adjust image name
+#else // Linux, macOS, other Unix-like
+    butt_check_cmd = "pgrep";
+    butt_check_args << "-x" << "butt"; // Match exact process name
+#endif
+
+    check_butt.start(butt_check_cmd, butt_check_args);
+     if (check_butt.waitForFinished(1000)) { // Short timeout
+ #ifdef Q_OS_WIN
+        QString output = check_butt.readAllStandardOutput();
+        if (output.contains("butt.exe", Qt::CaseInsensitive)) {
+             butt_running = true;
+         }
+ #else // pgrep check
+         if (check_butt.exitStatus() == QProcess::NormalExit && check_butt.exitCode() == 0) {
+             butt_running = true;
+         }
+ #endif
+    } else {
+         qWarning() << "Check command for butt timed out or failed.";
+     }
+
+    // Update Butt UI
+    if(butt_running){
         ui->lbl_butt->setText("Running");
-        ui->lbl_butt->setStyleSheet("color:green");
+        ui->lbl_butt->setStyleSheet("color:green;");
     } else {
         ui->lbl_butt->setText("Stopped");
-        ui->lbl_butt->setStyleSheet("color:red");
-        ui->bt_takeOver->setEnabled(false);
+        ui->lbl_butt->setStyleSheet("color:red;");
+        ui->bt_takeOver->setEnabled(false); // Also disable if butt stopped? Decide based on logic.
+    }
+}
+void player::ddnsUpdate() {
+    qDebug() << "Requesting external IP address...";
+
+    // Ensure networkManager is initialized (e.g., in constructor)
+    if (!networkManager) {
+         qWarning() << "Network manager not initialized!";
+         networkManager = new QNetworkAccessManager(this); // Lazy init? Or handle error better.
     }
 
+    // Use HTTPS for security. icanhazip supports it.
+    QUrl url("https://ipv4.icanhazip.com");
+    QNetworkRequest request(url);
+
+    // Set a timeout for the request (e.g., 10 seconds)
+    request.setTransferTimeout(10000);
+
+    QNetworkReply *reply = networkManager->get(request);
+
+    // Connect the finished signal to a lambda or a dedicated slot
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        QString externalIp = "Error"; // Default in case of failure
+
+        if (reply->error() == QNetworkReply::NoError) {
+            QByteArray responseData = reply->readAll();
+            externalIp = QString::fromUtf8(responseData).trimmed(); // Assume UTF-8, trim whitespace
+            qInfo() << "External IP determined:" << externalIp;
+        } else {
+            qWarning() << "Failed to get external IP:" << reply->errorString();
+            externalIp = "Error: " + reply->errorString(); // Provide error info in UI
+        }
+
+        // Update the UI label
+        ui->lbl_ddns->setText(externalIp);
+        // Consider styling based on success/error?
+        // if (reply->error() != QNetworkReply::NoError) {
+        //     ui->lbl_ddns->setStyleSheet("color: red;");
+        // } else {
+        //     ui->lbl_ddns->setStyleSheet(""); // Clear style
+        // }
 
 
+        // IMPORTANT: Clean up the reply object to prevent memory leaks
+        reply->deleteLater();
+    });
 
-}
+    // Optional: Connect errorOccurred signal for more immediate feedback?
+    // connect(reply, &QNetworkReply::errorOccurred, this, ...);
 
-void player::ddnsUpdate(){
-    QProcess cmd;
-    cmd.start("sh",QStringList()<<"-c"<<"curl ipv4.icanhazip.com");
-    cmd.waitForFinished();
-    QString cmdout = cmd.readAll().trimmed();
-
-    qDebug()<<"The current external ip determined was: "<<cmdout;
-
-    ui->lbl_ddns->setText(cmdout);
-
-
-
-
-
-
-
+    // Optional: Connect sslErrors signal if needed for debugging HTTPS issues
+    // connect(reply, &QNetworkReply::sslErrors, this, ...);
 }
 
 void player::on_horizontalSlider_lps_vol_sliderMoved(int position)
@@ -5604,8 +7601,8 @@ void player::on_horizontalSlider_lps_vol_sliderMoved(int position)
 
 
     if(position==100){
-        lp1_Xplayer->setVolume(100);
-        lp2_Xplayer->setVolume(100);
+        lp1_XplayerOutput->setVolume(1.0); // Qt6 uses 0.0-1.0 range for volume
+        lp2_XplayerOutput->setVolume(1.0); // Qt6 uses 0.0-1.0 range for volume
 
         ui->lbl_lp1_vol_level->setText("100");
         ui->lbl_lp2_vol_level->setText("100");
@@ -5614,8 +7611,8 @@ void player::on_horizontalSlider_lps_vol_sliderMoved(int position)
 
     if(position<=99){
 
-        lp1_Xplayer->setVolume(100);
-        lp2_Xplayer->setVolume(position);
+        lp1_XplayerOutput->setVolume(1.0); // Qt6 uses 0.0-1.0 range for volume
+        lp2_XplayerOutput->setVolume(position / 100.0); // Qt6 uses 0.0-1.0 range for volume
 
         ui->lbl_lp1_vol_level->setText("100");
 
@@ -5628,10 +7625,10 @@ void player::on_horizontalSlider_lps_vol_sliderMoved(int position)
 
     if(position>=101){
 
-        lp2_Xplayer->setVolume(100);
+        lp2_XplayerOutput->setVolume(1.0); // Qt6 uses 0.0-1.0 range for volume
 
         int lp1_volume = 200-position;
-        lp1_Xplayer->setVolume(lp1_volume);
+        lp1_XplayerOutput->setVolume(lp1_volume / 100.0); // Qt6 uses 0.0-1.0 range for volume
 
         QString lp1_lbl_vol = QString::number(lp1_volume);
         ui->lbl_lp1_vol_level->setText(lp1_lbl_vol);
@@ -5645,8 +7642,8 @@ void player::on_horizontalSlider_lps_vol_sliderMoved(int position)
 
 void player::on_bt_center_lps_vol_clicked()
 {
-    lp1_Xplayer->setVolume(100);
-    lp2_Xplayer->setVolume(100);
+    lp1_XplayerOutput->setVolume(1.0); // Qt6 uses 0.0-1.0 range for volume
+    lp2_XplayerOutput->setVolume(1.0); // Qt6 uses 0.0-1.0 range for volume
 
     ui->lbl_lp1_vol_level->setText("100");
     ui->lbl_lp2_vol_level->setText("100");
@@ -5680,28 +7677,123 @@ void player::on_actionForce_monitorization_triggered()
 
 void player::on_actionUpdate_Dinamic_Server_s_IP_triggered()
 {
+    // --- Confirmation ---
+    QMessageBox::StandardButton confirm = QMessageBox::question(this, "Confirm .netrc Update",
+                                     QString("This will fetch the server IP from:\n%1\n\n"
+                                             "It will then **overwrite** your ~/.netrc file with credentials for this server:\n"
+                                             "machine [Server IP]\nlogin %2\npassword [Your Password]\n\n"
+                                             "Any other entries in ~/.netrc will be lost! Proceed?")
+                                         .arg(Server_URL + "/XFB/Config/ftpupdate.txt") // Show the full URL
+                                         .arg(User), // Show the username being written
+                                     QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
 
-    QFile settings_ftp("~/.netrc");
-
-    QTextStream outF(&settings_ftp);
-
-    QString c2 = "curl "+Server_URL+"/XFB/Config/ftpupdate.txt";
-    qDebug()<<"Full cmd is: "<<c2;
-    QProcess pc2;
-    pc2.start("sh",QStringList()<<"-c"<<c2);
-    pc2.waitForFinished();
-
-    QString cOut2 = pc2.readAll();
-
-    QStringList ServerIP = cOut2.split("\n");
-
-    qDebug()<<"Server's IP is now:"<<ServerIP[0];
+    if (confirm != QMessageBox::Yes) {
+        qInfo() << ".netrc update cancelled by user.";
+        return;
+    }
 
 
-    outF<<"machine "<<ServerIP[0]<<" login "<<User<<" password "<<Pass<<"\n";
+    // --- Network Request ---
+    qInfo() << "Requesting server IP configuration...";
+
+    if (!networkManager) {
+         qWarning() << "Network manager not initialized!";
+         // Initialize it here if necessary, or ensure it's done in the constructor
+         networkManager = new QNetworkAccessManager(this);
+    }
+
+    // Construct the full URL
+    QUrl configUrl(Server_URL); // Assuming Server_URL is like "http://example.com"
+    if (!configUrl.isValid() || Server_URL.isEmpty()) {
+        qWarning() << "Server_URL is invalid or empty:" << Server_URL;
+        QMessageBox::critical(this, "Configuration Error", "The Server URL configured in the application is invalid.");
+        return;
+    }
+    configUrl.setPath("/XFB/Config/ftpupdate.txt"); // Append the path
+
+    QNetworkRequest request(configUrl);
+    request.setTransferTimeout(15000); // 15 second timeout
+
+    qDebug() << "Fetching configuration from:" << request.url().toString();
+
+    QNetworkReply *reply = networkManager->get(request);
+
+    // Connect the finished signal (asynchronous handling)
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        // --- Handle Network Response ---
+        QString serverIp; // Variable to store the successfully retrieved IP
+
+        if (reply->error() == QNetworkReply::NoError) {
+            QByteArray responseData = reply->readAll();
+            QString responseString = QString::fromUtf8(responseData).trimmed(); // Assume UTF-8
+
+            // Basic parsing: Assume IP is the first non-empty line
+            QStringList lines = responseString.split(QRegularExpression("[\r\n]+"), Qt::SkipEmptyParts);
+
+            if (!lines.isEmpty()) {
+                serverIp = lines.first().trimmed(); // Take the first line and trim whitespace
+                if (serverIp.isEmpty()) {
+                     qWarning() << "Received empty first line from config URL:" << reply->url().toString();
+                     QMessageBox::warning(this, "Update Failed", "Received empty data from the server configuration URL.");
+                } else {
+                     qInfo() << "Server IP determined:" << serverIp;
+                }
+            } else {
+                qWarning() << "Received empty response from config URL:" << reply->url().toString();
+                QMessageBox::warning(this, "Update Failed", "Received empty response from the server configuration URL.");
+            }
+        } else {
+            qWarning() << "Failed to fetch server config:" << reply->errorString() << "(" << reply->error() << ")";
+            QMessageBox::critical(this, "Network Error", QString("Failed to fetch server configuration:\n%1").arg(reply->errorString()));
+            reply->deleteLater(); // MUST cleanup reply object
+            return; // Stop processing on network error
+        }
+
+        // --- Proceed only if IP was found ---
+        if (serverIp.isEmpty()) {
+            reply->deleteLater(); // MUST cleanup reply object
+            return; // Stop if we couldn't get a valid IP
+        }
 
 
-    settings_ftp.close();
+        // --- Write to .netrc ---
+        QString netrcPath = QDir::homePath() + "/.netrc";
+        qInfo() << "Attempting to write to:" << netrcPath;
+
+        QFile netrcFile(netrcPath);
+
+        // Open for writing, overwrite existing content (Truncate)
+        if (!netrcFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
+            qWarning() << "Failed to open" << netrcPath << "for writing:" << netrcFile.errorString();
+            QMessageBox::critical(this, "File Error", QString("Could not open the .netrc file for writing:\n%1\n\nPlease check permissions.").arg(netrcPath));
+            reply->deleteLater();
+            return;
+        }
+
+        QTextStream outStream(&netrcFile);
+        QString line = QString("machine %1 login %2 password %3\n").arg(serverIp, User, Pass);
+        outStream << line;
+        outStream.flush(); // Ensure data is written
+
+        if (outStream.status() != QTextStream::Ok) {
+             qWarning() << "Error writing to .netrc file stream.";
+             // File might be partially written
+        }
+
+        // Set strict permissions (Owner Read/Write only - 600)
+        if (!netrcFile.setPermissions(QFile::ReadOwner | QFile::WriteOwner)) {
+             qWarning() << "Failed to set permissions (600) on" << netrcPath;
+             // Not critical enough to fail the whole operation, but log it.
+        }
+
+        netrcFile.close(); // QTextStream destructor also closes it, but explicit is okay.
+
+        qInfo() << ".netrc file updated successfully.";
+        QMessageBox::information(this, "Update Successful", QString(".netrc file updated successfully for machine: %1").arg(serverIp));
+
+        // --- Cleanup ---
+        reply->deleteLater(); // MUST cleanup reply object
+    });
 }
 
 void player::on_bt_add_some_random_songs_from_genre_clicked()
@@ -5709,11 +7801,11 @@ void player::on_bt_add_some_random_songs_from_genre_clicked()
 
     QString selectedGenre = ui->comboBox_random_add_genre->currentText();
 
-
+    QSqlDatabase db = QSqlDatabase::database("xfb_connection");
     QString num = ui->spinBox_num_of_songs_to_add_random->text();
-
+checkDbOpen();
     QString querystr = "select path from musics where genre1 like '"+selectedGenre+"' order by random() limit "+num;
-    QSqlQuery query;
+    QSqlQuery query(db);
     if(query.exec(querystr))
     {
         qDebug() << "SQL query executed from 201606181026: " << query.lastQuery();
@@ -5742,345 +7834,733 @@ void player::on_bt_add_some_random_songs_from_genre_clicked()
 
 void player::on_bt_icecast_clicked()
 {
+    // Use a local variable to track the intended state change during this function
+    bool shouldBeRunning = !icecastrunning; // If currently false, we want it true, and vice-versa
 
-    if(icecastrunning==false){
-        QProcess processo;
+    if (shouldBeRunning) {
+        // --- Try to START Icecast ---
+        qInfo() << "Attempting to start Icecast...";
 
-        qDebug()<<"Forcing all instences of icecast to close...";
-        processo.start("sh", QStringList()<<"-c"<<"killall icecast");
-        processo.waitForFinished();
+        // 1. Force kill any existing instances first (as per original logic)
+        qDebug() << "Ensuring no other icecast instances are running...";
+        killProcessByName("icecast"); // Call helper function
 
-        qDebug()<<"Starting icecast...";
-        processo.startDetached("sh",QStringList()<<"-c"<<"xvfb-run -a icecast -c /usr/local/etc/icecast.xml");
+        // 2. Find xvfb-run
+        QString xvfbRunPath = QStandardPaths::findExecutable("xvfb-run");
+        if (xvfbRunPath.isEmpty()) {
+             qWarning() << "xvfb-run command not found in PATH. Cannot start icecast.";
+             QMessageBox::critical(this, "Error", "Required command 'xvfb-run' not found. Cannot start Icecast.");
+             return; // Cannot proceed
+        }
+        qDebug() << "Found xvfb-run at:" << xvfbRunPath;
+        // Optional: Check if icecast executable itself exists?
+        // QString icecastPath = QStandardPaths::findExecutable("icecast");
+        // if (icecastPath.isEmpty()) { ... error ... }
 
-        processo.waitForStarted();
 
-        qDebug()<<"icecast started!";
+        // 3. Prepare and start the process detached
+        QProcess *icecastProcess = new QProcess(this); // Create on heap if needed elsewhere, else stack
+        QStringList args;
+        QString configPath = "/usr/local/etc/icecast.xml"; // Consider making this configurable
+        args << "-a" << "icecast" << "-c" << configPath;
 
-        icecastrunning = true;
+        qDebug() << "Starting detached process:" << xvfbRunPath << args;
 
-        ui->bt_icecast->setStyleSheet("background-color:#C8EE72");
+        bool started = icecastProcess->startDetached(xvfbRunPath, args);
+        // Note: startDetached only tells you if Qt could *invoke* the process,
+        // not if xvfb-run or icecast started successfully internally.
+        // The timer check (ice_timmer) is the real verification.
 
-        connect(icetimer, SIGNAL(timeout()), this, SLOT(ice_timmer()));
-        icetimer->start(5000);
-        ice_timmer();
+        if (started) {
+            qInfo() << "Icecast process launch initiated.";
+            icecastrunning = true; // Update state flag
+
+            // Update UI to "Starting" or "Running" - timer will confirm "Running"
+            ui->lbl_icecast->setText("Starting..."); // More accurate initial state
+            ui->lbl_icecast->setStyleSheet("color:orange;"); // Indicate intermediate state
+            ui->bt_icecast->setStyleSheet("background-color:#C8EE72;"); // Indicate "on" state
+
+            // Connect and start the timer to check status
+            if (icetimer) {
+                // Disconnect first to avoid multiple connections if clicked rapidly
+                disconnect(icetimer, &QTimer::timeout, this, &player::ice_timmer);
+                connect(icetimer, &QTimer::timeout, this, &player::ice_timmer);
+                icetimer->start(5000); // Check every 5 seconds
+                QTimer::singleShot(500, this, &player::ice_timmer); // Check quickly once after starting
+            } else {
+                 qWarning() << "icetimer is null!";
+            }
+        } else {
+            qWarning() << "Failed to initiate icecast process launch.";
+            QMessageBox::critical(this, "Error", "Failed to start the Icecast process using xvfb-run.");
+            // Don't change icecastrunning state or UI if launch failed
+            delete icecastProcess; // Clean up if created on heap
+        }
+
     } else {
-        icetimer->stop();
-        QProcess processo;
+        // --- Try to STOP Icecast ---
+        qInfo() << "Attempting to stop Icecast...";
 
-        qDebug()<<"Forcing all instences of icecast to close...";
-        processo.start("sh", QStringList()<<"-c"<<"killall icecast");
-        processo.waitForFinished();
+        // 1. Stop the status check timer
+        if (icetimer) {
+            icetimer->stop();
+            // Optional: disconnect(icetimer, &QTimer::timeout, this, &player::ice_timmer);
+        }
 
-         icecastrunning = false;
-         ui->bt_icecast->setStyleSheet("");
-         ui->lbl_icecast->setText("Stopped");
-         ui->lbl_icecast->setStyleSheet("color:blue");
+        // 2. Kill the process
+        bool killed = killProcessByName("icecast"); // Call helper function
 
-         ui->bt_takeOver->setStyleSheet("");
-         ui->bt_takeOver->setEnabled(false);
-
-         ui->txt_ProgramName->setStyleSheet("background-color:#FFE329;padding:5px;");
-         ui->txt_ProgramName->hide();
-
-         piscaLive = false;
-    }
-
-
-
-}
-
-void player::ice_timmer(){
-
-    QProcess chk;
-    chk.start("sh",QStringList()<<"-c"<<"ps -e | grep icecast");
-    chk.waitForFinished();
-    QString found = chk.readAll();
-
-    if(found!=""){
-        ui->lbl_icecast->setText("Running");
-        ui->lbl_icecast->setStyleSheet("color:green");
-    } else {
+        // 3. Update state and UI regardless of kill success, as the intention is to stop
+        icecastrunning = false;
+        ui->bt_icecast->setStyleSheet(""); // Default style
         ui->lbl_icecast->setText("Stopped");
-        ui->lbl_icecast->setStyleSheet("color:red");
+        ui->lbl_icecast->setStyleSheet("color:blue;"); // Use correct CSS
 
+        // Reset dependent UI elements (as per original logic)
         ui->bt_takeOver->setStyleSheet("");
         ui->bt_takeOver->setEnabled(false);
-
-        ui->txt_ProgramName->setStyleSheet("background-color:#FFE329;padding:5px;");
+        ui->txt_ProgramName->setStyleSheet(""); // Clear specific style
         ui->txt_ProgramName->hide();
-
         piscaLive = false;
+
+        if (!killed) {
+             qWarning() << "Kill command for icecast may have failed, but UI is set to stopped state.";
+             // User might need to manually check if process actually stopped
+        }
+    }
+}
+void player::ice_timmer() {
+    qDebug() << "Running ice_timmer (checking icecast process status...)";
+
+    QProcess check_icecast;
+    QString check_cmd;
+    QStringList check_args;
+    bool is_running = false; // Assume not running initially
+
+#ifdef Q_OS_WIN
+    // Windows: Use tasklist with image name filter
+    check_cmd = "tasklist";
+    // /NH for no header, /FI for filter. Adjust "icecast.exe" if needed.
+    check_args << "/NH" << "/FI" << "IMAGENAME eq icecast.exe";
+#else
+    // Unix-like (Linux, macOS): Use pgrep with exact name match
+    check_cmd = "pgrep";
+    check_args << "-x" << "icecast"; // -x matches the name exactly
+#endif
+
+    qDebug() << "Executing check:" << check_cmd << check_args;
+    check_icecast.start(check_cmd, check_args);
+
+    // Wait for the check command to finish (short timeout)
+    if (check_icecast.waitForFinished(1500)) { // 1.5 second timeout
+
+#ifdef Q_OS_WIN
+        // On Windows, tasklist usually exits with 0 even if not found when filtering.
+        // We need to check if the output contains the process name.
+        QByteArray output = check_icecast.readAllStandardOutput();
+        if (output.contains("icecast.exe", Qt::CaseInsensitive)) {
+            is_running = true;
+            qDebug() << "tasklist output indicates icecast is running.";
+        } else {
+             qDebug() << "tasklist output does not contain icecast.exe.";
+             is_running = false;
+        }
+#else
+        // On Unix-like, pgrep exits with 0 if found, non-zero otherwise.
+        if (check_icecast.exitStatus() == QProcess::NormalExit && check_icecast.exitCode() == 0) {
+            is_running = true;
+            qDebug() << "pgrep found running icecast process (exit code 0).";
+        } else {
+            // Exit code 1 usually means not found, other codes indicate errors.
+             qDebug() << "pgrep did not find running icecast process (exit code" << check_icecast.exitCode() << ").";
+            is_running = false;
+        }
+#endif
+    } else {
+        // Timeout or other error running the check command itself
+        qWarning() << "Check command (" << check_cmd << ") timed out or failed to start.";
+        is_running = false; // Assume not running if check failed
+        // Consider setting UI to an "Unknown" or "Error" state? For now, treat as stopped.
     }
 
+    // --- Update UI based on the is_running state ---
+    if (is_running) {
+        // Update state variable if needed (though might be redundant if only used here)
+        if (!icecastrunning) { // Update internal state if it changed
+             qInfo() << "Icecast detected as running (was previously considered stopped).";
+             icecastrunning = true;
+        }
+        // Set UI to "Running" state
+        ui->lbl_icecast->setText("Running");
+        ui->lbl_icecast->setStyleSheet("color:green;"); // Ensure semicolon
+        // Optionally ensure other UI elements are in the correct "running" state if needed
+    } else {
+        // Update state variable if needed
+        if (icecastrunning) { // Update internal state if it changed
+            qInfo() << "Icecast detected as stopped (was previously considered running).";
+            icecastrunning = false;
+        }
+        // Set UI to "Stopped" state and reset related elements
+        ui->lbl_icecast->setText("Stopped");
+        ui->lbl_icecast->setStyleSheet("color:red;"); // Ensure semicolon
 
+        // Reset other UI elements as per original logic when stopped
+        ui->bt_takeOver->setStyleSheet("");
+        ui->bt_takeOver->setEnabled(false);
+        ui->txt_ProgramName->setStyleSheet(""); // Clear specific style
+        ui->txt_ProgramName->hide();
+        piscaLive = false; // Reset live indicator flag
+    }
 }
-
 void player::on_bt_butt_clicked()
 {
+    // Determine the intended state
+    bool shouldBeRunning = !buttrunning;
 
-    if(buttrunning==false){
-        QProcess processo;
+    if (shouldBeRunning) {
+        // --- Try to START Butt ---
+        qInfo() << "Attempting to start Butt...";
 
-        qDebug()<<"Forcing all instences of butt to close...";
-        processo.start("sh", QStringList()<<"-c"<<"killall butt");
-        processo.waitForFinished();
+        // 1. Force kill any existing instances first
+        qDebug() << "Ensuring no other butt instances are running...";
+        killProcessByName("butt"); // Kill 'butt' process
 
-        qDebug()<<"Starting butt...";
-        processo.startDetached("sh",QStringList()<<"-c"<<"xvfb-run -a butt");
+        // 2. Find required executables
+        QString xvfbRunPath = QStandardPaths::findExecutable("xvfb-run");
+        if (xvfbRunPath.isEmpty()) {
+             qWarning() << "xvfb-run command not found in PATH. Cannot start butt.";
+             QMessageBox::critical(this, "Error", "Required command 'xvfb-run' not found. Cannot start Butt.");
+             return; // Cannot proceed
+        }
+        QString buttPath = QStandardPaths::findExecutable("butt");
+         if (buttPath.isEmpty()) {
+             qWarning() << "butt command not found in PATH. Cannot start butt.";
+             QMessageBox::critical(this, "Error", "Required command 'butt' not found. Cannot start Butt.");
+             return; // Cannot proceed
+         }
+        qDebug() << "Found xvfb-run at:" << xvfbRunPath;
+        qDebug() << "Found butt at:" << buttPath; // We found it, but xvfb-run will call it by name
 
-        processo.waitForStarted();
 
-        qDebug()<<"butt started!";
+        // 3. Prepare and start the process detached
+        QProcess *buttProcess = new QProcess(this); // Optional: manage this pointer if needed later
+        QStringList args;
+        args << "-a" << "butt"; // Arguments for xvfb-run
 
-        buttrunning = true;
+        qDebug() << "Starting detached process:" << xvfbRunPath << args;
 
-        ui->bt_butt->setStyleSheet("background-color:#C8EE72");
+        bool started = buttProcess->startDetached(xvfbRunPath, args);
 
-        connect(butt_timer, SIGNAL(timeout()), this, SLOT(butt_timmer()));
-        butt_timer->start(5000);
-        butt_timmer();
+        if (started) {
+            qInfo() << "Butt process launch initiated.";
+            buttrunning = true; // Update state flag
+
+            // Update UI to "Starting..." - timer will confirm "Running"
+            ui->lbl_butt->setText("Starting..."); // More accurate initial state
+            ui->lbl_butt->setStyleSheet("color:orange;"); // Indicate intermediate state
+            ui->bt_butt->setStyleSheet("background-color:#C8EE72;"); // Indicate "on" state
+
+            // Connect and start the timer to check status
+            if (butt_timer) {
+                // Ensure clean connection
+                disconnect(butt_timer, &QTimer::timeout, this, &player::butt_timmer);
+                connect(butt_timer, &QTimer::timeout, this, &player::butt_timmer);
+                butt_timer->start(5000); // Check every 5 seconds
+                QTimer::singleShot(500, this, &player::butt_timmer); // Check quickly once after starting
+            } else {
+                 qWarning() << "butt_timer is null!";
+            }
+        } else {
+            qWarning() << "Failed to initiate butt process launch.";
+            QMessageBox::critical(this, "Error", "Failed to start the Butt process using xvfb-run.");
+            // Clean up if necessary
+            delete buttProcess;
+        }
+
     } else {
-        butt_timer->stop();
-        QProcess processo;
+        // --- Try to STOP Butt ---
+        qInfo() << "Attempting to stop Butt...";
 
-        qDebug()<<"Forcing all instences of icecast to close...";
-        processo.start("sh", QStringList()<<"-c"<<"killall icecast");
-        processo.waitForFinished();
+        // 1. Stop the status check timer
+        if (butt_timer) {
+            butt_timer->stop();
+            // Optional: disconnect(...)
+        }
 
-         buttrunning = false;
-         ui->bt_butt->setStyleSheet("");
-         ui->lbl_butt->setText("Stopped");
-         ui->lbl_butt->setStyleSheet("color:blue");
+        // 2. Kill the 'butt' process (FIXED: was killing icecast in original code)
+        bool killed = killProcessByName("butt");
 
-         ui->bt_takeOver->setStyleSheet("");
-         ui->bt_takeOver->setEnabled(false);
-
-         ui->txt_ProgramName->setStyleSheet("background-color:#FFE329;padding:5px;");
-         ui->txt_ProgramName->hide();
-
-         piscaLive = false;
-    }
-
-
-
-}
-void player::butt_timmer(){
-
-    QProcess chk;
-    chk.start("sh",QStringList()<<"-c"<<"ps -e | grep butt");
-    chk.waitForFinished();
-    QString found = chk.readAll();
-
-    if(found!=""){
-        ui->lbl_butt->setText("Running");
-        ui->lbl_butt->setStyleSheet("color:green");
-    } else {
+        // 3. Update state and UI regardless of kill success
+        buttrunning = false;
+        ui->bt_butt->setStyleSheet(""); // Default style
         ui->lbl_butt->setText("Stopped");
-        ui->lbl_butt->setStyleSheet("color:red");
+        ui->lbl_butt->setStyleSheet("color:blue;");
 
+        // Reset dependent UI elements only if Butt stopping should affect them
+        // Note: Original code reset these based on stopping *icecast*. Decide if that's correct.
+        // If stopping BUTT should stop the 'takeover', etc., keep these lines.
+        // Otherwise, remove them or move them to the icecast stop logic.
+        // Assuming stopping Butt SHOULD reset these for now:
+        ui->bt_takeOver->setStyleSheet("");
+        ui->bt_takeOver->setEnabled(false);
+        ui->txt_ProgramName->setStyleSheet(""); // Clear specific style
+        ui->txt_ProgramName->hide();
+        piscaLive = false;
+
+        if (!killed) {
+             qWarning() << "Kill command for butt may have failed, but UI is set to stopped state.";
+        }
+    }
+}
+
+// --- Refactored butt_timmer ---
+
+void player::butt_timmer() {
+    qDebug() << "Running butt_timmer (checking butt process status...)";
+
+    QProcess check_butt;
+    QString check_cmd;
+    QStringList check_args;
+    bool is_running = false; // Assume not running initially
+
+#ifdef Q_OS_WIN
+    // Windows: Use tasklist with image name filter
+    check_cmd = "tasklist";
+    // Adjust "butt.exe" if the actual executable name differs
+    check_args << "/NH" << "/FI" << "IMAGENAME eq butt.exe";
+#else
+    // Unix-like (Linux, macOS): Use pgrep with exact name match
+    check_cmd = "pgrep";
+    check_args << "-x" << "butt"; // -x matches the name exactly
+#endif
+
+    qDebug() << "Executing check:" << check_cmd << check_args;
+    check_butt.start(check_cmd, check_args);
+
+    // Wait for the check command to finish (short timeout)
+    if (check_butt.waitForFinished(1500)) { // 1.5 second timeout
+
+#ifdef Q_OS_WIN
+        QByteArray output = check_butt.readAllStandardOutput();
+        if (output.contains("butt.exe", Qt::CaseInsensitive)) {
+            is_running = true;
+            qDebug() << "tasklist output indicates butt is running.";
+        } else {
+            qDebug() << "tasklist output does not contain butt.exe.";
+            is_running = false;
+        }
+#else
+        if (check_butt.exitStatus() == QProcess::NormalExit && check_butt.exitCode() == 0) {
+            is_running = true;
+            qDebug() << "pgrep found running butt process (exit code 0).";
+        } else {
+            qDebug() << "pgrep did not find running butt process (exit code" << check_butt.exitCode() << ").";
+            is_running = false;
+        }
+#endif
+    } else {
+        qWarning() << "Check command (" << check_cmd << ") timed out or failed to start.";
+        is_running = false; // Assume not running if check failed
     }
 
-
+    // --- Update UI and state based on the is_running result ---
+    if (is_running) {
+        // Update state if changed
+        if (!buttrunning) {
+             qInfo() << "Butt detected as running (was previously considered stopped).";
+             buttrunning = true;
+        }
+        // Set UI to "Running" state
+        ui->lbl_butt->setText("Running");
+        ui->lbl_butt->setStyleSheet("color:green;");
+    } else {
+        // Update state if changed
+        if (buttrunning) {
+            qInfo() << "Butt detected as stopped (was previously considered running).";
+            buttrunning = false;
+        }
+        // Set UI to "Stopped" state
+        ui->lbl_butt->setText("Stopped");
+        ui->lbl_butt->setStyleSheet("color:red;");
+        // Decide if stopping Butt should affect other UI like bt_takeOver.
+        // Original butt_timmer didn't reset other UI, only ice_timmer did.
+        // Stick to that logic unless intended otherwise.
+    }
 }
 
 void player::on_bt_ddns_clicked()
 {
     ddnsUpdate();
 }
-
 void player::on_bt_portTest_clicked()
 {
-    ui->lbl_port->setText("Checking...");
-    ui->lbl_port->setStyleSheet("color:#FBEA23");
+    // --- Configuration ---
+    const quint16 portToCheck = 8888;
+    const int connectionTimeoutMs = 5000; // 5 seconds timeout for connection attempt
 
+    // --- Get External IP ---
+    QString externalIpStr = ui->lbl_ddns->text();
 
-//
-    QString ptest = "ss -tl4 '( sport = :8888 )' | grep LISTEN";
-    QString nctest = "nc -z "+ui->lbl_ddns->text()+" 8888; echo $?";
-
-
-    qDebug()<<"The netcat command to check the port is: "<<ptest;
-
-
-    QProcess cmd;
-    cmd.start("sh",QStringList()<<"-c"<<ptest);
-    cmd.waitForFinished();
-    QString cmdout = cmd.readAll().trimmed();
-
-    cmd.start("sh",QStringList()<<"-c"<<nctest);
-    cmd.waitForFinished();
-    QString ncmdout = cmd.readAll().trimmed();
-
-    qDebug()<<"ss output: "<<cmdout;
-    qDebug()<<"nc output: "<<ncmdout;
-
-    if(cmdout != ""){
-
-        ui->lbl_port->setText("OPEN IN");
-        ui->lbl_port->setStyleSheet("color:yellow");
-
-        if(ncmdout != ""){
-
-            ui->lbl_port->setText("OPEN IN + OUT");
-            ui->lbl_port->setStyleSheet("color:green");
-
-            QString lbl_streamURL = "<a href=\"http://"+ui->lbl_ddns->text()+":8888/stream.m3u\">http://"+ui->lbl_ddns->text()+":8888/stream.m3u</a>";
-
-            ui->lbl_streamURL->setText(lbl_streamURL);
-            ui->lbl_streamURL->setTextFormat(Qt::RichText);
-            ui->lbl_streamURL->setTextInteractionFlags(Qt::TextBrowserInteraction);
-            ui->lbl_streamURL->setOpenExternalLinks(false);
-
-            ui->bt_takeOver->setEnabled(true);
-        } else {
-            QMessageBox::information(this,tr("Error"),tr("It was not possible to determine if port 8888 is open/forwarded :-( \n"
-                                                         "Most probable cause is that the port is NOT OPEN / NOT FORWARDED in the Router or firewall.\n"
-                                                         "This can also be due to the dependencie with the netcat command\n"
-                                                         "(try running the nc command). Or an error with the network?"));
-            ui->lbl_port->setText("ERROR");
-            ui->lbl_port->setStyleSheet("color:red");
-        }
-
-
-
-    } else {
-        QMessageBox::information(this,tr("Error"),tr("It was not possible to determine if port 8888 is LISTENING :-( \n"
-                                                     "Most probable cause is that the port is NOT OPEN in the firewall.\n"
-                                                     "This can also be due to the dependencie with the netcat command\n"
-                                                     "(try running the nc command). Or an error with the network?"));
-        ui->lbl_port->setText("ERROR");
-        ui->lbl_port->setStyleSheet("color:red");
+    // --- Basic Validation ---
+    if (externalIpStr.isEmpty() || externalIpStr.startsWith("Error")) {
+        QMessageBox::warning(this, tr("Missing IP"), tr("Could not determine the external IP address. Please update DDNS first."));
+        ui->lbl_port->setText("No IP");
+        ui->lbl_port->setStyleSheet("color:orange;");
+        return;
+    }
+    // Optional: More robust IP validation
+    QHostAddress addr(externalIpStr);
+    if (addr.isNull() || addr.protocol() != QAbstractSocket::IPv4Protocol) {
+         qWarning() << "External IP from label is not a valid IPv4 address:" << externalIpStr;
+         // Decide whether to proceed or warn the user further
+         // QMessageBox::warning(this, tr("Invalid IP"), tr("The determined external IP address (%1) does not appear valid.").arg(externalIpStr));
+         // return; // Uncomment to be stricter
     }
 
 
+    // --- Start Check ---
+    qInfo() << "Checking external reachability for" << externalIpStr << ":" << portToCheck;
+    ui->lbl_port->setText("Checking...");
+    ui->lbl_port->setStyleSheet("color:#FBEA23;"); // Yellowish color for checking
+    // Disable button during check to prevent multiple clicks?
+    // ui->bt_portTest->setEnabled(false); // Re-enable in results handling
+
+
+    // --- Use QTcpSocket for the check ---
+    QTcpSocket *socket = new QTcpSocket(this);
+    QTimer *timeoutTimer = new QTimer(this);
+    timeoutTimer->setSingleShot(true);
+
+    // Lambda to handle cleanup for both success and failure
+    auto cleanup = [socket, timeoutTimer, this]() {
+        // ui->bt_portTest->setEnabled(true); // Re-enable button
+        if (timeoutTimer->isActive()) {
+            timeoutTimer->stop();
+        }
+        // Ensure socket is disconnected before deleting if necessary
+        if(socket->state() != QAbstractSocket::UnconnectedState){
+            socket->abort(); // Force close immediately
+        }
+        socket->deleteLater();
+        timeoutTimer->deleteLater();
+        qDebug() << "Cleanup after port check complete.";
+    };
+
+    // Connection successful
+    connect(socket, &QTcpSocket::connected, this, [this, externalIpStr, portToCheck, cleanup]() {
+        qInfo() << "Connection successful to" << externalIpStr << ":" << portToCheck;
+        ui->lbl_port->setText("OPEN"); // Simplified from "OPEN IN + OUT"
+        ui->lbl_port->setStyleSheet("color:green;");
+
+        // Format the clickable link
+        QString urlString = QString("http://%1:%2/stream.m3u").arg(externalIpStr).arg(portToCheck);
+        QString linkHtml = QString("<a href=\"%1\">%1</a>").arg(urlString);
+
+        ui->lbl_streamURL->setText(linkHtml);
+        ui->lbl_streamURL->setTextFormat(Qt::RichText);
+        ui->lbl_streamURL->setTextInteractionFlags(Qt::TextBrowserInteraction);
+        // Note: setOpenExternalLinks(false) is default for QLabel, use true if you want direct clicking
+        ui->lbl_streamURL->setOpenExternalLinks(true);
+
+        ui->bt_takeOver->setEnabled(true);
+
+        cleanup(); // Call cleanup lambda
+    });
+
+    // Connection error (includes refusal, host not found, etc.)
+    connect(socket, &QTcpSocket::errorOccurred, this, [this, socket, cleanup](QAbstractSocket::SocketError socketError) {
+        QString errorMsg;
+        switch(socketError) {
+            case QAbstractSocket::ConnectionRefusedError:
+                errorMsg = tr("Connection Refused: Port is likely closed or not listening.");
+                break;
+            case QAbstractSocket::RemoteHostClosedError:
+                errorMsg = tr("Connection Closed Unexpectedly."); // Less likely during initial check
+                 break;
+            case QAbstractSocket::HostNotFoundError:
+                 errorMsg = tr("Host Not Found: The IP address might be incorrect or unreachable.");
+                 break;
+             case QAbstractSocket::SocketTimeoutError: // Should be caught by our timer, but handle anyway
+                 errorMsg = tr("Connection Timed Out (Socket Error).");
+                 break;
+             case QAbstractSocket::NetworkError:
+                 errorMsg = tr("Network Error: Check your connection or firewall.");
+                 break;
+             default:
+                 errorMsg = tr("Connection Failed: %1").arg(socket->errorString());
+                 break;
+        }
+        qWarning() << "Connection error:" << errorMsg << "(" << socketError << ")";
+        ui->lbl_port->setText("CLOSED/ERROR");
+        ui->lbl_port->setStyleSheet("color:red;");
+        QMessageBox::warning(this, tr("Port Check Failed"), errorMsg + "\n\n" + tr("Ensure the service (e.g., Icecast) is running locally and the port is correctly forwarded in your router/firewall."));
+
+        ui->lbl_streamURL->setText(tr("N/A")); // Clear stream URL
+        ui->lbl_streamURL->setOpenExternalLinks(false);
+        ui->bt_takeOver->setEnabled(false);
+
+        cleanup(); // Call cleanup lambda
+    });
+
+    // Connection timeout timer
+    connect(timeoutTimer, &QTimer::timeout, this, [this, socket, cleanup]() {
+        qWarning() << "Connection attempt timed out.";
+        ui->lbl_port->setText("TIMEOUT");
+        ui->lbl_port->setStyleSheet("color:red;");
+        QMessageBox::warning(this, tr("Port Check Timed Out"), tr("Could not connect to the server within the time limit.\n\nCheck if the server is running, the IP address is correct, and the port is open/forwarded. Network latency or firewalls could also be the cause."));
+
+        ui->lbl_streamURL->setText(tr("N/A"));
+        ui->lbl_streamURL->setOpenExternalLinks(false);
+        ui->bt_takeOver->setEnabled(false);
+
+        // Abort the socket connection attempt before cleanup
+        socket->abort();
+        cleanup(); // Call cleanup lambda
+    });
+
+    // --- Initiate Connection ---
+    socket->connectToHost(externalIpStr, portToCheck);
+    timeoutTimer->start(connectionTimeoutMs); // Start the timeout timer
+}
+
+
+void player::deleteFilesByPattern(const QString &dirPath, const QString &pattern) {
+    QDir dir(dirPath);
+    if (!dir.exists()) {
+        qWarning() << "Directory does not exist, cannot delete files:" << dirPath;
+        return;
+    }
+
+    // Ensure pattern is treated as a wildcard pattern
+    QStringList nameFilters;
+    nameFilters << pattern; // e.g., "*.xml"
+
+    // List files matching the pattern
+    QStringList filesToDelete = dir.entryList(nameFilters, QDir::Files | QDir::NoDotAndDotDot);
+
+    int deletedCount = 0;
+    if (filesToDelete.isEmpty()) {
+        qDebug() << "No files matching pattern" << pattern << "found in" << dirPath;
+        return;
+    }
+
+    qInfo() << "Attempting to delete" << filesToDelete.count() << "files matching" << pattern << "in" << dirPath;
+    for (const QString &filename : filesToDelete) {
+        QString filePath = dir.filePath(filename);
+        if (QFile::remove(filePath)) {
+            qDebug() << "Deleted:" << filePath;
+            deletedCount++;
+        } else {
+            qWarning() << "Failed to delete:" << filePath;
+            // Log QFile::errorString() if needed for more details
+        }
+    }
+    qInfo() << "Successfully deleted" << deletedCount << "out of" << filesToDelete.count() << "matching files.";
+    return;
 }
 
 void player::on_bt_takeOver_clicked()
 {
-    ui->bt_takeOver->setStyleSheet("background-color:yellow");
+    // --- State Toggle Logic ---
+    if (takeOver) {
+        // Currently in takeover mode, user wants to cancel
+        qInfo() << "Cancelling Takeover...";
+        takeOver = false; // Update state first
 
-    QString rmthis = "/usr/share/xfb/ftp/*.xml";
-    QFile::remove(rmthis);
+        // Call the function responsible for reversing the takeover on the server side
+        returnTakeOver(); // This likely needs its own robust implementation (maybe another script?)
 
-    rmthis = "/usr/share/xfb/TakeOver/*.xml";
-    QFile::remove(rmthis);
-
-
-    //just to be sure ...
-
-    rmthis = TakeOverPath+"/*.xml";
-    QFile::remove(rmthis);
-
-    rmthis = FTPPath+"/*.xml";
-    QFile::remove(rmthis);
-
-
-
-    QString takeOverFile = "/usr/share/xfb/ftp/takeover.xml";
-    QFile file(takeOverFile);
-
-    if(takeOver == false){
-
-        takeOver = true;
-
-        file.open(QIODevice::WriteOnly);
-        QXmlStreamWriter xmlWriter(&file);
-        xmlWriter.setAutoFormatting(true);
-        xmlWriter.writeStartDocument();
-
-        xmlWriter.writeStartElement("XFBClientTakeOver");
-        xmlWriter.writeStartElement("www.netpack.pt");
-
-        QString ip = ui->lbl_ddns->text();
-        QString stream = "http://"+ip+":8888/stream.m3u";
-
-
-
-        xmlWriter.writeTextElement("stream",stream);
-        xmlWriter.writeTextElement("ip",ip);
-
-
-        xmlWriter.writeEndElement();
-        xmlWriter.writeEndDocument();
-        file.close();
-
-
-
-
-
-
-
-
-        qDebug()<<"Sending takeOver to server. This requires ~/.netrc to be configured with the ftp options and FTP Path in the options to point to a folder called 'ftp' that MUST be located in the parent directory of XFB (due to the code of config/serverFtpCmdsPutTakeOver.sh).";
-
-
-        QProcess sh,sh2;
-        QByteArray output, output2;
-        QString outPath, FTPCmdPath, xmls;
-
-
-        sh.start("sh", QStringList() << "-c" << "pwd");
-        sh.waitForFinished();
-        output = sh.readAll();
-        outPath = output;
-        QStringList path_arry = outPath.split("\n");
-        FTPCmdPath = path_arry[0]+"/usr/share/xfb/scripts/serverFtpCmdsPutTakeOver.sh | grep 'Transfer complete'";
-        qDebug() << "running: " << FTPCmdPath;
-        qDebug() << "If you get errors: cd config && chmod +x serverFtpCmdsPutTakeOver.sh && chmod 600 ~/.netrc (the ftp is configured in .netrc correct?)";
-        sh.close();
-
-
-
-        sh2.start("sh", QStringList() << "-c" << FTPCmdPath);
-        sh2.waitForFinished(-1);
-        output2 = sh2.readAll().trimmed();
-        xmls = output2;
-        qDebug()<<"The output of serverFtpCmdsPutTakeOver.sh is:\n"<<output2;
-        sh2.close();
-
-
-
-        if(output2 == "226 Transfer complete."){
-
-            ui->bt_takeOver->setStyleSheet("background-color:blue");
-            ui->bt_takeOver->setText(tr("Connecting..."));
-
-            QFile::remove("/usr/share/xfb/ftp/takeover.xml");
-
-            QTimer::singleShot(5000, this, SLOT(checkTakeOver()));
-
-
+        // Clean up local indicator file (use configured FTPPath)
+        QString takeOverFilePath = QDir(FTPPath).filePath("takeover.xml");
+        if (QFile::exists(takeOverFilePath)) {
+            if (QFile::remove(takeOverFilePath)) {
+                qInfo() << "Removed local takeover indicator file:" << takeOverFilePath;
+            } else {
+                qWarning() << "Failed to remove local takeover indicator file:" << takeOverFilePath;
+            }
         }
 
-
-
-
-
-
-
-
-
-
-    } else {
-        takeOver = false;
-        returnTakeOver();
-        QFile::remove(takeOverFile) ;
+        // Reset UI
         ui->bt_takeOver->setStyleSheet("");
         ui->bt_takeOver->setText(tr("Broadcast LIVE"));
-
-        ui->txt_ProgramName->setStyleSheet("background-color:#FFE329;padding:5px;");
+        ui->txt_ProgramName->setStyleSheet(""); // Clear style
         ui->txt_ProgramName->hide();
-
         piscaLive = false;
-
-
+        return; // Finished cancelling
     }
 
+    // --- Initiate Takeover ---
+    qInfo() << "Initiating Takeover...";
+    ui->bt_takeOver->setEnabled(false); // Disable button during operation
+    ui->bt_takeOver->setText(tr("Processing..."));
+    ui->bt_takeOver->setStyleSheet("background-color:yellow;"); // Indicate processing
+    qApp->processEvents(); // Update UI immediately
+
+    // --- 1. Clean Up Old Files ---
+    qInfo() << "Cleaning up previous XML files...";
+    // Use helper function with configured paths
+    deleteFilesByPattern(FTPPath, "*.xml");
+    deleteFilesByPattern(TakeOverPath, "*.xml");
+    // Add checks here if deletion failure is critical
+
+    // --- 2. Get Required Data ---
+    QString externalIp = ui->lbl_ddns->text();
+    if (externalIp.isEmpty() || externalIp.startsWith("Error")) {
+        QMessageBox::warning(this, tr("Missing IP"), tr("Cannot initiate takeover without a valid external IP address. Please update DDNS first."));
+        ui->bt_takeOver->setEnabled(true); // Re-enable button
+        ui->bt_takeOver->setText(tr("Broadcast LIVE"));
+        ui->bt_takeOver->setStyleSheet("");
+        return;
+    }
+    QString streamUrl = QString("http://%1:8888/stream.m3u").arg(externalIp); // Hardcoded port 8888
+
+    // --- 3. Create Takeover XML ---
+    QString takeOverFilePath = QDir(FTPPath).filePath("takeover.xml"); // Create in FTPPath
+    qInfo() << "Creating takeover file:" << takeOverFilePath;
+    QFile file(takeOverFilePath);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
+        qWarning() << "Failed to open takeover file for writing:" << file.errorString();
+        QMessageBox::critical(this, "File Error", QString("Could not create the takeover XML file:\n%1").arg(takeOverFilePath));
+        ui->bt_takeOver->setEnabled(true);
+        ui->bt_takeOver->setText(tr("Broadcast LIVE"));
+        ui->bt_takeOver->setStyleSheet("");
+        return;
+    }
+
+    QXmlStreamWriter xmlWriter(&file);
+    xmlWriter.setAutoFormatting(true);
+    xmlWriter.writeStartDocument();
+    xmlWriter.writeStartElement("XFBClientTakeOver");
+    xmlWriter.writeStartElement("www.netpack.pt"); // Consider making this configurable
+    xmlWriter.writeTextElement("stream", streamUrl);
+    xmlWriter.writeTextElement("ip", externalIp);
+    xmlWriter.writeEndElement(); // www.netpack.pt
+    xmlWriter.writeEndElement(); // XFBClientTakeOver
+    xmlWriter.writeEndDocument();
+
+    if (xmlWriter.hasError()) {
+         qWarning() << "Error writing XML to takeover file.";
+         // File might be corrupt or incomplete
+         file.close(); // Try to close
+         QFile::remove(takeOverFilePath); // Attempt cleanup
+         QMessageBox::critical(this, "XML Error", "Failed to generate the takeover XML file correctly.");
+         ui->bt_takeOver->setEnabled(true);
+         ui->bt_takeOver->setText(tr("Broadcast LIVE"));
+         ui->bt_takeOver->setStyleSheet("");
+         return;
+    }
+    file.close(); // XML writing finished successfully
+    qInfo() << "Takeover XML created successfully.";
+
+    // --- 4. Execute Upload Script Asynchronously ---
+    // Determine script path (needs configuration - example assumes it's relative to app dir)
+    // TODO: Replace this with a robust way to find the script (e.g., settings, known install path)
+    QString scriptName = "serverFtpCmdsPutTakeOver.sh";
+    QString scriptDir = QCoreApplication::applicationDirPath() + "/usr/share/xfb/scripts"; // Example path relative to app binary
+    QString scriptPath = QDir(scriptDir).filePath(scriptName);
+
+    qInfo() << "Attempting to execute upload script:" << scriptPath;
+     qDebug() << "Dependencies: Script must exist, be executable, and ~/.netrc configured correctly.";
 
 
+    if (!QFileInfo::exists(scriptPath)) {
+         qWarning() << "Upload script not found at:" << scriptPath;
+         QMessageBox::critical(this, "Script Error", QString("The required upload script was not found:\n%1").arg(scriptPath));
+         // Clean up local XML file? Maybe not, user might want to upload manually.
+         ui->bt_takeOver->setEnabled(true);
+         ui->bt_takeOver->setText(tr("Broadcast LIVE"));
+         ui->bt_takeOver->setStyleSheet("");
+         return;
+    }
+     // Optional: Check if script is executable on Linux/macOS
+     // QFileInfo scriptInfo(scriptPath);
+     // if (!scriptInfo.isExecutable()) { ... error ... }
+
+
+    ui->bt_takeOver->setText(tr("Uploading..."));
+    qApp->processEvents();
+
+    QProcess *uploadProcess = new QProcess(this); // Create on heap for async handling
+
+    // Connect signals *before* starting
+    connect(uploadProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+            this, [this, uploadProcess, takeOverFilePath](int exitCode, QProcess::ExitStatus exitStatus) {
+        qDebug() << "Upload script finished. ExitCode:" << exitCode << "ExitStatus:" << exitStatus;
+
+        QString stdOutput = QString::fromLocal8Bit(uploadProcess->readAllStandardOutput()).trimmed();
+        QString stdError = QString::fromLocal8Bit(uploadProcess->readAllStandardError()).trimmed();
+
+        bool success = false;
+        if (exitStatus == QProcess::NormalExit && exitCode == 0) {
+            // Script exited normally, check output for confirmation
+             qDebug() << "Upload script STDOUT:\n" << stdOutput;
+             // Make check more robust - case-insensitive contains?
+            if (stdOutput.contains("Transfer complete", Qt::CaseInsensitive)) {
+                 qInfo() << "Upload script reported success.";
+                 success = true;
+             } else {
+                  qWarning() << "Upload script finished (exit 0) but success message not found in output.";
+                  if (!stdError.isEmpty()) {
+                       qWarning() << "Upload script STDERR:\n" << stdError;
+                  }
+             }
+        } else {
+            qWarning() << "Upload script failed to execute or exited with an error.";
+             if (!stdError.isEmpty()) {
+                  qWarning() << "Upload script STDERR:\n" << stdError;
+             } else if (!stdOutput.isEmpty()) {
+                 // Sometimes errors go to stdout
+                 qWarning() << "Upload script STDOUT (check for errors):\n" << stdOutput;
+             }
+        }
+
+        // --- Handle result ---
+        if (success) {
+            ui->bt_takeOver->setStyleSheet("background-color:blue;"); // Indicate active takeover
+            ui->bt_takeOver->setText(tr("Verifying...")); // Or "Broadcasting (Click to Stop)"
+            takeOver = true; // Update state only on confirmed success
+
+            // Clean up local file *after* successful upload
+            if (QFile::remove(takeOverFilePath)) {
+                 qInfo() << "Removed local takeover XML after successful upload.";
+            } else {
+                 qWarning() << "Could not remove local takeover XML after successful upload:" << takeOverFilePath;
+            }
+
+            // Start the verification check
+            QTimer::singleShot(5000, this, &player::checkTakeOver);
+
+        } else {
+            // Upload failed or confirmation missing
+            QMessageBox::critical(this, "Upload Failed", tr("Failed to upload the takeover file to the server or confirmation was not received.\nPlease check ~/.netrc, script permissions, network connection, and server status.\n\nScript output (if any):\n%1\n%2")
+                                  .arg(stdOutput.left(200)) // Show some output
+                                  .arg(stdError.left(200))); // Show some error output
+            // Reset UI to pre-takeover state
+            ui->bt_takeOver->setText(tr("Broadcast LIVE"));
+            ui->bt_takeOver->setStyleSheet("");
+            // Leave local XML file for debugging? Or remove it? Let's leave it for now.
+            // QFile::remove(takeOverFilePath);
+        }
+
+        // Re-enable button and clean up process object
+        ui->bt_takeOver->setEnabled(true);
+        uploadProcess->deleteLater();
+    });
+
+    // Handle process startup errors
+     connect(uploadProcess, &QProcess::errorOccurred, this, [this, uploadProcess, scriptPath](QProcess::ProcessError error){
+         qWarning() << "Failed to start upload script (" << scriptPath << "). Error:" << error;
+         QMessageBox::critical(this, "Script Error", QString("Could not start the upload script:\n%1\n\nError: %2").arg(scriptPath).arg(uploadProcess->errorString()));
+
+         ui->bt_takeOver->setText(tr("Broadcast LIVE"));
+         ui->bt_takeOver->setStyleSheet("");
+         ui->bt_takeOver->setEnabled(true);
+         uploadProcess->deleteLater(); // Cleanup
+     });
+
+    // Start the script
+    uploadProcess->start(scriptPath); // No arguments needed based on original code
 }
-
 void player::livePiscaStart(){
 
     if(piscaLive==true){
@@ -6099,87 +8579,143 @@ void player::livePiscaStop(){
 }
 
 
-void player::checkTakeOver(){
-    qDebug()<<"Checking the TakeOver...";
+void player::checkTakeOver() {
+    qDebug() << "Checking Takeover status asynchronously...";
 
-    QProcess sh;
-    QString shcmd = "/usr/share/xfb/scripts/serverFtpCmdsCHKTakeOver.sh | grep confirmtakeover.xml";
-    sh.start("sh",QStringList()<<"-c"<<shcmd);
-    sh.waitForFinished();
-    QString shout = sh.readAll().trimmed();
-    qDebug()<<"The output of: "<<shcmd<<":\n"<<shout;
+    // --- Determine Script Path ---
+    // TODO: Replace this with a robust way to find the script
+    QString scriptName = "serverFtpCmdsCHKTakeOver.sh";
+    QString scriptDir = QCoreApplication::applicationDirPath() + "/usr/share/xfb/scripts"; // Example path
+    QString scriptPath = QDir(scriptDir).filePath(scriptName);
 
-    if(shout!=""){
+    qInfo() << "Attempting to execute check script:" << scriptPath;
 
-        QStringList shoutarray = shout.split(".");
+    if (!QFileInfo::exists(scriptPath)) {
+        qWarning() << "Check script not found at:" << scriptPath;
+        // Stop checking? Or keep retrying? Let's stop and warn.
+        QMessageBox::critical(this, "Script Error", QString("The required check script was not found:\n%1\n\nTakeover verification stopped.").arg(scriptPath));
+        // Reset UI to non-live state? Depends on desired behavior on error.
+        // resetToNonLiveState(); // Call a hypothetical function to reset UI
+        return;
+    }
+    // Optional: Check script executability on Linux/macOS
 
-        if(shoutarray.count()>=1){
-            if(shoutarray[1]=="xml"){
+    // --- Execute Script Asynchronously ---
+    QProcess *checkProcess = new QProcess(this); // Create on heap for async
 
-                qDebug()<<"      -------------------         [TakeOver CONFIRMED]      ---------------------       ";
+    // Connection to handle when the process finishes
+    connect(checkProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+            this, [this, checkProcess](int exitCode, QProcess::ExitStatus exitStatus) {
+        qDebug() << "Check script finished. ExitCode:" << exitCode << "ExitStatus:" << exitStatus;
 
-                ui->bt_takeOver->setStyleSheet("background-color:green");
-                ui->bt_takeOver->setText(tr("BROADCASTING LIVE!!!"));
+        bool takeoverConfirmed = false;
+        QString stdOutput = QString::fromLocal8Bit(checkProcess->readAllStandardOutput()).trimmed();
+        QString stdError = QString::fromLocal8Bit(checkProcess->readAllStandardError()).trimmed();
 
-
-                ui->txt_ProgramName->setText(tr("BROADCASTING LIVE!!!"));
-                ui->txt_ProgramName->setStyleSheet("background-color:red;color:#FFF;text-align:center !important;font-size:28px;font-weight:bolder;");
-                ui->txt_ProgramName->setAlignment(Qt::AlignHCenter);
-                ui->txt_ProgramName->show();
-
-                if(piscaLive==false){
-                    piscaLive=true;
-                    livePiscaStart();
-                }
-
-
-
+        if (exitStatus == QProcess::NormalExit && exitCode == 0) {
+            // Script finished successfully, now check its output
+            qDebug() << "Check script STDOUT:\n" << stdOutput;
+            if (stdOutput.contains("confirmtakeover.xml", Qt::CaseInsensitive)) {
+                // Found the confirmation filename in the output
+                takeoverConfirmed = true;
+                qInfo() << "Takeover confirmation found in script output.";
             } else {
-
-                qDebug()<<"      -------------------         [TakeOver FAILD :: shoutarray[1] is not 'xml']         ---------------------       \n"
-                          "      -------------------     [Trying again in 10 sec]     ---------------------";
-                QTimer::singleShot(10000, this, SLOT(checkTakeOver()));
-
+                qInfo() << "Takeover confirmation filename not found in script output.";
+                // Log stderr just in case it has info
+                if (!stdError.isEmpty()) {
+                    qWarning() << "Check script STDERR (though exit code was 0):\n" << stdError;
+                }
             }
         } else {
-            qDebug()<<"      -------------------         [TakeOver FAILD :: shoutarray.count is less than 1]         ---------------------       \n"
-                      "      -------------------     [Trying again in 10 sec]     ---------------------";
-            QTimer::singleShot(10000, this, SLOT(checkTakeOver()));
-
+            // Script failed to execute properly or returned an error code
+            qWarning() << "Check script failed or exited with error.";
+            if (!stdError.isEmpty()) {
+                qWarning() << "Check script STDERR:\n" << stdError;
+            } else if (!stdOutput.isEmpty()) {
+                // Sometimes errors go to stdout
+                qWarning() << "Check script STDOUT (check for errors):\n" << stdOutput;
+            }
         }
 
+        // --- Update UI and State ---
+        if (takeoverConfirmed) {
+            qInfo() << "      -------------------         [TakeOver CONFIRMED]      ---------------------       ";
+            // Check if already in the live state to avoid redundant updates/starts
+            if (ui->bt_takeOver->text() != tr("BROADCASTING LIVE!!!")) {
+                 ui->bt_takeOver->setStyleSheet("background-color:green;"); // Use semicolon
+                 ui->bt_takeOver->setText(tr("BROADCASTING LIVE!!!"));
 
+                 ui->txt_ProgramName->setText(tr("BROADCASTING LIVE!!!"));
+                 ui->txt_ProgramName->setStyleSheet("background-color:red;color:#FFF;text-align:center !important;font-size:28px;font-weight:bolder;"); // Added semicolon
+                 ui->txt_ProgramName->setAlignment(Qt::AlignHCenter);
+                 ui->txt_ProgramName->show();
 
-    } else {
-        qDebug()<<"      -------------------         [TakeOver FAILD :: shout is empty]         ---------------------       \n"
-                  "      -------------------     [Trying again in 10 sec]     ---------------------";
-        QTimer::singleShot(10000, this, SLOT(checkTakeOver()));
+                 if (piscaLive == false) {
+                     piscaLive = true;
+                     livePiscaStart(); // Assuming this starts the blinking animation
+                 }
+            } else {
+                 qDebug() << "Takeover already confirmed, UI state unchanged.";
+            }
+            // Successfully confirmed, do NOT schedule another check.
 
-    }
+        } else {
+            // Takeover not confirmed, schedule retry
+            qWarning() << "      -------------------         [Takeover Check FAILED]         ---------------------       ";
+            qWarning() << "      -------------------     [Scheduling retry in 10 sec]     ---------------------";
 
+            // Optional: Update UI to show "Verification Failed" or similar temporarily?
+            // ui->bt_takeOver->setText(tr("Verification Failed"));
+            // ui->bt_takeOver->setStyleSheet("background-color:orange;"); // Indicate temporary failure?
+
+            QTimer::singleShot(10000, this, &player::checkTakeOver); // Schedule retry
+        }
+
+        // Cleanup the process object
+        checkProcess->deleteLater();
+    });
+
+    // Connection to handle process startup errors
+    connect(checkProcess, &QProcess::errorOccurred, this, [this, checkProcess, scriptPath](QProcess::ProcessError error) {
+        qWarning() << "Failed to start check script (" << scriptPath << "). Error:" << error << "-" << checkProcess->errorString();
+
+        // Decide how to handle startup failure. Retry? Show critical error?
+        qWarning() << "      -------------------         [Takeover Check FAILED - Could not start script]         ---------------------       ";
+        qWarning() << "      -------------------     [Scheduling retry in 10 sec]     ---------------------";
+
+        // Optional: Update UI to show error state
+        // ui->bt_takeOver->setText(tr("Check Script Error"));
+        // ui->bt_takeOver->setStyleSheet("background-color:purple;");
+
+        QTimer::singleShot(10000, this, &player::checkTakeOver); // Schedule retry even on startup error
+        checkProcess->deleteLater(); // Cleanup
+    });
+
+    // --- Start the Check ---
+    // Execute the script directly, do not pipe to grep here
+    checkProcess->start(scriptPath);
 }
-
 void player::MainsetVol100(){
-    Xplayer->setVolume(100);
+    XplayerOutput->setVolume(1.0); // Qt6 uses 0.0-1.0 range for volume
 }
 
 void player::MainsetVol80(){
-    Xplayer->setVolume(80);
+    XplayerOutput->setVolume(0.8); // Qt6 uses 0.0-1.0 range for volume
 }
 void player::MainsetVol60(){
-    Xplayer->setVolume(60);
+    XplayerOutput->setVolume(0.6); // Qt6 uses 0.0-1.0 range for volume
 }
 void player::MainsetVol40(){
-    Xplayer->setVolume(40);
+    XplayerOutput->setVolume(0.4); // Qt6 uses 0.0-1.0 range for volume
 }
 void player::MainsetVol20(){
-    Xplayer->setVolume(20);
+    XplayerOutput->setVolume(0.2); // Qt6 uses 0.0-1.0 range for volume
 }
 void player::MainsetVol10(){
-    Xplayer->setVolume(10);
+    XplayerOutput->setVolume(0.1); // Qt6 uses 0.0-1.0 range for volume
 }
 void player::MainsetVol5(){
-    Xplayer->setVolume(5);
+    XplayerOutput->setVolume(0.05); // Qt6 uses 0.0-1.0 range for volume
 }
 void player::MainStop(){
     Xplayer->stop();
@@ -6188,90 +8724,262 @@ void player::MainStop(){
     PlayMode = "stopped";
 }
 
-void player::pingTakeOverClient(){
+bool player::killProcessByName(const QString &processName) {
+    QProcess killer;
+    QString cmd;
+    QStringList args;
+    bool success = false;
 
-    qDebug()<<"Pinging the TakeOver Client ->| "<<takeOverIP;
+#ifdef Q_OS_WIN
+    // Windows: Use taskkill
+    cmd = "taskkill";
+    args << "/F" << "/IM" << processName + "*";
+    qWarning() << "Windows taskkill pattern matching is basic. Ensure '" << processName << "*' matches correctly, or use exact name.";
+#else
+    // Unix-like (Linux, macOS): Prefer pkill
+    cmd = "pkill";
+    args << "-f" << processName; // -f matches against the entire command line
+#endif
 
-    QProcess ping;
-    QString pingcmd = "ping -c 1 "+takeOverIP+" | grep '1 received'";
-
-    ping.start("sh",QStringList()<<"-c"<<pingcmd);
-    ping.waitForFinished(8000);
-
-    QString cmdout = ping.readAll();
-
-    QStringList pingArray = cmdout.split(",");
-
-    if(pingArray[1]==" 1 received"){
-
-        qDebug()<<"TakeOver Client pinged OK!! |<- "<<takeOverIP;
-
+    qInfo() << "Attempting to kill processes matching:" << processName << "using command:" << cmd << args;
+    killer.start(cmd, args);
+    if (killer.waitForFinished(3000)) { // Wait up to 3 seconds
+        if (killer.exitStatus() == QProcess::NormalExit && killer.exitCode() == 0) {
+            qInfo() << "Kill command executed successfully for" << processName << "(process may or may not have been running).";
+            success = true;
+        } else {
+            qWarning() << "Kill command for" << processName << "failed or reported an error. Exit code:" << killer.exitCode() << "Status:" << killer.exitStatus();
+        }
     } else {
-        qDebug()<<"ERROR pinging TakeOver Client!!\nKilling all streams and starting to play localy..";
-
-        //stop mplayer and start xplayer
-
-        QProcess kb;
-        kb.startDetached("sh",QStringList()<<"-c"<<"killall mplayer");
-
-        on_btPlay_clicked();
-
-        QTimer::singleShot(3500, this, SLOT(MainsetVol100()));
-        QTimer::singleShot(3000, this, SLOT(MainsetVol80()));
-        QTimer::singleShot(2500, this, SLOT(MainsetVol60()));
-        QTimer::singleShot(2000, this, SLOT(MainsetVol40()));
-        QTimer::singleShot(1500, this, SLOT(MainsetVol20()));
-        QTimer::singleShot(1000, this, SLOT(MainsetVol10()));
-        QTimer::singleShot(500, this, SLOT(MainsetVol5()));
-
-
-
-
-        QTimer::singleShot(30000,this,SLOT(recoveryStreamTakeOverPlay()));
-
+        qWarning() << "Kill command for" << processName << "timed out.";
+        killer.kill();
+        killer.waitForFinished(500);
     }
-
-
+    return success;
 }
 
+void player::pingTakeOverClient() {
 
-void player::recoveryStreamTakeOverPlay(){
+    if (takeOverIP.isEmpty()) {
+        qWarning() << "Cannot ping TakeOver Client: takeOverIP is empty.";
+        // Optionally trigger the failure actions immediately? Or just return?
+        // triggerPingFailureActions(); // Call a helper containing the failure steps
+        return;
+    }
 
-    qDebug()<<"Connection lost. Recovery routines running...";
+    qInfo() << "Pinging TakeOver Client asynchronously ->| " << takeOverIP;
 
-    stopMplayer();
+    // --- Prepare Ping Command (Platform Specific) ---
+    QProcess *pingProcess = new QProcess(this); // Create on heap for async handling
+    QString pingCmd;
+    QStringList pingArgs;
+    int timeoutMs = 5000; // Timeout for the ping command itself (e.g., 5 seconds) - was 8s wait
 
-    radio1str = "mplayer -volume 100 -playlist "+takeOverStream;
+#ifdef Q_OS_WIN
+    pingCmd = "ping";
+    // -n 1: Send 1 echo request
+    // -w timeout: Wait 'timeout' milliseconds for reply (use slightly less than waitForFinished timeout)
+    pingArgs << "-n" << "1" << "-w" << QString::number(timeoutMs - 500) << takeOverIP;
+#elif defined(Q_OS_MACOS)
+    pingCmd = "ping";
+    // -c 1: Send 1 echo request
+    // -t timeout: Specify timeout in seconds for the command
+    pingArgs << "-c" << "1" << "-t" << QString::number(timeoutMs / 1000) << takeOverIP;
+#else // Linux and other Unix-like
+    pingCmd = "ping";
+    // -c 1: Send 1 echo request
+    // -W timeout: Wait 'timeout' seconds for a reply
+    // -q: Quiet output (optional, we only care about exit code)
+    pingArgs << "-c" << "1" << "-W" << QString::number(timeoutMs / 1000) << "-q" << takeOverIP;
+#endif
 
-    qDebug()<<"Full cmd is: "<<radio1str;
+    qDebug() << "Executing ping command:" << pingCmd << pingArgs;
 
-    radio1.start("sh",QStringList()<<"-c"<<radio1str);
-    radio1.waitForStarted(-1);
+    // --- Connect Signals BEFORE Starting ---
+
+    // Handle process finished
+    connect(pingProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+            this, [this, pingProcess](int exitCode, QProcess::ExitStatus exitStatus) {
+        qDebug() << "Ping process finished. ExitCode:" << exitCode << "ExitStatus:" << exitStatus;
+
+        bool success = false;
+        if (exitStatus == QProcess::NormalExit && exitCode == 0) {
+            // Exit code 0 typically means success (at least one reply received)
+            success = true;
+        } else {
+            // Non-zero exit code or crash indicates failure
+            qWarning() << "Ping command failed or host unreachable.";
+            // Read stderr/stdout for potential clues (optional)
+            // QString stdErr = QString::fromLocal8Bit(pingProcess->readAllStandardError());
+            // if (!stdErr.isEmpty()) qDebug() << "Ping STDERR:" << stdErr;
+            // QString stdOut = QString::fromLocal8Bit(pingProcess->readAllStandardOutput());
+            // if (!stdOut.isEmpty()) qDebug() << "Ping STDOUT:" << stdOut;
+        }
+
+        // --- Take Action Based on Result ---
+        if (success) {
+            qInfo() << "TakeOver Client pinged OK!! |<- " << takeOverIP;
+            // No further action needed on success according to original logic
+        } else {
+            qWarning() << "ERROR pinging TakeOver Client!! Taking recovery actions...";
+            triggerPingFailureActions(); // Encapsulate failure actions in a helper
+        }
+
+        // Cleanup
+        pingProcess->deleteLater();
+    });
+
+    // Handle process startup errors
+    connect(pingProcess, &QProcess::errorOccurred, this, [this, pingProcess](QProcess::ProcessError error) {
+        qWarning() << "Failed to start ping process for" << takeOverIP << ". Error:" << error << "-" << pingProcess->errorString();
+        qWarning() << "Treating as ping failure and taking recovery actions...";
+
+        triggerPingFailureActions(); // Trigger failure actions if ping command itself fails
+
+        // Cleanup
+        pingProcess->deleteLater();
+    });
+
+    // --- Start the Ping ---
+    pingProcess->start(pingCmd, pingArgs);
+    // We don't use waitForFinished here, rely on signals
+}
+
+// --- Helper Function for Failure Actions ---
+// Encapsulating these makes the main logic cleaner
+void player::triggerPingFailureActions() {
+
+    qWarning() << "Killing all streams (mplayer) and starting local playback...";
+
+    // Stop mplayer using the robust helper
+    killProcessByName("mplayer");
+
+    // Start local playback
+    on_btPlay_clicked(); // Assuming this starts the local player
+
+    // Schedule volume fade-in (Original logic)
+    // Consider if these delays/steps are still appropriate
+    QTimer::singleShot(3500, this, &player::MainsetVol100);
+    QTimer::singleShot(3000, this, &player::MainsetVol80);
+    QTimer::singleShot(2500, this, &player::MainsetVol60);
+    QTimer::singleShot(2000, this, &player::MainsetVol40);
+    QTimer::singleShot(1500, this, &player::MainsetVol20);
+    QTimer::singleShot(1000, this, &player::MainsetVol10);
+    QTimer::singleShot(500, this, &player::MainsetVol5); // Note: Original code didn't have 0? Start low.
+
+    // Schedule recovery attempt
+    qInfo() << "Scheduling recovery stream attempt in 30 seconds.";
+    QTimer::singleShot(30000, this, &player::recoveryStreamTakeOverPlay);
+}
+
+void player::recoveryStreamTakeOverPlay() {
+
+    qInfo() << "Recovery initiated: Attempting to play takeover stream...";
+
+    // --- 1. Stop Existing Player ---
+    qInfo() << "Stopping any existing mplayer instance...";
+    stopMplayer(); // Call the assumed function to stop the player
+
+    // --- 2. Validate Stream URL/Path ---
+    if (takeOverStream.isEmpty()) {
+        qWarning() << "Cannot start recovery stream: takeOverStream variable is empty.";
+        QMessageBox::critical(this, tr("Recovery Error"), tr("The recovery stream URL is not configured. Cannot proceed."));
+        // Optionally trigger different recovery or stop?
+        return;
+    }
+    // Optional: If it's a local file path, check if it exists
+    // QUrl streamUrl(takeOverStream);
+    // if (streamUrl.isLocalFile()) {
+    //     QFileInfo playlistInfo(streamUrl.toLocalFile());
+    //     if (!playlistInfo.exists()) {
+    //         qWarning() << "Recovery playlist file not found:" << playlistInfo.filePath();
+    //         QMessageBox::critical(this, tr("Recovery Error"), tr("Recovery playlist file not found:\n%1").arg(playlistInfo.filePath()));
+    //         return;
+    //     }
+    // }
+    qInfo() << "Attempting to play stream/playlist:" << takeOverStream;
+
+    // --- 3. Find mplayer Executable ---
+    QString mplayerPath = QStandardPaths::findExecutable("mplayer");
+    if (mplayerPath.isEmpty()) {
+        qWarning() << "mplayer executable not found in system PATH.";
+        QMessageBox::critical(this, tr("Dependency Error"), tr("'mplayer' command not found. Please install mplayer and ensure it is in your PATH."));
+        // Cannot proceed without mplayer
+        return;
+    }
+    qInfo() << "Found mplayer at:" << mplayerPath;
+
+
+    // --- 4. Prepare and Start mplayer Asynchronously ---
+    QStringList mplayerArgs;
+    // Add arguments BEFORE the playlist/URL
+    mplayerArgs << "-volume" << "100"; // Start at full volume? Or maybe lower and fade in?
+    mplayerArgs << "-playlist" << takeOverStream; // Add playlist/URL last
+
+    qDebug() << "Executing:" << mplayerPath << mplayerArgs;
+
+    // Disconnect any previous signal connections from the 'radio1' process object
+    // to avoid duplicate handlers if this function is called again rapidly.
+    radio1.disconnect(); // Disconnects all signals from this object
+
+    // Connect error handling signal *before* starting
+    connect(&radio1, &QProcess::errorOccurred, this, [this](QProcess::ProcessError error){
+        qWarning() << "Failed to start mplayer for recovery stream. Error:" << error << "-" << radio1.errorString();
+        QMessageBox::warning(this, tr("Playback Error"), tr("Failed to start the recovery stream player (mplayer).\nError: %1").arg(radio1.errorString()));
+        // Optionally, schedule another recovery attempt?
+        // QTimer::singleShot(15000, this, &player::recoveryStreamTakeOverPlay);
+    });
+
+    // Optionally connect started signal for logging confirmation
+     connect(&radio1, &QProcess::started, this, [this](){
+         qInfo() << "mplayer process started successfully for recovery stream.";
+     });
+
+     // Optionally connect finished signal for cleanup or restart logic
+     connect(&radio1, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+             this, [this](int exitCode, QProcess::ExitStatus exitStatus){
+         qWarning() << "mplayer recovery stream finished unexpectedly. ExitCode:" << exitCode << "ExitStatus:" << exitStatus;
+         // Decide what to do: retry? stop? Assume user interaction needed?
+         // Maybe just log it if recoveryStreamTakeOverPlay is the only way to restart.
+         // If the stream *should* run indefinitely, maybe schedule another recovery:
+         // QTimer::singleShot(5000, this, &player::recoveryStreamTakeOverPlay);
+     });
+
+
+    // Start the process
+    radio1.start(mplayerPath, mplayerArgs);
+
+    // Close communication channels *after* starting if not needed (as per original)
+    // Note: Keeping stderr open can be useful for debugging mplayer errors.
     radio1.closeReadChannel(QProcess::StandardOutput);
     radio1.closeReadChannel(QProcess::StandardError);
+    // radio1.closeWriteChannel(); // Also close input if definitely not needed
 
 
-    ui->txtNowPlaying->setText(takeOverStream);
+    // --- 5. Update UI Immediately ---
+    // (Original logic updated UI before confirming mplayer started)
+    ui->txtNowPlaying->setText(QString("RECOVERY: %1").arg(takeOverStream)); // Add prefix for clarity
 
     QDateTime now = QDateTime::currentDateTime();
     QString text = now.toString("yyyy-MM-dd || hh:mm:ss ||");
-    QString historyNewLine = text + " " + takeOverStream;
+    // Add context to history entry
+    QString historyNewLine = text + " RECOVERY STARTED - " + takeOverStream;
     ui->historyList->addItem(historyNewLine);
-
-    //stop the main player...
-
-    QTimer::singleShot(500, this, SLOT(MainsetVol100()));
-    QTimer::singleShot(1000, this, SLOT(MainsetVol80()));
-    QTimer::singleShot(1500, this, SLOT(MainsetVol60()));
-    QTimer::singleShot(2000, this, SLOT(MainsetVol40()));
-    QTimer::singleShot(2500, this, SLOT(MainsetVol20()));
-    QTimer::singleShot(3000, this, SLOT(MainsetVol10()));
-    QTimer::singleShot(3500, this, SLOT(MainsetVol5()));
-    QTimer::singleShot(4000, this, SLOT(MainStop()));
+    ui->historyList->scrollToBottom(); // Ensure latest entry is visible
 
 
+    // --- 6. Stop the Main Local Player (Delayed Fade) ---
+    // This logic assumes MainsetVol/MainStop control a *different* player/UI element
+    qInfo() << "Scheduling fade-out and stop for the main local player...";
+    QTimer::singleShot(500, this, &player::MainsetVol100); // Start fade from 100? Or 0? This sequence looks like fade *out*.
+    QTimer::singleShot(1000, this, &player::MainsetVol80);
+    QTimer::singleShot(1500, this, &player::MainsetVol60);
+    QTimer::singleShot(2000, this, &player::MainsetVol40);
+    QTimer::singleShot(2500, this, &player::MainsetVol20);
+    QTimer::singleShot(3000, this, &player::MainsetVol10);
+    QTimer::singleShot(3500, this, &player::MainsetVol5);
+    QTimer::singleShot(4000, this, &player::MainStop); // Final stop
 }
-
 void player::on_bt_pause_rec_clicked()
 {
 
@@ -6306,5 +9014,12 @@ void player::on_bt_pause_play_clicked()
         ui->bt_pause_play->setStyleSheet("");
         Xplayer->play();
 
+    }
+}
+
+void player::refreshAdBanner() {
+    if (adBanner && adBanner->rootObject()) {
+        // Call the QML function to reload the ad
+        QMetaObject::invokeMethod(adBanner->rootObject(), "loadAd");
     }
 }

@@ -1,5 +1,9 @@
 <RCC>
     <qresource prefix="/">
+        <file>lp_player.png</file>
+        <file>resources/stylesheet.qss</file>
+        <file>resources/darkstylesheet.qss</file>
+        <file>resources/statusbar_fix.qss</file>
         <file>images/novo logo_12_cfundo2_900.png</file>
         <file>icons/1.png</file>
         <file>icons/3.png</file>
@@ -815,7 +819,6 @@
         <file>icons/zoom-out.png</file>
         <file>icons/zoom-previous.png</file>
         <file>icons/zoom-select.png</file>
-        <file>48x48.png</file>
         <file>icons/record.png</file>
         <file>images/lp_player_p0.png</file>
         <file>images/lp_player_p1.png</file>
@@ -905,5 +908,9 @@
         <file>icons/flat/Stop-32.png</file>
         <file>icons/flat/Stop Sign-32.png</file>
         <file>images/donate.png</file>
+        <file>AdView.qml</file>
+        <file>xfb.conf</file>
+        <file>adb.db</file>
+        <file>48x48.png</file>
     </qresource>
 </RCC>

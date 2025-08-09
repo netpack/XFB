@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'externaldownloader.ui'
 **
-** Created by: Qt User Interface Compiler version 5.15.12
+** Created by: Qt User Interface Compiler version 6.7.3
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
 ********************************************************************************/
@@ -58,148 +58,235 @@ public:
     void setupUi(QWidget *externaldownloader)
     {
         if (externaldownloader->objectName().isEmpty())
-            externaldownloader->setObjectName(QString::fromUtf8("externaldownloader"));
+            externaldownloader->setObjectName("externaldownloader");
+        externaldownloader->setStyleSheet(QString::fromUtf8("\n"
+"      QWidget {\n"
+"          background-color: #2b2b2b;\n"
+"          color: #bbbbbb; /* Default text color */\n"
+"      }\n"
+"      QLabel {\n"
+"          color: #bbbbbb;\n"
+"      }\n"
+"      QLineEdit, QTextEdit, QPlainTextEdit {\n"
+"          background-color: #3c3f41;\n"
+"          color: #bbbbbb;\n"
+"          border: 1px solid #555555;\n"
+"          selection-background-color: #007acc;\n"
+"          selection-color: white;\n"
+"      }\n"
+"      QPushButton, QToolButton {\n"
+"          background-color: #555555;\n"
+"          color: #bbbbbb;\n"
+"          border: 1px solid #666666;\n"
+"          padding: 5px;\n"
+"      }\n"
+"      QPushButton:hover, QToolButton:hover {\n"
+"          background-color: #666666;\n"
+"      }\n"
+"      QPushButton:pressed, QToolButton:pressed {\n"
+"          background-color: #444444;\n"
+"      }\n"
+"      QComboBox {\n"
+"          background-color: #3c3f41;\n"
+"          color: #bbbbbb;\n"
+"          border: 1px solid #555555;\n"
+"          selection-background-color: "
+                        "#007acc;\n"
+"          /* selection-color: white; */\n"
+"      }\n"
+"      QComboBox::drop-down {\n"
+"          border: none;\n"
+"      }\n"
+"      QComboBox QAbstractItemView {\n"
+"          background-color: #3c3f41;\n"
+"          color: #bbbbbb;\n"
+"          selection-background-color: #007acc;\n"
+"          selection-color: white;\n"
+"          border: 1px solid #555555;\n"
+"          outline: 0px;\n"
+"      }\n"
+"      QDateEdit {\n"
+"          background-color: #3c3f41;\n"
+"          color: #bbbbbb;\n"
+"          border: 1px solid #555555;\n"
+"          selection-background-color: #007acc;\n"
+"          selection-color: white;\n"
+"      }\n"
+"      QDateEdit::drop-down {\n"
+"           /* Style dropdown button if needed */\n"
+"      }\n"
+"      QDateEdit QAbstractItemView {\n"
+"          background-color: #3c3f41;\n"
+"          color: #bbbbbb;\n"
+"          selection-background-color: #007acc;\n"
+"      }\n"
+"      QTableView {\n"
+"          background-color: #3c3f41;\n"
+"          color: #bbbbbb;\n"
+" "
+                        "         gridline-color: #555555;\n"
+"          selection-background-color: #007acc;\n"
+"          selection-color: white;\n"
+"      }\n"
+"      QHeaderView::section {\n"
+"          background-color: #555555;\n"
+"          color: #bbbbbb;\n"
+"          padding: 4px;\n"
+"          border: 1px solid #666666;\n"
+"      }\n"
+"      QProgressBar {\n"
+"          border: 1px solid #555555;\n"
+"          text-align: center;\n"
+"          color: #bbbbbb;\n"
+"          background-color: #3c3f41;\n"
+"      }\n"
+"      QProgressBar::chunk {\n"
+"          background-color: #007acc;\n"
+"          width: 10px; \n"
+"          margin: 0.5px;\n"
+"      }\n"
+"     "));
         externaldownloader->resize(696, 548);
         QIcon icon;
-        icon.addFile(QString::fromUtf8(":/48x48.png"), QSize(), QIcon::Normal, QIcon::Off);
+        icon.addFile(QString::fromUtf8(":/48x48.png"), QSize(), QIcon::Mode::Normal, QIcon::State::Off);
         externaldownloader->setWindowIcon(icon);
         externaldownloader->setStyleSheet(QString::fromUtf8("background-color:#FFF;"));
         label = new QLabel(externaldownloader);
-        label->setObjectName(QString::fromUtf8("label"));
+        label->setObjectName("label");
         label->setGeometry(QRect(120, 10, 191, 41));
         QFont font;
-        font.setFamily(QString::fromUtf8("URW Chancery L"));
+        font.setFamilies({QString::fromUtf8("URW Chancery L")});
         font.setPointSize(17);
         font.setItalic(true);
         label->setFont(font);
         txt_teminal_yd1 = new QPlainTextEdit(externaldownloader);
-        txt_teminal_yd1->setObjectName(QString::fromUtf8("txt_teminal_yd1"));
+        txt_teminal_yd1->setObjectName("txt_teminal_yd1");
         txt_teminal_yd1->setGeometry(QRect(10, 320, 671, 161));
         QFont font1;
-        font1.setFamily(QString::fromUtf8("Ubuntu"));
+        font1.setFamilies({QString::fromUtf8("Ubuntu")});
         font1.setPointSize(8);
         txt_teminal_yd1->setFont(font1);
         txt_teminal_yd1->setStyleSheet(QString::fromUtf8("color:rgb(255, 255, 255);\n"
 "background-color: rgb(83, 28, 28);"));
         txt_teminal_yd1->setReadOnly(true);
+        txt_teminal_yd1->setTabStopDistance(80.000000000000000);
         txt_teminal_yd1->setCursorWidth(2);
-        txt_teminal_yd1->setProperty("tabStopWidth", QVariant(80));
         frame_loading = new QFrame(externaldownloader);
-        frame_loading->setObjectName(QString::fromUtf8("frame_loading"));
+        frame_loading->setObjectName("frame_loading");
         frame_loading->setEnabled(true);
         frame_loading->setGeometry(QRect(10, 320, 671, 161));
         frame_loading->setStyleSheet(QString::fromUtf8("background-color: rgb(92, 80, 80);"));
         frame_loading->setFrameShape(QFrame::StyledPanel);
         frame_loading->setFrameShadow(QFrame::Raised);
         label_8 = new QLabel(frame_loading);
-        label_8->setObjectName(QString::fromUtf8("label_8"));
+        label_8->setObjectName("label_8");
         label_8->setGeometry(QRect(10, 50, 651, 51));
         QFont font2;
-        font2.setFamily(QString::fromUtf8("URW Palladio L"));
+        font2.setFamilies({QString::fromUtf8("URW Palladio L")});
         font2.setPointSize(8);
         font2.setItalic(true);
         label_8->setFont(font2);
         label_8->setStyleSheet(QString::fromUtf8("color: rgb(255, 255, 255);"));
         label_8->setAlignment(Qt::AlignCenter);
         label_9 = new QLabel(frame_loading);
-        label_9->setObjectName(QString::fromUtf8("label_9"));
+        label_9->setObjectName("label_9");
         label_9->setGeometry(QRect(20, 20, 641, 41));
         QFont font3;
-        font3.setFamily(QString::fromUtf8("URW Palladio L"));
+        font3.setFamilies({QString::fromUtf8("URW Palladio L")});
         font3.setPointSize(18);
         font3.setItalic(true);
         label_9->setFont(font3);
         label_9->setStyleSheet(QString::fromUtf8("color:#FFF"));
         label_9->setAlignment(Qt::AlignCenter);
         label_10 = new QLabel(frame_loading);
-        label_10->setObjectName(QString::fromUtf8("label_10"));
+        label_10->setObjectName("label_10");
         label_10->setGeometry(QRect(10, 130, 651, 20));
         label_10->setFont(font2);
         label_10->setStyleSheet(QString::fromUtf8("color: rgb(255, 255, 255);"));
         label_10->setScaledContents(false);
         label_10->setAlignment(Qt::AlignCenter);
         label_5 = new QLabel(externaldownloader);
-        label_5->setObjectName(QString::fromUtf8("label_5"));
+        label_5->setObjectName("label_5");
         label_5->setGeometry(QRect(40, 170, 71, 17));
         cbox_g2 = new QComboBox(externaldownloader);
-        cbox_g2->setObjectName(QString::fromUtf8("cbox_g2"));
+        cbox_g2->setObjectName("cbox_g2");
         cbox_g2->setEnabled(true);
         cbox_g2->setGeometry(QRect(120, 190, 201, 27));
         cbox_g2->setStyleSheet(QString::fromUtf8("selection-color: rgb(87, 118, 255);"));
         cbox_g1 = new QComboBox(externaldownloader);
-        cbox_g1->setObjectName(QString::fromUtf8("cbox_g1"));
+        cbox_g1->setObjectName("cbox_g1");
         cbox_g1->setEnabled(true);
         cbox_g1->setGeometry(QRect(120, 160, 201, 27));
         cbox_g1->setStyleSheet(QString::fromUtf8("selection-color: rgb(87, 118, 255);"));
         txt_song = new QLineEdit(externaldownloader);
-        txt_song->setObjectName(QString::fromUtf8("txt_song"));
+        txt_song->setObjectName("txt_song");
         txt_song->setEnabled(true);
-        txt_song->setGeometry(QRect(120, 130, 461, 27));
+        txt_song->setGeometry(QRect(120, 130, 531, 27));
         txt_artist = new QLineEdit(externaldownloader);
-        txt_artist->setObjectName(QString::fromUtf8("txt_artist"));
+        txt_artist->setObjectName("txt_artist");
         txt_artist->setEnabled(true);
-        txt_artist->setGeometry(QRect(120, 100, 461, 27));
+        txt_artist->setGeometry(QRect(120, 100, 531, 27));
         checkBox_cplp = new QCheckBox(externaldownloader);
-        checkBox_cplp->setObjectName(QString::fromUtf8("checkBox_cplp"));
+        checkBox_cplp->setObjectName("checkBox_cplp");
         checkBox_cplp->setEnabled(true);
         checkBox_cplp->setGeometry(QRect(40, 260, 281, 22));
         label_4 = new QLabel(externaldownloader);
-        label_4->setObjectName(QString::fromUtf8("label_4"));
+        label_4->setObjectName("label_4");
         label_4->setGeometry(QRect(40, 140, 62, 17));
         label_3 = new QLabel(externaldownloader);
-        label_3->setObjectName(QString::fromUtf8("label_3"));
+        label_3->setObjectName("label_3");
         label_3->setGeometry(QRect(40, 110, 71, 17));
         label_6 = new QLabel(externaldownloader);
-        label_6->setObjectName(QString::fromUtf8("label_6"));
+        label_6->setObjectName("label_6");
         label_6->setGeometry(QRect(40, 200, 71, 17));
         label_7 = new QLabel(externaldownloader);
-        label_7->setObjectName(QString::fromUtf8("label_7"));
+        label_7->setObjectName("label_7");
         label_7->setGeometry(QRect(40, 230, 111, 17));
         dateEdit_publishedDate = new QDateEdit(externaldownloader);
-        dateEdit_publishedDate->setObjectName(QString::fromUtf8("dateEdit_publishedDate"));
+        dateEdit_publishedDate->setObjectName("dateEdit_publishedDate");
         dateEdit_publishedDate->setEnabled(true);
         dateEdit_publishedDate->setGeometry(QRect(150, 220, 171, 27));
         label_2 = new QLabel(externaldownloader);
-        label_2->setObjectName(QString::fromUtf8("label_2"));
+        label_2->setObjectName("label_2");
         label_2->setGeometry(QRect(40, 80, 81, 17));
         txt_videoLink = new QLineEdit(externaldownloader);
-        txt_videoLink->setObjectName(QString::fromUtf8("txt_videoLink"));
-        txt_videoLink->setGeometry(QRect(120, 70, 521, 27));
+        txt_videoLink->setObjectName("txt_videoLink");
+        txt_videoLink->setGeometry(QRect(120, 70, 531, 27));
         QFont font4;
         font4.setPointSize(8);
         txt_videoLink->setFont(font4);
         pushButton = new QPushButton(externaldownloader);
-        pushButton->setObjectName(QString::fromUtf8("pushButton"));
+        pushButton->setObjectName("pushButton");
         pushButton->setGeometry(QRect(350, 170, 171, 31));
         label_11 = new QLabel(externaldownloader);
-        label_11->setObjectName(QString::fromUtf8("label_11"));
+        label_11->setObjectName("label_11");
         label_11->setGeometry(QRect(40, 10, 61, 51));
         label_11->setPixmap(QPixmap(QString::fromUtf8(":/icons/icon48x48.png")));
         label_11->setScaledContents(true);
         layoutWidget = new QWidget(externaldownloader);
-        layoutWidget->setObjectName(QString::fromUtf8("layoutWidget"));
+        layoutWidget->setObjectName("layoutWidget");
         layoutWidget->setGeometry(QRect(10, 490, 671, 51));
         horizontalLayout = new QHBoxLayout(layoutWidget);
-        horizontalLayout->setObjectName(QString::fromUtf8("horizontalLayout"));
+        horizontalLayout->setObjectName("horizontalLayout");
         horizontalLayout->setContentsMargins(0, 0, 0, 0);
         bt_youtube_getIt = new QPushButton(layoutWidget);
-        bt_youtube_getIt->setObjectName(QString::fromUtf8("bt_youtube_getIt"));
+        bt_youtube_getIt->setObjectName("bt_youtube_getIt");
         QIcon icon1;
-        icon1.addFile(QString::fromUtf8(":/icons/svn-update.png"), QSize(), QIcon::Normal, QIcon::Off);
+        icon1.addFile(QString::fromUtf8(":/icons/svn-update.png"), QSize(), QIcon::Mode::Normal, QIcon::State::Off);
         bt_youtube_getIt->setIcon(icon1);
         bt_youtube_getIt->setIconSize(QSize(24, 24));
 
         horizontalLayout->addWidget(bt_youtube_getIt);
 
         bt_clear = new QPushButton(layoutWidget);
-        bt_clear->setObjectName(QString::fromUtf8("bt_clear"));
+        bt_clear->setObjectName("bt_clear");
 
         horizontalLayout->addWidget(bt_clear);
 
         bt_close = new QPushButton(layoutWidget);
-        bt_close->setObjectName(QString::fromUtf8("bt_close"));
+        bt_close->setObjectName("bt_close");
         QIcon icon2;
-        icon2.addFile(QString::fromUtf8(":/icons/application-exit.png"), QSize(), QIcon::Normal, QIcon::Off);
+        icon2.addFile(QString::fromUtf8(":/icons/application-exit.png"), QSize(), QIcon::Mode::Normal, QIcon::State::Off);
         bt_close->setIcon(icon2);
 
         horizontalLayout->addWidget(bt_close);
@@ -229,7 +316,7 @@ public:
         label_7->setText(QCoreApplication::translate("externaldownloader", "Published date:", nullptr));
         dateEdit_publishedDate->setDisplayFormat(QCoreApplication::translate("externaldownloader", "yyyy/MM/dd", nullptr));
         label_2->setText(QCoreApplication::translate("externaldownloader", "Video Link:", nullptr));
-        txt_videoLink->setPlaceholderText(QCoreApplication::translate("externaldownloader", "https://www.youtube.com/watch?v=qWG2dsXV5HI", nullptr));
+        txt_videoLink->setPlaceholderText(QString());
         pushButton->setText(QCoreApplication::translate("externaldownloader", "Manage Genres", nullptr));
         label_11->setText(QString());
         bt_youtube_getIt->setText(QCoreApplication::translate("externaldownloader", "Get it!", nullptr));

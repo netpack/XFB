@@ -6,17 +6,16 @@
 #
 #-------------------------------------------------
 
-QT       += core gui multimedia sql webkit webkitwidgets widgets designer network
+QT       += core gui concurrent multimedia sql widgets network webenginecore webenginequick quickwidgets
 
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
-
-CONFIG += C++11
+CONFIG += c++17
 
 TARGET = XFB
 TEMPLATE = app
 
-SOURCES +=\
+SOURCES += \
     externaldownloader.cpp \
+    permission_utils.mm \
     player.cpp \
     main.cpp \
     add_music_single.cpp \
@@ -27,10 +26,12 @@ SOURCES +=\
     optionsdialog.cpp \
     aboutus.cpp \
     add_program.cpp \
-    audioinput.cpp
+    audioinput.cpp \
+    config.cpp
 
 HEADERS  += \
     externaldownloader.h \
+    permission_utils.h \
     player.h \
     add_music_single.h \
     add_full_dir.h \
@@ -42,7 +43,6 @@ HEADERS  += \
     add_program.h \
     audioinput.h \
     config.h
-
 
 FORMS    += \
     externaldownloader.ui \
@@ -62,3 +62,21 @@ RESOURCES += \
 
 DISTFILES += \
     setup.sh
+
+macx {
+    LIBS += -framework AVFoundation
+    # Add microphone usage description to Info.plist
+    QMAKE_INFO_PLIST_KEY_NSMicrophoneUsageDescription = "XFB needs access to the microphone to list devices and enable recording features."
+    ICON = ../XFB.icns
+    QMAKE_INFO_PLIST = XFB.app/Contents/Info.plist
+
+}
+
+contains(CONFIG, cross_compile) {
+    include(cross_compile.pri)
+}
+
+unix {
+    QMAKE_LFLAGS_RPATH=
+    QMAKE_LFLAGS += -Wl,-rpath,'$$ORIGIN'
+}

@@ -45,8 +45,10 @@
 #include <QDebug>
 #include <QPainter>
 #include <QVBoxLayout>
-#include <QAudioDeviceInfo>
+#include <QMediaDevices> // Qt6 replacement for QAudioDeviceInfo
+#include <QAudioDevice> // Qt6 audio device representation
 #include <QAudioInput>
+#include <QAudioSource>
 #include <qendian.h>
 
 #include "audioinput.h"
@@ -65,45 +67,31 @@ AudioInfo::AudioInfo(const QAudioFormat &format, QObject *parent)
     ,   m_level(0.0)
 
 {
-    switch (m_format.sampleSize()) {
+    // In Qt6, sample format handling has changed
+    // We need to determine max amplitude based on sample format
+    
+    int sampleSize = m_format.bytesPerSample() * 8; // Get sample size in bits
+    QAudioFormat::SampleFormat sampleFormat = m_format.sampleFormat();
+    
+    switch (sampleSize) {
     case 8:
-        switch (m_format.sampleType()) {
-        case QAudioFormat::UnSignedInt:
+        if (sampleFormat == QAudioFormat::UInt8)
             m_maxAmplitude = 255;
-            break;
-        case QAudioFormat::SignedInt:
-            m_maxAmplitude = 127;
-            break;
-        default:
-            break;
-        }
+        // Qt6 doesn't have Int8 format
         break;
+        
     case 16:
-        switch (m_format.sampleType()) {
-        case QAudioFormat::UnSignedInt:
-            m_maxAmplitude = 65535;
-            break;
-        case QAudioFormat::SignedInt:
+        if (sampleFormat == QAudioFormat::Int16)
             m_maxAmplitude = 32767;
-            break;
-        default:
-            break;
-        }
+        // Qt6 doesn't have UInt16 format
         break;
 
     case 32:
-        switch (m_format.sampleType()) {
-        case QAudioFormat::UnSignedInt:
-            m_maxAmplitude = 0xffffffff;
-            break;
-        case QAudioFormat::SignedInt:
+        if (sampleFormat == QAudioFormat::Int32)
             m_maxAmplitude = 0x7fffffff;
-            break;
-        case QAudioFormat::Float:
+        else if (sampleFormat == QAudioFormat::Float)
             m_maxAmplitude = 0x7fffffff; // Kind of
-        default:
-            break;
-        }
+        // Qt6 doesn't have UInt32 format
         break;
 
     default:
@@ -117,12 +105,12 @@ AudioInfo::~AudioInfo()
 
 void AudioInfo::start()
 {
-    open(QIODevice::WriteOnly);
+    QIODevice::open(QIODevice::WriteOnly);
 }
 
 void AudioInfo::stop()
 {
-    close();
+    QIODevice::close();
 }
 
 qint64 AudioInfo::readData(char *data, qint64 maxlen)
@@ -136,8 +124,8 @@ qint64 AudioInfo::readData(char *data, qint64 maxlen)
 qint64 AudioInfo::writeData(const char *data, qint64 len)
 {
     if (m_maxAmplitude) {
-        Q_ASSERT(m_format.sampleSize() % 8 == 0);
-        const int channelBytes = m_format.sampleSize() / 8;
+        // In Qt6, we use bytesPerSample() instead of sampleSize()/8
+        const int channelBytes = m_format.bytesPerSample();
         const int sampleBytes = m_format.channelCount() * channelBytes;
         Q_ASSERT(len % sampleBytes == 0);
         const int numSamples = len / sampleBytes;
@@ -148,32 +136,19 @@ qint64 AudioInfo::writeData(const char *data, qint64 len)
         for (int i = 0; i < numSamples; ++i) {
             for (int j = 0; j < m_format.channelCount(); ++j) {
                 quint32 value = 0;
-
-                if (m_format.sampleSize() == 8 && m_format.sampleType() == QAudioFormat::UnSignedInt) {
+                QAudioFormat::SampleFormat sampleFormat = m_format.sampleFormat();
+                int sampleSize = m_format.bytesPerSample() * 8; // Get sample size in bits
+                
+                // Handle different sample formats in Qt6
+                if (sampleSize == 8 && sampleFormat == QAudioFormat::UInt8) {
                     value = *reinterpret_cast<const quint8*>(ptr);
-                } else if (m_format.sampleSize() == 8 && m_format.sampleType() == QAudioFormat::SignedInt) {
-                    value = qAbs(*reinterpret_cast<const qint8*>(ptr));
-                } else if (m_format.sampleSize() == 16 && m_format.sampleType() == QAudioFormat::UnSignedInt) {
-                    if (m_format.byteOrder() == QAudioFormat::LittleEndian)
-                        value = qFromLittleEndian<quint16>(ptr);
-                    else
-                        value = qFromBigEndian<quint16>(ptr);
-                } else if (m_format.sampleSize() == 16 && m_format.sampleType() == QAudioFormat::SignedInt) {
-                    if (m_format.byteOrder() == QAudioFormat::LittleEndian)
-                        value = qAbs(qFromLittleEndian<qint16>(ptr));
-                    else
-                        value = qAbs(qFromBigEndian<qint16>(ptr));
-                } else if (m_format.sampleSize() == 32 && m_format.sampleType() == QAudioFormat::UnSignedInt) {
-                    if (m_format.byteOrder() == QAudioFormat::LittleEndian)
-                        value = qFromLittleEndian<quint32>(ptr);
-                    else
-                        value = qFromBigEndian<quint32>(ptr);
-                } else if (m_format.sampleSize() == 32 && m_format.sampleType() == QAudioFormat::SignedInt) {
-                    if (m_format.byteOrder() == QAudioFormat::LittleEndian)
-                        value = qAbs(qFromLittleEndian<qint32>(ptr));
-                    else
-                        value = qAbs(qFromBigEndian<qint32>(ptr));
-                } else if (m_format.sampleSize() == 32 && m_format.sampleType() == QAudioFormat::Float) {
+                } else if (sampleSize == 16 && sampleFormat == QAudioFormat::Int16) {
+                    // In Qt6, we always use native endianness
+                    value = qAbs(*reinterpret_cast<const qint16*>(ptr));
+                } else if (sampleSize == 32 && sampleFormat == QAudioFormat::Int32) {
+                    // In Qt6, we always use native endianness
+                    value = qAbs(*reinterpret_cast<const qint32*>(ptr));
+                } else if (sampleSize == 32 && sampleFormat == QAudioFormat::Float) {
                     value = qAbs(*reinterpret_cast<const float*>(ptr) * 0x7fffffff); // assumes 0-1.0
                 }
 
@@ -233,9 +208,10 @@ InputTest::InputTest()
     ,   m_modeButton(0)
     ,   m_suspendResumeButton(0)
     ,   m_deviceBox(0)
-    ,   m_device(QAudioDeviceInfo::defaultInputDevice())
+    ,   m_device(QMediaDevices::defaultAudioInput())
     ,   m_audioInfo(0)
     ,   m_audioInput(0)
+    ,   m_audioSource(0)
     ,   m_input(0)
     ,   m_pullMode(false)
     ,   m_buffer(BufferSize, 0)
@@ -255,11 +231,11 @@ void InputTest::initializeWindow()
     layout->addWidget(m_canvas);
 
     m_deviceBox = new QComboBox(this);
-    const QAudioDeviceInfo &defaultDeviceInfo = QAudioDeviceInfo::defaultInputDevice();
-    m_deviceBox->addItem(defaultDeviceInfo.deviceName(), qVariantFromValue(defaultDeviceInfo));
-    foreach (const QAudioDeviceInfo &deviceInfo, QAudioDeviceInfo::availableDevices(QAudio::AudioInput)) {
+    const QAudioDevice defaultDeviceInfo = QMediaDevices::defaultAudioInput();
+    m_deviceBox->addItem(defaultDeviceInfo.description(), QVariant::fromValue(defaultDeviceInfo));
+    foreach (const QAudioDevice &deviceInfo, QMediaDevices::audioInputs()) {
         if (deviceInfo != defaultDeviceInfo)
-            m_deviceBox->addItem(deviceInfo.deviceName(), qVariantFromValue(deviceInfo));
+            m_deviceBox->addItem(deviceInfo.description(), QVariant::fromValue(deviceInfo));
     }
 
     connect(m_deviceBox, SIGNAL(activated(int)), SLOT(deviceChanged(int)));
@@ -282,10 +258,10 @@ void InputTest::initializeWindow()
     layout->addWidget(m_suspendResumeButton);
 
     window->setLayout(layout.data());
-    layout.take(); // ownership transferred
+    layout.take(); // QScopedPointer uses take() method, not release()
 
     setCentralWidget(window.data());
-    QWidget *const windowPtr = window.take(); // ownership transferred
+    QWidget *const windowPtr = window.take(); // QScopedPointer uses take() method, not release()
     windowPtr->show();
 }
 
@@ -295,15 +271,14 @@ void InputTest::initializeAudio()
 
     m_format.setSampleRate(8000);
     m_format.setChannelCount(1);
-    m_format.setSampleSize(16);
-    m_format.setSampleType(QAudioFormat::SignedInt);
-    m_format.setByteOrder(QAudioFormat::LittleEndian);
-    m_format.setCodec("audio/pcm");
+    // In Qt6, we use setSampleFormat instead of setSampleSize and setSampleType
+    m_format.setSampleFormat(QAudioFormat::Int16);
+    // Qt6 doesn't use byteOrder or codec anymore
 
-    QAudioDeviceInfo info(QAudioDeviceInfo::defaultInputDevice());
+    QAudioDevice info = QMediaDevices::defaultAudioInput();
     if (!info.isFormatSupported(m_format)) {
         qWarning() << "Default format not supported - trying to use nearest";
-        m_format = info.nearestFormat(m_format);
+        m_format = info.preferredFormat();
     }
 
     m_audioInfo  = new AudioInfo(m_format, this);
@@ -314,17 +289,29 @@ void InputTest::initializeAudio()
 
 void InputTest::createAudioInput()
 {
-    m_audioInput = new QAudioInput(m_device, m_format, this);
+    // In Qt6, QAudioInput has a different API
+    // It no longer takes format as a constructor parameter
+    m_audioInput = new QAudioInput(m_device, this);
     m_volumeSlider->setValue(m_audioInput->volume() * 100);
     m_audioInfo->start();
-    m_audioInput->start(m_audioInfo);
+    
+    // In Qt6, we need to create a QAudioSource to handle the actual audio input
+    // This replaces the direct use of QAudioInput for capturing
+    m_audioSource = new QAudioSource(m_device, m_format, this);
+    
+    if (m_pullMode) {
+        m_audioSource->start(m_audioInfo);
+    } else {
+        m_input = m_audioSource->start();
+        connect(m_input, SIGNAL(readyRead()), SLOT(readMore()));
+    }
 }
 
 void InputTest::readMore()
 {
-    if (!m_audioInput)
+    if (!m_audioSource)
         return;
-    qint64 len = m_audioInput->bytesReady();
+    qint64 len = m_audioSource->bytesAvailable();
     if (len > BufferSize)
         len = BufferSize;
     qint64 l = m_input->read(m_buffer.data(), len);
@@ -334,18 +321,22 @@ void InputTest::readMore()
 
 void InputTest::toggleMode()
 {
-    // Change bewteen pull and push modes
-    m_audioInput->stop();
+    // Change between pull and push modes
+    m_audioSource->stop();
 
     if (m_pullMode) {
         m_modeButton->setText(tr(PULL_MODE_LABEL));
-        m_input = m_audioInput->start();
+        m_input = m_audioSource->start();
         connect(m_input, SIGNAL(readyRead()), SLOT(readMore()));
         m_pullMode = false;
     } else {
         m_modeButton->setText(tr(PUSH_MODE_LABEL));
+        // Disconnect the readyRead signal when switching to push mode
+        if (m_input) {
+            disconnect(m_input, SIGNAL(readyRead()), this, SLOT(readMore()));
+        }
         m_pullMode = true;
-        m_audioInput->start(m_audioInfo);
+        m_audioSource->start(m_audioInfo);
     }
 
     m_suspendResumeButton->setText(tr(SUSPEND_LABEL));
@@ -354,16 +345,16 @@ void InputTest::toggleMode()
 void InputTest::toggleSuspend()
 {
     // toggle suspend/resume
-    if (m_audioInput->state() == QAudio::SuspendedState) {
-        m_audioInput->resume();
+    if (m_audioSource->state() == QAudio::SuspendedState) {
+        m_audioSource->resume();
         m_suspendResumeButton->setText(tr(SUSPEND_LABEL));
-    } else if (m_audioInput->state() == QAudio::ActiveState) {
-        m_audioInput->suspend();
+    } else if (m_audioSource->state() == QAudio::ActiveState) {
+        m_audioSource->suspend();
         m_suspendResumeButton->setText(tr(RESUME_LABEL));
-    } else if (m_audioInput->state() == QAudio::StoppedState) {
-        m_audioInput->resume();
+    } else if (m_audioSource->state() == QAudio::StoppedState) {
+        m_audioSource->start(m_pullMode ? m_audioInfo : nullptr);
         m_suspendResumeButton->setText(tr(SUSPEND_LABEL));
-    } else if (m_audioInput->state() == QAudio::IdleState) {
+    } else if (m_audioSource->state() == QAudio::IdleState) {
         // no-op
     }
 }
@@ -376,16 +367,34 @@ void InputTest::refreshDisplay()
 void InputTest::deviceChanged(int index)
 {
     m_audioInfo->stop();
-    m_audioInput->stop();
-    m_audioInput->disconnect(this);
-    delete m_audioInput;
+    
+    if (m_audioSource) {
+        m_audioSource->stop();
+        m_audioSource->disconnect(this);
+        delete m_audioSource;
+        m_audioSource = nullptr;
+    }
+    
+    if (m_audioInput) {
+        m_audioInput->disconnect(this);
+        delete m_audioInput;
+        m_audioInput = nullptr;
+    }
 
-    m_device = m_deviceBox->itemData(index).value<QAudioDeviceInfo>();
+    m_device = m_deviceBox->itemData(index).value<QAudioDevice>();
     createAudioInput();
 }
 
 void InputTest::sliderChanged(int value)
 {
+    // Convert slider value to volume (0.0 to 1.0)
+    qreal volumeValue = qreal(value) / 100;
+    
+    // Set volume on both audio input and audio source
     if (m_audioInput)
-        m_audioInput->setVolume(qreal(value) / 100);
+        m_audioInput->setVolume(volumeValue);
+    
+    // In Qt6, we primarily use QAudioSource for recording
+    if (m_audioSource)
+        m_audioSource->setVolume(volumeValue);
 }

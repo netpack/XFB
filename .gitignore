@@ -1,0 +1,41 @@
+# Build artifacts
+*.o
+Makefile*
+*.a
+*.so
+*.so.*
+*.dll
+*.dylib
+
+# Executables
+XFB
+XFB.app/
+XFB.exe
+
+# Build directories
+build/
+build-*/
+tmp/
+tmp_*/
+
+# Qt Creator user files
+*.pro.user
+*.pro.user.*
+
+# Debian package files (the final .deb is a release artifact, not source)
+*.deb
+*.ddeb
+
+# macOS build artifacts
+*.dmg
+
+# UI/MOC generated files (these are generated from source)
+ui_*.h
+moc_*.cpp
+moc_predefs.h
+qrc_*.cpp
+
+# Misc
+.DS_Store
+ftp/.directory
+.cache

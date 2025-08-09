@@ -3,12 +3,10 @@
 
 #include <QMainWindow>
 #include <QMediaPlayer>
-#include <QMediaPlaylist>
+// QMediaPlaylist replaced with QList<QUrl>
 #include <QtSql>
 #include <QMediaRecorder>
-#include <QAudioRecorder>
 #include <QUrl>
-#include <QAudioInput>
 #include <QByteArray>
 #include <QComboBox>
 #include <QMainWindow>
@@ -18,10 +16,19 @@
 #include <QSlider>
 #include <QWidget>
 #include <QTime>
-#include <QAudioProbe>
 #include <QNetworkReply>
 #include <QNetworkAccessManager>
 #include <QUrl>
+#include <QLabel>
+#include <QFrame>
+#include <QQuickWidget>
+#include <QtWebEngineQuick/QtWebEngineQuick>
+#include <QMediaFormat>
+// Qt6 multimedia includes
+#include <QAudioOutput>
+#include <QMediaDevices>
+#include <QAudioInput>
+#include <QMediaCaptureSession>
 
 namespace Ui {
 class player;
@@ -37,7 +44,7 @@ public:
     int onAbout2Finish;
     QSqlDatabase adb;
     QString saveFile;
-    QTimer *recTimer = new QTimer(this);
+    QTimer *recTimer = nullptr; // Will be initialized in constructor
     int recSecs;
     int recMins;
     int recHours;
@@ -49,12 +56,14 @@ public:
     QTimer *stimer = new QTimer(this);
     QTimer *icetimer = new QTimer(this);
     QTimer *butt_timer = new QTimer(this);
+    QTimer *adRefreshTimer = new QTimer(this);
     int jingleCadaNumMusicas;
 
 public slots:
-    void checkDbOpen();
+    bool checkDbOpen();
     void update_music_table();
     void checkForUpdates();
+    void refreshAdBanner(); // New slot to refresh the ad banner
 
 private slots:
     void on_actionOpen_triggered();
@@ -62,18 +71,23 @@ private slots:
     void on_sliderProgress_sliderMoved(int position);
     void on_sliderVolume_sliderMoved(int position);
     void on_btStop_clicked();
+    // Update these method signatures to work with Qt6
     void onPositionChanged(qint64 position);
     void durationChanged(qint64 position);
-    void currentMediaChanged(const QMediaContent & content);
+    void currentMediaChanged(const QUrl &content); // Changed from QMediaContent
     void volumeChanged(int volume);
     void lp1_onPositionChanged(qint64 position);
     void lp1_durationChanged(qint64 position);
-    void lp1_currentMediaChanged(const QMediaContent & content);
+    void lp1_currentMediaChanged(const QUrl &content); // Changed from QMediaContent
     void lp1_volumeChanged(int volume);
     void lp2_onPositionChanged(qint64 position);
     void lp2_durationChanged(qint64 position);
-    void lp2_currentMediaChanged(const QMediaContent & content);
+    void lp2_currentMediaChanged(const QUrl &content); // Changed from QMediaContent
     void lp2_volumeChanged(int volume);
+
+    // Add new methods for playlist management
+    void playNextMedia(); // New method to handle playlist progression
+    void playPreviousMedia(); // New method to handle playlist progression
     void playlistAboutToFinish();
     void playNextSong();
     void showTime();
@@ -180,29 +194,49 @@ private slots:
     void stopMplayer();
     void monitorTakeOver();
     void on_bt_pause_rec_clicked();
-
+    void deleteFilesByPattern(const QString &dirPath, const QString &pattern);
     void on_bt_pause_play_clicked();
-
+    void triggerPingFailureActions();
+    bool killProcessByName(const QString &processName);
 private:
     Ui::player *ui;
     QMediaPlayer *Xplayer;
-    QMediaPlaylist *Xplaylist;
+    QList<QUrl> XplaylistUrls;  // Store URLs instead of using QMediaPlaylist
+    int XplaylistIndex = 0;     // Track current index
+
     QMediaPlayer *lp1_Xplayer;
-    QMediaPlaylist *lp1_Xplaylist;
+    QList<QUrl> lp1_XplaylistUrls;  // Store URLs for LP1
+    int lp1_XplaylistIndex = 0;     // Track current index
+
     QMediaPlayer *lp2_Xplayer;
-    QMediaPlaylist *lp2_Xplaylist;
+    QList<QUrl> lp2_XplaylistUrls;  // Store URLs for LP2
+    int lp2_XplaylistIndex = 0;     // Track current index
+
+    QAudioOutput *XplayerOutput;
+    QAudioOutput *lp1_XplayerOutput;
+    QAudioOutput *lp2_XplayerOutput;
+
+    // Media recording components
+    QMediaCaptureSession *captureSession;
+    QMediaRecorder *audioRecorder;
+    QAudioInput *audioInput;
+
+    // Google Ads banner webview
+    QQuickWidget *adBanner;
+
+    int indexcanal;
     qint64 trackTotalDuration;
     int autoMode,recMode,indexJust3rdDropEvt,lastTrackPercentage,Port,tmpFullScreen;
-    QString aExtencaoDesteCoiso, txt_selected_db, disableSeekBar,normalization_soft, Disable_Volume,ask_normalize_new_files,estevalor,xaction,text,txtDuration,lastPlayedSong,Role,recDevice,SavePath,NomeDestePrograma,ProgramsPath,MusicPath,JinglePath,Server_URL,User,Pass,destinationProgram,FTPPath,TakeOverPath,PlayMode,genrehour,ComHour,fullScreen,codec,contentamento;
-    QAudioRecorder *audioRecorder;
-    QAudioProbe *probe;
+    QString aExtencaoDesteCoiso, txt_selected_db, ask_normalize_new_files,estevalor,xaction,text,txtDuration,lastPlayedSong,Role,recDevice,SavePath,NomeDestePrograma,ProgramsPath,MusicPath,JinglePath,Server_URL,User,Pass,destinationProgram,FTPPath,TakeOverPath,PlayMode,genrehour,ComHour,codec,contentamento;
     QMediaPlayer RadioPlayer;
     QProcess radio1;
     QMovie* movie;
     QMovie* movie2;
+    bool Disable_Volume = false;
+    bool normalization_soft = false;
+    bool fullScreen = false;
     bool lp_1_paused = false;
     bool lp_2_paused = false;
-    int indexcanal;
     bool icecastrunning = false;
     bool buttrunning = false;
     bool takeOver = false;
@@ -214,7 +248,17 @@ private:
     bool piscaLive = false;
     bool recPause = false;
     bool playPause = false;
-
+    bool darkMode = false;
+    bool disableSeekBar = false;
+    QString recDeviceDesc;
+    QMediaFormat::AudioCodec recCodec = QMediaFormat::AudioCodec::Unspecified;
+    QMediaFormat::FileFormat recContainer = QMediaFormat::FileFormat();
+    QNetworkAccessManager *networkManager;
+    void launchExternalApplication(const QString &appName, const QString &filePath);
+    void getMediaInfoForFile(const QString &filePath);
+    void runServerCheckScript(const QString &scriptName, const QString &fileToCheck, const QString &successMessage, const QString &failureMessage);
+    void runServerUploadScript(const QString &scriptName, const QString &fileToUpload, const QString &successMessage, const QString &failureMessage, std::function<void (bool)> callback);
+    void getDurationForFile(const QString &filePath, std::function<void (const QString &, const QString &)> callback);
 };
 
 

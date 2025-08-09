@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'add_music_single.ui'
 **
-** Created by: Qt User Interface Compiler version 5.15.12
+** Created by: Qt User Interface Compiler version 6.7.3
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
 ********************************************************************************/
@@ -30,7 +30,7 @@ public:
     QToolButton *toolButton;
     QPushButton *pushButton;
     QPushButton *pushButton_2;
-    QWidget *layoutWidget;
+    QWidget *layoutWidget_music1;
     QVBoxLayout *verticalLayout;
     QLabel *label_2;
     QLabel *label_3;
@@ -39,7 +39,7 @@ public:
     QLabel *label_6;
     QLabel *label_7;
     QLabel *label_8;
-    QWidget *layoutWidget1;
+    QWidget *layoutWidgetmusic2;
     QVBoxLayout *verticalLayout_2;
     QLineEdit *txt_file;
     QLineEdit *txt_artist;
@@ -54,117 +54,177 @@ public:
     void setupUi(QDialog *add_music_single)
     {
         if (add_music_single->objectName().isEmpty())
-            add_music_single->setObjectName(QString::fromUtf8("add_music_single"));
+            add_music_single->setObjectName("add_music_single");
         add_music_single->resize(678, 396);
-        add_music_single->setStyleSheet(QString::fromUtf8("background-color: rgb(255, 255, 255);"));
+        add_music_single->setStyleSheet(QString::fromUtf8("\n"
+"    QDialog {\n"
+"        background-color: #2b2b2b;\n"
+"        color: #bbbbbb; /* Default text color */\n"
+"    }\n"
+"    QLabel {\n"
+"        color: #bbbbbb;\n"
+"    }\n"
+"    QLineEdit, QTextEdit, QPlainTextEdit {\n"
+"        background-color: #3c3f41;\n"
+"        color: #bbbbbb;\n"
+"        border: 1px solid #555555;\n"
+"        selection-background-color: #007acc;\n"
+"        selection-color: white;\n"
+"    }\n"
+"    QPushButton, QToolButton {\n"
+"        background-color: #555555;\n"
+"        color: #bbbbbb;\n"
+"        border: 1px solid #666666;\n"
+"        padding: 5px;\n"
+"    }\n"
+"    QPushButton:hover, QToolButton:hover {\n"
+"        background-color: #666666;\n"
+"    }\n"
+"    QPushButton:pressed, QToolButton:pressed {\n"
+"        background-color: #444444;\n"
+"    }\n"
+"    QComboBox {\n"
+"        background-color: #3c3f41;\n"
+"        color: #bbbbbb;\n"
+"        border: 1px solid #555555;\n"
+"        selection-background-color: #007acc;\n"
+"        /* selection-color: white; */\n"
+"    }\n"
+""
+                        "    QComboBox::drop-down {\n"
+"        border: none;\n"
+"    }\n"
+"    QComboBox QAbstractItemView {\n"
+"        background-color: #3c3f41;\n"
+"        color: #bbbbbb;\n"
+"        selection-background-color: #007acc;\n"
+"        selection-color: white;\n"
+"        border: 1px solid #555555;\n"
+"        outline: 0px;\n"
+"    }\n"
+"    QDateEdit {\n"
+"        background-color: #3c3f41;\n"
+"        color: #bbbbbb;\n"
+"        border: 1px solid #555555;\n"
+"        selection-background-color: #007acc;\n"
+"        selection-color: white;\n"
+"    }\n"
+"    QDateEdit::drop-down {\n"
+"         /* Style dropdown button if needed */\n"
+"    }\n"
+"    QDateEdit QAbstractItemView {\n"
+"        background-color: #3c3f41;\n"
+"        color: #bbbbbb;\n"
+"        selection-background-color: #007acc;\n"
+"    }\n"
+"   "));
         label = new QLabel(add_music_single);
-        label->setObjectName(QString::fromUtf8("label"));
+        label->setObjectName("label");
         label->setGeometry(QRect(120, 10, 531, 31));
         QFont font;
         font.setPointSize(12);
         font.setBold(true);
-        font.setWeight(75);
         label->setFont(font);
         toolButton = new QToolButton(add_music_single);
-        toolButton->setObjectName(QString::fromUtf8("toolButton"));
+        toolButton->setObjectName("toolButton");
         toolButton->setGeometry(QRect(550, 60, 111, 31));
         pushButton = new QPushButton(add_music_single);
-        pushButton->setObjectName(QString::fromUtf8("pushButton"));
+        pushButton->setObjectName("pushButton");
         pushButton->setGeometry(QRect(540, 320, 111, 51));
         pushButton_2 = new QPushButton(add_music_single);
-        pushButton_2->setObjectName(QString::fromUtf8("pushButton_2"));
+        pushButton_2->setObjectName("pushButton_2");
         pushButton_2->setGeometry(QRect(50, 320, 111, 51));
-        layoutWidget = new QWidget(add_music_single);
-        layoutWidget->setObjectName(QString::fromUtf8("layoutWidget"));
-        layoutWidget->setGeometry(QRect(50, 60, 111, 231));
-        verticalLayout = new QVBoxLayout(layoutWidget);
-        verticalLayout->setObjectName(QString::fromUtf8("verticalLayout"));
+        layoutWidget_music1 = new QWidget(add_music_single);
+        layoutWidget_music1->setObjectName("layoutWidget_music1");
+        layoutWidget_music1->setGeometry(QRect(50, 60, 111, 231));
+        verticalLayout = new QVBoxLayout(layoutWidget_music1);
+        verticalLayout->setObjectName("verticalLayout");
         verticalLayout->setContentsMargins(0, 0, 0, 0);
-        label_2 = new QLabel(layoutWidget);
-        label_2->setObjectName(QString::fromUtf8("label_2"));
+        label_2 = new QLabel(layoutWidget_music1);
+        label_2->setObjectName("label_2");
 
         verticalLayout->addWidget(label_2);
 
-        label_3 = new QLabel(layoutWidget);
-        label_3->setObjectName(QString::fromUtf8("label_3"));
+        label_3 = new QLabel(layoutWidget_music1);
+        label_3->setObjectName("label_3");
 
         verticalLayout->addWidget(label_3);
 
-        label_4 = new QLabel(layoutWidget);
-        label_4->setObjectName(QString::fromUtf8("label_4"));
+        label_4 = new QLabel(layoutWidget_music1);
+        label_4->setObjectName("label_4");
 
         verticalLayout->addWidget(label_4);
 
-        label_5 = new QLabel(layoutWidget);
-        label_5->setObjectName(QString::fromUtf8("label_5"));
+        label_5 = new QLabel(layoutWidget_music1);
+        label_5->setObjectName("label_5");
 
         verticalLayout->addWidget(label_5);
 
-        label_6 = new QLabel(layoutWidget);
-        label_6->setObjectName(QString::fromUtf8("label_6"));
+        label_6 = new QLabel(layoutWidget_music1);
+        label_6->setObjectName("label_6");
 
         verticalLayout->addWidget(label_6);
 
-        label_7 = new QLabel(layoutWidget);
-        label_7->setObjectName(QString::fromUtf8("label_7"));
+        label_7 = new QLabel(layoutWidget_music1);
+        label_7->setObjectName("label_7");
 
         verticalLayout->addWidget(label_7);
 
-        label_8 = new QLabel(layoutWidget);
-        label_8->setObjectName(QString::fromUtf8("label_8"));
+        label_8 = new QLabel(layoutWidget_music1);
+        label_8->setObjectName("label_8");
 
         verticalLayout->addWidget(label_8);
 
-        layoutWidget1 = new QWidget(add_music_single);
-        layoutWidget1->setObjectName(QString::fromUtf8("layoutWidget1"));
-        layoutWidget1->setGeometry(QRect(170, 60, 371, 194));
-        verticalLayout_2 = new QVBoxLayout(layoutWidget1);
-        verticalLayout_2->setObjectName(QString::fromUtf8("verticalLayout_2"));
+        layoutWidgetmusic2 = new QWidget(add_music_single);
+        layoutWidgetmusic2->setObjectName("layoutWidgetmusic2");
+        layoutWidgetmusic2->setGeometry(QRect(170, 60, 371, 194));
+        verticalLayout_2 = new QVBoxLayout(layoutWidgetmusic2);
+        verticalLayout_2->setObjectName("verticalLayout_2");
         verticalLayout_2->setContentsMargins(0, 0, 0, 0);
-        txt_file = new QLineEdit(layoutWidget1);
-        txt_file->setObjectName(QString::fromUtf8("txt_file"));
+        txt_file = new QLineEdit(layoutWidgetmusic2);
+        txt_file->setObjectName("txt_file");
 
         verticalLayout_2->addWidget(txt_file);
 
-        txt_artist = new QLineEdit(layoutWidget1);
-        txt_artist->setObjectName(QString::fromUtf8("txt_artist"));
+        txt_artist = new QLineEdit(layoutWidgetmusic2);
+        txt_artist->setObjectName("txt_artist");
 
         verticalLayout_2->addWidget(txt_artist);
 
-        txt_song = new QLineEdit(layoutWidget1);
-        txt_song->setObjectName(QString::fromUtf8("txt_song"));
+        txt_song = new QLineEdit(layoutWidgetmusic2);
+        txt_song->setObjectName("txt_song");
 
         verticalLayout_2->addWidget(txt_song);
 
-        cbox_g1 = new QComboBox(layoutWidget1);
-        cbox_g1->setObjectName(QString::fromUtf8("cbox_g1"));
+        cbox_g1 = new QComboBox(layoutWidgetmusic2);
+        cbox_g1->setObjectName("cbox_g1");
         cbox_g1->setStyleSheet(QString::fromUtf8("selection-color: rgb(87, 118, 255);"));
 
         verticalLayout_2->addWidget(cbox_g1);
 
-        cbox_g2 = new QComboBox(layoutWidget1);
-        cbox_g2->setObjectName(QString::fromUtf8("cbox_g2"));
+        cbox_g2 = new QComboBox(layoutWidgetmusic2);
+        cbox_g2->setObjectName("cbox_g2");
         cbox_g2->setStyleSheet(QString::fromUtf8("selection-color: rgb(87, 118, 255);"));
 
         verticalLayout_2->addWidget(cbox_g2);
 
-        cbox_country = new QComboBox(layoutWidget1);
+        cbox_country = new QComboBox(layoutWidgetmusic2);
         cbox_country->addItem(QString());
         cbox_country->addItem(QString());
-        cbox_country->setObjectName(QString::fromUtf8("cbox_country"));
+        cbox_country->setObjectName("cbox_country");
         cbox_country->setStyleSheet(QString::fromUtf8("selection-color: rgb(87, 118, 255);"));
 
         verticalLayout_2->addWidget(cbox_country);
 
         label_9 = new QLabel(add_music_single);
-        label_9->setObjectName(QString::fromUtf8("label_9"));
+        label_9->setObjectName("label_9");
         label_9->setGeometry(QRect(50, 0, 51, 51));
         label_9->setPixmap(QPixmap(QString::fromUtf8("../../../../usr/share/icons/Mint-X/mimetypes/48/application-ogg.png")));
         f_date = new QDateEdit(add_music_single);
-        f_date->setObjectName(QString::fromUtf8("f_date"));
+        f_date->setObjectName("f_date");
         f_date->setGeometry(QRect(170, 260, 161, 26));
         bt_manageGenres = new QPushButton(add_music_single);
-        bt_manageGenres->setObjectName(QString::fromUtf8("bt_manageGenres"));
+        bt_manageGenres->setObjectName("bt_manageGenres");
         bt_manageGenres->setGeometry(QRect(550, 160, 111, 25));
 
         retranslateUi(add_music_single);
