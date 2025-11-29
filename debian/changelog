@@ -1,0 +1,19 @@
+xfb (2.0.0-1) unstable; urgency=medium
+
+  * Initial release of XFB Radio with full accessibility support
+  * Complete ORCA screen reader integration
+  * Comprehensive keyboard navigation system
+  * Audio feedback for all user interactions
+  * Braille display support via BrlTTY
+  * Live region updates for dynamic content
+  * Accessibility preferences dialog
+  * WCAG 2.1 AA compliance
+  * AT-SPI integration for assistive technologies
+  * Enhanced table navigation for playlists and databases
+  * Context-sensitive help system
+  * Background operation feedback
+  * Customizable verbosity levels
+  * Professional audio processing with accessibility
+  * Multi-language support with screen reader compatibility
+
+ -- Netpack - Online Solutions <support@xfb.com>  Sat, 11 Oct 2025 12:00:00 +0000

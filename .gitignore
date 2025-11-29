@@ -26,6 +26,14 @@ tmp_*/
 *.deb
 *.ddeb
 
+# Arch Linux package files
+*.pkg.tar.zst
+*.pkg.tar.xz
+*.pkg.tar.gz
+src/
+pkg/
+.SRCINFO
+
 # macOS build artifacts
 *.dmg
 
@@ -39,3 +47,4 @@ qrc_*.cpp
 .DS_Store
 ftp/.directory
 .cache
+.kiro/*

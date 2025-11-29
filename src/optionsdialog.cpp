@@ -6,9 +6,9 @@
 #include "QProcess"
 #include <QMessageBox>
 #include <QtSql>
-#include <commonFunctions.h>
+#include "commonFunctions.h"
 #include <QDebug>
-#include <player.h>
+#include "player.h"
 #include <QAudio>
 #include <QMediaRecorder>
 #include <QMediaDevices> // Qt6 replacement for QAudioDeviceInfo

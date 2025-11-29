@@ -1,0 +1,72 @@
+Source: xfb
+Section: sound
+Priority: optional
+Maintainer: Netpack <info@netpack.pt>
+Build-Depends: debhelper (>= 12),
+               cmake (>= 3.16),
+               pkg-config,
+               qt6-base-dev,
+               qt6-multimedia-dev,
+               qt6-webengine-dev,
+               qt6-quickwidgets-dev,
+               libatspi2.0-dev,
+               libspeechd-dev,
+               libasound2-dev,
+               libpulse-dev,
+               libsqlite3-dev,
+               libcurl4-openssl-dev
+Standards-Version: 4.6.0
+Homepage: https://netpack.pt
+
+Package: xfb
+Architecture: amd64 arm64
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+         qt6-base-dev,
+         qt6-multimedia-dev,
+         libatspi2.0-0,
+         libspeechd2,
+         libasound2,
+         libpulse0,
+         libsqlite3-0,
+         libcurl4,
+         orca (>= 40.0),
+         speech-dispatcher,
+         at-spi2-core,
+         gstreamer1.0-plugins-base,
+         gstreamer1.0-plugins-good,
+         gstreamer1.0-alsa,
+         gstreamer1.0-pulseaudio,
+         pulseaudio
+Recommends: brltty,
+            espeak-ng,
+            pulseaudio
+Suggests: festival,
+          flite
+Description: XFB Radio Automation Software
+ XFB Radio Automation Software is a comprehensive solution designed for
+ professional radio stations and broadcasting environments. The software
+ provides full accessibility support for visually impaired users through
+ ORCA screen reader integration, complete keyboard navigation, audio feedback,
+ and braille display support.
+ .
+ Key accessibility features:
+  * Full ORCA screen reader compatibility with live region updates
+  * Complete keyboard navigation - no mouse required
+  * Audio feedback for all user actions and system events
+  * Braille display support via BrlTTY integration
+  * Customizable accessibility preferences and verbosity levels
+  * WCAG 2.1 AA compliance for web-based components
+  * Context-sensitive help system with audio descriptions
+ .
+ Broadcasting features:
+  * Professional audio playback and recording capabilities
+  * Playlist management with drag-and-drop support
+  * Live streaming integration with Icecast/Shoutcast
+  * Automated scheduling and crossfading
+  * Real-time audio processing and effects
+  * Multi-format audio support (MP3, FLAC, WAV, OGG)
+  * Database-driven music library management
+ .
+ This version is optimized for Ubuntu 20.04 LTS and newer systems with
+ comprehensive ORCA screen reader support.

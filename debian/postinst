@@ -1,0 +1,164 @@
+#!/bin/bash
+# XFB - Post-installation script
+
+set -e
+
+# Configure debconf
+. /usr/share/debconf/confmodule
+
+case "$1" in
+    configure)
+        echo "Configuring XFB..."
+        
+        # Update desktop database
+        if command -v update-desktop-database >/dev/null 2>&1; then
+            update-desktop-database -q /usr/share/applications || true
+        fi
+        
+        # Update icon cache
+        if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+            gtk-update-icon-cache -q /usr/share/pixmaps || true
+        fi
+        
+        # Ensure AT-SPI is enabled system-wide
+        if [ -f /etc/at-spi2/accessibility.conf ]; then
+            sed -i 's/^#\?\s*enabled\s*=.*/enabled=true/' /etc/at-spi2/accessibility.conf || true
+        fi
+        
+        # Create XFB configuration directory
+        if [ ! -d /etc/xfb ]; then
+            mkdir -p /etc/xfb
+            chmod 755 /etc/xfb
+        fi
+        
+        # Set up default accessibility configuration
+        cat > /etc/xfb/accessibility.conf << 'EOF'
+# XFB Accessibility Configuration
+# This file contains system-wide accessibility settings
+
+[General]
+AccessibilityEnabled=true
+ScreenReaderSupport=true
+KeyboardNavigationEnabled=true
+AudioFeedbackEnabled=true
+
+[ORCA]
+AutoDetect=true
+VerbosityLevel=Normal
+AnnounceFocus=true
+AnnounceKeystrokes=false
+
+[Audio]
+SeparateAudioChannels=true
+SpeechDucking=true
+FeedbackVolume=0.8
+
+[Braille]
+AutoDetectDisplay=true
+BrailleEnabled=true
+EOF
+        
+        # Set proper permissions
+        chmod 644 /etc/xfb/accessibility.conf
+        
+        # Add XFB to audio group permissions
+        if getent group audio >/dev/null 2>&1; then
+            echo "Audio group exists - XFB will use system audio permissions"
+        fi
+        
+        # Create log directory
+        if [ ! -d /var/log/xfb ]; then
+            mkdir -p /var/log/xfb
+            chmod 755 /var/log/xfb
+        fi
+        
+        # Set up logrotate for XFB logs
+        cat > /etc/logrotate.d/xfb << 'EOF'
+/var/log/xfb/*.log {
+    weekly
+    missingok
+    rotate 4
+    compress
+    delaycompress
+    notifempty
+    copytruncate
+}
+EOF
+        
+        # Enable accessibility services if not already enabled
+        if command -v systemctl >/dev/null 2>&1; then
+            # Enable AT-SPI D-Bus service
+            systemctl --global enable at-spi-dbus-bus.service || true
+        fi
+        
+        # Install essential multimedia packages if missing
+        echo "Checking multimedia dependencies..."
+        GST_PACKAGES="gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-alsa gstreamer1.0-pulseaudio"
+        MISSING_PACKAGES=""
+        
+        for package in $GST_PACKAGES; do
+            if ! dpkg -l "$package" >/dev/null 2>&1; then
+                MISSING_PACKAGES="$MISSING_PACKAGES $package"
+            fi
+        done
+        
+        if [ -n "$MISSING_PACKAGES" ]; then
+            echo "Installing missing multimedia packages:$MISSING_PACKAGES"
+            apt-get update >/dev/null 2>&1 || true
+            apt-get install -y $MISSING_PACKAGES >/dev/null 2>&1 || echo "Warning: Some multimedia packages could not be installed"
+        fi
+        
+        # Create XFB launcher with proper environment
+        cat > /usr/bin/xfb-launcher << 'LAUNCHER_EOF'
+#!/bin/bash
+# XFB Launcher with proper multimedia environment
+
+# Set GStreamer environment
+export GST_PLUGIN_PATH="/usr/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/gstreamer-1.0:/usr/lib/gstreamer-1.0"
+export QT_MULTIMEDIA_PREFERRED_PLUGINS="gstreamer"
+
+# Enable accessibility
+export QT_ACCESSIBILITY=1
+
+# Ensure PulseAudio is available
+if command -v pulseaudio >/dev/null 2>&1 && ! pgrep -x "pulseaudio" >/dev/null; then
+    pulseaudio --start --log-target=syslog 2>/dev/null || true
+fi
+
+# Launch XFB
+exec /usr/bin/XFB "$@"
+LAUNCHER_EOF
+        
+        chmod +x /usr/bin/xfb-launcher
+        
+        # Create lowercase symlink
+        ln -sf /usr/bin/XFB /usr/bin/xfb
+        
+        # Update desktop file to use launcher
+        if [ -f "/usr/share/applications/XFB.desktop" ]; then
+            sed -i 's|Exec=.*|Exec=/usr/bin/xfb-launcher|g' /usr/share/applications/XFB.desktop
+            update-desktop-database -q /usr/share/applications || true
+        fi
+        
+        echo "XFB installation completed successfully."
+        echo ""
+        echo "To get started:"
+        echo "1. Launch XFB from Applications menu or run 'xfb'"
+        echo "2. Ensure ORCA screen reader is running: 'orca --replace &'"
+        echo "3. Check accessibility documentation: /usr/share/doc/xfb/"
+        echo ""
+        echo "For support, visit: https://netpack.pt/"
+        ;;
+        
+    abort-upgrade|abort-remove|abort-deconfigure)
+        ;;
+        
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0

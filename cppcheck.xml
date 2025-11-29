@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="1">
+    <root name="."/>
+    <builddir>build</builddir>
+    <analyze-all-vs-configs>true</analyze-all-vs-configs>
+    <check-headers>true</check-headers>
+    <check-unused-templates>true</check-unused-templates>
+    <max-ctu-depth>2</max-ctu-depth>
+    <max-template-recursion>100</max-template-recursion>
+    
+    <!-- Include paths -->
+    <includedir>
+        <dir name="src/"/>
+        <dir name="tests/"/>
+    </includedir>
+    
+    <!-- Paths to analyze -->
+    <paths>
+        <dir name="src/"/>
+        <dir name="tests/"/>
+    </paths>
+    
+    <!-- Exclude patterns -->
+    <exclude>
+        <path name="build/"/>
+        <path name="src/moc_*.cpp"/>
+        <path name="src/ui_*.h"/>
+        <path name="src/qrc_*.cpp"/>
+        <path name="*_qmlcache.cpp"/>
+    </exclude>
+    
+    <!-- Libraries -->
+    <libraries>
+        <library>qt</library>
+        <library>std</library>
+        <library>posix</library>
+    </libraries>
+    
+    <!-- Suppressions -->
+    <suppressions>
+        <suppression>
+            <id>missingIncludeSystem</id>
+            <fileName>*</fileName>
+        </suppression>
+        <suppression>
+            <id>unusedFunction</id>
+            <fileName>tests/*</fileName>
+        </suppression>
+    </suppressions>
+</project>

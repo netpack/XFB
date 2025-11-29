@@ -2,10 +2,10 @@
 #define PLAYER_H
 
 #include <QMainWindow>
-#include <QMediaPlayer>
+#include <QtMultimedia/QMediaPlayer>
 // QMediaPlaylist replaced with QList<QUrl>
 #include <QtSql>
-#include <QMediaRecorder>
+#include <QtMultimedia/QMediaRecorder>
 #include <QUrl>
 #include <QByteArray>
 #include <QComboBox>
@@ -18,16 +18,17 @@
 #include <QTime>
 #include <QNetworkReply>
 #include <QNetworkAccessManager>
+#include <QTableView>
 #include <QUrl>
 #include <QLabel>
 #include <QFrame>
-#include <QQuickWidget>
+#include <QtQuickWidgets/QQuickWidget>
 #include <QtWebEngineQuick/QtWebEngineQuick>
 #include <QMediaFormat>
 // Qt6 multimedia includes
-#include <QAudioOutput>
-#include <QMediaDevices>
-#include <QAudioInput>
+#include <QtMultimedia/QAudioOutput>
+#include <QtMultimedia/QMediaDevices>
+#include <QtMultimedia/QAudioInput>
 #include <QMediaCaptureSession>
 
 namespace Ui {
@@ -37,6 +38,7 @@ class player;
 class player : public QMainWindow
 {
     Q_OBJECT
+    friend class PlayerUIController;
 
 public:
     explicit player(QWidget *parent = 0);
@@ -57,6 +59,13 @@ public:
     QTimer *icetimer = new QTimer(this);
     QTimer *butt_timer = new QTimer(this);
     QTimer *adRefreshTimer = new QTimer(this);
+    
+    // UI accessor methods for controllers
+    QTableView* getMusicView() const;
+    QPushButton* getPlayButton() const;
+    QPushButton* getStopButton() const;
+    QSlider* getProgressSlider() const;
+    QSlider* getVolumeSlider() const;
     int jingleCadaNumMusicas;
 
 public slots:
@@ -198,6 +207,9 @@ private slots:
     void on_bt_pause_play_clicked();
     void triggerPingFailureActions();
     bool killProcessByName(const QString &processName);
+    
+    // Accessibility initialization
+    void initializeAccessibility();
 private:
     Ui::player *ui;
     QMediaPlayer *Xplayer;

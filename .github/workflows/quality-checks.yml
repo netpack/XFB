@@ -1,0 +1,108 @@
+name: Code Quality Checks
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  code-quality:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: 6.5.0
+        arch: gcc_64
+        modules: 'qtmultimedia qtwebengine'
+        cache: true
+
+    - name: Install quality tools
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          clang-tidy \
+          cppcheck \
+          clang-format \
+          lizard
+
+    - name: Configure CMake
+      run: |
+        cmake -B build \
+          -DCMAKE_BUILD_TYPE=Debug \
+          -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+    - name: Check code formatting
+      run: |
+        find src tests -name "*.cpp" -o -name "*.h" | \
+        xargs clang-format --dry-run --Werror || \
+        (echo "Code formatting issues found. Run 'clang-format -i' on the files." && exit 1)
+
+    - name: Run complexity analysis
+      run: |
+        lizard src/ -l cpp -w -x "*/moc_*" -x "*/ui_*" -x "*/qrc_*" > complexity-report.txt || true
+        cat complexity-report.txt
+
+    - name: Check for common issues
+      run: |
+        echo "Checking for common C++ issues..."
+        
+        # Check for memory leaks patterns
+        echo "=== Checking for potential memory leaks ==="
+        find src -name "*.cpp" | xargs grep -n "new " | grep -v "delete\|smart_ptr\|unique_ptr\|shared_ptr" || echo "No obvious memory leak patterns found"
+        
+        # Check for Qt best practices
+        echo "=== Checking Qt best practices ==="
+        find src -name "*.cpp" | xargs grep -n "connect.*SIGNAL.*SLOT" && echo "Consider using modern Qt5+ connect syntax" || echo "Modern connect syntax used"
+        
+        # Check for hardcoded strings that should be translated
+        echo "=== Checking for untranslated strings ==="
+        find src -name "*.cpp" | xargs grep -n '"[A-Za-z]' | grep -v "tr(\|QObject::tr(\|//\|/\*" | head -10 || echo "No obvious untranslated strings found"
+
+    - name: Upload quality reports
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: quality-reports
+        path: |
+          complexity-report.txt
+          reports/
+
+  security-scan:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run security scan
+      run: |
+        echo "Running basic security checks..."
+        
+        # Check for potential security issues
+        mkdir -p security-reports
+        
+        echo "=== Checking for unsafe functions ===" > security-reports/security-scan.txt
+        find src -name "*.cpp" | xargs grep -n "strcpy\|strcat\|sprintf\|gets\|scanf" >> security-reports/security-scan.txt || echo "No unsafe functions found" >> security-reports/security-scan.txt
+        
+        echo "" >> security-reports/security-scan.txt
+        echo "=== Checking for SQL injection patterns ===" >> security-reports/security-scan.txt
+        find src -name "*.cpp" | xargs grep -n "exec.*+\|query.*+" >> security-reports/security-scan.txt || echo "No obvious SQL injection patterns found" >> security-reports/security-scan.txt
+        
+        echo "" >> security-reports/security-scan.txt
+        echo "=== Checking for hardcoded credentials ===" >> security-reports/security-scan.txt
+        find src -name "*.cpp" -o -name "*.h" | xargs grep -i "password.*=\|secret.*=\|key.*=" | grep -v "//\|/\*" >> security-reports/security-scan.txt || echo "No hardcoded credentials found" >> security-reports/security-scan.txt
+        
+        cat security-reports/security-scan.txt
+
+    - name: Upload security reports
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: security-reports
+        path: security-reports/

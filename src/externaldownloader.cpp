@@ -4,8 +4,8 @@
 #include <QMessageBox>
 #include <QtSql>
 #include <QDir>
-#include <addgenre.h>
-#include <player.h>
+#include "addgenre.h"
+#include "player.h"
 #include <QtConcurrent>
 
 //#include "permission_utils.h"
@@ -172,7 +172,7 @@ externaldownloader::~externaldownloader()
     delete ui;
 }
 
-void::externaldownloader::showLoadingFrame(){
+void externaldownloader::showLoadingFrame(){
     ui->frame_loading->show();
     //this down here allows us to show the splash sreen
     QTime dieTime= QTime::currentTime().addSecs(1);
@@ -307,16 +307,37 @@ DownloadResult processDownloadTask(
 
     // 3. Find yt-dlp executable
     QString ytdlpPath = QStandardPaths::findExecutable("yt-dlp");
+    
 #ifdef Q_OS_WIN
-        // On Windows, check common extensions if findExecutable fails without them
+    // On Windows, check common extensions if findExecutable fails without them
     if (ytdlpPath.isEmpty()) ytdlpPath = QStandardPaths::findExecutable("yt-dlp.exe");
     if (ytdlpPath.isEmpty()) ytdlpPath = QStandardPaths::findExecutable("yt-dlp.cmd");
     if (ytdlpPath.isEmpty()) ytdlpPath = QStandardPaths::findExecutable("yt-dlp.bat");
 #endif
 
+#ifdef Q_OS_MACOS
+    // On macOS, GUI apps don't inherit shell PATH, so check common installation locations
+    if (ytdlpPath.isEmpty()) {
+        QStringList commonPaths = {
+            "/opt/homebrew/bin/yt-dlp",     // Homebrew on Apple Silicon
+            "/usr/local/bin/yt-dlp",        // Homebrew on Intel Macs
+            "/opt/local/bin/yt-dlp",        // MacPorts
+            QDir::homePath() + "/.local/bin/yt-dlp",  // pip user install
+            "/usr/bin/yt-dlp"               // System install
+        };
+        
+        for (const QString& path : commonPaths) {
+            if (QFile::exists(path)) {
+                ytdlpPath = path;
+                break;
+            }
+        }
+    }
+#endif
+
     if (ytdlpPath.isEmpty()) {
         result.success = false;
-        result.message = "Error: 'yt-dlp' executable not found in PATH. Please install yt-dlp and ensure it's accessible.";
+        result.message = "Error: 'yt-dlp' executable not found in PATH or common installation locations. Please install yt-dlp and ensure it's accessible.";
         appendOutput(result.message);
         result.consoleOutput = consoleLines.join("\n");
         return result;
@@ -326,7 +347,8 @@ DownloadResult processDownloadTask(
     // 4. Prepare and Run yt-dlp command
     QStringList ytdlpArgs;
     ytdlpArgs << "--extract-audio"
-              << "--audio-format" << "vorbis" // ogg container with vorbis audio
+              << "--audio-format" << "m4a"  // Use M4A/AAC format for better Qt6 compatibility on macOS
+              << "--audio-quality" << "0"   // Best quality
               << "-o" << outputPathTemplate // Output template
               << "--ffmpeg-location" << QStandardPaths::findExecutable("ffmpeg") // Explicitly provide ffmpeg path if needed
               << ylink;                        // The URL
@@ -361,23 +383,30 @@ DownloadResult processDownloadTask(
 
     appendOutput("yt-dlp finished successfully.");
 
-    // Construct the expected final filename (yt-dlp replaces %(ext)s)
-    QString finalFilename = targetBaseFilename + ".ogg"; // Assuming vorbis -> ogg
-    QString finalFilepath = musicDir.absoluteFilePath(finalFilename);
-    QFileInfo fileInfo(finalFilepath);
-
-    if (!fileInfo.exists()) {
-        // Sometimes yt-dlp might use .opus instead of .ogg for vorbis, check common alternatives
-        finalFilename = targetBaseFilename + ".opus";
+    // Find the downloaded file (yt-dlp replaces %(ext)s with actual extension)
+    // Check common audio extensions that yt-dlp might use, prioritizing M4A
+    QStringList possibleExtensions = {"m4a", "aac", "mp3", "ogg", "opus", "webm"};
+    QString finalFilepath;
+    QString finalFilename;
+    QFileInfo fileInfo;
+    bool fileFound = false;
+    
+    for (const QString& ext : possibleExtensions) {
+        finalFilename = targetBaseFilename + "." + ext;
         finalFilepath = musicDir.absoluteFilePath(finalFilename);
         fileInfo.setFile(finalFilepath);
-        if(!fileInfo.exists()) {
-            result.success = false;
-            result.message = "Error: Expected output file not found after download: " + finalFilepath + " or .ogg";
-            appendOutput(result.message);
-            result.consoleOutput = consoleLines.join("\n");
-            return result;
+        if (fileInfo.exists()) {
+            fileFound = true;
+            break;
         }
+    }
+
+    if (!fileFound) {
+        result.success = false;
+        result.message = "Error: Expected output file not found after download. Checked extensions: " + possibleExtensions.join(", ");
+        appendOutput(result.message);
+        result.consoleOutput = consoleLines.join("\n");
+        return result;
     }
     appendOutput("Downloaded file seems to be at: " + finalFilepath);
 
@@ -569,6 +598,7 @@ void externaldownloader::getFile() {
 
         if (result.success) {
             QMessageBox::information(this, tr("yt-dlp Downloader"), result.message);
+            emit musicAdded(); // Emit signal to notify that music was added to database
         } else {
             QMessageBox::critical(this, tr("yt-dlp Downloader Error"), result.message);
         }

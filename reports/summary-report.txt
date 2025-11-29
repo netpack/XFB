@@ -1,0 +1,14 @@
+XFB Static Analysis Summary Report
+==================================
+Generated on: Wed Aug 13 12:33:56 WEST 2025
+
+Files analyzed:
+      32
+
+TODO/FIXME comments:        6
+
+Detailed reports available in: /Users/fredericbogaerts/XFB/reports/
+- clang-tidy-report.txt
+- cppcheck-report.xml
+- todo-fixme-report.txt
+- security-check-report.txt

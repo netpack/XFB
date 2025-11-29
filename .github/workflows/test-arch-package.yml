@@ -1,0 +1,113 @@
+name: Test Arch Linux Package
+
+on:
+  push:
+    paths:
+      - 'PKGBUILD'
+      - '.github/workflows/test-arch-package.yml'
+  pull_request:
+    paths:
+      - 'PKGBUILD'
+      - '.github/workflows/test-arch-package.yml'
+  workflow_dispatch:
+
+jobs:
+  test-pkgbuild:
+    name: Test PKGBUILD on Arch Linux
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Update system and install dependencies
+        run: |
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm base-devel git sudo namcap
+      
+      - name: Create build user
+        run: |
+          useradd -m -G wheel builder
+          echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+          chown -R builder:builder .
+      
+      - name: Validate PKGBUILD with namcap
+        run: |
+          sudo -u builder namcap PKGBUILD || true
+      
+      - name: Generate .SRCINFO
+        run: |
+          sudo -u builder makepkg --printsrcinfo > .SRCINFO
+          cat .SRCINFO
+      
+      - name: Build package
+        run: |
+          sudo -u builder makepkg --syncdeps --noconfirm --noextract
+      
+      - name: Check package with namcap
+        run: |
+          sudo -u builder namcap *.pkg.tar.zst || true
+      
+      - name: List package contents
+        run: |
+          tar -tzf *.pkg.tar.zst | head -50
+      
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: xfb-arch-package
+          path: '*.pkg.tar.zst'
+          retention-days: 7
+
+  test-installation:
+    name: Test Package Installation
+    runs-on: ubuntu-latest
+    needs: test-pkgbuild
+    container:
+      image: archlinux:latest
+    
+    steps:
+      - name: Update system
+        run: |
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm sudo
+      
+      - name: Download package artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: xfb-arch-package
+      
+      - name: Install package
+        run: |
+          pacman -U --noconfirm *.pkg.tar.zst
+      
+      - name: Verify installation
+        run: |
+          echo "Checking if XFB is installed..."
+          if command -v xfb &> /dev/null; then
+            echo "✓ XFB executable found"
+          else
+            echo "✗ XFB executable not found"
+            exit 1
+          fi
+          
+          if [ -f "/usr/share/applications/xfb.desktop" ]; then
+            echo "✓ Desktop file installed"
+          else
+            echo "✗ Desktop file not found"
+          fi
+          
+          if [ -f "/usr/share/pixmaps/xfb.png" ]; then
+            echo "✓ Icon installed"
+          else
+            echo "✗ Icon not found"
+          fi
+      
+      - name: Test package removal
+        run: |
+          pacman -R --noconfirm xfb
+          echo "✓ Package removed successfully"

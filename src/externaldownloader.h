@@ -21,6 +21,9 @@ public:
     ~externaldownloader();
      QSqlDatabase adb;
 
+signals:
+    void musicAdded(); // Signal emitted when music is successfully added to database
+
 private slots:
     void on_bt_youtube_getIt_clicked();
     void on_pushButton_clicked();

@@ -3,9 +3,10 @@
 
 #include <QDialog>
 #include <QtSql>
-#include <player.h>
+// Forward declaration to avoid circular dependency
+class player;
 
-#include <QAudioInput>
+#include <QtMultimedia/QAudioInput>
 #include <QByteArray>
 #include <QComboBox>
 #include <QMainWindow>
@@ -14,7 +15,7 @@
 #include <QPushButton>
 #include <QSlider>
 #include <QWidget>
-#include <QMediaRecorder>
+#include <QtMultimedia/QMediaRecorder>
 
 namespace Ui {
 class optionsDialog;

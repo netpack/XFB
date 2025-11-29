@@ -63,6 +63,8 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 
 #include <QtWebEngineQuick>
 #include <QQuickWidget>
+#include "services/ServiceContainer.h"
+#include "services/AccessibilityManager.h"
 
 class ClickableTextBrowser : public QTextBrowser {
 public:
@@ -243,6 +245,8 @@ player::player(QWidget *parent) :
     connect(lp2_Xplayer, &QMediaPlayer::sourceChanged, this, &player::lp2_currentMediaChanged);
     connect(lp2_Xplayer->audioOutput(), &QAudioOutput::volumeChanged, this, &player::lp2_volumeChanged);
 
+    // Initialize recTimer before connecting it
+    recTimer = new QTimer(this);
     connect(recTimer,SIGNAL(timeout()),this,SLOT(run_recTimer()));
 
     /* main clock signals and slots */
@@ -330,6 +334,10 @@ checkDbOpen();
      ui->playlist->setAcceptDrops(true);
      ui->playlist->setDropIndicatorShown(false);
      ui->playlist->setDragDropMode(QAbstractItemView::InternalMove);
+     
+     // Accessibility improvements for playlist
+     ui->playlist->setFocusPolicy(Qt::StrongFocus);
+     ui->playlist->setAttribute(Qt::WA_KeyboardFocusChange, true);
     /*Music list*/
      ui->musicView->setSelectionMode(QAbstractItemView::ExtendedSelection);
      ui->musicView->setDragEnabled(true);
@@ -338,6 +346,11 @@ checkDbOpen();
      ui->musicView->setDropIndicatorShown(true);
      ui->musicView->setDragDropMode(QAbstractItemView::DragOnly);
      ui->musicView->setSelectionBehavior(QAbstractItemView::SelectRows);
+     
+     // Accessibility improvements for keyboard navigation
+     ui->musicView->setFocusPolicy(Qt::StrongFocus);
+     ui->musicView->setTabKeyNavigation(true);
+     ui->musicView->setAttribute(Qt::WA_KeyboardFocusChange, true);
 
      ui->musicView->setContextMenuPolicy(Qt::CustomContextMenu);
      connect(ui->musicView, SIGNAL(customContextMenuRequested(const QPoint&)),
@@ -347,14 +360,26 @@ checkDbOpen();
      connect(ui->playlist, SIGNAL(customContextMenuRequested(const QPoint&)),
              this, SLOT(playlistContextMenu(const QPoint&)));
 
+     // Accessibility improvements for jinglesView
+     ui->jinglesView->setFocusPolicy(Qt::StrongFocus);
+     ui->jinglesView->setTabKeyNavigation(true);
+     ui->jinglesView->setAttribute(Qt::WA_KeyboardFocusChange, true);
      ui->jinglesView->setContextMenuPolicy(Qt::CustomContextMenu);
      connect(ui->jinglesView, SIGNAL(customContextMenuRequested(const QPoint&)),
          this, SLOT(jinglesViewContextMenu(const QPoint&)));
 
+     // Accessibility improvements for pubView
+     ui->pubView->setFocusPolicy(Qt::StrongFocus);
+     ui->pubView->setTabKeyNavigation(true);
+     ui->pubView->setAttribute(Qt::WA_KeyboardFocusChange, true);
      ui->pubView->setContextMenuPolicy(Qt::CustomContextMenu);
      connect(ui->pubView, SIGNAL(customContextMenuRequested(const QPoint&)),
          this, SLOT(pubViewContextMenu(const QPoint&)));
 
+     // Accessibility improvements for programsView
+     ui->programsView->setFocusPolicy(Qt::StrongFocus);
+     ui->programsView->setTabKeyNavigation(true);
+     ui->programsView->setAttribute(Qt::WA_KeyboardFocusChange, true);
      ui->programsView->setContextMenuPolicy(Qt::CustomContextMenu);
      connect(ui->programsView, SIGNAL(customContextMenuRequested(const QPoint&)),
          this, SLOT(programsViewContextMenu(const QPoint&)));
@@ -420,12 +445,32 @@ checkDbOpen();
 
    }
 
-
+   // Initialize accessibility features for the player interface
+   initializeAccessibility();
 
 }
 
-
-
+void player::initializeAccessibility()
+{
+    try {
+        // Get the accessibility manager from the service container
+        auto* serviceContainer = ServiceContainer::instance();
+        auto* accessibilityManager = serviceContainer->resolve<AccessibilityManager>();
+        
+        if (accessibilityManager) {
+            // Initialize player-specific accessibility enhancements
+            if (accessibilityManager->initializePlayerAccessibility(this)) {
+                qDebug() << "Player accessibility initialized successfully";
+            } else {
+                qWarning() << "Failed to initialize player accessibility";
+            }
+        } else {
+            qWarning() << "AccessibilityManager not available - accessibility features disabled";
+        }
+    } catch (const std::exception& e) {
+        qCritical() << "Exception during accessibility initialization:" << e.what();
+    }
+}
 
 player::~player()
 {
@@ -1442,6 +1487,16 @@ void player::playNextSong(){
 
 
     QSqlDatabase db = QSqlDatabase::database("xfb_connection");
+    if (!db.isOpen()) {
+        qWarning() << "Database connection 'xfb_connection' is not open in playNextSong!";
+        checkDbOpen(); // Try to reopen the database
+        db = QSqlDatabase::database("xfb_connection");
+        if (!db.isOpen()) {
+            qCritical() << "Failed to open database connection in playNextSong!";
+            return;
+        }
+    }
+    
     if(PlayMode=="Playing_Segue"){
         qDebug()<<"The white rabit is Playing_segue";
 
@@ -1560,8 +1615,19 @@ void player::playNextSong(){
 
         if(autoMode==1){
             qDebug()<<"Almost giving up dude.. there's nothing to play.. but trying again since we are in autoMode..";
+            // Prevent infinite recursion by checking if playlist is still empty after playlistAboutToFinish
+            int currentPlaylistCount = ui->playlist->count();
             playlistAboutToFinish();
-            playNextSong();
+            if(ui->playlist->count() > currentPlaylistCount) {
+                // Only recurse if new items were added to the playlist
+                playNextSong();
+            } else {
+                qDebug()<<"No new items added to playlist, stopping to prevent infinite recursion";
+                Xplayer->stop();
+                ui->btPlay->setStyleSheet("");
+                ui->btPlay->setText(tr("Play"));
+                PlayMode = "stopped";
+            }
             return;
         }
 
@@ -3999,6 +4065,10 @@ void player::on_actionAdd_a_song_from_Youtube_or_Other_triggered()
 {
     externaldownloader* widget = new externaldownloader;
     widget->setAttribute(Qt::WA_DeleteOnClose);
+    
+    // Connect the musicAdded signal to update the music table
+    connect(widget, &externaldownloader::musicAdded, this, &player::update_music_table);
+    
     widget->show();
 
 }
@@ -4117,6 +4187,10 @@ void player::on_bt_youtubeDL_clicked()
 {
     externaldownloader* widget = new externaldownloader;
     widget->setAttribute(Qt::WA_DeleteOnClose);
+    
+    // Connect the musicAdded signal to update the music table
+    connect(widget, &externaldownloader::musicAdded, this, &player::update_music_table);
+    
     widget->show();
 }
 */
@@ -9022,4 +9096,25 @@ void player::refreshAdBanner() {
         // Call the QML function to reload the ad
         QMetaObject::invokeMethod(adBanner->rootObject(), "loadAd");
     }
+}
+
+// UI accessor methods for controllers
+QTableView* player::getMusicView() const {
+    return ui->musicView;
+}
+
+QPushButton* player::getPlayButton() const {
+    return ui->btPlay;
+}
+
+QPushButton* player::getStopButton() const {
+    return ui->btStop;
+}
+
+QSlider* player::getProgressSlider() const {
+    return ui->sliderProgress;
+}
+
+QSlider* player::getVolumeSlider() const {
+    return ui->sliderVolume;
 }

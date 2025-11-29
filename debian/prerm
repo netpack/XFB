@@ -1,0 +1,34 @@
+#!/bin/bash
+# XFB - Pre-removal script
+
+set -e
+
+case "$1" in
+    remove|upgrade|deconfigure)
+        echo "Preparing to remove XFB..."
+        
+        # Stop any running XFB processes gracefully
+        if command -v pkill >/dev/null 2>&1; then
+            pkill -f "xfb" || true
+            # Give processes time to shut down gracefully
+            sleep 2
+        fi
+        
+        # Remove any temporary files
+        rm -rf /tmp/xfb-* || true
+        
+        echo "XFB processes stopped."
+        ;;
+        
+    failed-upgrade)
+        ;;
+        
+    *)
+        echo "prerm called with unknown argument \`$1'" >&2
+        exit 1
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0

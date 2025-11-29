@@ -41,7 +41,7 @@
 #ifndef AUDIOINPUT_H
 #define AUDIOINPUT_H
 
-#include <QAudioInput>
+#include <QtMultimedia/QAudioInput>
 #include <QAudioSource> // Qt6 class for audio recording
 #include <QByteArray>
 #include <QComboBox>
@@ -49,7 +49,7 @@
 #include <QObject>
 #include <QPixmap>
 #include <QPushButton>
-#include <QMediaDevices> // Qt6 replacement for QAudioDeviceInfo
+#include <QtMultimedia/QMediaDevices> // Qt6 replacement for QAudioDeviceInfo
 #include <QAudioDevice> // Qt6 audio device representation
 #include <QAudioFormat>
 #include <QIODevice> // Explicitly include QIODevice

@@ -1,0 +1,56 @@
+# Dockerfile for testing XFB on Arch Linux
+# Usage: 
+#   docker build -t xfb-arch-test -f Dockerfile.arch-test .
+#   docker run -it --rm -v $(pwd):/xfb xfb-arch-test
+
+FROM archlinux:latest
+
+# Update system and install base dependencies
+RUN pacman -Syu --noconfirm && \
+    pacman -S --noconfirm \
+        base-devel \
+        git \
+        sudo \
+        cmake \
+        pkg-config \
+        qt6-base \
+        qt6-multimedia \
+        qt6-webengine \
+        qt6-quickwidgets \
+        at-spi2-core \
+        speech-dispatcher \
+        alsa-lib \
+        libpulse \
+        sqlite \
+        curl \
+        gstreamer \
+        gst-plugins-base \
+        gst-plugins-good \
+        namcap
+
+# Install optional dependencies for full testing
+RUN pacman -S --noconfirm \
+        orca \
+        brltty \
+        espeak-ng \
+        ffmpeg \
+        lame \
+        sox \
+        flac \
+        vorbis-tools \
+        wavpack \
+        opus-tools \
+        mediainfo
+
+# Create a non-root user for building
+RUN useradd -m -G wheel builder && \
+    echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+
+# Set working directory
+WORKDIR /xfb
+
+# Switch to builder user
+USER builder
+
+# Default command
+CMD ["/bin/bash", "-c", "echo 'XFB Arch Linux Test Environment' && echo 'Run: makepkg -si' && /bin/bash"]

@@ -31,7 +31,7 @@ The easiest way to install XFB is by using a pre-built package for your operatin
 | --------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------- |
 | 🍏 **macOS** (Intel/Apple Silicon) | [**GitHub Releases**](https://github.com/netpack/XFB/releases) (Download the `.dmg` file) | Drag `XFB.app` to your Applications folder.               |
 | 🐧 **Debian / Ubuntu** (amd64)  | [**GitHub Releases**](https://github.com/netpack/XFB/releases) (Download the `.deb` file) | `sudo apt install ./xfb_*.deb`                            |
-|  Arch Linux (Manjaro, etc.) | [**AUR (Arch User Repository)**](https://aur.archlinux.org/packages/xfb)            | `yay -S xfb`                                            |
+| 🐧 **Arch Linux** (Manjaro, etc.) | [**AUR (Arch User Repository)**](https://aur.archlinux.org/packages/xfb)            | `yay -S xfb` or `paru -S xfb`                           |
 
 ### Installing on Arch Linux (Details)
 

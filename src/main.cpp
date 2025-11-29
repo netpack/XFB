@@ -16,6 +16,10 @@
 #include <QApplication>
 int main(int argc, char *argv[])
 {
+    // Set up multimedia environment before QApplication
+    qputenv("QT_MULTIMEDIA_PREFERRED_PLUGINS", "gstreamer");
+    qputenv("QT_ACCESSIBILITY", "1");
+    
     // Basic application setup - Do this EARLY
     QApplication::setDesktopSettingsAware(false); // Keep this if needed for specific behavior
     QApplication a(argc, argv);
