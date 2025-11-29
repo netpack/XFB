@@ -1,6 +1,0 @@
-src/player.cpp:469:// TODO: Implement proper parsing of MediaInfo output (JSON is best)
-src/player.cpp:497:            // ** TODO: Parse the 'output' string here! **
-src/player.cpp:1084:    // TODO: Replace this with a robust way to find the script
-src/player.cpp:1153:    // TODO: Replace this with a robust way to find the script
-src/player.cpp:8457:    // TODO: Replace this with a robust way to find the script (e.g., settings, known install path)
-src/player.cpp:8586:    // TODO: Replace this with a robust way to find the script

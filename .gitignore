@@ -43,6 +43,18 @@ moc_*.cpp
 moc_predefs.h
 qrc_*.cpp
 
+# Internal tracking and progress files (not for public repo)
+*_STATUS.md
+*_SUMMARY.md
+WHAT_WAS_*.md
+*_CHECKLIST.md
+QUICK_START_*.md
+AUR_UPDATE_*.md
+*_ANALYSIS.md
+*_COMPARISON.md
+*_REFERENCE.txt
+reports/
+
 # Misc
 .DS_Store
 ftp/.directory
