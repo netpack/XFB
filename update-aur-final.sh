@@ -2,7 +2,7 @@
 set -e
 
 echo "╔══════════════════════════════════════════════════════════╗"
-echo "║          Updating XFB AUR to v2.0.0                      ║"
+echo "║          Updating XFB AUR to v2.0.0-5                    ║"
 echo "╚══════════════════════════════════════════════════════════╝"
 echo ""
 
@@ -41,17 +41,12 @@ echo ""
 
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     git add PKGBUILD .SRCINFO
-    git commit -m "Update to version 2.0.0
+    git commit -m "Update to version 2.0.0-5
 
-- Updated to XFB 2.0.0
-- Migrated from Qt5 to Qt6
-- New CMake-based build system
-- Enhanced accessibility features with ORCA integration
-- Complete keyboard navigation support
-- Audio feedback system
-- Braille display support via BrlTTY
-- Performance optimizations
-- Updated dependencies
+- Fixed linking errors in unit and integration tests
+- Added missing accessibility service dependencies
+- Removed references to disabled services in test builds
+- Build now completes successfully on all architectures
 "
     
     echo ""
@@ -68,7 +63,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "Users can now install with:"
     echo "  yay -S xfb"
     echo ""
-    echo "The package will show version 2.0.0-1 within 5 minutes."
+    echo "The package will show version 2.0.0-5 within 5 minutes."
 else
     echo "Update cancelled"
 fi
