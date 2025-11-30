@@ -54,6 +54,16 @@ add_executable(test_player_ui_controller_integration
     ${CMAKE_SOURCE_DIR}/src/services/DatabaseService.cpp
     ${CMAKE_SOURCE_DIR}/src/services/AudioService.cpp
     ${CMAKE_SOURCE_DIR}/src/services/ConfigurationService.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/AccessibilityManager.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/WidgetAccessibilityEnhancer.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/AudioFeedbackService.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/LiveRegionManager.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/PlaybackStatusAnnouncer.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/SystemStatusAnnouncer.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/PlayerAudioFeedbackIntegration.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/BackgroundOperationFeedback.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/Logger.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/ErrorHandler.cpp
     ${CMAKE_SOURCE_DIR}/src/repositories/MusicRepository.cpp
     ${CMAKE_SOURCE_DIR}/src/repositories/PlaylistRepository.cpp
     ${CMAKE_SOURCE_DIR}/src/repositories/GenreRepository.cpp
@@ -83,20 +93,31 @@ add_test(NAME PlayerUIControllerIntegrationTest COMMAND test_player_ui_controlle
 add_executable(test_accessibility_integration
     TestAccessibilityIntegration.cpp
     TestAccessibilityIntegration.h
+    ${CMAKE_SOURCE_DIR}/src/services/IService.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/BaseService.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/ServiceContainer.cpp
     ${CMAKE_SOURCE_DIR}/src/services/AccessibilityManager.cpp
     ${CMAKE_SOURCE_DIR}/src/services/WidgetAccessibilityEnhancer.cpp
     ${CMAKE_SOURCE_DIR}/src/services/KeyboardNavigationController.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/AudioService.cpp
     ${CMAKE_SOURCE_DIR}/src/services/AudioFeedbackService.cpp
     ${CMAKE_SOURCE_DIR}/src/services/LiveRegionManager.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/PlaybackStatusAnnouncer.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/SystemStatusAnnouncer.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/PlayerAudioFeedbackIntegration.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/BackgroundOperationFeedback.cpp
     ${CMAKE_SOURCE_DIR}/src/services/AccessibilityPerformanceMonitor.cpp
     ${CMAKE_SOURCE_DIR}/src/services/AccessibilityErrorHandler.cpp
     ${CMAKE_SOURCE_DIR}/src/services/ATSPIConnectionManager.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/Logger.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/ErrorHandler.cpp
 )
 
 target_link_libraries(test_accessibility_integration
     Qt6::Core
     Qt6::Widgets
     Qt6::Gui
+    Qt6::Multimedia
     Qt6::Test
     TestUtils
 )
@@ -112,14 +133,26 @@ add_test(NAME AccessibilityIntegrationTest COMMAND test_accessibility_integratio
 add_executable(test_orca_compatibility
     TestORCACompatibility.cpp
     TestORCACompatibility.h
+    ${CMAKE_SOURCE_DIR}/src/services/IService.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/BaseService.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/ServiceContainer.cpp
     ${CMAKE_SOURCE_DIR}/src/services/AccessibilityManager.cpp
     ${CMAKE_SOURCE_DIR}/src/services/WidgetAccessibilityEnhancer.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/AudioService.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/AudioFeedbackService.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/LiveRegionManager.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/PlaybackStatusAnnouncer.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/SystemStatusAnnouncer.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/PlayerAudioFeedbackIntegration.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/BackgroundOperationFeedback.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/Logger.cpp
 )
 
 target_link_libraries(test_orca_compatibility
     Qt6::Core
     Qt6::Widgets
     Qt6::Gui
+    Qt6::Multimedia
     Qt6::Test
     TestUtils
 )
@@ -135,17 +168,27 @@ add_test(NAME ORCACompatibilityTest COMMAND test_orca_compatibility)
 add_executable(test_accessibility_user_acceptance
     TestAccessibilityUserAcceptance.cpp
     TestAccessibilityUserAcceptance.h
+    ${CMAKE_SOURCE_DIR}/src/services/IService.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/BaseService.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/ServiceContainer.cpp
     ${CMAKE_SOURCE_DIR}/src/services/AccessibilityManager.cpp
     ${CMAKE_SOURCE_DIR}/src/services/WidgetAccessibilityEnhancer.cpp
     ${CMAKE_SOURCE_DIR}/src/services/KeyboardNavigationController.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/AudioService.cpp
     ${CMAKE_SOURCE_DIR}/src/services/AudioFeedbackService.cpp
     ${CMAKE_SOURCE_DIR}/src/services/LiveRegionManager.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/PlaybackStatusAnnouncer.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/SystemStatusAnnouncer.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/PlayerAudioFeedbackIntegration.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/BackgroundOperationFeedback.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/Logger.cpp
 )
 
 target_link_libraries(test_accessibility_user_acceptance
     Qt6::Core
     Qt6::Widgets
     Qt6::Gui
+    Qt6::Multimedia
     Qt6::Test
     TestUtils
 )
