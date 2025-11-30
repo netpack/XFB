@@ -49,6 +49,17 @@ qrc_*.cpp
 *.pro.user*
 compile_commands.json
 
+# Qt compiled translation files in build directories (but keep src/*.qm for distribution)
+build*/*.qm
+tmp*/*.qm
+
+# Database files in build/test directories (but keep src/adb.db as template)
+build*/*.db
+tmp*/*.db
+*.sqlite
+*.sqlite3
+test*.db
+
 # Internal tracking and progress files (not for public repo)
 *_STATUS.md
 *_SUMMARY.md
@@ -63,7 +74,19 @@ reports/
 
 # Misc
 .DS_Store
-ftp/.directory
+*/.directory
+.directory
 .cache
 .kiro/**.7z
 err.txt
+
+# Backup and temporary files
+*.backup
+*.old
+*.tmp
+*_minimal.txt
+*_minimal.cpp
+
+# Root-level test files (tests should be in tests/ directory)
+/test_*.cpp
+/test-*.cpp
