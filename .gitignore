@@ -43,6 +43,12 @@ moc_*.cpp
 moc_predefs.h
 qrc_*.cpp
 
+# Qt Creator and IDE files
+.qtc_clangd/
+.qmake.stash
+*.pro.user*
+compile_commands.json
+
 # Internal tracking and progress files (not for public repo)
 *_STATUS.md
 *_SUMMARY.md
