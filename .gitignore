@@ -26,13 +26,13 @@ tmp_*/
 *.deb
 *.ddeb
 
-# Arch Linux package files
+# Arch Linux package files (in build directory only)
 *.pkg.tar.zst
 *.pkg.tar.xz
 *.pkg.tar.gz
-src/
-pkg/
-.SRCINFO
+/pkg/
+/.SRCINFO
+# Note: Don't ignore src/ as it contains source code!
 
 # macOS build artifacts
 *.dmg
@@ -59,4 +59,5 @@ reports/
 .DS_Store
 ftp/.directory
 .cache
-.kiro/*
+.kiro/**.7z
+err.txt
