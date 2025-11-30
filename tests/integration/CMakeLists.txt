@@ -98,7 +98,6 @@ add_executable(test_accessibility_integration
     ${CMAKE_SOURCE_DIR}/src/services/ServiceContainer.cpp
     ${CMAKE_SOURCE_DIR}/src/services/AccessibilityManager.cpp
     ${CMAKE_SOURCE_DIR}/src/services/WidgetAccessibilityEnhancer.cpp
-    ${CMAKE_SOURCE_DIR}/src/services/KeyboardNavigationController.cpp
     ${CMAKE_SOURCE_DIR}/src/services/AudioService.cpp
     ${CMAKE_SOURCE_DIR}/src/services/AudioFeedbackService.cpp
     ${CMAKE_SOURCE_DIR}/src/services/LiveRegionManager.cpp
@@ -106,11 +105,13 @@ add_executable(test_accessibility_integration
     ${CMAKE_SOURCE_DIR}/src/services/SystemStatusAnnouncer.cpp
     ${CMAKE_SOURCE_DIR}/src/services/PlayerAudioFeedbackIntegration.cpp
     ${CMAKE_SOURCE_DIR}/src/services/BackgroundOperationFeedback.cpp
-    ${CMAKE_SOURCE_DIR}/src/services/AccessibilityPerformanceMonitor.cpp
-    ${CMAKE_SOURCE_DIR}/src/services/AccessibilityErrorHandler.cpp
-    ${CMAKE_SOURCE_DIR}/src/services/ATSPIConnectionManager.cpp
     ${CMAKE_SOURCE_DIR}/src/services/Logger.cpp
     ${CMAKE_SOURCE_DIR}/src/services/ErrorHandler.cpp
+    # Disabled services (not in main build):
+    # ${CMAKE_SOURCE_DIR}/src/services/KeyboardNavigationController.cpp
+    # ${CMAKE_SOURCE_DIR}/src/services/AccessibilityPerformanceMonitor.cpp
+    # ${CMAKE_SOURCE_DIR}/src/services/AccessibilityErrorHandler.cpp
+    # ${CMAKE_SOURCE_DIR}/src/services/ATSPIConnectionManager.cpp
 )
 
 target_link_libraries(test_accessibility_integration
@@ -173,7 +174,6 @@ add_executable(test_accessibility_user_acceptance
     ${CMAKE_SOURCE_DIR}/src/services/ServiceContainer.cpp
     ${CMAKE_SOURCE_DIR}/src/services/AccessibilityManager.cpp
     ${CMAKE_SOURCE_DIR}/src/services/WidgetAccessibilityEnhancer.cpp
-    ${CMAKE_SOURCE_DIR}/src/services/KeyboardNavigationController.cpp
     ${CMAKE_SOURCE_DIR}/src/services/AudioService.cpp
     ${CMAKE_SOURCE_DIR}/src/services/AudioFeedbackService.cpp
     ${CMAKE_SOURCE_DIR}/src/services/LiveRegionManager.cpp
@@ -182,6 +182,8 @@ add_executable(test_accessibility_user_acceptance
     ${CMAKE_SOURCE_DIR}/src/services/PlayerAudioFeedbackIntegration.cpp
     ${CMAKE_SOURCE_DIR}/src/services/BackgroundOperationFeedback.cpp
     ${CMAKE_SOURCE_DIR}/src/services/Logger.cpp
+    # Disabled service (not in main build):
+    # ${CMAKE_SOURCE_DIR}/src/services/KeyboardNavigationController.cpp
 )
 
 target_link_libraries(test_accessibility_user_acceptance
