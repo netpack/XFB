@@ -42,14 +42,13 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-# Enable testing
-enable_testing()
-
 # Add subdirectories
 add_subdirectory(src)
 
-# Add tests subdirectory if it exists and not packaging
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests" AND NOT CPACK_GENERATOR)
+# Add tests subdirectory if BUILD_TESTING is enabled (default ON)
+option(BUILD_TESTING "Build the testing tree" ON)
+if(BUILD_TESTING AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests")
+    enable_testing()
     add_subdirectory(tests)
 endif()
 
