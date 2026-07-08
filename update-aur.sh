@@ -31,8 +31,8 @@ else
 fi
 
 echo ""
-echo "Copying PKGBUILD to AUR directory..."
-cp PKGBUILD aur-xfb/
+echo "Copying PKGBUILD and install script to AUR directory..."
+cp PKGBUILD xfb.install aur-xfb/
 
 cd aur-xfb
 
@@ -54,7 +54,7 @@ fi
 
 echo ""
 echo "Committing changes..."
-git add PKGBUILD .SRCINFO
+git add PKGBUILD .SRCINFO xfb.install
 git commit -m "Update to version $VERSION-$PKGREL
 
 - Updated to XFB 3.14159
