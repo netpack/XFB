@@ -8165,6 +8165,12 @@ void player::on_actionUpdate_System_triggered()
     checkForUpdates();
 }
 
+void player::on_actionInstall_all_dependencies_triggered()
+{
+    DependencyChecker depChecker;
+    depChecker.installAllInteractive(this);
+}
+
 void player::on_bt_apply_multi_selection_clicked()
 {
 

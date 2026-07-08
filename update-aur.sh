@@ -5,7 +5,7 @@
 set -e
 
 VERSION="3.14159"
-PKGREL="1"
+PKGREL="2"
 
 echo "=========================================="
 echo "Updating XFB on AUR to version $VERSION"
@@ -37,7 +37,16 @@ cp PKGBUILD xfb.install aur-xfb/
 cd aur-xfb
 
 echo "Generating .SRCINFO..."
-makepkg --printsrcinfo > .SRCINFO
+if command -v makepkg &>/dev/null; then
+    makepkg --printsrcinfo > .SRCINFO
+else
+    # makepkg doesn't exist on macOS: generate .SRCINFO in an Arch container.
+    # makepkg refuses to run as root, and xfb.install must sit next to the
+    # PKGBUILD (install=xfb.install), hence the builder user and the copies.
+    echo "makepkg not found — generating .SRCINFO via Docker (archlinux)..."
+    docker run --rm --platform linux/amd64 -v "$PWD":/pkg archlinux:latest \
+        bash -c "useradd -m builder && install -m644 -o builder /pkg/PKGBUILD /pkg/xfb.install /home/builder/ && cd /home/builder && su builder -c 'makepkg --printsrcinfo' > /pkg/.SRCINFO"
+fi
 
 echo ""
 echo "Changes to be committed:"
@@ -57,12 +66,10 @@ echo "Committing changes..."
 git add PKGBUILD .SRCINFO xfb.install
 git commit -m "Update to version $VERSION-$PKGREL
 
-- Updated to XFB 3.14159
-- Live audio FX engine (10-band EQ, compressor, 432 Hz retune) via ffmpeg
-- DJ decks with scratchable jog wheels
-- Streaming client for Icecast/Shoutcast stations
-- ffmpeg promoted to a hard dependency; added xfb.install
-- Accessibility and keyboard navigation improvements
+- Fix white application icon background: install the transparent hicolor
+  icons (16-512px + scalable SVG) from XFB.iconset instead of the
+  flattened root xfb_icon.png; the pixmaps fallback is transparent too
+- Refresh the hicolor icon cache in the install scriptlets
 "
 
 echo ""

@@ -32,6 +32,11 @@ public:
     // Convenience: check and auto-install, returns list of still-missing deps
     QList<DependencyInfo> checkAndInstall();
 
+    // Interactive "install everything" used by the Options menu: lists what is
+    // missing, asks for consent once, then installs each dependency with live
+    // progress and shows a summary. Safe to call when nothing is missing.
+    void installAllInteractive(QWidget *parent);
+
     // Check if a single executable is available
     static bool isAvailable(const QString &executable);
 

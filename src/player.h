@@ -187,6 +187,7 @@ private slots:
     void on_bt_sndconv_clicked();
     void on_actionAutoTrim_the_silence_from_the_start_and_the_end_of_all_music_tracks_in_the_database_triggered();
     void on_actionUpdate_System_triggered();
+    void on_actionInstall_all_dependencies_triggered();
     void on_bt_apply_multi_selection_clicked();
     void on_actionConvert_all_musics_in_the_database_to_mp3_triggered();
     void on_actionConvert_all_musics_in_the_database_to_ogg_triggered();

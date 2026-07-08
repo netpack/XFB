@@ -3531,6 +3531,7 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
     <addaction name="menuServer"/>
     <addaction name="separator"/>
     <addaction name="actionUpdate_System"/>
+    <addaction name="actionInstall_all_dependencies"/>
     <addaction name="actionUpdate_Dinamic_Server_s_IP"/>
    </widget>
    <addaction name="menuFile"/>
@@ -3826,6 +3827,18 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
    </property>
    <property name="text">
     <string>Check for updates</string>
+   </property>
+  </action>
+  <action name="actionInstall_all_dependencies">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/icons/run-build-install.png</normaloff>:/icons/run-build-install.png</iconset>
+   </property>
+   <property name="text">
+    <string>Install all dependencies</string>
+   </property>
+   <property name="toolTip">
+    <string>Install every external tool XFB can use (FFmpeg, yt-dlp, ExifTool, …)</string>
    </property>
   </action>
   <action name="actionConvert_all_musics_in_the_database_to_mp3">

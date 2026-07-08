@@ -62,6 +62,16 @@ bool DependencyChecker::isAvailable(const QString &executable)
     for (const QString &p : paths) {
         if (QFileInfo::exists(p)) return true;
     }
+#ifdef Q_OS_MACOS
+    // GUI tools installed as Homebrew casks (e.g. Audacity) ship as an app
+    // bundle, not a binary on PATH. Use the same lookup that
+    // player::launchExternalApplication uses to start them via "open -a".
+    const QString appBundle = executable.left(1).toUpper() + executable.mid(1) + ".app";
+    if (QFileInfo::exists("/Applications/" + appBundle) ||
+        QFileInfo::exists(QDir::homePath() + "/Applications/" + appBundle)) {
+        return true;
+    }
+#endif
 #endif
     // Fallback to PATH
     return !QStandardPaths::findExecutable(executable).isEmpty();
@@ -202,6 +212,123 @@ QList<DependencyInfo> DependencyChecker::checkAndInstall()
         missing = checkDependencies();
     }
     return missing;
+}
+
+void DependencyChecker::installAllInteractive(QWidget *parent)
+{
+    QList<DependencyInfo> missing = checkDependencies();
+    if (missing.isEmpty()) {
+        QMessageBox::information(parent, QObject::tr("Dependencies"),
+            QObject::tr("All external tools XFB can use are already installed."));
+        return;
+    }
+
+    QString pm = detectPackageManager();
+
+#ifdef Q_OS_MACOS
+    // Installing anything on macOS goes through Homebrew; offer to bootstrap it
+    // first if it isn't there yet.
+    if (pm.isEmpty()) {
+        if (ensureHomebrew(parent)) {
+            pm = detectPackageManager();
+        }
+    }
+#endif
+
+    if (pm.isEmpty()) {
+        QStringList names;
+        for (const DependencyInfo &dep : missing) names << dep.name;
+        QMessageBox::warning(parent, QObject::tr("Cannot Install Dependencies"),
+            QObject::tr("No supported package manager was found, so XFB cannot install "
+                        "these tools for you:\n\n%1\n\nPlease install them manually.")
+                .arg(names.join(", ")));
+        return;
+    }
+
+    // On the chosen package manager some catalog entries may have no package
+    // (e.g. transmission-cli on winget); list them separately so the summary
+    // is honest about what will actually be installed.
+    QList<DependencyInfo> installable;
+    QStringList unavailable;
+    for (const DependencyInfo &dep : missing) {
+        // The self-updating yt-dlp in ~/.local/bin (see ensureYtDlp) is not on
+        // the paths isAvailable() checks; if it's provisioned, yt-dlp isn't
+        // actually missing.
+        if (dep.executable == "yt-dlp" && QFileInfo(localYtDlpPath()).isExecutable()) {
+            continue;
+        }
+        QString pkg;
+        if (pm == "brew")        pkg = dep.brewPackage;
+        else if (pm == "apt")    pkg = dep.aptPackage;
+        else if (pm == "pacman") pkg = dep.pacmanPackage;
+        else if (pm == "winget" || pm == "choco") pkg = dep.wingetPackage;
+        if (pkg.isEmpty()) {
+            unavailable << dep.name;
+        } else {
+            installable.append(dep);
+        }
+    }
+
+    if (installable.isEmpty() && unavailable.isEmpty()) {
+        QMessageBox::information(parent, QObject::tr("Dependencies"),
+            QObject::tr("All external tools XFB can use are already installed."));
+        return;
+    }
+
+    if (installable.isEmpty()) {
+        QMessageBox::warning(parent, QObject::tr("Cannot Install Dependencies"),
+            QObject::tr("None of the missing tools (%1) can be installed automatically "
+                        "with %2. Please install them manually.")
+                .arg(unavailable.join(", "), friendlyManagerName(pm)));
+        return;
+    }
+
+    QStringList installNames;
+    for (const DependencyInfo &dep : installable) installNames << dep.name;
+    QString question = QObject::tr("The following optional tools are not installed:\n\n%1\n\n"
+                                   "XFB can install them now using %2. This may ask for your "
+                                   "password and take several minutes.\n\nInstall them all now?")
+                           .arg(installNames.join(", "), friendlyManagerName(pm));
+    if (!unavailable.isEmpty()) {
+        question += QObject::tr("\n\n(Not available via %1 and skipped: %2)")
+                        .arg(friendlyManagerName(pm), unavailable.join(", "));
+    }
+
+    const QMessageBox::StandardButton reply = QMessageBox::question(parent,
+        QObject::tr("Install All Dependencies?"), question,
+        QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
+    if (reply != QMessageBox::Yes) {
+        return;
+    }
+
+    QStringList installed, failed;
+    for (const DependencyInfo &dep : installable) {
+        if (runInstallWithProgress(dep, parent) && isAvailable(dep.executable)) {
+            installed << dep.name;
+        } else {
+            failed << dep.name;
+        }
+    }
+
+    QString summary;
+    if (!installed.isEmpty()) {
+        summary += QObject::tr("Installed: %1").arg(installed.join(", "));
+    }
+    if (!failed.isEmpty()) {
+        if (!summary.isEmpty()) summary += "\n\n";
+        summary += QObject::tr("Failed or canceled: %1").arg(failed.join(", "));
+    }
+    if (!unavailable.isEmpty()) {
+        if (!summary.isEmpty()) summary += "\n\n";
+        summary += QObject::tr("Not available via %1: %2")
+                       .arg(friendlyManagerName(pm), unavailable.join(", "));
+    }
+
+    if (failed.isEmpty() && unavailable.isEmpty()) {
+        QMessageBox::information(parent, QObject::tr("Dependencies Installed"), summary);
+    } else {
+        QMessageBox::warning(parent, QObject::tr("Dependencies"), summary);
+    }
 }
 
 DependencyInfo DependencyChecker::lookup(const QString &executable) const
