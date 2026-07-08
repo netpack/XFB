@@ -65,7 +65,7 @@ public:
      */
     void announcePlaylistModification(const QString& operation, const QString& itemText, const QString& position = QString());
 
-private:
+public:
     /**
      * @brief Get formatted item content with context
      * @param row The item row index

@@ -83,8 +83,8 @@ fi
 
 # Check DMG
 print_check "Checking DMG file..."
-if [ -f "XFB-2.0.0-macOS.dmg" ]; then
-    dmg_size=$(du -h "XFB-2.0.0-macOS.dmg" | cut -f1)
+if [ -f "XFB-3.14159-macOS.dmg" ]; then
+    dmg_size=$(du -h "XFB-3.14159-macOS.dmg" | cut -f1)
     print_success "DMG file found (${dmg_size})"
 else
     print_error "DMG file not found"
@@ -93,13 +93,13 @@ fi
 
 # Get file sizes
 app_size=$(du -sh XFB.app | cut -f1)
-dmg_size=$(du -sh XFB-2.0.0-macOS.dmg | cut -f1)
+dmg_size=$(du -sh XFB-3.14159-macOS.dmg | cut -f1)
 
 echo ""
 echo "📊 Build Summary:"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "📦 App Bundle: XFB.app ($app_size)"
-echo "💿 DMG Package: XFB-2.0.0-macOS.dmg ($dmg_size)"
+echo "💿 DMG Package: XFB-3.14159-macOS.dmg ($dmg_size)"
 echo "🏗️  Architecture: $(file XFB.app/Contents/MacOS/XFB | grep -o 'arm64\|x86_64')"
 echo "🎯 Target: macOS 10.15+"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -108,6 +108,6 @@ echo "✅ All checks passed! Build is ready for distribution."
 echo ""
 echo "📋 Next steps:"
 echo "   • Test the app: open XFB.app"
-echo "   • Install from DMG: open XFB-2.0.0-macOS.dmg"
+echo "   • Install from DMG: open XFB-3.14159-macOS.dmg"
 echo "   • Distribute the DMG file to users"
 echo ""

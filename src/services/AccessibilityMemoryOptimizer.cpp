@@ -10,7 +10,6 @@
 AccessibilityMemoryOptimizer::AccessibilityMemoryOptimizer(QObject *parent)
     : QObject(parent)
     , m_strategy(Balanced)
-    , m_interfaceCache(100) // Default cache size
     , m_cleanupTimer(new QTimer(this))
     , m_memoryCheckTimer(new QTimer(this))
     , m_currentMemoryUsage(0)
@@ -115,7 +114,10 @@ void AccessibilityMemoryOptimizer::cacheInterface(QWidget* widget, QAccessibleIn
     }
     
     // Cache the interface
-    m_interfaceCache.insert(widget, interface);
+    auto p = new InterfaceWrapper{interface};
+    if (!m_interfaceCache.insert(widget, p, interfaceSize)) {
+        delete p;
+    }
     
     m_currentMemoryUsage += interfaceSize;
     updateMemoryUsage();
@@ -127,7 +129,8 @@ QAccessibleInterface* AccessibilityMemoryOptimizer::getCachedInterface(QWidget* 
     
     QMutexLocker locker(&m_dataMutex);
     
-    QAccessibleInterface* interface = m_interfaceCache.value(widget);
+    InterfaceWrapper* wrapper = m_interfaceCache.object(widget);
+    QAccessibleInterface* interface = wrapper ? wrapper->iface : nullptr;
     
     if (interface && m_trackedWidgets.contains(widget)) {
         // Update access info

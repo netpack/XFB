@@ -912,5 +912,8 @@
         <file>xfb.conf</file>
         <file>adb.db</file>
         <file>48x48.png</file>
+        <file>icons/flat/pirate-32.png</file>
+        <file>icons/flat/eq-fx-64.png</file>
+        <file>icons/flat/tuning-fork-64.png</file>
     </qresource>
 </RCC>

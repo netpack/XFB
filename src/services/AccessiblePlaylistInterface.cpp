@@ -16,8 +16,11 @@ AccessiblePlaylistInterface::AccessiblePlaylistInterface(QListWidget* listWidget
 
 AccessiblePlaylistInterface::~AccessiblePlaylistInterface()
 {
-    // Clean up item interfaces
-    qDeleteAll(m_itemInterfaces);
+    for (QAccessibleInterface* iface : m_itemInterfaces) {
+        if (auto* item = dynamic_cast<AccessiblePlaylistItemInterface*>(iface)) {
+            delete item;
+        }
+    }
     m_itemInterfaces.clear();
 }
 
@@ -69,9 +72,8 @@ int AccessiblePlaylistInterface::indexOfChild(const QAccessibleInterface* child)
         return -1;
     }
 
-    const AccessiblePlaylistItemInterface* itemInterface = 
-        qobject_cast<const AccessiblePlaylistItemInterface*>(child);
-    
+            const AccessiblePlaylistItemInterface* itemInterface =
+            dynamic_cast<const AccessiblePlaylistItemInterface*>(child);    
     if (!itemInterface) {
         return -1;
     }

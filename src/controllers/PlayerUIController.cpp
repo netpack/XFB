@@ -17,6 +17,7 @@
 #include <QDebug>
 #include <QFileInfo>
 #include <QStandardPaths>
+#include <QSqlTableModel>
 
 PlayerUIController::PlayerUIController(player* playerWindow, QObject* parent)
     : QObject(parent)

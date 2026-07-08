@@ -231,7 +231,7 @@ public slots:
      * @param old Previously focused widget
      * @param now Currently focused widget
      */
-    void onFocusChanged(QWidget* old, QWidget* now);
+    void onFocusObjectChanged(QObject* focusObject);
 
     /**
      * @brief Handle context help request

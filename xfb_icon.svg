@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Wood cabinet -->
+    <linearGradient id="wood" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7a4630"/>
+      <stop offset="0.18" stop-color="#6b3a26"/>
+      <stop offset="0.5" stop-color="#5e3120"/>
+      <stop offset="0.82" stop-color="#54291a"/>
+      <stop offset="1" stop-color="#472113"/>
+    </linearGradient>
+    <linearGradient id="woodTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8a5138"/>
+      <stop offset="1" stop-color="#5e3120"/>
+    </linearGradient>
+    <!-- Speaker grille -->
+    <linearGradient id="grille" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f4f2ec"/>
+      <stop offset="0.5" stop-color="#e9e6de"/>
+      <stop offset="1" stop-color="#dcd8cd"/>
+    </linearGradient>
+    <pattern id="grilleWeave" width="16" height="16" patternUnits="userSpaceOnUse">
+      <rect width="16" height="16" fill="none"/>
+      <circle cx="8" cy="8" r="2.6" fill="#c9c4b6"/>
+      <circle cx="0" cy="0" r="2.6" fill="#cfcabd"/>
+      <circle cx="16" cy="0" r="2.6" fill="#cfcabd"/>
+      <circle cx="0" cy="16" r="2.6" fill="#cfcabd"/>
+      <circle cx="16" cy="16" r="2.6" fill="#cfcabd"/>
+    </pattern>
+    <!-- Dial -->
+    <linearGradient id="dial" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9ecf5a"/>
+      <stop offset="0.45" stop-color="#7db43e"/>
+      <stop offset="1" stop-color="#5f9427"/>
+    </linearGradient>
+    <!-- Knobs -->
+    <radialGradient id="knob" cx="0.38" cy="0.3" r="0.85">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.55" stop-color="#e3e3e3"/>
+      <stop offset="0.85" stop-color="#b9b9b9"/>
+      <stop offset="1" stop-color="#8f8f8f"/>
+    </radialGradient>
+    <!-- Gentle top sheen over the whole cabinet -->
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.22"/>
+      <stop offset="0.12" stop-color="#ffffff" stop-opacity="0.06"/>
+      <stop offset="0.3" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <clipPath id="cabinetClip">
+      <rect x="92" y="92" width="840" height="840" rx="160" ry="160"/>
+    </clipPath>
+  </defs>
+
+  <!-- Cabinet -->
+  <rect x="92" y="92" width="840" height="840" rx="160" ry="160" fill="url(#wood)"/>
+
+  <g clip-path="url(#cabinetClip)">
+    <!-- Top wood band -->
+    <rect x="92" y="92" width="840" height="188" fill="url(#woodTop)"/>
+    <!-- Wood grain strokes -->
+    <g stroke="#3e1d10" stroke-width="7" fill="none" opacity="0.35" stroke-linecap="round">
+      <path d="M120 150 C 320 138, 560 162, 904 146"/>
+      <path d="M110 205 C 380 220, 640 196, 916 214"/>
+      <path d="M140 250 C 400 238, 700 258, 900 246"/>
+    </g>
+    <g stroke="#3e1d10" stroke-width="6" fill="none" opacity="0.28" stroke-linecap="round">
+      <path d="M120 820 C 360 834, 620 812, 906 828"/>
+      <path d="M140 884 C 420 872, 680 892, 900 878"/>
+    </g>
+
+    <!-- Grille bezel -->
+    <rect x="128" y="286" width="768" height="452" rx="26" ry="26" fill="#3b1c0f"/>
+    <rect x="136" y="294" width="752" height="436" rx="22" ry="22" fill="url(#grille)"/>
+    <rect x="136" y="294" width="752" height="436" rx="22" ry="22" fill="url(#grilleWeave)" opacity="0.5"/>
+    <!-- Grille inner shading -->
+    <rect x="136" y="294" width="752" height="436" rx="22" ry="22" fill="none"
+          stroke="#8d876f" stroke-opacity="0.55" stroke-width="6"/>
+
+    <!-- Bottom control panel -->
+    <!-- Dial display -->
+    <rect x="332" y="796" width="360" height="94" rx="14" ry="14" fill="#2d1408"/>
+    <rect x="342" y="806" width="340" height="74" rx="10" ry="10" fill="url(#dial)"/>
+    <!-- Dial tick marks -->
+    <g stroke="#3f6b12" stroke-width="5" opacity="0.85">
+      <line x1="382" y1="812" x2="382" y2="836"/>
+      <line x1="442" y1="812" x2="442" y2="836"/>
+      <line x1="502" y1="812" x2="502" y2="836"/>
+      <line x1="562" y1="812" x2="562" y2="836"/>
+      <line x1="622" y1="812" x2="622" y2="836"/>
+      <line x1="672" y1="812" x2="672" y2="836"/>
+    </g>
+    <!-- Dial needle -->
+    <line x1="527" y1="808" x2="527" y2="878" stroke="#c62f22" stroke-width="7"/>
+    <!-- Dial glass highlight -->
+    <rect x="342" y="806" width="340" height="30" rx="10" ry="10" fill="#ffffff" opacity="0.18"/>
+
+    <!-- Knobs -->
+    <g>
+      <circle cx="222" cy="843" r="60" fill="#241007"/>
+      <circle cx="222" cy="843" r="52" fill="url(#knob)"/>
+      <rect x="217" y="801" width="10" height="30" rx="5" fill="#8a2f24"/>
+      <circle cx="802" cy="843" r="60" fill="#241007"/>
+      <circle cx="802" cy="843" r="52" fill="url(#knob)"/>
+      <rect x="797" y="801" width="10" height="30" rx="5" fill="#8a2f24"/>
+    </g>
+
+    <!-- Cabinet sheen -->
+    <rect x="92" y="92" width="840" height="840" fill="url(#sheen)"/>
+  </g>
+
+  <!-- Cabinet edge highlight / shadow -->
+  <rect x="97" y="97" width="830" height="830" rx="155" ry="155" fill="none"
+        stroke="#ffffff" stroke-opacity="0.14" stroke-width="8"/>
+  <rect x="92" y="92" width="840" height="840" rx="160" ry="160" fill="none"
+        stroke="#2b1209" stroke-opacity="0.85" stroke-width="8"/>
+</svg>

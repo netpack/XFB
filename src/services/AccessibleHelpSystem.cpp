@@ -2,7 +2,8 @@
 #include "AccessibilityManager.h"
 #include "KeyboardNavigationController.h"
 #include <QApplication>
-#include <QDesktopWidget>
+#include <QTextDocumentFragment>
+#include <QScreen>
 #include <QHeaderView>
 #include <QTreeWidgetItem>
 #include <QTextCursor>
@@ -603,7 +604,7 @@ QString AccessibleHelpSystem::findContextHelpForWidget(QWidget* widget) const
 }
 
 // Implementation continues in next part due to length...vo
-id AccessibleHelpSystem::createHelpWindow()
+void AccessibleHelpSystem::createHelpWindow()
 {
     m_helpWindow = new QWidget();
     m_helpWindow->setWindowTitle(HELP_WINDOW_TITLE);
@@ -611,7 +612,7 @@ id AccessibleHelpSystem::createHelpWindow()
     m_helpWindow->setAttribute(Qt::WA_DeleteOnClose, false);
 
     // Center the window
-    QRect screenGeometry = QApplication::desktop()->screenGeometry();
+    QRect screenGeometry = m_helpWindow->screen()->geometry();
     int x = (screenGeometry.width() - HELP_WINDOW_WIDTH) / 2;
     int y = (screenGeometry.height() - HELP_WINDOW_HEIGHT) / 2;
     m_helpWindow->move(x, y);
@@ -1167,7 +1168,7 @@ void AccessibleHelpSystem::createTutorialWindow()
     m_tutorialWindow->setAttribute(Qt::WA_DeleteOnClose, false);
 
     // Center the window
-    QRect screenGeometry = QApplication::desktop()->screenGeometry();
+    QRect screenGeometry = m_tutorialWindow->screen()->geometry();
     int x = (screenGeometry.width() - TUTORIAL_WINDOW_WIDTH) / 2;
     int y = (screenGeometry.height() - TUTORIAL_WINDOW_HEIGHT) / 2;
     m_tutorialWindow->move(x, y);

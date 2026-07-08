@@ -1,17 +1,15 @@
 [Desktop Entry]
-Version=2.0.0
+Version=1.5
 Type=Application
 Name=XFB
 GenericName=Open-Source Radio Automation
 Comment=Radio automation software, now with full accessibility support for visually impaired users
 Comment[pt]=Software de automação de rádio profissional, agora com suporte completo de acessibilidade para usuários com deficiência visual
-Exec=XFB
+Exec=XFB %F
 Icon=xfb_icon
 Categories=AudioVideo;Audio;Multimedia;
 Keywords=radio;automation;broadcasting;
-Path=/usr/bin
 Terminal=false
 StartupNotify=true
 MimeType=audio/mpeg;audio/wav;audio/flac;audio/ogg;
 X-GNOME-UsesNotifications=true
-X-Desktop-File-Install-Version=0.26

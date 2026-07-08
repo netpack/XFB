@@ -68,8 +68,8 @@ bool ContextSensitiveHelpService::initialize()
     
     // Connect to application focus changes
     if (QApplication::instance()) {
-        connect(QApplication::instance(), &QApplication::focusChanged,
-                this, &ContextSensitiveHelpService::onFocusChanged);
+        connect(qobject_cast<QGuiApplication*>(QApplication::instance()), &QGuiApplication::focusObjectChanged,
+                this, &ContextSensitiveHelpService::onFocusObjectChanged);
     }
     
     // Install event filter on application
@@ -340,9 +340,9 @@ ContextSensitiveHelpService::HelpContext ContextSensitiveHelpService::getCurrent
     return m_currentContext;
 }
 
-void ContextSensitiveHelpService::onFocusChanged(QWidget* old, QWidget* now)
+void ContextSensitiveHelpService::onFocusObjectChanged(QObject* focusObject)
 {
-    Q_UNUSED(old)
+    QWidget* now = qobject_cast<QWidget*>(focusObject);
     
     if (now != m_currentWidget) {
         updateCurrentContext(now);

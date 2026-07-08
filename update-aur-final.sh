@@ -2,7 +2,7 @@
 set -e
 
 echo "╔══════════════════════════════════════════════════════════╗"
-echo "║          Updating XFB AUR to v2.0.0-5                    ║"
+echo "║          Updating XFB AUR to v3.14159-5                    ║"
 echo "╚══════════════════════════════════════════════════════════╝"
 echo ""
 
@@ -41,7 +41,7 @@ echo ""
 
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     git add PKGBUILD .SRCINFO
-    git commit -m "Update to version 2.0.0-5
+    git commit -m "Update to version 3.14159-5
 
 - Fixed linking errors in unit and integration tests
 - Added missing accessibility service dependencies
@@ -63,7 +63,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "Users can now install with:"
     echo "  yay -S xfb"
     echo ""
-    echo "The package will show version 2.0.0-5 within 5 minutes."
+    echo "The package will show version 3.14159-5 within 5 minutes."
 else
     echo "Update cancelled"
 fi

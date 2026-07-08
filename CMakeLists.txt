@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(XFB VERSION 2.0.0 LANGUAGES CXX)
+project(XFB VERSION 3.14159 LANGUAGES CXX)
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 17)
@@ -15,10 +15,19 @@ find_package(Qt6 REQUIRED COMPONENTS
     Multimedia
     Sql
     Network
+    Test
+)
+
+# WebEngine and QuickWidgets are OPTIONAL. Qt does not ship WebEngine (Chromium)
+# for every target — notably there is no WebEngine for Windows on ARM64. The
+# application does not currently reference any WebEngine/QuickWidgets APIs, so
+# these are treated as optional and only linked when the Qt build provides them
+# (see src/CMakeLists.txt). This keeps x64/macOS/Linux unchanged while allowing
+# the arm64 Windows build to configure.
+find_package(Qt6 QUIET OPTIONAL_COMPONENTS
     WebEngineCore
     WebEngineQuick
     QuickWidgets
-    Test
 )
 
 # Enable Qt MOC, UIC, and RCC
@@ -33,13 +42,22 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 # Platform-specific settings
 if(APPLE)
-    set(CMAKE_OSX_DEPLOYMENT_TARGET "10.15")
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum macOS deployment target")
     find_library(AVFOUNDATION_FRAMEWORK AVFoundation)
+elseif(WIN32)
+    # Windows-specific settings
+    add_definitions(-DUNICODE -D_UNICODE)
+    # Prevent console window from appearing
+    set(CMAKE_WIN32_EXECUTABLE ON)
 endif()
 
 # Compiler-specific options
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     add_compile_options(-Wall -Wextra -Wpedantic)
+elseif(MSVC)
+    add_compile_options(/W3 /utf-8)
+    # Suppress specific MSVC warnings that are noisy with Qt
+    add_compile_options(/wd4127 /wd4251)
 endif()
 
 # Add subdirectories
@@ -101,9 +119,10 @@ else()
     set(CPACK_DEBIAN_PACKAGE_DEPENDS 
         "libqt6core6, libqt6gui6, libqt6widgets6, libqt6multimedia6, libqt6sql6, libqt6network6, libqt6webenginecore6, libqt6webengine6-data, libqt6quick6, libqt6qml6, libatspi2.0-0, at-spi2-core, libspeechd2, libasound2, libpulse0, libsqlite3-0, libcurl4")
     
-    # Recommended packages for full accessibility
-    set(CPACK_DEBIAN_PACKAGE_RECOMMENDS 
-        "orca, speech-dispatcher, espeak-ng, brltty, liblouis20, pulseaudio")
+    # Recommended packages for full accessibility, plus ffmpeg for the
+    # audio FX engine (EQ / compressor / 432 Hz) and format conversions
+    set(CPACK_DEBIAN_PACKAGE_RECOMMENDS
+        "orca, speech-dispatcher, espeak-ng, brltty, liblouis20, pulseaudio, ffmpeg")
     
     # Suggested packages for enhanced experience
     set(CPACK_DEBIAN_PACKAGE_SUGGESTS 

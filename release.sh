@@ -4,8 +4,8 @@
 
 set -e
 
-VERSION="2.0.0"
-RELEASE_NAME="XFB $VERSION - Accessibility Enhanced"
+VERSION="3.14159"
+RELEASE_NAME="XFB $VERSION — Pour Mr. De La Plume (Alain Bogaerts) pour l'Éternité."
 
 echo "╔══════════════════════════════════════════════════════════╗"
 echo "║          XFB Release Automation Script                  ║"
@@ -156,7 +156,7 @@ case $OPTION in
         
         # Step 5: Create GitHub release
         echo ""
-        echo "Step 5/5: GitHub Release..."
+        echo "Step 5/6: GitHub Release..."
         echo ""
         echo "To create a GitHub release:"
         echo "1. Go to https://github.com/netpack/XFB/releases/new"
@@ -166,7 +166,18 @@ case $OPTION in
         echo "5. Upload: XFB-${VERSION}-macOS.dmg (if available)"
         echo ""
         read -p "Press Enter when done..."
-        
+
+        # Step 6: Update the Homebrew tap (needs the dmg + GitHub release)
+        echo ""
+        echo "Step 6/6: Updating Homebrew tap..."
+        read -p "Update Homebrew tap (brew install --cask netpack/xfb/xfb)? (y/N) " -n 1 -r
+        echo ""
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            ./update-homebrew-tap.sh "$VERSION"
+        else
+            print_warning "Skipped Homebrew tap update"
+        fi
+
         echo ""
         print_status "Full release process completed!"
         ;;

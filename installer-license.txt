@@ -1,0 +1,36 @@
+XFB - Radio Automation Software
+The open-source solution for professional radio broadcasting, rebuilt with Qt6.
+
+Developed by Frederic Bogaerts at Netpack Online Solutions (https://www.netpack.pt).
+
+--------------------------------------------------------------------------------
+
+WHAT XFB DOES
+
+  - Database management for music, jingles, advertisements, and programs
+  - Automated scheduling for playback, ad slots, and program airing
+  - Drag & drop playlist building from your music library
+  - Main player plus two auxiliary LP players for DJ mixing
+  - Per-player 10-band equalizer and broadcast-style compressor (requires ffmpeg)
+  - Real-time 432 Hz playback and batch conversion
+  - Live program recording
+  - Icecast/Shoutcast and .m3u/.pls stream client with automatic reconnect
+  - Torrent search and download via Tor-routed onion sites
+  - Accessibility: screen reader support, keyboard navigation, audio feedback
+  - Cross-platform: macOS, Linux (Debian/Arch), and Windows
+
+--------------------------------------------------------------------------------
+
+LICENSE
+
+XFB is free software released under the GNU General Public License, version 3
+(GPLv3). You may use, study, share, and modify it under the terms of that
+license. XFB is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.
+
+The full license text is available at:
+  https://www.gnu.org/licenses/gpl-3.0.html
+  https://github.com/netpack/XFB/blob/main/LICENSE
+
+Click "I Agree" to accept these terms and continue the installation.

@@ -215,18 +215,27 @@ void add_music_single::on_pushButton_clicked()
 
     QProcess cmd;
     QString time;
-    QString cmdtmpstr = "exiftool \""+file+"\" | grep Duration";
-    cmd.start("sh",QStringList()<<"-c"<<cmdtmpstr);
+    // Use QProcess argument list to avoid shell injection via filenames
+    cmd.start("exiftool", QStringList() << file);
     cmd.waitForFinished();
     QString cmdOut = cmd.readAll();
-    qDebug()<<"Output of exiftool from youtubedownloader: "<<cmdOut;
+    // Filter for Duration line
+    QStringList lines = cmdOut.split("\n");
+    QString durationLine;
+    for (const QString &line : lines) {
+        if (line.contains("Duration", Qt::CaseInsensitive)) {
+            durationLine = line;
+            break;
+        }
+    }
+    qDebug()<<"Output of exiftool from youtubedownloader: "<<durationLine;
     cmd.close();
 
-    QStringList arraycmd = cmdOut.split(" ");
-    if(arraycmd.count()>25){
-        QStringList splitarray = arraycmd[25].split("\n");
-        qDebug()<<"Total track time is: "<<splitarray[0];
-        time = splitarray[0];
+    QStringList arraycmd = durationLine.split(" ");
+    if(arraycmd.count() > 1){
+        // Duration line format: "Duration : 0:03:45"
+        time = arraycmd.last().trimmed();
+        qDebug()<<"Total track time is: "<<time;
 
     } else {
         qDebug()<<"-------------->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>     !!!!!!!!    An exception happend !? ... outputing details of this track: ";
@@ -241,10 +250,18 @@ void add_music_single::on_pushButton_clicked()
     QSqlQuery sql(db);
 
 
-        QString sqlquery = "insert into musics values(NULL,'"+artist+"','"+song+"','"+g1+"','"+g2+"','"+country+"','"+data_ano+"','"+file+"','"+time+"',0,'-')";
+        sql.prepare("INSERT INTO musics VALUES(NULL, ?, ?, ?, ?, ?, ?, ?, ?, 0, '-')");
+        sql.addBindValue(artist);
+        sql.addBindValue(song);
+        sql.addBindValue(g1);
+        sql.addBindValue(g2);
+        sql.addBindValue(country);
+        sql.addBindValue(data_ano);
+        sql.addBindValue(file);
+        sql.addBindValue(time);
 
 
-        if(sql.exec(sqlquery))
+        if(sql.exec())
         {
             qDebug() << "last sql: " << sql.lastQuery();
             QMessageBox::information(this,tr("Save"),tr("Music Added!"));

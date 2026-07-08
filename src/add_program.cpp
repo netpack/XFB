@@ -126,7 +126,13 @@ void add_program::on_pushButton_4_clicked()
         //prepare the query
 
             QSqlQuery qry_add(db);
-            qry_add.prepare("insert into scheduler values ('"+programs_id+"','"+ano1+"','"+mes1+"','"+dia1+"','"+hora1+"','"+min1+"','1',NULL,NULL,NULL,NULL,NULL,NULL,NULL,'1')");
+            qry_add.prepare("INSERT INTO scheduler VALUES (?, ?, ?, ?, ?, ?, '1', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '1')");
+            qry_add.addBindValue(programs_id);
+            qry_add.addBindValue(ano1);
+            qry_add.addBindValue(mes1);
+            qry_add.addBindValue(dia1);
+            qry_add.addBindValue(hora1);
+            qry_add.addBindValue(min1);
 
 
         //add to scheduler
@@ -170,8 +176,11 @@ QSqlQuery qry(db);
     QString thisName = ui->txt_name->text();
 
     //QSqlQuery qry;
-    QString qrystr = "update programs set name='"+thisName+"', path='"+thisPath+"' where id="+programs_id;
-    if(qry.exec(qrystr)){
+    qry.prepare("UPDATE programs SET name=?, path=? WHERE id=?");
+    qry.addBindValue(thisName);
+    qry.addBindValue(thisPath);
+    qry.addBindValue(programs_id);
+    if(qry.exec()){
         qDebug()<<"add program query was ok: "<<qry.lastQuery();
     } else {
         qDebug()<<"There was an error executing the following sql: "<<qry.lastQuery();
@@ -210,8 +219,11 @@ void add_program::on_pushButton_6_clicked()
     qDebug()<<"Array splitted hours: "<<hora<<" and minutes: "<<min;
 
     QSqlQuery Qr_add(db);
-    Qr_add.prepare("insert into scheduler values ('"+thisprogramsId+"',NULL,NULL,NULL,'"+hora+"','"+min+"','2','"+dayOfTheWeek+"',NULL,NULL,NULL,NULL,NULL,NULL,'1')");
-
+    Qr_add.prepare("INSERT INTO scheduler VALUES (?, NULL, NULL, NULL, ?, ?, '2', ?, NULL, NULL, NULL, NULL, NULL, NULL, '1')");
+    Qr_add.addBindValue(thisprogramsId);
+    Qr_add.addBindValue(hora);
+    Qr_add.addBindValue(min);
+    Qr_add.addBindValue(dayOfTheWeek);
     Qr_add.exec();
     qDebug()<<"Last Query: "<<Qr_add.lastQuery();
     QString str = dayOfTheWeek + " at " + hourMinute;
@@ -244,12 +256,16 @@ void add_program::on_pushButton_5_clicked()
         QString hora = hstr1[0];
         QString min = hstr1[1];
 
-        QString qqq = "delete from scheduler where dia='"+dia+"' and mes='"+mes+"' and dia='"+dia+"' and ano='"+ano+"' and hora='"+hora+"' and min='"+min+"'";
-        qDebug()<<qqq;
         QSqlDatabase db = QSqlDatabase::database("xfb_connection");
         QSqlQuery qrydel(db);
-        qrydel.prepare(qqq);
+        qrydel.prepare("DELETE FROM scheduler WHERE dia=? AND mes=? AND ano=? AND hora=? AND min=?");
+        qrydel.addBindValue(dia);
+        qrydel.addBindValue(mes);
+        qrydel.addBindValue(ano);
+        qrydel.addBindValue(hora);
+        qrydel.addBindValue(min);
         qrydel.exec();
+        qDebug() << "Deleted scheduler entry:" << dia << mes << ano << hora << min;
 
 
     }

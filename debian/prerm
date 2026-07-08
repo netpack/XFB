@@ -7,15 +7,20 @@ case "$1" in
     remove|upgrade|deconfigure)
         echo "Preparing to remove XFB..."
         
-        # Stop any running XFB processes gracefully
+        # Stop any running XFB processes gracefully (match exact binary name)
         if command -v pkill >/dev/null 2>&1; then
-            pkill -f "xfb" || true
+            pkill -x "XFB" 2>/dev/null || true
             # Give processes time to shut down gracefully
-            sleep 2
+            sleep 1
         fi
         
         # Remove any temporary files
-        rm -rf /tmp/xfb-* || true
+        rm -rf /tmp/xfb-* 2>/dev/null || true
+        
+        # Stop any Tor processes started by XFB
+        if [ -d "/tmp/xfb_tor_data" ]; then
+            rm -rf /tmp/xfb_tor_data 2>/dev/null || true
+        fi
         
         echo "XFB processes stopped."
         ;;

@@ -1,0 +1,41 @@
+# Host build directories (contain CMakeCache.txt pointing at host paths).
+# Patterns are listed both at root and recursively (**/) to catch nested copies
+# such as src/build/ and src/XFB.app/.
+build/
+**/build/
+build-*/
+**/build-*/
+*-build/
+pkg-root/
+**/pkg-root/
+pkg-build/
+output/
+
+# macOS app bundle and packaging artifacts
+XFB.app/
+**/XFB.app/
+*.dmg
+*.7z
+*.icns
+# Note: XFB.iconset/ is intentionally NOT ignored — its PNGs are installed as
+# the Linux application icons (see src/CMakeLists.txt).
+
+# Prebuilt packages
+*.deb
+**/*.deb
+*.pkg.tar.zst
+
+# Version control and editor/IDE metadata
+.git/
+.vscode/
+.kiro/
+.DS_Store
+**/.DS_Store
+
+# Temp/verification scratch dirs
+tmp/
+tmp_verify/
+test_makefile/
+
+# CMake stash
+.qmake.stash

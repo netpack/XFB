@@ -4,13 +4,17 @@
 #include <QObject>
 #include <QTimer>
 #include <QHash>
-#include <QWeakPointer>
+#include <QPointer>
 #include <QMutex>
 #include <QCache>
 #include <QDateTime>
 
 class QWidget;
 class QAccessibleInterface;
+
+struct InterfaceWrapper {
+    QAccessibleInterface* iface;
+};
 
 /**
  * @brief Memory optimization system for accessibility metadata
@@ -154,7 +158,7 @@ private:
      * @brief Structure for tracking widget memory usage
      */
     struct WidgetMemoryInfo {
-        QWeakPointer<QWidget> widget;
+        QPointer<QWidget> widget;
         qint64 metadataSize;
         QDateTime lastAccessed;
         int accessCount;
@@ -171,7 +175,7 @@ private:
     // Member variables
     OptimizationStrategy m_strategy;
     QHash<QWidget*, WidgetMemoryInfo> m_trackedWidgets;
-    QHash<QWidget*, QAccessibleInterface*> m_interfaceCache;
+    QCache<QWidget*, InterfaceWrapper> m_interfaceCache;
     QTimer* m_cleanupTimer;
     QTimer* m_memoryCheckTimer;
     mutable QMutex m_dataMutex;

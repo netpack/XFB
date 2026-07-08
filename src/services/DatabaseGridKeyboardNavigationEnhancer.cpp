@@ -32,37 +32,37 @@ DatabaseGridKeyboardNavigationEnhancer::DatabaseGridKeyboardNavigationEnhancer(p
     , m_lastClipboardOperation(GridOperation::CopyItems)
 {
     if (!m_playerWindow) {
-        logError("DatabaseGridKeyboardNavigationEnhancer: Player window is null");
+        qCritical() << "DatabaseGridKeyboardNavigationEnhancer: Player window is null";
         return;
     }
     
     if (!m_navigationController) {
-        logError("DatabaseGridKeyboardNavigationEnhancer: KeyboardNavigationController is null");
+        qCritical() << "DatabaseGridKeyboardNavigationEnhancer: KeyboardNavigationController is null";
         return;
     }
     
     if (!m_accessibilityManager) {
-        logError("DatabaseGridKeyboardNavigationEnhancer: AccessibilityManager is null");
+        qCritical() << "DatabaseGridKeyboardNavigationEnhancer: AccessibilityManager is null";
         return;
     }
     
-    logDebug("DatabaseGridKeyboardNavigationEnhancer created");
+    qDebug() << "DatabaseGridKeyboardNavigationEnhancer created";
 }
 
 DatabaseGridKeyboardNavigationEnhancer::~DatabaseGridKeyboardNavigationEnhancer()
 {
     shutdown();
-    logDebug("DatabaseGridKeyboardNavigationEnhancer destroyed");
+    qDebug() << "DatabaseGridKeyboardNavigationEnhancer destroyed";
 }
 
 bool DatabaseGridKeyboardNavigationEnhancer::initialize()
 {
     if (m_initialized) {
-        logWarning("DatabaseGridKeyboardNavigationEnhancer already initialized");
+        qWarning() << "DatabaseGridKeyboardNavigationEnhancer already initialized";
         return true;
     }
     
-    logDebug("Initializing DatabaseGridKeyboardNavigationEnhancer");
+    qDebug() << "Initializing DatabaseGridKeyboardNavigationEnhancer";
     
     // Cache grid references
     m_musicView = m_playerWindow->findChild<QTableView*>("musicView");
@@ -80,14 +80,14 @@ bool DatabaseGridKeyboardNavigationEnhancer::initialize()
     setupGridAccessibilityFeatures();
     
     // Connect to navigation controller signals
-    connect(m_navigationController, &KeyboardNavigationController::shortcutTriggered,
+    QObject::connect(m_navigationController, &KeyboardNavigationController::shortcutTriggered,
             this, &DatabaseGridKeyboardNavigationEnhancer::onShortcutTriggered);
     
-    connect(m_navigationController, &KeyboardNavigationController::gridNavigationChanged,
+    QObject::connect(m_navigationController, &KeyboardNavigationController::gridNavigationChanged,
             this, &DatabaseGridKeyboardNavigationEnhancer::onGridNavigationChanged);
     
     m_initialized = true;
-    logDebug("DatabaseGridKeyboardNavigationEnhancer initialized successfully");
+    qDebug() << "DatabaseGridKeyboardNavigationEnhancer initialized successfully";
     return true;
 }
 
@@ -97,14 +97,14 @@ void DatabaseGridKeyboardNavigationEnhancer::shutdown()
         return;
     }
     
-    logDebug("Shutting down DatabaseGridKeyboardNavigationEnhancer");
+    qDebug() << "Shutting down DatabaseGridKeyboardNavigationEnhancer";
     
     // Disconnect signals
     if (m_navigationController) {
-        disconnect(m_navigationController, &KeyboardNavigationController::shortcutTriggered,
+        QObject::disconnect(m_navigationController, &KeyboardNavigationController::shortcutTriggered,
                   this, &DatabaseGridKeyboardNavigationEnhancer::onShortcutTriggered);
         
-        disconnect(m_navigationController, &KeyboardNavigationController::gridNavigationChanged,
+        QObject::disconnect(m_navigationController, &KeyboardNavigationController::gridNavigationChanged,
                   this, &DatabaseGridKeyboardNavigationEnhancer::onGridNavigationChanged);
     }
     
@@ -122,7 +122,7 @@ void DatabaseGridKeyboardNavigationEnhancer::shutdown()
     m_lastFocusedGrid = nullptr;
     
     m_initialized = false;
-    logDebug("DatabaseGridKeyboardNavigationEnhancer shutdown complete");
+    qDebug() << "DatabaseGridKeyboardNavigationEnhancer shutdown complete";
 }
 
 void DatabaseGridKeyboardNavigationEnhancer::onShortcutTriggered(const QString& action, const QKeySequence& sequence)
@@ -142,8 +142,7 @@ void DatabaseGridKeyboardNavigationEnhancer::onShortcutTriggered(const QString& 
     } else if (action == "refresh_database") {
         // Refresh the current grid's model
         if (currentGrid->model()) {
-            currentGrid->model()->beginResetModel();
-            currentGrid->model()->endResetModel();
+            currentGrid->model()->layoutChanged();
             announceGridOperation(GridOperation::AddToPlaylist, true, "Database refreshed");
         }
     } else if (action == "search") {
@@ -256,7 +255,7 @@ void DatabaseGridKeyboardNavigationEnhancer::setupDatabaseShortcuts()
         "clear_filter", QKeySequence(Qt::CTRL | Qt::Key_0), 
         "Clear all filters", "Database", true);
     
-    logDebug("Database keyboard shortcuts registered");
+    qDebug() << "Database keyboard shortcuts registered";
 }
 
 void DatabaseGridKeyboardNavigationEnhancer::setupDatabaseGridNavigation()
@@ -285,18 +284,18 @@ void DatabaseGridKeyboardNavigationEnhancer::setupDatabaseGridNavigation()
         
         // Connect selection model signals
         if (grid->selectionModel()) {
-            connect(grid->selectionModel(), &QItemSelectionModel::selectionChanged,
+            QObject::connect(grid->selectionModel(), &QItemSelectionModel::selectionChanged,
                     this, &DatabaseGridKeyboardNavigationEnhancer::onSelectionChanged);
         }
         
         // Connect header signals for sorting announcements
         if (grid->horizontalHeader()) {
-            connect(grid->horizontalHeader(), &QHeaderView::sectionClicked,
+            QObject::connect(grid->horizontalHeader(), &QHeaderView::sectionClicked,
                     this, &DatabaseGridKeyboardNavigationEnhancer::onHeaderSectionClicked);
         }
     }
     
-    logDebug("Database grid navigation configured");
+    qDebug() << "Database grid navigation configured";
 }
 
 void DatabaseGridKeyboardNavigationEnhancer::setupGridAccessibilityFeatures()
@@ -333,7 +332,7 @@ void DatabaseGridKeyboardNavigationEnhancer::setupGridAccessibilityFeatures()
         }
     }
     
-    logDebug("Grid accessibility features configured");
+    qDebug() << "Grid accessibility features configured";
 }
 
 QList<QTableView*> DatabaseGridKeyboardNavigationEnhancer::getDatabaseGrids() const

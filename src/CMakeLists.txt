@@ -14,6 +14,11 @@ set(SOURCES
     config.cpp
     externaldownloader.cpp
     commonFunctions.cpp
+    # Audio FX engine (EQ / compressor / 432 Hz)
+    audio/FxDsp.cpp
+    audio/FxEngine.cpp
+    audio/FxPlayer.cpp
+    dialogs/AudioFxDialog.cpp
     # Essential service layer (working components only)
     services/IService.cpp
     services/ServiceContainer.cpp
@@ -68,6 +73,13 @@ set(SOURCES
     repositories/GenreRepository.cpp
     repositories/PlaylistRepository.cpp
     repositories/DatabaseMigrator.cpp
+    # Torrent services (required by player.cpp)
+    services/TorNetworkService.cpp
+    services/TorrentSearchService.cpp
+    services/TorrentDownloadService.cpp
+    services/DependencyChecker.cpp
+    services/NgrokTunnelService.cpp
+    services/UpdateCheckService.cpp
 )
 
 # Header files (corresponding to sources)
@@ -85,6 +97,12 @@ set(HEADERS
     config.h
     externaldownloader.h
     commonFunctions.h
+    # Audio FX engine headers
+    audio/FxParams.h
+    audio/FxDsp.h
+    audio/FxEngine.h
+    audio/FxPlayer.h
+    dialogs/AudioFxDialog.h
     # Service layer headers
     services/IService.h
     services/ServiceContainer.h
@@ -134,6 +152,14 @@ set(HEADERS
     repositories/GenreRepository.h
     repositories/PlaylistRepository.h
     repositories/DatabaseMigrator.h
+    # Torrent service headers
+    services/TorNetworkService.h
+    services/TorrentSearchService.h
+    services/TorrentDownloadService.h
+    services/DependencyChecker.h
+    services/TorrentTypes.h
+    services/NgrokTunnelService.h
+    services/UpdateCheckService.h
 )
 
 # UI files
@@ -161,10 +187,17 @@ set(RESOURCE_FILES
 if(APPLE)
     list(APPEND SOURCES permission_utils.mm)
     list(APPEND HEADERS permission_utils.h)
+elseif(WIN32)
+    # Windows-specific sources can be added here
+    # list(APPEND SOURCES permission_utils_win.cpp)
 endif()
 
 # Create the executable
-add_executable(XFB ${SOURCES} ${HEADERS} ${UI_FILES} ${RESOURCE_FILES})
+if(WIN32)
+    add_executable(XFB WIN32 ${SOURCES} ${HEADERS} ${UI_FILES} ${RESOURCE_FILES})
+else()
+    add_executable(XFB ${SOURCES} ${HEADERS} ${UI_FILES} ${RESOURCE_FILES})
+endif()
 
 # Link Qt6 libraries
 target_link_libraries(XFB
@@ -175,10 +208,25 @@ target_link_libraries(XFB
     Qt6::Multimedia
     Qt6::Sql
     Qt6::Network
-    Qt6::WebEngineCore
-    Qt6::WebEngineQuick
-    Qt6::QuickWidgets
 )
+
+# WebEngine / QuickWidgets are optional (not available on e.g. Windows ARM64).
+# Link them only when the Qt build provides them. The app does not reference
+# their APIs, so their absence does not affect functionality.
+foreach(_optional_qt_module WebEngineCore WebEngineQuick QuickWidgets)
+    if(TARGET Qt6::${_optional_qt_module})
+        target_link_libraries(XFB Qt6::${_optional_qt_module})
+    else()
+        message(STATUS "Optional Qt module Qt6::${_optional_qt_module} not found - skipping")
+    endif()
+endforeach()
+
+# Define XFB_HAS_WEBENGINE when Qt WebEngine is available so the (currently
+# unused) WebEngine include/code in player.cpp is guarded out on platforms that
+# lack it, e.g. Windows on ARM64.
+if(TARGET Qt6::WebEngineQuick)
+    target_compile_definitions(XFB PRIVATE XFB_HAS_WEBENGINE)
+endif()
 
 # Platform-specific linking
 if(APPLE)
@@ -194,20 +242,49 @@ if(APPLE)
         MACOSX_BUNDLE_DISPLAY_NAME "XFB Radio Automation"
         MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
         MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION}
+        INSTALL_RPATH "@executable_path/../Frameworks"
+        BUILD_WITH_INSTALL_RPATH TRUE
     )
     
     # Copy icon to bundle
     set(ICON_FILE "${CMAKE_SOURCE_DIR}/XFB.icns")
-    set_source_files_properties(${ICON_FILE} PROPERTIES
-        MACOSX_PACKAGE_LOCATION "Resources"
-    )
-    target_sources(XFB PRIVATE ${ICON_FILE})
-endif()
+    if(EXISTS ${ICON_FILE})
+        set_source_files_properties(${ICON_FILE} PROPERTIES
+            MACOSX_PACKAGE_LOCATION "Resources"
+        )
+        target_sources(XFB PRIVATE ${ICON_FILE})
+    endif()
 
-if(UNIX AND NOT APPLE)
-    # Set RPATH for Linux
+    # Remove stale qt.conf from previous macdeployqt runs — it overrides Qt's
+    # default plugin search paths and breaks dev builds where the binary links
+    # to Homebrew Qt rather than bundled frameworks.
+    add_custom_command(TARGET XFB POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E rm -f "$<TARGET_BUNDLE_DIR:XFB>/Contents/Resources/qt.conf"
+        COMMENT "Removing stale qt.conf from app bundle (if any)"
+    )
+elseif(WIN32)
+    # Windows-specific properties
     set_target_properties(XFB PROPERTIES
-        INSTALL_RPATH "$ORIGIN"
+        WIN32_EXECUTABLE TRUE
+    )
+    # Add Windows application icon via .rc file if it exists
+    if(EXISTS "${CMAKE_SOURCE_DIR}/xfb.rc")
+        target_sources(XFB PRIVATE "${CMAKE_SOURCE_DIR}/xfb.rc")
+        # The .rc only references xfb.ico by name, so CMake/MSVC can't see that
+        # the compiled resource depends on the icon. Without this, editing
+        # xfb.ico alone does NOT re-run the resource compiler on an incremental
+        # build and the executable keeps embedding the OLD icon (e.g. a stale
+        # white-background version). Declare the dependency explicitly so the
+        # icon is recompiled into the exe whenever it changes.
+        if(EXISTS "${CMAKE_SOURCE_DIR}/xfb.ico")
+            set_source_files_properties("${CMAKE_SOURCE_DIR}/xfb.rc"
+                PROPERTIES OBJECT_DEPENDS "${CMAKE_SOURCE_DIR}/xfb.ico")
+        endif()
+    endif()
+else()
+    # Linux/Unix
+    set_target_properties(XFB PROPERTIES
+        INSTALL_RPATH "$ORIGIN;$ORIGIN/../lib"
         BUILD_WITH_INSTALL_RPATH TRUE
     )
 endif()
@@ -223,8 +300,26 @@ if(UNIX AND NOT APPLE)
     install(FILES "${CMAKE_SOURCE_DIR}/XFB.desktop"
         DESTINATION share/applications
     )
+
+    # Pixmaps fallback (used by older menus). The file name must match the
+    # desktop entry's "Icon=xfb_icon" key, otherwise the desktop environment
+    # falls back to a generic placeholder icon.
     install(FILES "${CMAKE_SOURCE_DIR}/xfb_icon.png"
         DESTINATION share/pixmaps
-        RENAME xfb.png
     )
+
+    # hicolor theme icons (preferred by GNOME/Ubuntu). Each size is installed
+    # under the same "xfb_icon" name referenced by XFB.desktop.
+    install(FILES "${CMAKE_SOURCE_DIR}/XFB.iconset/icon_16x16.png"
+        DESTINATION share/icons/hicolor/16x16/apps RENAME xfb_icon.png)
+    install(FILES "${CMAKE_SOURCE_DIR}/XFB.iconset/icon_32x32.png"
+        DESTINATION share/icons/hicolor/32x32/apps RENAME xfb_icon.png)
+    install(FILES "${CMAKE_SOURCE_DIR}/xfb_icon.png"
+        DESTINATION share/icons/hicolor/48x48/apps RENAME xfb_icon.png)
+    install(FILES "${CMAKE_SOURCE_DIR}/XFB.iconset/icon_128x128.png"
+        DESTINATION share/icons/hicolor/128x128/apps RENAME xfb_icon.png)
+    install(FILES "${CMAKE_SOURCE_DIR}/XFB.iconset/icon_256x256.png"
+        DESTINATION share/icons/hicolor/256x256/apps RENAME xfb_icon.png)
+    install(FILES "${CMAKE_SOURCE_DIR}/XFB.iconset/icon_512x512.png"
+        DESTINATION share/icons/hicolor/512x512/apps RENAME xfb_icon.png)
 endif()

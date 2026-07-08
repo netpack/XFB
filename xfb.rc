@@ -1,0 +1,2 @@
+// Windows application icon resource (picked up by src/CMakeLists.txt)
+IDI_ICON1 ICON "xfb.ico"

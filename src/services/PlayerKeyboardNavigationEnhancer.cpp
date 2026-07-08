@@ -35,37 +35,37 @@ PlayerKeyboardNavigationEnhancer::PlayerKeyboardNavigationEnhancer(player* playe
     , m_playlistView(nullptr)
 {
     if (!m_playerWindow) {
-        logError("PlayerKeyboardNavigationEnhancer: Player window is null");
+        qCritical() << "PlayerKeyboardNavigationEnhancer: Player window is null";
         return;
     }
     
     if (!m_navigationController) {
-        logError("PlayerKeyboardNavigationEnhancer: KeyboardNavigationController is null");
+        qCritical() << "PlayerKeyboardNavigationEnhancer: KeyboardNavigationController is null";
         return;
     }
     
     if (!m_accessibilityManager) {
-        logError("PlayerKeyboardNavigationEnhancer: AccessibilityManager is null");
+        qCritical() << "PlayerKeyboardNavigationEnhancer: AccessibilityManager is null";
         return;
     }
     
-    logDebug("PlayerKeyboardNavigationEnhancer created");
+    qDebug() << "PlayerKeyboardNavigationEnhancer created";
 }
 
 PlayerKeyboardNavigationEnhancer::~PlayerKeyboardNavigationEnhancer()
 {
     shutdown();
-    logDebug("PlayerKeyboardNavigationEnhancer destroyed");
+    qDebug() << "PlayerKeyboardNavigationEnhancer destroyed";
 }
 
 bool PlayerKeyboardNavigationEnhancer::initialize()
 {
     if (m_initialized) {
-        logWarning("PlayerKeyboardNavigationEnhancer already initialized");
+        qWarning() << "PlayerKeyboardNavigationEnhancer already initialized";
         return true;
     }
     
-    logDebug("Initializing PlayerKeyboardNavigationEnhancer");
+    qDebug() << "Initializing PlayerKeyboardNavigationEnhancer";
     
     // Cache widget references
     m_playButton = getPlayButton();
@@ -89,7 +89,7 @@ bool PlayerKeyboardNavigationEnhancer::initialize()
     setupPlaylistNavigation();
     
     // Connect to navigation controller signals
-    connect(m_navigationController, &KeyboardNavigationController::shortcutTriggered,
+    QObject::connect(m_navigationController, &KeyboardNavigationController::shortcutTriggered,
             this, &PlayerKeyboardNavigationEnhancer::onShortcutTriggered);
     
     // Connect to player signals for state tracking
@@ -99,25 +99,25 @@ bool PlayerKeyboardNavigationEnhancer::initialize()
         
         // Connect volume slider if available
         if (m_volumeSlider) {
-            connect(m_volumeSlider, &QSlider::valueChanged,
+            QObject::connect(m_volumeSlider, &QSlider::valueChanged,
                     this, &PlayerKeyboardNavigationEnhancer::onVolumeChanged);
         }
         
         // Connect play button if available
         if (m_playButton) {
-            connect(m_playButton, &QPushButton::clicked,
+            QObject::connect(m_playButton, &QPushButton::clicked,
                     this, &PlayerKeyboardNavigationEnhancer::onPlaybackStateChanged);
         }
         
         // Connect stop button if available
         if (m_stopButton) {
-            connect(m_stopButton, &QPushButton::clicked,
+            QObject::connect(m_stopButton, &QPushButton::clicked,
                     this, &PlayerKeyboardNavigationEnhancer::onPlaybackStateChanged);
         }
     }
     
     m_initialized = true;
-    logDebug("PlayerKeyboardNavigationEnhancer initialized successfully");
+    qDebug() << "PlayerKeyboardNavigationEnhancer initialized successfully";
     return true;
 }
 
@@ -127,11 +127,11 @@ void PlayerKeyboardNavigationEnhancer::shutdown()
         return;
     }
     
-    logDebug("Shutting down PlayerKeyboardNavigationEnhancer");
+    qDebug() << "Shutting down PlayerKeyboardNavigationEnhancer";
     
     // Disconnect signals
     if (m_navigationController) {
-        disconnect(m_navigationController, &KeyboardNavigationController::shortcutTriggered,
+        QObject::disconnect(m_navigationController, &KeyboardNavigationController::shortcutTriggered,
                   this, &PlayerKeyboardNavigationEnhancer::onShortcutTriggered);
     }
     
@@ -145,7 +145,7 @@ void PlayerKeyboardNavigationEnhancer::shutdown()
     m_playlistView = nullptr;
     
     m_initialized = false;
-    logDebug("PlayerKeyboardNavigationEnhancer shutdown complete");
+    qDebug() << "PlayerKeyboardNavigationEnhancer shutdown complete";
 }
 
 void PlayerKeyboardNavigationEnhancer::onPlayPauseShortcut()
@@ -462,7 +462,7 @@ void PlayerKeyboardNavigationEnhancer::onPlaybackStateChanged()
 {
     // This would be called when playback state changes
     // Update internal state and announce if needed
-    logDebug("Playback state changed");
+    qDebug() << "Playback state changed";
 }
 
 void PlayerKeyboardNavigationEnhancer::onVolumeChanged(int volume)
@@ -582,7 +582,7 @@ void PlayerKeyboardNavigationEnhancer::setupPlayerShortcuts()
         "mute_legacy", QKeySequence(Qt::Key_M), 
         "Mute or unmute audio (legacy)", "Player", true, m_volumeSlider);
     
-    logDebug("Player keyboard shortcuts registered");
+    qDebug() << "Player keyboard shortcuts registered";
 }
 
 void PlayerKeyboardNavigationEnhancer::setupPlayerWidgetNavigation()
@@ -637,7 +637,7 @@ void PlayerKeyboardNavigationEnhancer::setupPlayerWidgetNavigation()
         );
     }
     
-    logDebug("Player widget navigation registered");
+    qDebug() << "Player widget navigation registered";
 }
 
 void PlayerKeyboardNavigationEnhancer::setupPlayerTabOrder()
@@ -663,7 +663,7 @@ void PlayerKeyboardNavigationEnhancer::setupPlayerTabOrder()
         m_navigationController->setCustomTabOrder(m_volumeSlider, m_progressSlider);
     }
     
-    logDebug("Player tab order configured");
+    qDebug() << "Player tab order configured";
 }
 
 void PlayerKeyboardNavigationEnhancer::setupPlaylistNavigation()
@@ -696,7 +696,7 @@ void PlayerKeyboardNavigationEnhancer::setupPlaylistNavigation()
         m_navigationController->setArrowKeyNavigationEnabled(m_playlistView, true);
     }
     
-    logDebug("Playlist navigation configured");
+    qDebug() << "Playlist navigation configured";
 }
 
 QString PlayerKeyboardNavigationEnhancer::getCurrentTimeString() const

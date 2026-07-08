@@ -7,6 +7,8 @@
 #include <QMessageBox>
 #include <QtSql>
 #include "commonFunctions.h"
+#include "secretstore.h"
+#include "audio/FxParams.h"
 #include <QDebug>
 #include "player.h"
 #include <QAudio>
@@ -76,6 +78,22 @@ optionsDialog::optionsDialog(QWidget *parent) :
     ui->checkBox_Normalize_Soft->setChecked(settings.value("Normalize_Soft", false).toBool());
     ui->checkBox_fullScreen->setChecked(settings.value("FullScreen", false).toBool());
     ui->checkBox_darkMode->setChecked(settings.value("DarkMode", false).toBool());
+    ui->checkBox_enableTorrents->setChecked(settings.value("EnableTorrents", false).toBool());
+    ui->checkBox_showFxTab->setChecked(settings.value("ShowFxTab", true).toBool());
+    ui->checkBox_retune432->setChecked(FxSettings::loadRetune432());
+
+    // Application font size. 0/unset means "use the current default"; fall back
+    // to the running app's point size, then to 10 pt.
+    {
+        int fontSize = settings.value("FontSize", 0).toInt();
+        if (fontSize <= 0) {
+            fontSize = QApplication::font().pointSize();
+        }
+        if (fontSize <= 0) {
+            fontSize = 10;
+        }
+        ui->spin_fontSize->setValue(fontSize);
+    }
 
     // -- Database Tab --
     txt_selected_db = settings.value("Database").toString(); // Load into member variable
@@ -123,7 +141,7 @@ optionsDialog::optionsDialog(QWidget *parent) :
     ui->txt_server->setText(settings.value("Server_URL").toString());
     ui->txt_port->setText(settings.value("Port").toString());
     ui->txt_user->setText(settings.value("User").toString());
-    ui->txt_password->setText(settings.value("Pass").toString());
+    ui->txt_password->setText(SecretStore::open(settings.value("Pass").toString()));
     ui->cbox_role->setCurrentText(settings.value("Role", "Client").toString());
 
     // Commercial Hour
@@ -139,6 +157,16 @@ optionsDialog::optionsDialog(QWidget *parent) :
     ui->cboxComHour->setTime(comTime);
 
     // -- System Resources Tab -- (No settings loaded here typically)
+
+    // -- Downloads (yt-dlp) Tab --
+    {
+        QString fmt = settings.value("MusicFormat", "opus").toString().trimmed().toLower();
+        int fmtIdx = ui->cbox_ytdlpFormat->findText(fmt);
+        ui->cbox_ytdlpFormat->setCurrentIndex(fmtIdx >= 0 ? fmtIdx : 0);
+    }
+    ui->checkBox_ytdlpKeepVideo->setChecked(settings.value("MusicKeepVideo", false).toBool());
+    ui->checkBox_ytdlpEmbedThumbnail->setChecked(settings.value("MusicEmbedThumbnail", false).toBool());
+    ui->checkBox_ytdlpEmbedMetadata->setChecked(settings.value("MusicEmbedMetadata", true).toBool());
 
     qDebug() << "Finished loading settings in options dialog.";
 
@@ -187,6 +215,21 @@ void optionsDialog::saveSettings2Db()
     settings.setValue("Disable_Volume", ui->checkBox_disableVolume->isChecked());
     settings.setValue("FullScreen", ui->checkBox_fullScreen->isChecked());
     settings.setValue("DarkMode", ui->checkBox_darkMode->isChecked());
+    settings.setValue("EnableTorrents", ui->checkBox_enableTorrents->isChecked());
+    settings.setValue("ShowFxTab", ui->checkBox_showFxTab->isChecked());
+    FxSettings::saveRetune432(ui->checkBox_retune432->isChecked());
+
+    // Application font size — persist and apply immediately (a restart ensures
+    // every already-open view picks it up fully).
+    {
+        const int fontSize = ui->spin_fontSize->value();
+        settings.setValue("FontSize", fontSize);
+        if (fontSize > 0 && qApp) {
+            QFont appFont = qApp->font();
+            appFont.setPointSize(fontSize);
+            qApp->setFont(appFont);
+        }
+    }
 
     // Language
     QString langText = ui->cbox_lang->currentText();
@@ -220,6 +263,12 @@ void optionsDialog::saveSettings2Db()
     // Commercial Hour
     settings.setValue("ComHour", ui->cboxComHour->time().toString(Qt::ISODate)); // Save in standard format
 
+    // Downloads (yt-dlp)
+    settings.setValue("MusicFormat", ui->cbox_ytdlpFormat->currentText().trimmed().toLower());
+    settings.setValue("MusicKeepVideo", ui->checkBox_ytdlpKeepVideo->isChecked());
+    settings.setValue("MusicEmbedThumbnail", ui->checkBox_ytdlpEmbedThumbnail->isChecked());
+    settings.setValue("MusicEmbedMetadata", ui->checkBox_ytdlpEmbedMetadata->isChecked());
+
     // Networking
     bool networkingEnabled = ui->cbox_enableNetworking->isChecked();
     settings.setValue("Enable_Networking", networkingEnabled);
@@ -227,7 +276,7 @@ void optionsDialog::saveSettings2Db()
         settings.setValue("Server_URL", ui->txt_server->text());
         settings.setValue("Port", ui->txt_port->text());
         settings.setValue("User", ui->txt_user->text());
-        settings.setValue("Pass", ui->txt_password->text()); // Still insecure
+        settings.setValue("Pass", SecretStore::seal(ui->txt_password->text())); // obfuscated; config is chmod 600
         settings.setValue("Role", ui->cbox_role->currentText());
 
         // --- .netrc logic ---
@@ -290,6 +339,7 @@ void optionsDialog::saveSettings2Db()
 
     // QSettings automatically saves on destruction or explicitly via sync()
     settings.sync(); // Force save to file immediately
+    SecretStore::restrictFile(settings.fileName()); // config may hold credentials: owner-only
     qDebug() << "Settings save attempt finished for" << settings.fileName();
     if (settings.status() != QSettings::NoError) {
         qWarning() << "Error during QSettings sync:" << settings.status();
@@ -321,23 +371,27 @@ void optionsDialog::on_pushButton_2_clicked()
 
 void optionsDialog::on_bt_pwd_clicked()
 {
-
     QProcess sh;
+#ifdef Q_OS_WIN
+    sh.start("cmd", QStringList() << "/c" << "cd");
+#else
     sh.start("sh", QStringList() << "-c" << "pwd");
-
+#endif
     sh.waitForFinished();
     QByteArray output = sh.readAll();
     qDebug() << output;
     ui->txt_terminal->appendPlainText(output);
     sh.close();
-
 }
 
 void optionsDialog::on_bt_uname_clicked()
 {
     QProcess sh;
+#ifdef Q_OS_WIN
+    sh.start("cmd", QStringList() << "/c" << "systeminfo | findstr /B /C:\"OS\"");
+#else
     sh.start("sh", QStringList() << "-c" << "uname -a");
-
+#endif
     sh.waitForFinished();
     QByteArray output = sh.readAll();
     ui->txt_terminal->appendPlainText(output);
@@ -347,14 +401,24 @@ void optionsDialog::on_bt_uname_clicked()
 void optionsDialog::on_bt_edit_settings_clicked()
 {
     QProcess process;
-    process.start("gedit", QStringList() << ":/xfb.conf");
+#ifdef Q_OS_WIN
+    process.start("notepad", QStringList() << ":/xfb.conf");
+#elif defined(Q_OS_MACOS)
+    process.start("open", QStringList() << "-t" << ":/xfb.conf");
+#else
+    process.start("xdg-open", QStringList() << ":/xfb.conf");
+#endif
     process.waitForFinished(-1);
 }
 
 void optionsDialog::on_bt_free_clicked()
 {
     QProcess sh;
+#ifdef Q_OS_WIN
+    sh.start("cmd", QStringList() << "/c" << "wmic OS get FreePhysicalMemory,TotalVisibleMemorySize /Value");
+#else
     sh.start("sh", QStringList() << "-c" << "free -mt");
+#endif
     sh.waitForFinished();
     QByteArray output = sh.readAll();
     ui->txt_terminal->appendPlainText(output);
@@ -364,7 +428,11 @@ void optionsDialog::on_bt_free_clicked()
 void optionsDialog::on_bt_df_clicked()
 {
     QProcess sh;
+#ifdef Q_OS_WIN
+    sh.start("cmd", QStringList() << "/c" << "wmic logicaldisk get size,freespace,caption");
+#else
     sh.start("sh", QStringList() << "-c" << "df -hT");
+#endif
     sh.waitForFinished();
     QByteArray output = sh.readAll();
     ui->txt_terminal->appendPlainText(output);

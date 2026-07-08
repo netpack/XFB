@@ -130,10 +130,18 @@ void add_full_dir::on_f_bt_add_clicked()
 
          QProcess cmd;
          QString time;
-         QString cmdtmpstr = "exiftool \""+filewpath+"\" | grep Duration";
-         cmd.start("sh",QStringList()<<"-c"<<cmdtmpstr);
+         // Argument list instead of a shell string (file names must never be
+         // shell-interpreted); the old "| grep Duration" is done in C++ below.
+         cmd.start("exiftool", QStringList() << filewpath);
          cmd.waitForFinished();
-         QString cmdOut = cmd.readAll();
+         QString cmdOut;
+         const QStringList exifLines = QString::fromLocal8Bit(cmd.readAll()).split('\n');
+         for (const QString &exifLine : exifLines) {
+             if (exifLine.contains("Duration")) {
+                 cmdOut = exifLine + "\n";
+                 break;
+             }
+         }
          qDebug()<<"Output of exiftool: "<<cmdOut;
          cmd.close();
 

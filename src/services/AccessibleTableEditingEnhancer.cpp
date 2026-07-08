@@ -109,30 +109,9 @@ bool AccessibleTableEditingEnhancer::exitEditMode()
         return false;
     }
     
-    // Commit the edit
-    if (m_tableView->state() == QAbstractItemView::EditingState) {
-        // Close the editor and commit data
-        QWidget* editor = m_tableView->indexWidget(m_currentEditIndex);
-        if (editor) {
-            m_tableView->commitData(editor);
-            m_tableView->closeEditor(editor, QAbstractItemDelegate::SubmitModelCache);
-        }
-    }
-    
-    // Get new value for confirmation
-    const QString newValue = getCellValue(m_currentEditIndex);
-    
-    // Announce confirmation
-    announceEditConfirmation(m_currentEditIndex, m_originalValue, newValue);
-    
-    // Reset edit state
-    m_isEditing = false;
-    const QModelIndex editedIndex = m_currentEditIndex;
-    m_currentEditIndex = QModelIndex();
-    m_originalValue.clear();
-    
-    // Announce edit state change
-    announceEditStateChange(false, editedIndex);
+    // By giving focus back to the table view, the editor should close and commit its data.
+    // The onDataChanged signal handler will take care of the rest.
+    m_tableView->setFocus();
     
     return true;
 }
@@ -143,25 +122,20 @@ bool AccessibleTableEditingEnhancer::cancelEditMode()
         return false;
     }
     
-    // Cancel the edit
-    if (m_tableView->state() == QAbstractItemView::EditingState) {
-        QWidget* editor = m_tableView->indexWidget(m_currentEditIndex);
-        if (editor) {
-            m_tableView->closeEditor(editor, QAbstractItemDelegate::RevertModelCache);
-        }
-    }
+    const QModelIndex editedIndex = m_currentEditIndex;
+    
+    m_isEditing = false;
+    m_currentEditIndex = QModelIndex();
     
     // Announce cancellation
     if (m_accessibilityManager) {
-        const QString columnName = getColumnName(m_currentEditIndex.column());
+        const QString columnName = getColumnName(editedIndex.column());
         const QString announcement = QString("Edit cancelled for %1").arg(columnName);
         m_accessibilityManager->announceMessage(announcement);
     }
     
-    // Reset edit state
-    m_isEditing = false;
-    const QModelIndex editedIndex = m_currentEditIndex;
-    m_currentEditIndex = QModelIndex();
+    // Revert the model data to original value, which will also close the editor
+    m_tableView->model()->setData(editedIndex, m_originalValue);
     m_originalValue.clear();
     
     // Announce edit state change

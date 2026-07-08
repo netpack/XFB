@@ -135,11 +135,16 @@ void add_pub::on_pushButton_4_clicked()
 
 
 
-        //prepare the query
+        //prepare the query (parameterized to prevent SQL injection)
 
             QSqlQuery qry_add(db);
-            qry_add.prepare("insert into scheduler values ('"+pub_id+"','"+ano1+"','"+mes1+"','"+dia1+"','"+hora1+"','"+min1+"','1',NULL,NULL,NULL,NULL,NULL,NULL,NULL,'0')");
-
+            qry_add.prepare("INSERT INTO scheduler VALUES (?, ?, ?, ?, ?, ?, '1', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '0')");
+            qry_add.addBindValue(pub_id);
+            qry_add.addBindValue(ano1);
+            qry_add.addBindValue(mes1);
+            qry_add.addBindValue(dia1);
+            qry_add.addBindValue(hora1);
+            qry_add.addBindValue(min1);
 
         //add to scheduler
             qry_add.exec();
@@ -212,7 +217,10 @@ void add_pub::on_pushButton_clicked()
     QString thisName = ui->txt_name->text();
 
     //QSqlQuery qry;
-    qry.prepare("update pub set name='"+thisName+"', path='"+thisPath+"' where id="+pub_id+"");
+    qry.prepare("UPDATE pub SET name=?, path=? WHERE id=?");
+    qry.addBindValue(thisName);
+    qry.addBindValue(thisPath);
+    qry.addBindValue(pub_id);
     qry.exec();
 
    QMessageBox::information(this,"Add pub","Publicity saved!");
@@ -246,8 +254,11 @@ QSqlQuery Q(db);
     qDebug()<<"Array splitted hours: "<<hora<<" and minutes: "<<min;
 
     QSqlQuery Qr_add(db);
-    Qr_add.prepare("insert into scheduler values ('"+thisPubId+"',NULL,NULL,NULL,'"+hora+"','"+min+"','2','"+dayOfTheWeek+"',NULL,NULL,NULL,NULL,NULL,NULL,'0')");
-
+    Qr_add.prepare("INSERT INTO scheduler VALUES (?, NULL, NULL, NULL, ?, ?, '2', ?, NULL, NULL, NULL, NULL, NULL, NULL, '0')");
+    Qr_add.addBindValue(thisPubId);
+    Qr_add.addBindValue(hora);
+    Qr_add.addBindValue(min);
+    Qr_add.addBindValue(dayOfTheWeek);
     Qr_add.exec();
     qDebug()<<"Last Query: "<<Qr_add.lastQuery();
     QString str = dayOfTheWeek + " at " + hourMinute;
@@ -296,12 +307,16 @@ void add_pub::on_pushButton_5_clicked()
         QString hora = hstr1[0];
         QString min = hstr1[1];
 
-        QString qqq = "delete from scheduler where dia='"+dia+"' and mes='"+mes+"' and dia='"+dia+"' and ano='"+ano+"' and hora='"+hora+"' and min='"+min+"'";
-        qDebug()<<qqq;
         QSqlDatabase db = QSqlDatabase::database("xfb_connection");
         QSqlQuery qrydel(db);
-        qrydel.prepare(qqq);
+        qrydel.prepare("DELETE FROM scheduler WHERE dia=? AND mes=? AND ano=? AND hora=? AND min=?");
+        qrydel.addBindValue(dia);
+        qrydel.addBindValue(mes);
+        qrydel.addBindValue(ano);
+        qrydel.addBindValue(hora);
+        qrydel.addBindValue(min);
         qrydel.exec();
+        qDebug() << "Deleted scheduler entry:" << dia << mes << ano << hora << min;
 
 
     }

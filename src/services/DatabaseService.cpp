@@ -30,10 +30,9 @@ DatabaseService::DatabaseService(QObject* parent)
     m_cleanupTimer->setSingleShot(false);
     connect(m_cleanupTimer, &QTimer::timeout, this, &DatabaseService::onConnectionCleanupTimer);
     
-    // Set default database path
-    QString configDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
-    QString appDir = configDir + "/Netpack - Online Solutions/XFB/config";
-    m_databasePath = appDir + "/adb.db";
+    // Set default database path using QStandardPaths (respects organization name set in main.cpp)
+    QString appDataDir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    m_databasePath = appDataDir + "/config/adb.db";
 }
 
 DatabaseService::~DatabaseService()
@@ -481,36 +480,33 @@ bool DatabaseService::optimizeDatabase()
 {
     logDebug("Starting database optimization...");
     
-    bool success = executeTransaction([this]() {
-        QSqlQuery query = createQuery();
-        
-        // VACUUM to reclaim space and defragment
-        if (!query.exec("VACUUM")) {
-            logSqlError(query.lastError(), "VACUUM", "Database optimization");
-            return false;
-        }
-        
-        // ANALYZE to update query planner statistics
-        if (!query.exec("ANALYZE")) {
-            logSqlError(query.lastError(), "ANALYZE", "Database optimization");
-            return false;
-        }
-        
-        return true;
-    });
+    // Note: VACUUM cannot run inside a transaction in SQLite.
+    // Execute VACUUM and ANALYZE as standalone statements.
+    QSqlQuery query = createQuery();
     
-    if (success) {
-        QMutexLocker locker(&m_statsMutex);
-        m_lastOptimization = QDateTime::currentDateTime();
-        locker.unlock();
-        
-        logDebug("Database optimization completed successfully");
-    } else {
-        logError("Database optimization failed");
+    // VACUUM to reclaim space and defragment
+    if (!query.exec("VACUUM")) {
+        logSqlError(query.lastError(), "VACUUM", "Database optimization");
+        logError("Database optimization failed (VACUUM)");
+        emit optimizationCompleted(false);
+        return false;
     }
     
-    emit optimizationCompleted(success);
-    return success;
+    // ANALYZE to update query planner statistics
+    if (!query.exec("ANALYZE")) {
+        logSqlError(query.lastError(), "ANALYZE", "Database optimization");
+        logError("Database optimization failed (ANALYZE)");
+        emit optimizationCompleted(false);
+        return false;
+    }
+    
+    QMutexLocker locker(&m_statsMutex);
+    m_lastOptimization = QDateTime::currentDateTime();
+    locker.unlock();
+    
+    logDebug("Database optimization completed successfully");
+    emit optimizationCompleted(true);
+    return true;
 }
 
 bool DatabaseService::checkIntegrity()

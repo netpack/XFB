@@ -14,7 +14,7 @@ NC='\033[0m' # No Color
 # Configuration
 PROJECT_NAME="XFB Radio Automation Software"
 PACKAGE_NAME="xfb"
-VERSION="2.0.0"
+VERSION="3.14159"
 BUILD_DIR="build-package"
 INSTALL_DIR="install"
 
@@ -137,16 +137,23 @@ cp -r ../docs/accessibility/* "../$INSTALL_DIR/usr/share/doc/$PACKAGE_NAME/"
 if [ -f "../README.md" ]; then
     cp ../README.md "../$INSTALL_DIR/usr/share/doc/$PACKAGE_NAME/"
 fi
-cp ../debian/copyright "../$INSTALL_DIR/usr/share/doc/$PACKAGE_NAME/"
-cp ../debian/changelog "../$INSTALL_DIR/usr/share/doc/$PACKAGE_NAME/"
-
-# Compress changelog
-gzip -9 "../$INSTALL_DIR/usr/share/doc/$PACKAGE_NAME/changelog"
+if [ -f "../debian/copyright" ]; then
+    cp ../debian/copyright "../$INSTALL_DIR/usr/share/doc/$PACKAGE_NAME/"
+else
+    print_warning "debian/copyright not found, skipping"
+fi
+if [ -f "../debian/changelog" ]; then
+    cp ../debian/changelog "../$INSTALL_DIR/usr/share/doc/$PACKAGE_NAME/"
+    # Compress changelog
+    gzip -9 "../$INSTALL_DIR/usr/share/doc/$PACKAGE_NAME/changelog"
+else
+    print_warning "debian/changelog not found, skipping"
+fi
 
 # Create man page directory and install man page
 mkdir -p "../$INSTALL_DIR/usr/share/man/man1"
 cat > "../$INSTALL_DIR/usr/share/man/man1/xfb.1" << 'EOF'
-.TH XFB 1 "October 2025" "XFB 2.0.0" "User Commands"
+.TH XFB 1 "October 2025" "XFB 3.14159" "User Commands"
 .SH NAME
 xfb \- XFB Radio Automation Software
 .SH SYNOPSIS

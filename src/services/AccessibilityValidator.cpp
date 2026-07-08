@@ -270,7 +270,7 @@ AccessibilityValidator::ValidationResult AccessibilityValidator::validateAccessi
     QAccessibleInterface* interface = QAccessible::queryAccessibleInterface(widget);
     if (interface) {
         bool isValid = interface->isValid();
-        delete interface;
+        
         
         if (isValid) {
             return ValidationResult("Interface", "Accessible Interface", true,

@@ -13,18 +13,23 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include "add_pub.h"
 #include "add_program.h"
 #include "optionsdialog.h"
-#include "aboutus.h"
 #include "externaldownloader.h"
+#include "aboutus.h"
+#include "audio/FxEngine.h"
+#include "dialogs/AudioFxDialog.h"
+#include "secretstore.h"
+#include "services/NgrokTunnelService.h"
+#include "services/UpdateCheckService.h"
+
 #include <QMessageBox>
 #include <QInputDialog>
 #include <QFileDialog>
+#include <QFile>
 #include <QtSql>
 #include <QMediaPlayer>
-// QMediaPlaylist removed - using QList<QUrl> instead
 #include <QAudio>
 #include <QDebug>
 #include <QtMultimedia>
-// QAudioProbe is deprecated in Qt6
 #include <QTableWidgetItem>
 #include <QList>
 #include <QDateTime>
@@ -33,12 +38,11 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include <QDragMoveEvent>
 #include <QSqlTableModel>
 #include <QFileInfo>
-// QAudioRecorder is deprecated in Qt6
-#include <QMediaDevices> // Qt6 replacement for QAudioDeviceInfo
-#include <QAudioInput> // Qt6 replacement for audio recording
-#include <QAudioOutput> // Qt6 for audio output
+#include <QMediaDevices>
+#include <QAudioInput>
+#include <QAudioOutput>
 #include <QNetworkAccessManager>
-#include <QNetworkInformation> // Qt6 replacement for QNetworkConfigurationManager
+#include <QNetworkInformation>
 #include <QHttpPart>
 #include <QGraphicsView>
 #include <QGraphicsScene>
@@ -46,25 +50,63 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include <QVector>
 #include <QMovie>
 #include <QProgressDialog>
-#include <QNetworkAccessManager>
 #include <QTextBrowser>
 #include <QMouseEvent>
+#include <QCloseEvent>
 #include <QDesktopServices>
-#include <QUrl>
 
+#include <cstdlib> // _exit()
+#ifdef Q_OS_MAC
+#include <unistd.h>
+#endif
+#include <QUrl>
+#include <QClipboard>
+#include <QHeaderView>
+#include <QApplication>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
 #include <QDialog>
 #include <QVBoxLayout>
+#include <QSpacerItem>
 #include <QPushButton>
 #include <QPixmap>
-
 #include <QtCore>
 #include <QtGlobal>
 #include <QSizeGrip>
+#include <QScopeGuard>
+#include <QProcess>
+#include <QComboBox>
+#include <QLabel>
+#include <QPainter>
+#include <QPainterPath>
+#include <QScrollArea>
+#include <QSlider>
+#include <QSplitter>
+#include <QTabWidget>
+#include <QTabBar>
+#include <QToolBox>
+#include <QToolButton>
 
+#ifdef XFB_HAS_WEBENGINE
 #include <QtWebEngineQuick>
+#endif
 #include <QQuickWidget>
+#include <QQuickItem>  // full definition needed for adBanner->rootObject()
+
 #include "services/ServiceContainer.h"
 #include "services/AccessibilityManager.h"
+#include "services/AudioFeedbackService.h"
+#include "services/LiveRegionManager.h"
+#include "services/PlaybackStatusAnnouncer.h"
+#include "services/SystemStatusAnnouncer.h"
+#include "services/TorNetworkService.h"
+#include "services/TorrentSearchService.h"
+#include "services/TorrentDownloadService.h"
+#include "services/DependencyChecker.h"
+
+// Static variable definition for recursion protection
+int player::s_recursionDepth = 0;
 
 class ClickableTextBrowser : public QTextBrowser {
 public:
@@ -127,10 +169,201 @@ player::player(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::player)
 {
+    // Ensure we're in the main thread
+    if (QThread::currentThread() != QApplication::instance()->thread()) {
+        qCritical() << "Player constructor called from wrong thread!";
+        qCritical() << "Current thread:" << QThread::currentThread();
+        qCritical() << "Main thread:" << QApplication::instance()->thread();
+        throw std::runtime_error("Player must be created in main thread");
+    }
 
     qDebug()<<"\nStarting XFB :: Developed by Frédéric Bogaerts @ Netpack - Online Solutions! www.netpack.pt";
 
-    ui->setupUi(this);
+    qDebug() << "About to call ui->setupUi(this)...";
+    
+    try {
+        ui->setupUi(this);
+        qDebug() << "ui->setupUi(this) completed successfully!";
+    } catch (const std::exception& e) {
+        qCritical() << "Exception during ui->setupUi():" << e.what();
+        throw;
+    } catch (...) {
+        qCritical() << "Unknown exception during ui->setupUi()";
+        throw;
+    }
+
+    // Fix grid layout: the UI file's QGridLayout has 25 rows but only 3 have widgets.
+    // Empty rows consume space that creates a visible gap. Replace with a VBoxLayout
+    // and use QSplitter for user-resizable side panels.
+    if (ui->gridLayout_2) {
+        QWidget *parentWidget = ui->widget;
+        
+        // Reparent widgets to a temporary holder so they survive layout deletion
+        QWidget tempHolder;
+        ui->frame_4->setParent(&tempHolder);
+        ui->frame->setParent(&tempHolder);
+        ui->tabWidget_2->setParent(&tempHolder);
+        ui->pubWidget->setParent(&tempHolder);
+        ui->page_FTP_Connection->setParent(&tempHolder);
+        
+        // Delete the old grid layout
+        QLayout *oldLayout = parentWidget->layout();
+        QLayoutItem *item;
+        while ((item = oldLayout->takeAt(0)) != nullptr) {
+            delete item;
+        }
+        delete oldLayout;
+        
+        // Build a clean VBoxLayout
+        QVBoxLayout *vbox = new QVBoxLayout(parentWidget);
+        vbox->setContentsMargins(0, 0, 0, 0);
+        vbox->setSpacing(0);
+        
+        // Top row: player controls + clock — resizable splitter
+        QSplitter *topSplitter = new QSplitter(Qt::Horizontal, parentWidget);
+        topSplitter->setChildrenCollapsible(false);
+        ui->frame_4->setParent(topSplitter);
+        ui->frame->setParent(topSplitter);
+        ui->frame->setMinimumWidth(200);
+        ui->frame->setMaximumWidth(16777215); // remove the 350 cap
+        topSplitter->addWidget(ui->frame_4);
+        topSplitter->addWidget(ui->frame);
+        topSplitter->setStretchFactor(0, 1); // frame_4 stretches
+        topSplitter->setStretchFactor(1, 0); // frame stays compact
+        topSplitter->setSizes({1000, 350});
+        vbox->addWidget(topSplitter, 0);
+        
+        // Middle row: Playlist/History/DJ/FX tabs + the side toolbox —
+        // resizable splitter. The toolbox lives up here (rather than beside the
+        // music lists) so that collapsing the bottom music tabs hands their
+        // vertical space to this area — the DJ and Audio FX tabs.
+        QSplitter *middleSplitter = new QSplitter(Qt::Horizontal, parentWidget);
+        middleSplitter->setChildrenCollapsible(false);
+        ui->tabWidget_2->setParent(middleSplitter);
+        ui->page_FTP_Connection->setParent(middleSplitter);
+        ui->page_FTP_Connection->setMaximumWidth(16777215); // remove the 350 cap
+        ui->page_FTP_Connection->setMinimumWidth(150);
+        middleSplitter->addWidget(ui->tabWidget_2);
+        middleSplitter->addWidget(ui->page_FTP_Connection);
+        middleSplitter->setStretchFactor(0, 1); // the tabs stretch
+        middleSplitter->setStretchFactor(1, 0); // toolbox stays compact
+        middleSplitter->setSizes({1000, 350});
+        middleSplitter->setCollapsible(0, false);
+        // Don't allow dragging the side panel down to nothing — that left it
+        // impossible to restore. Hiding/showing is done with the toggle below.
+        middleSplitter->setCollapsible(1, false);
+        vbox->addWidget(middleSplitter, 1);
+
+        // Always-visible toggle in the tab-bar corner to show/hide the side
+        // panel (Search / Filters / Extras / Playlist). Hiding a QSplitter child
+        // reclaims its space for the tabs, and the corner button guarantees the
+        // panel can always be brought back.
+        m_sidePanelToggle = new QToolButton(ui->tabWidget_2);
+        m_sidePanelToggle->setCheckable(true);
+        m_sidePanelToggle->setChecked(true);
+        m_sidePanelToggle->setAutoRaise(true);
+        m_sidePanelToggle->setArrowType(Qt::RightArrow);
+        m_sidePanelToggle->setToolTip(tr("Show or hide the side panel (Search, Filters, Extras, Playlist)"));
+        ui->tabWidget_2->setCornerWidget(m_sidePanelToggle, Qt::TopRightCorner);
+        connect(m_sidePanelToggle, &QToolButton::toggled, this, [this](bool on) {
+            if (ui->page_FTP_Connection)
+                ui->page_FTP_Connection->setVisible(on);
+            if (m_sidePanelToggle)
+                m_sidePanelToggle->setArrowType(on ? Qt::RightArrow : Qt::LeftArrow);
+        });
+
+        // Bottom row: Music/Jingles/Pub/Programs/Torrents tabs — full width,
+        // pinned to the bottom of the window. Collapsing them (click the active
+        // tab) folds this row down to just the tab bar, giving all of its space
+        // to the middle area above.
+        ui->pubWidget->setParent(parentWidget);
+        vbox->addWidget(ui->pubWidget, 1);
+        
+        qDebug() << "Replaced gridLayout_2 with VBoxLayout + resizable QSplitters";
+    }
+
+    // Make the Music/Jingles/Pub/Programs/Torrents tab area collapsible:
+    // clicking the currently-selected tab folds the content pane down to just
+    // the tab bar, freeing vertical space for the playlist above.
+    setupCollapsibleTabs();
+
+    // The playlist controls panel (frame_2: Total time / Sum to Playlist /
+    // Update last played / Random) moves into the Search/Filters/Extras toolbox
+    // as a new "Playlist" page, so all side controls live in one toggle-able
+    // panel. The Playlist tab then shows just the playlist, full width.
+    if (ui->tabPlaylist && ui->playlist) {
+        QWidget *playlistTab = ui->tabPlaylist;
+
+        // Move frame_2 into the side toolbox (reparents it out of this tab).
+        if (ui->frame_2 && ui->page_FTP_Connection &&
+            ui->page_FTP_Connection->indexOf(ui->frame_2) < 0) {
+            ui->frame_2->setMinimumWidth(0);
+            ui->frame_2->setMaximumWidth(16777215);
+            ui->page_FTP_Connection->addItem(ui->frame_2,
+                QIcon(QStringLiteral(":/icons/format-list-unordered.png")),
+                tr("Playlist"));
+        }
+
+        // Reparent the playlist out of the old grid layout, then delete it.
+        QWidget tempHolder2;
+        ui->playlist->setParent(&tempHolder2);
+
+        QLayout *oldPlaylistLayout = playlistTab->layout();
+        if (oldPlaylistLayout) {
+            QLayoutItem *item;
+            while ((item = oldPlaylistLayout->takeAt(0)) != nullptr) {
+                delete item;
+            }
+            delete oldPlaylistLayout;
+        }
+
+        // Playlist fills the whole tab now.
+        QVBoxLayout *playlistVbox = new QVBoxLayout(playlistTab);
+        playlistVbox->setContentsMargins(0, 0, 0, 0);
+        playlistVbox->setSpacing(0);
+        ui->playlist->setParent(playlistTab);
+        playlistVbox->addWidget(ui->playlist);
+        qDebug() << "Playlist tab now full-width; controls moved into side toolbox";
+    }
+    
+    // Verify UI was properly initialized
+    qDebug() << "Checking UI elements...";
+    if (!ui) {
+        qCritical() << "UI object is null!";
+        throw std::runtime_error("UI object is null");
+    }
+    
+    qDebug() << "Checking sliderProgress...";
+    if (!ui->sliderProgress) {
+        qCritical() << "sliderProgress is null!";
+        throw std::runtime_error("sliderProgress is null");
+    }
+    
+    qDebug() << "Checking sliderVolume...";
+    if (!ui->sliderVolume) {
+        qCritical() << "sliderVolume is null!";
+        throw std::runtime_error("sliderVolume is null");
+    }
+    
+    qDebug() << "Checking playlist...";
+    if (!ui->playlist) {
+        qCritical() << "playlist is null!";
+        throw std::runtime_error("playlist is null");
+    }
+    
+    qDebug() << "Checking musicView...";
+    if (!ui->musicView) {
+        qCritical() << "musicView is null!";
+        throw std::runtime_error("musicView is null");
+    }
+    
+    qDebug() << "UI validation passed!";
+
+    // Initialize timers (must be created in the constructor, not in the header)
+    stimer = new QTimer(this);
+    icetimer = new QTimer(this);
+    butt_timer = new QTimer(this);
+    adRefreshTimer = new QTimer(this);
 
     QSqlDatabase db = QSqlDatabase::database("xfb_connection");
     networkManager = new QNetworkAccessManager(this);
@@ -153,27 +386,101 @@ player::player(QWidget *parent) :
     connect(adRefreshTimer, &QTimer::timeout, this, &player::refreshAdBanner);
     adRefreshTimer->start();*/
 
-    updateConfig();
-    checkDbOpen();
+    qDebug() << "Initializing database and UI components";
+    
+    // Initialize database connection with error handling
+    try {
+        updateConfig();
+        if (!checkDbOpen()) {
+            qCritical() << "Failed to open database - this may cause crashes";
+            // Don't throw here, let the app try to continue
+        } else {
+            qDebug() << "Database opened successfully";
+        }
+    } catch (const std::exception& e) {
+        qCritical() << "Exception during database initialization:" << e.what();
+        // Continue without database for now
+    }
     //on_actionUpdate_Dinamic_Server_s_IP_triggered();
 
-    // Initialize audio outputs for Qt6
-    XplayerOutput = new QAudioOutput(this);
-    lp1_XplayerOutput = new QAudioOutput(this);
-    lp2_XplayerOutput = new QAudioOutput(this);
+    // Initialize audio outputs for Qt6 - ensure they're created in the main thread
+    qDebug() << "Initializing audio outputs in thread:" << QThread::currentThread();
+    
+    try {
+        XplayerOutput = new QAudioOutput(this);
+        lp1_XplayerOutput = new QAudioOutput(this);
+        lp2_XplayerOutput = new QAudioOutput(this);
+        qDebug() << "Audio outputs created successfully";
+    } catch (const std::exception& e) {
+        qCritical() << "Exception creating audio outputs:" << e.what();
+        throw;
+    }
 
-    // Initialize media players with audio outputs
-    Xplayer = new QMediaPlayer(this);
-    Xplayer->setAudioOutput(XplayerOutput);
-    XplaylistIndex = 0;
+    // Initialize media players with audio outputs - ensure main thread
+    try {
+        Xplayer = new FxPlayer(this);
+        Xplayer->setAudioOutput(XplayerOutput);
+        XplaylistIndex = 0;
+        qDebug() << "Main player created successfully";
 
-    lp1_Xplayer = new QMediaPlayer(this);
-    lp1_Xplayer->setAudioOutput(lp1_XplayerOutput);
-    lp1_XplaylistIndex = 0;
+        lp1_Xplayer = new FxPlayer(this);
+        lp1_Xplayer->setAudioOutput(lp1_XplayerOutput);
+        lp1_XplaylistIndex = 0;
+        qDebug() << "LP1 player created successfully";
 
-    lp2_Xplayer = new QMediaPlayer(this);
-    lp2_Xplayer->setAudioOutput(lp2_XplayerOutput);
-    lp2_XplaylistIndex = 0;
+        lp2_Xplayer = new FxPlayer(this);
+        lp2_Xplayer->setAudioOutput(lp2_XplayerOutput);
+        lp2_XplaylistIndex = 0;
+        qDebug() << "LP2 player created successfully";
+
+        // Restore persisted FX settings (EQ / compressor / 432 Hz retune)
+        applyStoredFxSettings();
+
+        // LP decks always route through the FX engine so scratching and the
+        // DJ effects work even with EQ/compressor off (falls back to plain
+        // playback automatically when ffmpeg is missing)
+        lp1_Xplayer->setPreferEngineAlways(true);
+        lp2_Xplayer->setPreferEngineAlways(true);
+
+        // Streaming client: FxPlayer routes http(s) URLs through the
+        // ffmpeg-CLI engine (plain QMediaPlayer cannot play live streams).
+        RadioPlayerOutput = new QAudioOutput(this);
+        RadioPlayer = new FxPlayer(this);
+        RadioPlayer->setAudioOutput(RadioPlayerOutput);
+        RadioPlayerOutput->setVolume(ui->slider_rol_volume->value() / 100.0);
+        connect(ui->slider_rol_volume, &QSlider::valueChanged, this, [this](int v) {
+            if (RadioPlayerOutput)
+                RadioPlayerOutput->setVolume(v / 100.0);
+        });
+        connect(RadioPlayer, &FxPlayer::playbackStateChanged, this,
+                [this](QMediaPlayer::PlaybackState state) {
+            if (state == QMediaPlayer::PlayingState) {
+                ui->bt_rol_streaming_play->setStyleSheet("background-color:#C8EE72");
+                ui->lbl_rol_streaming_status->setText(tr("Playing: %1")
+                    .arg(RadioPlayer->source().toDisplayString()));
+            } else if (state == QMediaPlayer::StoppedState) {
+                ui->bt_rol_streaming_play->setStyleSheet("");
+                ui->lbl_rol_streaming_status->setText(tr("Stopped"));
+            }
+        });
+        connect(RadioPlayer, &FxPlayer::mediaStatusChanged, this,
+                [this](QMediaPlayer::MediaStatus status) {
+            if (status == QMediaPlayer::BufferingMedia || status == QMediaPlayer::LoadingMedia)
+                ui->lbl_rol_streaming_status->setText(tr("Connecting / buffering..."));
+            else if (status == QMediaPlayer::StalledMedia)
+                ui->lbl_rol_streaming_status->setText(tr("Stream stalled — rebuffering..."));
+            else if (status == QMediaPlayer::InvalidMedia)
+                ui->lbl_rol_streaming_status->setText(tr("Invalid stream"));
+        });
+        connect(RadioPlayer, &FxPlayer::errorOccurred, this,
+                [this](QMediaPlayer::Error, const QString &errorString) {
+            ui->bt_rol_streaming_play->setStyleSheet("");
+            ui->lbl_rol_streaming_status->setText(tr("Stream error: %1").arg(errorString));
+        });
+    } catch (const std::exception& e) {
+        qCritical() << "Exception creating media players:" << e.what();
+        throw;
+    }
 
     indexcanal = 4;
     onAbout2Finish = 0;
@@ -190,13 +497,23 @@ player::player(QWidget *parent) :
     ui->led_rec->hide();
     ui->txt_loading->hide();
 
-    // Initialize Qt6 media recording components
-    captureSession = new QMediaCaptureSession(this);
-    audioRecorder = new QMediaRecorder(this);
-    audioInput = new QAudioInput(this);
+    // Initialize Qt6 media recording components with error handling
+    qDebug() << "Initializing media recording components";
+    try {
+        captureSession = new QMediaCaptureSession(this);
+        audioRecorder = new QMediaRecorder(this);
+        audioInput = new QAudioInput(this);
 
-    captureSession->setRecorder(audioRecorder);
-    captureSession->setAudioInput(audioInput);
+        captureSession->setRecorder(audioRecorder);
+        captureSession->setAudioInput(audioInput);
+        qDebug() << "Media recording components initialized successfully";
+    } catch (const std::exception& e) {
+        qCritical() << "Exception initializing media recording:" << e.what();
+        // Don't throw here, recording is not critical for basic functionality
+        captureSession = nullptr;
+        audioRecorder = nullptr;
+        audioInput = nullptr;
+    }
 
     // List available audio input devices
     const QList<QAudioDevice> inputDevices = QMediaDevices::audioInputs();
@@ -222,80 +539,187 @@ player::player(QWidget *parent) :
     qDebug() << "Current encoding mode: " << mode << ", quality: " << quality;
     qDebug() << "Audio Sample Rates are handled through quality settings in Qt6";
 
-    connect(Xplayer, &QMediaPlayer::positionChanged, this, &player::onPositionChanged);
-    connect(Xplayer, &QMediaPlayer::durationChanged, this, &player::durationChanged);
-    connect(Xplayer, &QMediaPlayer::sourceChanged, this, &player::currentMediaChanged);
-    connect(Xplayer->audioOutput(), &QAudioOutput::volumeChanged, this, &player::volumeChanged);
+    // Connect media player signals with error handling
+    qDebug() << "Connecting media player signals";
+    try {
+        connect(Xplayer, &FxPlayer::positionChanged, this, &player::onPositionChanged);
+        connect(Xplayer, &FxPlayer::durationChanged, this, &player::durationChanged);
+        connect(Xplayer, &FxPlayer::sourceChanged, this, &player::currentMediaChanged);
+        connect(Xplayer->audioOutput(), &QAudioOutput::volumeChanged, this, &player::volumeChanged);
+        qDebug() << "Main player signals connected";
 
-    // Connect media player signals for playlist management
-    connect(Xplayer, &QMediaPlayer::playbackStateChanged, [this](QMediaPlayer::PlaybackState state) {
-        if (state == QMediaPlayer::StoppedState && PlayMode == "Playing_Segue") {
-            // When playback stops, play the next media if in segue mode
-            QTimer::singleShot(100, this, &player::playNextMedia);
+        // Handle media player errors (e.g., codec issues, corrupt files)
+        connect(Xplayer, &FxPlayer::errorOccurred, this, [this](QMediaPlayer::Error error, const QString &errorString) {
+            qWarning() << "Media player error:" << error << "-" << errorString;
+            qWarning() << "Current source:" << Xplayer->source().toString();
+            
+            // Don't hang — recover gracefully
+            if (PlayMode == "Playing_Segue" && !m_manualAdvancing) {
+                qWarning() << "Error during segue playback, advancing to next track...";
+                ui->statusBar->showMessage(tr("Playback error: %1 — skipping track").arg(errorString), 5000);
+                // Use a timer to avoid re-entry issues
+                QTimer::singleShot(200, this, &player::playNextMedia);
+            } else {
+                ui->statusBar->showMessage(tr("Playback error: %1").arg(errorString), 5000);
+            }
+        });
+
+        // Handle media status changes (detect stalled/invalid media)
+        connect(Xplayer, &FxPlayer::mediaStatusChanged, this, [this](QMediaPlayer::MediaStatus status) {
+            qDebug() << "Media status changed:" << status;
+            if (status == QMediaPlayer::InvalidMedia) {
+                qWarning() << "Invalid media detected:" << Xplayer->source().toString();
+                if (PlayMode == "Playing_Segue" && !m_manualAdvancing) {
+                    ui->statusBar->showMessage(tr("Invalid media file — skipping"), 5000);
+                    QTimer::singleShot(200, this, &player::playNextMedia);
+                }
+            } else if (status == QMediaPlayer::StalledMedia) {
+                qWarning() << "Media playback stalled:" << Xplayer->source().toString();
+                ui->statusBar->showMessage(tr("Playback stalled — buffering..."), 3000);
+            }
+        });
+
+        // Connect media player signals for playlist management
+        connect(Xplayer, &FxPlayer::playbackStateChanged, [this](QMediaPlayer::PlaybackState state) {
+            if (state == QMediaPlayer::StoppedState && PlayMode == "Playing_Segue" && !m_manualAdvancing) {
+                // When playback stops, play the next media if in segue mode
+                QTimer::singleShot(100, this, &player::playNextMedia);
+            }
+        });
+        qDebug() << "Main player playlist signals connected";
+
+        connect(lp1_Xplayer, &FxPlayer::positionChanged, this, &player::lp1_onPositionChanged);
+        connect(lp1_Xplayer, &FxPlayer::durationChanged, this, &player::lp1_durationChanged);
+        connect(lp1_Xplayer, &FxPlayer::sourceChanged, this, &player::lp1_currentMediaChanged);
+        connect(lp1_Xplayer->audioOutput(), &QAudioOutput::volumeChanged, this, &player::lp1_volumeChanged);
+        qDebug() << "LP1 player signals connected";
+
+        connect(lp2_Xplayer, &FxPlayer::positionChanged, this, &player::lp2_onPositionChanged);
+        connect(lp2_Xplayer, &FxPlayer::durationChanged, this, &player::lp2_durationChanged);
+        connect(lp2_Xplayer, &FxPlayer::sourceChanged, this, &player::lp2_currentMediaChanged);
+        connect(lp2_Xplayer->audioOutput(), &QAudioOutput::volumeChanged, this, &player::lp2_volumeChanged);
+        qDebug() << "LP2 player signals connected";
+    } catch (const std::exception& e) {
+        qCritical() << "Exception connecting media player signals:" << e.what();
+        throw; // This is critical for functionality
+    }
+
+    // Watchdog timer: detects when playback stalls (position stops updating)
+    m_playbackWatchdog = new QTimer(this);
+    m_playbackWatchdog->setInterval(3000); // Check every 3 seconds
+    connect(m_playbackWatchdog, &QTimer::timeout, this, [this]() {
+        if (Xplayer->playbackState() != QMediaPlayer::PlayingState) {
+            m_stallCount = 0;
+            m_playbackWatchdog->stop();
+            return;
         }
+        
+        qint64 currentPos = Xplayer->position();
+        if (currentPos == m_lastKnownPosition && currentPos > 0) {
+            m_stallCount++;
+            qWarning() << "Playback stall detected! Position stuck at" << currentPos << "ms (count:" << m_stallCount << ")";
+            
+            if (m_stallCount >= 2) {
+                // Playback has been stuck for 6+ seconds — force recovery
+                qWarning() << "Forcing player recovery after stall on:" << Xplayer->source().toString();
+                ui->statusBar->showMessage(tr("Playback stalled — recovering..."), 5000);
+                
+                m_manualAdvancing = true;
+                Xplayer->stop();
+                Xplayer->setSource(QUrl()); // Release stuck AVFoundation session
+                m_manualAdvancing = false;
+                m_stallCount = 0;
+                m_playbackWatchdog->stop();
+                
+                // If in segue mode, advance to next track
+                if (PlayMode == "Playing_Segue") {
+                    QTimer::singleShot(300, this, &player::playNextMedia);
+                } else {
+                    PlayMode = "stopped";
+                    ui->btPlay->setStyleSheet("");
+                    ui->btPlay->setText(tr("Play"));
+                }
+            }
+        } else {
+            m_stallCount = 0;
+        }
+        m_lastKnownPosition = currentPos;
     });
-
-    connect(lp1_Xplayer, &QMediaPlayer::positionChanged, this, &player::lp1_onPositionChanged);
-    connect(lp1_Xplayer, &QMediaPlayer::durationChanged, this, &player::lp1_durationChanged);
-    connect(lp1_Xplayer, &QMediaPlayer::sourceChanged, this, &player::lp1_currentMediaChanged);
-    connect(lp1_Xplayer->audioOutput(), &QAudioOutput::volumeChanged, this, &player::lp1_volumeChanged);
-
-    connect(lp2_Xplayer, &QMediaPlayer::positionChanged, this, &player::lp2_onPositionChanged);
-    connect(lp2_Xplayer, &QMediaPlayer::durationChanged, this, &player::lp2_durationChanged);
-    connect(lp2_Xplayer, &QMediaPlayer::sourceChanged, this, &player::lp2_currentMediaChanged);
-    connect(lp2_Xplayer->audioOutput(), &QAudioOutput::volumeChanged, this, &player::lp2_volumeChanged);
 
     // Initialize recTimer before connecting it
     recTimer = new QTimer(this);
-    connect(recTimer,SIGNAL(timeout()),this,SLOT(run_recTimer()));
+    connect(recTimer, &QTimer::timeout, this, &player::run_recTimer);
 
     /* main clock signals and slots */
     QTimer *timer = new QTimer(this);
-    connect(timer, SIGNAL(timeout()), this, SLOT(showTime()));
+    connect(timer, &QTimer::timeout, this, &player::showTime);
     timer->start(1000);
     showTime();
 
     if(Role=="Server"){
 
         QTimer *schedulerTimer = new QTimer(this);
-        connect(schedulerTimer,SIGNAL(timeout()),this,SLOT(run_scheduler()));
+        connect(schedulerTimer, &QTimer::timeout, this, &player::run_scheduler);
         schedulerTimer->start(60000);
 
         run_server_scheduler(); //run at startup
 
         server_this_day_of_the_week = QDate::currentDate().dayOfWeek();
         QTimer *schedulerTimerh = new QTimer(this);
-        connect(schedulerTimerh,SIGNAL(timeout()),this,SLOT(run_server_scheduler()));
+        connect(schedulerTimerh, &QTimer::timeout, this, &player::run_server_scheduler);
         schedulerTimerh->start(3600000); //once per hour
 
         QTimer *schedulerTimerMT = new QTimer(this);
-        connect(schedulerTimerMT,SIGNAL(timeout()),this,SLOT(monitorTakeOver()));
+        connect(schedulerTimerMT, &QTimer::timeout, this, &player::monitorTakeOver);
         schedulerTimerMT->start(25000);
 
     }
 
     /*Populate music table with an editable table field on double-click*/
-    checkDbOpen();
-    QSqlTableModel *model = new QSqlTableModel(this,db);
-    model->setTable("musics");
-    model->select();
+    qDebug() << "Initializing music table model";
+    bool dbAvailable = false;
+    try {
+        if (!checkDbOpen()) {
+            qWarning() << "Database not available for music table";
+        } else {
+            QSqlDatabase db = QSqlDatabase::database("xfb_connection");
+            if (!db.isValid() || !db.isOpen()) {
+                qCritical() << "Database connection invalid for music table";
+            } else {
+                dbAvailable = true;
+                QSqlTableModel *model = new QSqlTableModel(this, db);
+                model->setTable("musics");
+                if (!model->select()) {
+                    qWarning() << "Failed to select from musics table:" << model->lastError().text();
+                } else {
+                    qDebug() << "Music table model created successfully";
+                }
 
-    ui->musicView->setModel(model);
-    ui->musicView->setSortingEnabled(true);
-    ui->musicView->hideColumn(0);
-    ui->musicView->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
-    ui->musicView->setColumnWidth(1,150);
-    ui->musicView->setColumnWidth(2,150);
-    ui->musicView->setColumnWidth(3,80);
-    ui->musicView->setColumnWidth(4,80);
-    ui->musicView->setColumnWidth(5,60);
-    ui->musicView->setColumnWidth(6,100);
-    ui->musicView->setColumnWidth(7,300);
-    ui->musicView->setColumnWidth(8,50);
-    ui->musicView->setColumnWidth(9,80);
-    ui->musicView->setColumnWidth(10,100);
+                ui->musicView->setModel(model);
+                ui->musicView->setSortingEnabled(true);
+                ui->musicView->hideColumn(0);
+                ui->musicView->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
+                ui->musicView->setColumnWidth(1,150);
+                ui->musicView->setColumnWidth(2,150);
+                ui->musicView->setColumnWidth(3,80);
+                ui->musicView->setColumnWidth(4,80);
+                ui->musicView->setColumnWidth(5,60);
+                ui->musicView->setColumnWidth(6,100);
+                ui->musicView->setColumnWidth(7,300);
+                ui->musicView->setColumnWidth(8,50);
+                ui->musicView->setColumnWidth(9,80);
+                ui->musicView->setColumnWidth(10,100);
+                qDebug() << "Music table view configured successfully";
+            }
+        }
+    } catch (const std::exception& e) {
+        qCritical() << "Exception initializing music table:" << e.what();
+        // Continue without music table — don't abort the entire constructor
+    }
 checkDbOpen();
     /*Populate jingles table with an editable table field on double-click*/
+    if (dbAvailable) {
+    QSqlDatabase db = QSqlDatabase::database("xfb_connection");
     QSqlTableModel * jinglesmodel = new QSqlTableModel(this,db);
     jinglesmodel->setTable("jingles");
     jinglesmodel->select();
@@ -322,6 +746,17 @@ checkDbOpen();
     ui->programsView->setSortingEnabled(true);
     ui->programsView->hideColumn(0);
     ui->programsView->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
+
+    /*Populate Torrents table*/
+
+    QSqlTableModel *torrentsmodel = new QSqlTableModel(this,db);
+    torrentsmodel->setTable("torrents");
+    torrentsmodel->select();
+    ui->torrentsView->setModel(torrentsmodel);
+    ui->torrentsView->setSortingEnabled(true);
+    ui->torrentsView->hideColumn(0);
+    ui->torrentsView->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
+    } // end if (dbAvailable)
 
     /*Drag & Drop Set*/
 
@@ -353,47 +788,46 @@ checkDbOpen();
      ui->musicView->setAttribute(Qt::WA_KeyboardFocusChange, true);
 
      ui->musicView->setContextMenuPolicy(Qt::CustomContextMenu);
-     connect(ui->musicView, SIGNAL(customContextMenuRequested(const QPoint&)),
-         this, SLOT(musicViewContextMenu(const QPoint&)));
+     connect(ui->musicView, &QWidget::customContextMenuRequested,
+         this, &player::musicViewContextMenu);
 
      ui->playlist->setContextMenuPolicy(Qt::CustomContextMenu);
-     connect(ui->playlist, SIGNAL(customContextMenuRequested(const QPoint&)),
-             this, SLOT(playlistContextMenu(const QPoint&)));
+     connect(ui->playlist, &QWidget::customContextMenuRequested,
+             this, &player::playlistContextMenu);
 
      // Accessibility improvements for jinglesView
      ui->jinglesView->setFocusPolicy(Qt::StrongFocus);
      ui->jinglesView->setTabKeyNavigation(true);
      ui->jinglesView->setAttribute(Qt::WA_KeyboardFocusChange, true);
      ui->jinglesView->setContextMenuPolicy(Qt::CustomContextMenu);
-     connect(ui->jinglesView, SIGNAL(customContextMenuRequested(const QPoint&)),
-         this, SLOT(jinglesViewContextMenu(const QPoint&)));
+     connect(ui->jinglesView, &QWidget::customContextMenuRequested,
+         this, &player::jinglesViewContextMenu);
 
      // Accessibility improvements for pubView
      ui->pubView->setFocusPolicy(Qt::StrongFocus);
      ui->pubView->setTabKeyNavigation(true);
      ui->pubView->setAttribute(Qt::WA_KeyboardFocusChange, true);
      ui->pubView->setContextMenuPolicy(Qt::CustomContextMenu);
-     connect(ui->pubView, SIGNAL(customContextMenuRequested(const QPoint&)),
-         this, SLOT(pubViewContextMenu(const QPoint&)));
+     connect(ui->pubView, &QWidget::customContextMenuRequested,
+         this, &player::pubViewContextMenu);
 
      // Accessibility improvements for programsView
      ui->programsView->setFocusPolicy(Qt::StrongFocus);
      ui->programsView->setTabKeyNavigation(true);
      ui->programsView->setAttribute(Qt::WA_KeyboardFocusChange, true);
      ui->programsView->setContextMenuPolicy(Qt::CustomContextMenu);
-     connect(ui->programsView, SIGNAL(customContextMenuRequested(const QPoint&)),
-         this, SLOT(programsViewContextMenu(const QPoint&)));
+     connect(ui->programsView, &QWidget::customContextMenuRequested,
+         this, &player::programsViewContextMenu);
 
-     /*Populate genre1 and 2 filters*/
+     // Accessibility improvements for torrentsView
+     ui->torrentsView->setFocusPolicy(Qt::StrongFocus);
+     ui->torrentsView->setTabKeyNavigation(true);
+     ui->torrentsView->setAttribute(Qt::WA_KeyboardFocusChange, true);
+     ui->torrentsView->setContextMenuPolicy(Qt::CustomContextMenu);
+     connect(ui->torrentsView, &QWidget::customContextMenuRequested,
+         this, &player::torrentsViewContextMenu);
 
-     QSqlQueryModel * model_genre1=new QSqlQueryModel();
-     QSqlQuery* qry=new QSqlQuery(db);
-     QString sqlq = "select name from genres1";
-     qry->exec(sqlq);
-     model_genre1->setQuery(std::move(*qry));
-     ui->cBoxGenre1->setModel(model_genre1);
-     ui->cBoxGenre2->setModel(model_genre1);
-
+     // Genre combo boxes will be populated by update_music_table()
 
     update_music_table();
 
@@ -428,9 +862,21 @@ checkDbOpen();
    }
 
 
-   QPixmap pixmap(":/images/donate.png");
-   CustomMessageBox msgBox(tr("Donate to the Developer!"), tr("Please support the development of XFB!<br>If you appreciate this software, kindly consider making a donation to support the developer!<br><a href=\"https://www.paypal.com/donate/?hosted_button_id=TFDSZU78WLMC6\">Donate via PayPal!</a><br>Contact for professional support and custom development!<br><br>Why did the computer get a little emotional when using WinRAR?<br>_Because even after all the \"evaluation\", it still felt unzipped!"), pixmap);
-   msgBox.exec();
+    // Show the donation dialog on every startup (skipped only for scripted
+    // runs via --no-dialogs)
+    if (!QApplication::arguments().contains("--no-dialogs")) {
+        try {
+            QPixmap pixmap(":/images/donate.png");
+            CustomMessageBox msgBox(tr("Donate to the Developer!"), tr("Please support the development of XFB!<br>If you appreciate this software, kindly consider making a donation to support the developer!<br><a href=\"https://www.paypal.com/donate/?hosted_button_id=TFDSZU78WLMC6\">Donate via PayPal!</a><br>Contact for professional support and custom development!<br><br>Why did the computer get a little emotional when using WinRAR?<br>_Because even after all the \"evaluation\", it still felt unzipped!"), pixmap);
+            msgBox.exec();
+        } catch (const std::exception& e) {
+            qWarning() << "Exception showing donation dialog:" << e.what();
+        } catch (...) {
+            qWarning() << "Unknown exception showing donation dialog";
+        }
+    } else {
+        qDebug() << "Skipping donation dialog (--no-dialogs flag)";
+    }
 
    // Directly set style on the status bar
    if(darkMode){
@@ -445,9 +891,618 @@ checkDbOpen();
 
    }
 
-   // Initialize accessibility features for the player interface
-   initializeAccessibility();
+   // Initialize torrent services with error handling (only if GUI is available)
+   if (!QApplication::arguments().contains("--version") && 
+       !QApplication::arguments().contains("--help") &&
+       !QApplication::arguments().contains("-v") &&
+       !QApplication::arguments().contains("-h") &&
+       !QApplication::arguments().contains("--minimal")) {
+       
+       try {
+           // Note: external tools (Tor, a torrent client, etc.) are NOT installed
+           // at startup. They are installed on-demand, with the user's explicit
+           // consent, the first time a feature actually needs them (see
+           // DependencyChecker::ensureDependency). Here we only log what's missing.
+           {
+               DependencyChecker depChecker;
+               QList<DependencyInfo> missing = depChecker.checkDependencies();
+               if (!missing.isEmpty()) {
+                   QStringList names;
+                   for (const auto &d : missing) names << d.name;
+                   qInfo() << "Optional dependencies not installed:" << names.join(", ")
+                           << "— will be offered on first use.";
+               }
+           }
 
+           // Proactively provision the core download toolchain (yt-dlp + ffmpeg)
+           // shortly after startup, so the FIRST download doesn't stall waiting
+           // for an install. We defer with a single-shot timer so the main
+           // window is visible before any consent dialog appears (running the
+           // modal prompts in the constructor would block before the UI shows).
+           //
+           // This is done once (guarded by a config flag): if the tools are
+           // already present it's a no-op, and if the user declines we don't
+           // nag on every launch — the on-demand prompts (opening the downloader
+           // or starting a download) still cover them.
+           {
+               const QString cfgPath =
+                   QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
+                   + "/xfb.conf";
+               QSettings depSettings(cfgPath, QSettings::IniFormat);
+               const bool alreadyPrompted =
+                   depSettings.value("StartupDepsProvisioned", false).toBool();
+
+               const bool haveFfmpeg = DependencyChecker::isAvailable("ffmpeg");
+               const bool haveYtdlp =
+                   QFileInfo(DependencyChecker::localYtDlpPath()).isExecutable() ||
+                   DependencyChecker::isAvailable("yt-dlp");
+
+               if (!alreadyPrompted && !(haveFfmpeg && haveYtdlp)) {
+                   QTimer::singleShot(1500, this, [this]() {
+                       DependencyChecker depChecker;
+                       // Self-updating yt-dlp in ~/.local/bin (no admin needed).
+                       depChecker.ensureYtDlp(this);
+                       // ffmpeg also provides ffprobe; on macOS this bootstraps
+                       // Homebrew first if it isn't installed.
+                       depChecker.ensureDependency("ffmpeg",
+                           tr("Downloading audio needs FFmpeg (which also provides ffprobe). "
+                              "Installing it now means your first download won't have to wait."),
+                           this);
+
+                       const QString cfgPath =
+                           QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
+                           + "/xfb.conf";
+                       QSettings s(cfgPath, QSettings::IniFormat);
+                       s.setValue("StartupDepsProvisioned", true);
+                   });
+               }
+           }
+
+           m_torNetworkService = new TorNetworkService(this);
+           m_torrentSearchService = new TorrentSearchService(this);
+           m_torrentDownloadService = new TorrentDownloadService(this);
+           
+           // Initialize the services safely
+           if (m_torNetworkService && !m_torNetworkService->initialize()) {
+               qWarning() << "Failed to initialize TorNetworkService";
+           }
+           if (m_torrentSearchService && !m_torrentSearchService->initialize()) {
+               qWarning() << "Failed to initialize TorrentSearchService";
+           }
+           if (m_torrentDownloadService && !m_torrentDownloadService->initialize()) {
+               qWarning() << "Failed to initialize TorrentDownloadService";
+           }
+       } catch (const std::exception& e) {
+           qWarning() << "Exception during torrent service initialization:" << e.what();
+           // Set services to nullptr if initialization fails
+           m_torNetworkService = nullptr;
+           m_torrentSearchService = nullptr;
+           m_torrentDownloadService = nullptr;
+       }
+   } else {
+       // Set services to nullptr for command line usage or minimal mode
+       qDebug() << "Skipping torrent services initialization";
+       m_torNetworkService = nullptr;
+       m_torrentSearchService = nullptr;
+       m_torrentDownloadService = nullptr;
+   }
+   
+   // Connect torrent services with null checks
+   if (m_torrentSearchService && m_torNetworkService) {
+       m_torrentSearchService->setTorService(m_torNetworkService);
+   }
+   if (m_torrentDownloadService && m_torNetworkService) {
+       m_torrentDownloadService->setTorService(m_torNetworkService);
+   }
+   
+   // Connect torrent network signals with null checks
+   if (m_torNetworkService) {
+       connect(m_torNetworkService, &TorNetworkService::torReady,
+               this, &player::onTorReady);
+       connect(m_torNetworkService, &TorNetworkService::torStopped,
+               this, &player::onTorDisconnected);
+       connect(m_torNetworkService, &TorNetworkService::torError,
+               this, &player::onTorError);
+       connect(m_torNetworkService, &TorNetworkService::onionMirrorFound,
+               this, &player::onOnionMirrorFound);
+       connect(m_torNetworkService, &TorNetworkService::searchingForOnionMirror,
+               this, &player::onSearchingForOnionMirror);
+       connect(m_torNetworkService, &TorNetworkService::onionMirrorSearchFailed,
+               this, &player::onOnionMirrorSearchFailed);
+   }
+   
+   // Connect torrent search signals with null checks
+   if (m_torrentSearchService) {
+       connect(m_torrentSearchService, &TorrentSearchService::resultsReady,
+               this, &player::onTorrentSearchResults);
+       connect(m_torrentSearchService, &TorrentSearchService::searchError,
+               this, &player::onTorrentSearchError);
+       connect(m_torrentSearchService, &TorrentSearchService::searchProgress,
+               ui->torrentSearchProgress, &QProgressBar::setValue);
+       connect(m_torrentSearchService, &TorrentSearchService::searchStarted,
+               [this]() { ui->torrentSearchProgress->setVisible(true); });
+       connect(m_torrentSearchService, &TorrentSearchService::searchFinished,
+               [this]() { ui->torrentSearchProgress->setVisible(false); });
+       connect(m_torrentSearchService, &TorrentSearchService::onionSitesUnavailable,
+               this, &player::onOnionSitesUnavailable);
+   }
+   
+   // Connect torrent download signals with null checks
+   if (m_torrentDownloadService) {
+       connect(m_torrentDownloadService, &TorrentDownloadService::downloadCompleted,
+               this, &player::onTorrentDownloadCompleted);
+       connect(m_torrentDownloadService, &TorrentDownloadService::streamingReady,
+               this, &player::onTorrentStreamingReady);
+
+       // Show downloads panel whenever a download starts
+       connect(m_torrentDownloadService, &TorrentDownloadService::downloadStarted,
+               this, [this](const QString &) {
+           ui->downloadsPanel->setVisible(true);
+           updateDownloadsCountLabel();
+       });
+       connect(m_torrentDownloadService, &TorrentDownloadService::downloadProgress,
+               this, [this](const QString &, double) {
+           updateDownloadsCountLabel();
+       });
+       connect(m_torrentDownloadService, &TorrentDownloadService::downloadError,
+               this, [this](const QString &, const QString &error) {
+           ui->statusBar->showMessage(tr("Download error: %1").arg(error), 5000);
+           updateDownloadsCountLabel();
+       });
+       connect(m_torrentDownloadService, &TorrentDownloadService::downloadCancelled,
+               this, [this](const QString &) {
+           updateDownloadsCountLabel();
+       });
+       connect(m_torrentDownloadService, &TorrentDownloadService::downloadsChanged,
+               this, [this]() {
+           updateDownloadsCountLabel();
+       });
+
+       // Wire the downloads table view to the model
+       ui->downloadsTableView->setModel(m_torrentDownloadService->getDownloadsModel());
+       // Allow user to resize all columns freely; last column stretches to fill
+       ui->downloadsTableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Interactive);
+       ui->downloadsTableView->horizontalHeader()->setStretchLastSection(true);
+       ui->downloadsTableView->setColumnWidth(0, 300);  // Name
+       ui->downloadsTableView->setColumnWidth(1, 80);   // Progress
+       ui->downloadsTableView->setColumnWidth(2, 120);  // Status
+   }
+
+   // Downloads panel buttons
+   if (m_torrentDownloadService) {
+       connect(ui->downloadCancelSelectedButton, &QPushButton::clicked, this, [this]() {
+           QModelIndex idx = ui->downloadsTableView->currentIndex();
+           if (idx.isValid()) {
+               QString dlId = m_torrentDownloadService->downloadIdForRow(idx.row());
+               if (!dlId.isEmpty()) {
+                   m_torrentDownloadService->cancelDownload(dlId);
+                   ui->statusBar->showMessage(tr("Download cancelled"), 3000);
+               }
+           }
+       });
+       connect(ui->downloadCancelAllButton, &QPushButton::clicked, this, [this]() {
+           m_torrentDownloadService->cancelAllDownloads();
+           ui->statusBar->showMessage(tr("All downloads cancelled"), 3000);
+       });
+       connect(ui->downloadClearFinishedButton, &QPushButton::clicked, this, [this]() {
+           m_torrentDownloadService->removeCompleted();
+           if (m_torrentDownloadService->activeDownloadCount() == 0) {
+               ui->downloadsPanel->setVisible(false);
+           }
+       });
+       connect(ui->downloadOpenFolderButton, &QPushButton::clicked, this, [this]() {
+           QDesktopServices::openUrl(QUrl::fromLocalFile(m_torrentDownloadService->downloadDirectory()));
+       });
+       connect(ui->downloadRetryButton, &QPushButton::clicked, this, [this]() {
+           QModelIndex idx = ui->downloadsTableView->currentIndex();
+           if (idx.isValid()) {
+               QString dlId = m_torrentDownloadService->downloadIdForRow(idx.row());
+               if (!dlId.isEmpty()) {
+                   if (m_torrentDownloadService->retryDownload(dlId)) {
+                       ui->statusBar->showMessage(tr("Retrying download..."), 3000);
+                   } else {
+                       ui->statusBar->showMessage(tr("Cannot retry this download"), 3000);
+                   }
+               }
+           }
+       });
+   }
+   
+   // Set torrents view model with null check
+   if (m_torrentSearchService) {
+       ui->torrentsView->setModel(m_torrentSearchService->getResultsModel());
+   }
+
+   // --- Make torrentsView and downloadsPanel resizable via QSplitter ---
+   {
+       auto *splitter = new QSplitter(Qt::Vertical, ui->torrentsView->parentWidget());
+       splitter->setChildrenCollapsible(false);
+
+       // Reparent torrentsView and downloadsPanel into the splitter
+       auto *parentLayout = qobject_cast<QVBoxLayout*>(ui->torrentsView->parentWidget()->layout());
+       if (parentLayout) {
+           // Find and remove torrentsView + downloadsPanel from the layout
+           parentLayout->removeWidget(ui->torrentsView);
+           parentLayout->removeWidget(ui->downloadsPanel);
+
+           // Add them to the splitter instead
+           splitter->addWidget(ui->torrentsView);
+           splitter->addWidget(ui->downloadsPanel);
+
+           // Search results get most space, downloads panel gets less
+           splitter->setStretchFactor(0, 3);
+           splitter->setStretchFactor(1, 1);
+           splitter->setSizes({400, 150});
+
+           // Insert splitter where torrentsView was (after search progress bar)
+           parentLayout->addWidget(splitter);
+       }
+
+       // Wire collapse/expand toggle for downloads table
+       connect(ui->downloadsCollapseButton, &QPushButton::clicked, this, [this]() {
+           bool visible = ui->downloadsTableView->isVisible();
+           ui->downloadsTableView->setVisible(!visible);
+           ui->downloadsCollapseButton->setText(visible ? QStringLiteral("▶") : QStringLiteral("▼"));
+       });
+   }
+
+   // Note: The main layout uses QGridLayout with absolute-positioned children
+   // in the right panel, so only the torrents tab internal splitter is used.
+   
+   // --- Make top tabs and bottom panels resizable via vertical QSplitter ---
+   {
+       auto *mainLayout = qobject_cast<QGridLayout*>(ui->widget->layout());
+       if (mainLayout && ui->tabWidget_2 && ui->pubWidget) {
+           auto *vSplitter = new QSplitter(Qt::Vertical, ui->widget);
+           vSplitter->setChildrenCollapsible(false);
+
+           // Remove tabWidget_2 and pubWidget from the grid
+           mainLayout->removeWidget(ui->tabWidget_2);
+           mainLayout->removeWidget(ui->pubWidget);
+
+           vSplitter->addWidget(ui->tabWidget_2);
+           vSplitter->addWidget(ui->pubWidget);
+
+           vSplitter->setStretchFactor(0, 3);
+           vSplitter->setStretchFactor(1, 1);
+
+           // Place splitter in column 0
+           mainLayout->addWidget(vSplitter, 20, 0, 5, 1);
+
+           // Move frame contents (clock stays on top, auto mode + playlist controls go to Controls tab)
+           if (ui->frame && ui->page_FTP_Connection) {
+               // Create a wrapper that holds the clock on top and the toolbox below
+               auto *rightPanel = new QWidget();
+               rightPanel->setMinimumWidth(350);
+               rightPanel->setMaximumWidth(350);
+               auto *rightLayout = new QVBoxLayout(rightPanel);
+               rightLayout->setContentsMargins(0, 0, 0, 0);
+               rightLayout->setSpacing(0);
+
+               // Keep the clock on top (outside the toolbox)
+               ui->txt_horas->setParent(rightPanel);
+               ui->txt_horas->setMinimumHeight(70);
+               ui->txt_horas->setMaximumHeight(90);
+               rightLayout->addWidget(ui->txt_horas);
+
+               // Small margin between clock and toolbox
+               rightLayout->addSpacing(6);
+
+               // Remove page_FTP_Connection from the grid before reparenting
+               mainLayout->removeWidget(ui->page_FTP_Connection);
+
+               // Move the toolbox below the clock
+               rightLayout->addWidget(ui->page_FTP_Connection, 1);
+
+               // Create the Controls page content
+               auto *controlsPage = new QWidget();
+               auto *controlsLayout = new QVBoxLayout(controlsPage);
+               controlsLayout->setContentsMargins(5, 5, 5, 5);
+               controlsLayout->setSpacing(6);
+
+               // Auto Mode button
+               ui->bt_autoMode->setParent(controlsPage);
+               ui->bt_autoMode->setMinimumHeight(24);
+               ui->bt_autoMode->setMaximumHeight(28);
+               controlsLayout->addWidget(ui->bt_autoMode);
+
+               // Total time label from playlist panel
+               ui->txt_playlistTotalTime->setParent(controlsPage);
+               controlsLayout->addWidget(ui->txt_playlistTotalTime);
+
+               // Checkboxes and controls from frame_2's layoutWidget
+               ui->checkBox_sum_to_playlist_time->setParent(controlsPage);
+               ui->checkBox_sum_to_playlist_time->setMaximumWidth(16777215);
+               controlsLayout->addWidget(ui->checkBox_sum_to_playlist_time);
+
+               ui->checkBox_update_last_played_values->setParent(controlsPage);
+               controlsLayout->addWidget(ui->checkBox_update_last_played_values);
+
+               // Random jingle row
+               auto *jingleRow = new QHBoxLayout();
+               ui->checkBox_random_jingles->setParent(controlsPage);
+               jingleRow->addWidget(ui->checkBox_random_jingles);
+               ui->spinBox_random_jingles_interval->setParent(controlsPage);
+               jingleRow->addWidget(ui->spinBox_random_jingles_interval);
+               ui->label_9->setParent(controlsPage);
+               jingleRow->addWidget(ui->label_9);
+               jingleRow->addStretch();
+               controlsLayout->addLayout(jingleRow);
+
+               // Random add songs row
+               auto *randomRow = new QHBoxLayout();
+               ui->label_3->setParent(controlsPage);
+               randomRow->addWidget(ui->label_3);
+               ui->spinBox_num_of_songs_to_add_random->setParent(controlsPage);
+               randomRow->addWidget(ui->spinBox_num_of_songs_to_add_random);
+               ui->comboBox_random_add_genre->setParent(controlsPage);
+               randomRow->addWidget(ui->comboBox_random_add_genre);
+               ui->label_10->setParent(controlsPage);
+               randomRow->addWidget(ui->label_10);
+               ui->bt_add_some_random_songs_from_genre->setParent(controlsPage);
+               randomRow->addWidget(ui->bt_add_some_random_songs_from_genre);
+               randomRow->addStretch();
+               controlsLayout->addLayout(randomRow);
+
+               controlsLayout->addStretch();
+
+               // Insert Controls as the first page in the toolbox
+               ui->page_FTP_Connection->insertItem(0, controlsPage,
+                   QIcon(QStringLiteral(":/icons/flat/Einstein-48.png")),
+                   tr("Controls"));
+               ui->page_FTP_Connection->setCurrentIndex(0);
+
+               // Hide the now-empty frame and frame_2
+               ui->frame->setVisible(false);
+               mainLayout->removeWidget(ui->frame);
+               ui->frame_2->setVisible(false);
+
+               // Place the right panel wrapper in the grid
+               mainLayout->addWidget(rightPanel, 0, 1, 25, 1);
+           }
+       }
+   }
+
+   // Load persisted download state and resume incomplete downloads
+   if (m_torrentDownloadService) {
+       m_torrentDownloadService->loadDownloadState();
+       m_torrentDownloadService->resumeDownloads();
+   }
+   
+   // Initialize UI state for Tor controls after constructor completes
+   QTimer::singleShot(0, [this]() {
+       updateTorConnectionUI(false);
+   });
+
+   // DO NOT auto-start Tor - user must manually connect
+
+   // Register accessibility services with the service container
+   if (!QApplication::arguments().contains("--minimal")) {
+       try {
+           registerAccessibilityServices();
+           initializeAccessibility();
+       } catch (const std::exception& e) {
+           qWarning() << "Exception during accessibility initialization:" << e.what();
+       }
+   } else {
+       qDebug() << "Skipping accessibility initialization (--minimal mode)";
+   }
+
+   // Start with the Musics tab selected in the bottom panel
+   ui->pubWidget->setCurrentWidget(ui->tabMusic);
+
+   // ngrok tunnel: public share link for the local streaming server
+   {
+       m_ngrokService = new NgrokTunnelService(this);
+
+       connect(m_ngrokService, &NgrokTunnelService::tunnelStarted, this,
+               [this](const QString &publicUrl) {
+           ui->txt_ngrok_url->setText(publicUrl);
+           ui->bt_ngrok->setText(tr("Stop"));
+           ui->bt_ngrok->setStyleSheet("background-color:#C8EE72");
+           ui->lbl_ngrok_status->setText(tr("Public link active! Share it with your listeners "
+                                            "(they may need to append your mount point, e.g. /stream)."));
+       });
+       connect(m_ngrokService, &NgrokTunnelService::tunnelStopped, this, [this]() {
+           ui->txt_ngrok_url->clear();
+           ui->bt_ngrok->setText(tr("Share"));
+           ui->bt_ngrok->setStyleSheet("");
+           ui->lbl_ngrok_status->setText(tr("Stopped"));
+       });
+       connect(m_ngrokService, &NgrokTunnelService::tunnelError, this,
+               [this](const QString &message) {
+           ui->txt_ngrok_url->clear();
+           ui->bt_ngrok->setText(tr("Share"));
+           ui->bt_ngrok->setStyleSheet("");
+           ui->lbl_ngrok_status->setText(tr("ngrok error: %1").arg(message));
+       });
+       connect(m_ngrokService, &NgrokTunnelService::authTokenConfigured, this,
+               [this](bool ok, const QString &message) {
+           ui->lbl_ngrok_status->setText(message);
+           if (ok) {
+               QSettings settings(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
+                                      + "/xfb.conf", QSettings::IniFormat);
+               settings.setValue("NgrokConfigured", true);
+           }
+       });
+
+       // Restore the last used tunnel port
+       QSettings settings(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
+                              + "/xfb.conf", QSettings::IniFormat);
+       const int ngrokPort = settings.value("NgrokLocalPort", 8888).toInt();
+       ui->txt_ngrok_port->setText(QString::number(ngrokPort));
+   }
+
+   // Update notifications: check GitHub releases shortly after startup and
+   // then once a day; the user can also check manually (XFB → Update System)
+   {
+       m_updateService = new UpdateCheckService(networkManager, this);
+
+       connect(m_updateService, &UpdateCheckService::updateAvailable, this,
+               [this](const QString &version, const QUrl &releasePage,
+                      const QUrl &downloadUrl, const QString & /*notes*/) {
+           QSettings settings(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
+                                  + "/xfb.conf", QSettings::IniFormat);
+           if (!m_updateCheckManual
+               && settings.value("SkipUpdateVersion").toString() == version) {
+               qInfo() << "Update" << version << "available but skipped by user preference";
+               return;
+           }
+           notifyUpdateAvailable(version, releasePage, downloadUrl);
+       });
+       connect(m_updateService, &UpdateCheckService::upToDate, this,
+               [this](const QString &current) {
+           QMessageBox::information(this, tr("Check for updates"),
+               tr("You are running XFB %1 — this is the latest version.").arg(current));
+       });
+       connect(m_updateService, &UpdateCheckService::checkFailed, this,
+               [this](const QString &error) {
+           QMessageBox::warning(this, tr("Check for updates"),
+               tr("Could not check for updates:\n%1").arg(error));
+       });
+
+       if (!QApplication::arguments().contains("--no-dialogs")) {
+           QTimer::singleShot(20000, this, [this]() {
+               m_updateCheckManual = false;
+               m_updateService->checkNow(false);
+           });
+           QTimer *dailyUpdateTimer = new QTimer(this);
+           connect(dailyUpdateTimer, &QTimer::timeout, this, [this]() {
+               m_updateCheckManual = false;
+               m_updateService->checkNow(false);
+           });
+           dailyUpdateTimer->start(24 * 60 * 60 * 1000);
+       }
+   }
+
+   // 432 Hz conversion menu entry (the live EQ/compressor controls live in
+   // the Audio FX tab next to the DJ tab)
+   {
+       QAction *conv432All = new QAction(QIcon(":/icons/flat/tuning-fork-64.png"),
+                                         tr("Convert all musics in the database to 432 Hz tuning"), this);
+       ui->menuDatabase->addAction(conv432All);
+       connect(conv432All, &QAction::triggered, this, &player::convertAllMusicsTo432);
+   }
+
+   // DJ decks: scratchable platters + performance FX
+   {
+       m_scratchClock.start();
+       ui->lp_1->installEventFilter(this);
+       ui->lp_2->installEventFilter(this);
+       ui->lp_1->setCursor(Qt::OpenHandCursor);
+       ui->lp_2->setCursor(Qt::OpenHandCursor);
+       ui->lp_1->setToolTip(tr("Grab the platter to scratch while playing"));
+       ui->lp_2->setToolTip(tr("Grab the platter to scratch while playing"));
+
+       auto wireDeckFx = [this](QDial *filterDial, QDial *echoDial, QPushButton *brakeBtn,
+                                QPushButton *backspinBtn, FxPlayer *deck, int deckIdx) {
+           auto applyFx = [filterDial, echoDial, deck]() {
+               deck->setDjFx(filterDial->value() / 100.0, echoDial->value() / 100.0);
+           };
+           connect(filterDial, &QDial::valueChanged, this, applyFx);
+           connect(echoDial, &QDial::valueChanged, this, applyFx);
+           connect(brakeBtn, &QPushButton::clicked, this, [this, deck, deckIdx]() {
+               startPlatterEffectAnimation(deckIdx, false);
+               deck->djBrake();
+           });
+           connect(backspinBtn, &QPushButton::clicked, this, [this, deck, deckIdx]() {
+               startPlatterEffectAnimation(deckIdx, true);
+               deck->djBackspin();
+           });
+       };
+       wireDeckFx(ui->lp1_dial_filter, ui->lp1_dial_echo,
+                  ui->lp1_bt_brake, ui->lp1_bt_backspin, lp1_Xplayer, 0);
+       wireDeckFx(ui->lp2_dial_filter, ui->lp2_dial_echo,
+                  ui->lp2_bt_brake, ui->lp2_bt_backspin, lp2_Xplayer, 1);
+
+       // When a deck stops on its own (brake, backspin, natural end),
+       // restore its play button and platter artwork
+       connect(lp1_Xplayer, &FxPlayer::playbackStateChanged, this,
+               [this](QMediaPlayer::PlaybackState s) {
+           if (s == QMediaPlayer::StoppedState) {
+               if (m_lpPlatterAnim[0])
+                   m_lpPlatterAnim[0]->stop();
+               ui->lp_1_bt_play->setDisabled(false);
+               ui->lp_1->setPixmap(QPixmap(":/images/lp_player_p0.png"));
+               if (movie) movie->stop();
+               lp_1_paused = false;
+               ui->lp_1_bt_pause->setStyleSheet("");
+           }
+       });
+       connect(lp2_Xplayer, &FxPlayer::playbackStateChanged, this,
+               [this](QMediaPlayer::PlaybackState s) {
+           if (s == QMediaPlayer::StoppedState) {
+               if (m_lpPlatterAnim[1])
+                   m_lpPlatterAnim[1]->stop();
+               ui->lp_1_bt_play_2->setDisabled(false);
+               ui->lp_2->setPixmap(QPixmap(":/images/lp_player_p0.png"));
+               if (movie2) movie2->stop();
+               lp_2_paused = false;
+               ui->lp_2_bt_pause->setStyleSheet("");
+           }
+       });
+   }
+
+   // Audio FX tab, right after the DJ tab (hide it via Options → ShowFxTab)
+   {
+       m_fxTabWidget = new AudioFxWidget(Xplayer, lp1_Xplayer, lp2_Xplayer, this);
+       auto *fxScroll = new QScrollArea(this);
+       fxScroll->setWidgetResizable(true);
+       fxScroll->setFrameShape(QFrame::NoFrame);
+       fxScroll->setWidget(m_fxTabWidget);
+       m_fxTabPage = fxScroll;
+
+       QSettings settings(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
+                              + "/xfb.conf", QSettings::IniFormat);
+       if (settings.value("ShowFxTab", true).toBool()) {
+           const int djIndex = ui->tabWidget_2->indexOf(ui->tab_dj);
+           ui->tabWidget_2->insertTab(djIndex + 1, m_fxTabPage,
+                                      QIcon(":/icons/flat/eq-fx-64.png"), tr("Audio FX"));
+       }
+
+       // The same settings are editable from the menu dialog too — refresh
+       // the tab's controls whenever it becomes visible.
+       connect(ui->tabWidget_2, &QTabWidget::currentChanged, this, [this](int idx) {
+           if (m_fxTabPage && m_fxTabWidget && ui->tabWidget_2->widget(idx) == m_fxTabPage)
+               m_fxTabWidget->reloadFromSettings();
+       });
+   }
+
+   qDebug() << "Player constructor completed successfully";
+
+
+}
+
+void player::registerAccessibilityServices()
+{
+    try {
+        auto* serviceContainer = ServiceContainer::instance();
+        if (!serviceContainer) {
+            qWarning() << "ServiceContainer not available - cannot register accessibility services";
+            return;
+        }
+        
+        // Register AccessibilityManager as a singleton service using template method
+        serviceContainer->registerSingleton<AccessibilityManager>();
+        
+        // Register AudioFeedbackService as a singleton service using template method
+        serviceContainer->registerSingleton<AudioFeedbackService>();
+        
+        // Register LiveRegionManager as a singleton service using template method
+        serviceContainer->registerSingleton<LiveRegionManager>();
+        
+        // Register PlaybackStatusAnnouncer as a singleton service using template method
+        serviceContainer->registerSingleton<PlaybackStatusAnnouncer>();
+        
+        // Register SystemStatusAnnouncer as a singleton service using template method
+        serviceContainer->registerSingleton<SystemStatusAnnouncer>();
+        
+        qDebug() << "Accessibility services registered successfully";
+    } catch (const std::exception& e) {
+        qCritical() << "Exception registering accessibility services:" << e.what();
+    } catch (...) {
+        qCritical() << "Unknown exception registering accessibility services";
+    }
 }
 
 void player::initializeAccessibility()
@@ -455,6 +1510,11 @@ void player::initializeAccessibility()
     try {
         // Get the accessibility manager from the service container
         auto* serviceContainer = ServiceContainer::instance();
+        if (!serviceContainer) {
+            qWarning() << "ServiceContainer not available - accessibility features disabled";
+            return;
+        }
+        
         auto* accessibilityManager = serviceContainer->resolve<AccessibilityManager>();
         
         if (accessibilityManager) {
@@ -469,39 +1529,209 @@ void player::initializeAccessibility()
         }
     } catch (const std::exception& e) {
         qCritical() << "Exception during accessibility initialization:" << e.what();
+    } catch (...) {
+        qCritical() << "Unknown exception during accessibility initialization";
     }
+}
+
+void player::closeEvent(QCloseEvent *event)
+{
+    // Force immediate clean exit on macOS to prevent crash-on-close.
+    // All cleanup that matters (Tor process, database) is handled by the OS
+    // when the process terminates. The Tor child process will receive SIGHUP.
+#ifdef Q_OS_MAC
+    // Stop Tor process — it's a child process that should be terminated explicitly
+    if (m_torNetworkService) {
+        m_torNetworkService->stopTorProcess();
+    }
+    // Stop external radio process
+    if (radio1.state() == QProcess::Running) {
+        radio1.kill();
+    }
+    // Stop the ngrok tunnel — _exit() below would orphan the agent process
+    if (m_ngrokService) {
+        m_ngrokService->stop();
+    }
+    // Force exit — bypasses all Qt destruction which causes the SIGSEGV
+    _exit(0);
+#endif
+
+    // Non-macOS: do graceful shutdown
+    if (QApplication* app = qobject_cast<QApplication*>(QApplication::instance())) {
+        app->disconnect(this);
+    }
+    
+    if (ui) {
+        if (ui->musicView) ui->musicView->setModel(nullptr);
+        if (ui->jinglesView) ui->jinglesView->setModel(nullptr);
+        if (ui->pubView) ui->pubView->setModel(nullptr);
+        if (ui->programsView) ui->programsView->setModel(nullptr);
+        if (ui->torrentsView) ui->torrentsView->setModel(nullptr);
+        if (ui->downloadsTableView) ui->downloadsTableView->setModel(nullptr);
+        if (ui->cBoxGenre1) ui->cBoxGenre1->setModel(nullptr);
+        if (ui->cBoxGenre2) ui->cBoxGenre2->setModel(nullptr);
+        if (ui->comboBox_random_add_genre) ui->comboBox_random_add_genre->setModel(nullptr);
+    }
+    
+    if (m_torNetworkService) {
+        m_torNetworkService->stopTorProcess();
+    }
+    if (m_torrentSearchService) {
+        m_torrentSearchService->cancelSearch();
+    }
+    if (m_ngrokService) {
+        m_ngrokService->stop();
+    }
+
+    if (stimer) stimer->stop();
+    if (icetimer) icetimer->stop();
+    if (butt_timer) butt_timer->stop();
+    if (recTimer) recTimer->stop();
+    if (adRefreshTimer) adRefreshTimer->stop();
+    
+    if (Xplayer) Xplayer->stop();
+    if (lp1_Xplayer) lp1_Xplayer->stop();
+    if (lp2_Xplayer) lp2_Xplayer->stop();
+    if (RadioPlayer) RadioPlayer->stop();
+    
+    if (radio1.state() == QProcess::Running) {
+        radio1.terminate();
+        radio1.waitForFinished(2000);
+    }
+    
+    if (audioRecorder && audioRecorder->recorderState() == QMediaRecorder::RecordingState) {
+        audioRecorder->stop();
+    }
+    
+    if (ServiceContainer::instance()) {
+        ServiceContainer::instance()->shutdownServices();
+    }
+    
+    if (adb.isOpen()) {
+        adb.close();
+    }
+    
+    event->accept();
+
+    // After the graceful cleanup above (Tor/processes stopped, models detached,
+    // services shut down, database closed), bypass Qt's automatic widget/member
+    // destruction. That teardown crashes (SIGSEGV) on exit due to ordering
+    // issues between the media players, services and the singleton
+    // ServiceContainer — the destructor would also shut services down a second
+    // time. macOS already force-exits above for the same reason; we do the same
+    // here now that all meaningful resources have been released explicitly.
+    std::_Exit(0);
 }
 
 player::~player()
 {
-    delete ui;
-    delete audioRecorder;
-    delete captureSession;
-    delete audioInput;
-    delete XplayerOutput;
-    delete lp1_XplayerOutput;
-    delete lp2_XplayerOutput;
-    delete adBanner;
+    // Stop Tor process first — must happen before Qt's event loop winds down
+    if (m_torNetworkService) {
+        m_torNetworkService->stopTorProcess();
+    }
+    
+    // Shutdown services to prevent access to destroyed objects
+    if (ServiceContainer::instance()) {
+        ServiceContainer::instance()->shutdownServices();
+    }
+    
+    // Stop all timers to prevent callbacks during destruction
+    if (stimer) stimer->stop();
+    if (icetimer) icetimer->stop();
+    if (butt_timer) butt_timer->stop();
+    if (recTimer) recTimer->stop();
+    if (adRefreshTimer) adRefreshTimer->stop();
+    
+    // Stop any ongoing operations
+    if (Xplayer && Xplayer->playbackState() == QMediaPlayer::PlayingState) {
+        Xplayer->stop();
+    }
+    if (lp1_Xplayer && lp1_Xplayer->playbackState() == QMediaPlayer::PlayingState) {
+        lp1_Xplayer->stop();
+    }
+    if (lp2_Xplayer && lp2_Xplayer->playbackState() == QMediaPlayer::PlayingState) {
+        lp2_Xplayer->stop();
+    }
+    
+    // Stop value-member media player and process (these are NOT pointers, so they
+    // will be destroyed when `player` is destroyed — make sure they're stopped first)
+    if (RadioPlayer) RadioPlayer->stop();
+    
+    if (radio1.state() == QProcess::Running) {
+        radio1.terminate();
+        if (!radio1.waitForFinished(2000)) {
+            radio1.kill();
+            radio1.waitForFinished(1000);
+        }
+    }
+    
+    // Clean up audio recording safely
+    if (audioRecorder) {
+        if (audioRecorder->recorderState() == QMediaRecorder::RecordingState) {
+            audioRecorder->stop();
+        }
+        audioRecorder->deleteLater();
+        audioRecorder = nullptr;
+    }
+    
+    // Clean up capture session safely
+    if (captureSession) {
+        captureSession->deleteLater();
+        captureSession = nullptr;
+    }
+    
+    // Clean up audio input safely
+    if (audioInput) {
+        audioInput->deleteLater();
+        audioInput = nullptr;
+    }
+    
+    // Don't manually delete audio outputs - they are managed by Qt's parent-child system
+    // The QMediaPlayer objects and their audio outputs will be cleaned up automatically
+    // when this QWidget (player) is destroyed, since they were created with 'this' as parent
+    
+    // Clean up ad banner safely
+    if (adBanner) {
+        adBanner->deleteLater();
+        adBanner = nullptr;
+    }
+    
+    // UI is automatically cleaned up by Qt's parent-child system
+    // Don't manually delete ui as it's managed by QWidget's destructor
 }
 
 // Generic helper to launch an external GUI application safely
 void player::launchExternalApplication(const QString& appName, const QString& filePath) {
     QString appPath = QStandardPaths::findExecutable(appName);
+    
+#ifdef Q_OS_MAC
+    // On macOS, also check /Applications for .app bundles
+    if (appPath.isEmpty()) {
+        QString macAppPath = "/Applications/" + appName.left(1).toUpper() + appName.mid(1) + ".app";
+        if (QFile::exists(macAppPath)) {
+            // Use 'open -a' to launch macOS apps
+            QStringList args;
+            args << "-a" << macAppPath << filePath;
+            if (QProcess::startDetached("open", args)) {
+                qInfo() << "Launched" << macAppPath << "with file:" << filePath;
+                return;
+            }
+        }
+    }
+#endif
+    
     if (appPath.isEmpty()) {
         qWarning() << "Cannot find executable for" << appName << "in system PATH.";
-        // Try opening with default handler as fallback?
+        // Try opening with default handler as fallback
         bool opened = QDesktopServices::openUrl(QUrl::fromLocalFile(filePath));
         if (!opened) {
              QMessageBox::warning(this, tr("Application Not Found"), tr("Could not find '%1' in your system's PATH, and could not open the file '%2' with the default application.").arg(appName, QFileInfo(filePath).fileName()));
-        } else {
-             QMessageBox::information(this, tr("Opening File"), tr("'%1' not found. Opening '%2' with the default application instead.").arg(appName, QFileInfo(filePath).fileName()));
         }
         return;
     }
 
     qInfo() << "Launching" << appName << " (" << appPath << ") with file:" << filePath;
     QStringList args;
-    // Most GUI apps take the file path as a direct argument
     args << filePath;
 
     if (!QProcess::startDetached(appPath, args)) {
@@ -521,9 +1751,8 @@ void player::getMediaInfoForFile(const QString& filePath) {
 
     QProcess *mediaInfoProcess = new QProcess(this);
     QStringList args;
-    // Request specific tags for easier parsing, or use --Output=JSON
-    args << "--Inform=General;%Artist%\\n%Title%\\n%Album%\\n%Genre%\\n%Duration/String3%\\n%FileSize/String%\\n%Format%\\n%OverallBitRate/String%"
-         << filePath;
+    // Use JSON output for robust parsing regardless of which tags are present.
+    args << "--Output=JSON" << filePath;
 
     qInfo() << "Getting MediaInfo:" << mediaInfoPath << args;
 
@@ -539,48 +1768,85 @@ void player::getMediaInfoForFile(const QString& filePath) {
              QMessageBox::warning(this, tr("Metadata Error"), tr("Failed to get metadata using 'mediainfo'.\n%1").arg(errorOutput));
         } else {
             qDebug() << "mediainfo output:\n" << output;
-            // ** TODO: Parse the 'output' string here! **
-            // The original parsing was extremely fragile (fixed indices).
-            // Need to parse based on the requested format or, better, use JSON.
-            // Example (NEEDS PROPER IMPLEMENTATION):
-            QStringList lines = output.split('\n');
-            if (lines.count() >= 8) { // Based on the requested format
-                 QString artist = lines[0];
-                 QString song = lines[1];
-                 QString album = lines[2];
-                 QString genre = lines[3];
-                 QString duration = lines[4];
-                 QString size = lines[5];
-                 QString format = lines[6];
-                 QString bitrate = lines[7];
 
-                 QString msg4box = tr("Artist: %1\nSong: %2\nAlbum: %3\nGenre: %4\nDuration: %5\nSize: %6\nFormat: %7\nBitrate: %8")
-                                     .arg(artist, song, album, genre, duration, size, format, bitrate);
+            // Parse mediainfo's JSON. Structure:
+            //   { "media": { "track": [ { "@type": "General", ... }, ... ] } }
+            QJsonObject general;
+            QJsonParseError perr;
+            const QJsonDocument doc = QJsonDocument::fromJson(output.toUtf8(), &perr);
+            if (perr.error == QJsonParseError::NoError && doc.isObject()) {
+                const QJsonArray tracks = doc.object().value("media").toObject()
+                                              .value("track").toArray();
+                for (const QJsonValue &tv : tracks) {
+                    const QJsonObject t = tv.toObject();
+                    if (t.value("@type").toString() == QLatin1String("General")) {
+                        general = t;
+                        break;
+                    }
+                }
+            }
 
-                 QMessageBox::StandardButton rpl = QMessageBox::question(this, tr("Apply this info to the database?"), msg4box, QMessageBox::Yes | QMessageBox::No);
-
-                 if (rpl == QMessageBox::Yes) {
-                     // Update Database (Use Prepared Statements!)
-                     QSqlDatabase db = QSqlDatabase::database("xfb_connection");
-                     QSqlQuery query(db);
-                     query.prepare("UPDATE musics SET artist = :artist, song = :song, genre1 = :genre, genre2 = :genre " // Assuming genre1/2 same here
-                                     "WHERE path = :path");
-                     query.bindValue(":artist", artist);
-                     query.bindValue(":song", song);
-                     query.bindValue(":genre", genre); // Or more complex genre mapping
-                     query.bindValue(":path", filePath);
-
-                     if (!query.exec()) {
-                          qWarning() << "Failed to update metadata in DB:" << query.lastError().text();
-                          QMessageBox::warning(this, tr("Database Error"), tr("Failed to update metadata in the database."));
-                     } else {
-                          qInfo() << "Metadata updated in DB for:" << filePath;
-                          update_music_table();
-                     }
-                 }
-            } else {
+            if (general.isEmpty()) {
                 qWarning() << "Could not parse mediainfo output:" << output;
-                 QMessageBox::warning(this, tr("Metadata Error"), tr("Could not parse the metadata received from 'mediainfo'."));
+                QMessageBox::warning(this, tr("Metadata Error"), tr("Could not parse the metadata received from 'mediainfo'."));
+            } else {
+                // Helper: return the first non-empty value among candidate keys.
+                auto field = [&general](std::initializer_list<const char*> keys) -> QString {
+                    for (const char *k : keys) {
+                        const QString v = general.value(QLatin1String(k)).toString().trimmed();
+                        if (!v.isEmpty()) return v;
+                    }
+                    return QString();
+                };
+
+                const QString artist   = field({"Performer", "Artist", "Album_Performer"});
+                const QString song     = field({"Title", "Track"});
+                const QString album    = field({"Album"});
+                const QString genre    = field({"Genre"});
+                const QString duration = field({"Duration_String3", "Duration_String", "Duration"});
+                const QString size     = field({"FileSize_String", "FileSize"});
+                const QString format   = field({"Format"});
+                const QString bitrate  = field({"OverallBitRate_String", "OverallBitRate"});
+
+                auto orDash = [](const QString &s) { return s.isEmpty() ? QStringLiteral("-") : s; };
+
+                const QString msg4box = tr("Artist: %1\nSong: %2\nAlbum: %3\nGenre: %4\nDuration: %5\nSize: %6\nFormat: %7\nBitrate: %8")
+                    .arg(orDash(artist), orDash(song), orDash(album), orDash(genre),
+                         orDash(duration), orDash(size), orDash(format), orDash(bitrate));
+
+                const QMessageBox::StandardButton rpl = QMessageBox::question(this,
+                    tr("Apply this info to the database?"), msg4box,
+                    QMessageBox::Yes | QMessageBox::No);
+
+                if (rpl == QMessageBox::Yes) {
+                    // Only update fields we actually found, so we don't overwrite
+                    // existing good data with blanks.
+                    QStringList sets;
+                    if (!artist.isEmpty()) sets << "artist = :artist";
+                    if (!song.isEmpty())   sets << "song = :song";
+                    if (!genre.isEmpty())  sets << "genre1 = :genre, genre2 = :genre";
+
+                    if (sets.isEmpty()) {
+                        QMessageBox::information(this, tr("Nothing to Update"),
+                            tr("The file did not contain artist, title or genre tags to apply."));
+                    } else {
+                        QSqlDatabase db = QSqlDatabase::database("xfb_connection");
+                        QSqlQuery query(db);
+                        query.prepare("UPDATE musics SET " + sets.join(", ") + " WHERE path = :path");
+                        if (!artist.isEmpty()) query.bindValue(":artist", artist);
+                        if (!song.isEmpty())   query.bindValue(":song", song);
+                        if (!genre.isEmpty())  query.bindValue(":genre", genre);
+                        query.bindValue(":path", filePath);
+
+                        if (!query.exec()) {
+                            qWarning() << "Failed to update metadata in DB:" << query.lastError().text();
+                            QMessageBox::warning(this, tr("Database Error"), tr("Failed to update metadata in the database."));
+                        } else {
+                            qInfo() << "Metadata updated in DB for:" << filePath;
+                            update_music_table();
+                        }
+                    }
+                }
             }
         }
         mediaInfoProcess->deleteLater();
@@ -613,11 +1879,14 @@ void player::updateConfig() {
 
     // --- Read values using settings.value() and assign to member variables ---
 
+    // Keep the config private to the owning user: it can contain credentials
+    SecretStore::restrictFile(configFilePath);
+
     SavePath = settings.value("SavePath").toString();
     Server_URL = settings.value("Server_URL").toString();
     Port = settings.value("Port", 0).toInt(); // Provide default, convert to int
     User = settings.value("User").toString();
-    Pass = settings.value("Pass").toString(); // Still insecure storage
+    Pass = SecretStore::open(settings.value("Pass").toString()); // stored obfuscated (see secretstore.h)
     ProgramsPath = settings.value("ProgramsPath").toString();
     MusicPath = settings.value("MusicPath").toString();
     JinglePath = settings.value("JinglePath").toString();
@@ -631,6 +1900,7 @@ void player::updateConfig() {
     normalization_soft = settings.value("Normalize_Soft", false).toBool();
     Disable_Volume = settings.value("Disable_Volume", false).toBool();
     darkMode = settings.value("DarkMode", false).toBool();
+    bool enableTorrents = settings.value("EnableTorrents", false).toBool();
 
     // Read recording info (description and potentially enum data)
     recDevice = settings.value("RecDevice").toString(); // Store description
@@ -640,6 +1910,13 @@ void player::updateConfig() {
 
     // Database path
     txt_selected_db = settings.value("Database").toString();
+
+    // Streaming client: restore the last used stream URL
+    if (ui && ui->txt_rol_stream_url) {
+        const QString streamUrl = settings.value("StreamClientURL").toString();
+        if (!streamUrl.isEmpty())
+            ui->txt_rol_stream_url->setText(streamUrl);
+    }
 
     // Role
     Role = settings.value("Role", "Client").toString(); // Default "Client"
@@ -684,6 +1961,42 @@ void player::updateConfig() {
     qDebug() << "ProgramsPath:" << ProgramsPath;
     // ... log other variables as needed ...
 
+    // Show or hide the Torrents tab based on the EnableTorrents setting
+    if (ui && ui->pubWidget) {
+        int torrentsTabIndex = ui->pubWidget->indexOf(ui->tabTorrents);
+        if (enableTorrents) {
+            // Re-add the tab if it was previously removed
+            if (torrentsTabIndex == -1) {
+                ui->pubWidget->addTab(ui->tabTorrents,
+                    QIcon(":/icons/flat/pirate-32.png"), tr("Torrents"));
+            }
+        } else {
+            // Remove the tab (widget is not deleted, just hidden from the tab bar)
+            if (torrentsTabIndex != -1) {
+                ui->pubWidget->removeTab(torrentsTabIndex);
+            }
+        }
+        qDebug() << "EnableTorrents setting:" << enableTorrents;
+    }
+
+    // Show or hide the Audio FX tab (next to the DJ tab)
+    bool showFxTab = settings.value("ShowFxTab", true).toBool();
+    if (ui && ui->tabWidget_2 && m_fxTabPage) {
+        int fxTabIndex = ui->tabWidget_2->indexOf(m_fxTabPage);
+        if (showFxTab && fxTabIndex == -1) {
+            const int djIndex = ui->tabWidget_2->indexOf(ui->tab_dj);
+            ui->tabWidget_2->insertTab(djIndex + 1, m_fxTabPage,
+                                       QIcon(":/icons/flat/eq-fx-64.png"), tr("Audio FX"));
+        } else if (!showFxTab && fxTabIndex != -1) {
+            ui->tabWidget_2->removeTab(fxTabIndex);
+        }
+        qDebug() << "ShowFxTab setting:" << showFxTab;
+    }
+
+    // Re-apply the FX chain settings (covers the 432 Hz switch in the
+    // Options dialog; no-op during construction, before the players exist)
+    applyStoredFxSettings();
+
     qDebug() << "Finished updating player configuration.";
 }
 
@@ -700,7 +2013,6 @@ void player::showTime()
 
 bool player::checkDbOpen() {
 
-    QSqlDatabase db = QSqlDatabase::database("xfb_connection");
     QString resourceDbPath = ":/adb.db";
     QString appDataPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
     if (appDataPath.isEmpty()) {
@@ -787,9 +2099,9 @@ bool player::checkDbOpen() {
     // --- Setup the QSqlDatabase connection ---
     if (QSqlDatabase::contains(connectionName)) {
          // Even if reusing, check if it's actually usable / still open correctly
-         if (db.isOpen() && !db.databaseName().isEmpty() ) {
+         if (adb.isOpen() && !adb.databaseName().isEmpty() ) {
              // Optional: Ping the database to be sure it's responsive
-             QSqlQuery pingQuery(db);
+             QSqlQuery pingQuery(adb);
              if (!pingQuery.exec("SELECT 1")) { // Simple query
                  qWarning() << "Ping query failed on existing open connection. Error:" << pingQuery.lastError().text();
                  qWarning() << "Connection state might be stale. Closing it.";
@@ -850,6 +2162,26 @@ bool player::checkDbOpen() {
     }
 
     qInfo() << "Database initialization successful. Connection '" << connectionName << "' is open.";
+    
+    // Create torrents table if it doesn't exist
+    QSqlQuery createTorrentsTable(adb);
+    QString createTorrentsTableSql = R"(
+        CREATE TABLE IF NOT EXISTS torrents (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            path TEXT NOT NULL,
+            size INTEGER,
+            date_added DATETIME DEFAULT CURRENT_TIMESTAMP,
+            status TEXT DEFAULT 'active'
+        )
+    )";
+    
+    if (!createTorrentsTable.exec(createTorrentsTableSql)) {
+        qWarning() << "Failed to create torrents table:" << createTorrentsTable.lastError().text();
+    } else {
+        qDebug() << "Torrents table created or already exists";
+    }
+    
     return true;
 }
 
@@ -921,91 +2253,191 @@ void::player::playlistContextMenu(const QPoint& pos){
 
 void player::musicViewContextMenu(const QPoint& pos) {
     QPoint globalPos = ui->musicView->mapToGlobal(pos);
-    QMenu thisMenu;
-    // Use constants or enums instead of strings for actions if preferred
-    const QString actionAddToBottom = tr("Add to the bottom of playlist");
-    const QString actionAddToTop = tr("Add to the top of the playlist");
-    const QString actionDeleteFromDB = tr("Delete this track from database");
-    const QString actionOpenAudacity = tr("Open this in Audacity");
-    const QString actionGetInfo = tr("Retrieve metadata from file (mediainfo)");
 
-    thisMenu.addAction(actionAddToBottom);
-    thisMenu.addAction(actionAddToTop);
+    QModelIndexList selectedIndexes = ui->musicView->selectionModel()->selectedRows(1); // column 1 (artist) — column 0 is hidden
+    if (selectedIndexes.isEmpty()) return;
+
+    bool multiSelect = selectedIndexes.size() > 1;
+    int count = selectedIndexes.size();
+
+    QMenu thisMenu;
+
+    // Playlist actions
+    QAction *actAddBottom = thisMenu.addAction(tr("Add to the bottom of playlist"));
+    QAction *actAddTop = thisMenu.addAction(tr("Add to the top of the playlist"));
     thisMenu.addSeparator();
-    thisMenu.addAction(actionDeleteFromDB);
+
+    // Batch edit actions (show submenu when multi-selected)
+    QAction *actSetGenre1 = nullptr;
+    QAction *actSetGenre2 = nullptr;
+    QAction *actSetArtist = nullptr;
+    QAction *actSetCountry = nullptr;
+
+    if (multiSelect) {
+        QMenu *batchMenu = thisMenu.addMenu(tr("Batch Edit (%1 tracks)").arg(count));
+        actSetGenre1 = batchMenu->addAction(tr("Set Genre 1..."));
+        actSetGenre2 = batchMenu->addAction(tr("Set Genre 2..."));
+        actSetArtist = batchMenu->addAction(tr("Set Artist..."));
+        actSetCountry = batchMenu->addAction(tr("Set Country..."));
+        thisMenu.addSeparator();
+    }
+
+    QAction *actRetune432 = thisMenu.addAction(
+        QIcon(":/icons/flat/tuning-fork-64.png"),
+        multiSelect ? tr("Retune %1 tracks to 432 Hz...").arg(count)
+                    : tr("Retune this track to 432 Hz..."));
     thisMenu.addSeparator();
-    thisMenu.addAction(actionOpenAudacity);
-    thisMenu.addAction(actionGetInfo);
+
+    QAction *actDelete = thisMenu.addAction(
+        multiSelect ? tr("Delete %1 tracks from database").arg(count)
+                    : tr("Delete this track from database"));
+    thisMenu.addSeparator();
+    QAction *actAudacity = thisMenu.addAction(tr("Open this in Audacity"));
+    QAction *actInfo = thisMenu.addAction(tr("Retrieve metadata from file (mediainfo)"));
 
     QAction* selectedItem = thisMenu.exec(globalPos);
-    if (!selectedItem) return; // No action selected
+    if (!selectedItem) return;
 
-    QModelIndexList selectedIndexes = ui->musicView->selectionModel()->selectedIndexes();
-    if (selectedIndexes.isEmpty()) return; // No row selected
+    QSqlDatabase db = QSqlDatabase::database("xfb_connection");
 
-    int rowidx = selectedIndexes.first().row(); // Use first selected index
-    QModelIndex pathIndex = ui->musicView->model()->index(rowidx, 7); // Assuming column 7 is path
-    if (!pathIndex.isValid()) return;
-    QString selectedFilePath = ui->musicView->model()->data(pathIndex).toString();
-
-    QString selectedActionText = selectedItem->text();
-
-    if (selectedActionText == actionAddToBottom) {
-        qDebug() << "Adding to bottom of playlist:" << selectedFilePath;
-        ui->playlist->addItem(selectedFilePath);
-        calculate_playlist_total_time();
-    } else if (selectedActionText == actionAddToTop) {
-        qDebug() << "Adding to top of playlist:" << selectedFilePath;
-        ui->playlist->insertItem(0, selectedFilePath);
-        calculate_playlist_total_time();
-    } else if (selectedActionText == actionDeleteFromDB) {
-        QMessageBox::StandardButton go = QMessageBox::question(this, tr("Confirm Deletion"), tr("Are you sure you want to delete the track '%1' from the database?").arg(QFileInfo(selectedFilePath).fileName()), QMessageBox::Yes | QMessageBox::No);
-        if (go == QMessageBox::Yes) {
-            QMessageBox::StandardButton rm = QMessageBox::question(this, tr("Delete File?"), tr("Also delete the file '%1' from the hard drive?").arg(QFileInfo(selectedFilePath).fileName()), QMessageBox::Yes | QMessageBox::No);
-
-            bool deleteFile = (rm == QMessageBox::Yes);
-            bool fileDeleted = false;
-
-            if (deleteFile) {
-                qInfo() << "Attempting to delete file from disk:" << selectedFilePath;
-                if (QFile::exists(selectedFilePath)) {
-                    if (QFile::remove(selectedFilePath)) {
-                        qInfo() << "File successfully deleted from disk.";
-                        fileDeleted = true;
-                    } else {
-                        qWarning() << "Failed to delete file from disk:" << selectedFilePath;
-                        QMessageBox::warning(this, "File Deletion Failed", tr("Could not delete the file:\n%1\nPlease check permissions.").arg(selectedFilePath));
-                        // Ask user if they still want to delete DB record? Maybe not. Let's abort.
-                         return;
-                    }
-                } else {
-                     qWarning() << "File not found for deletion, proceeding with DB removal.";
-                     fileDeleted = true; // Treat as success if not found
-                }
-            }
-
-            // Proceed with DB deletion if physical file deleted or not requested
-            QSqlDatabase db = QSqlDatabase::database("xfb_connection");
-            QSqlQuery sql(db);
-            sql.prepare("DELETE FROM musics WHERE path = :path");
-            sql.bindValue(":path", selectedFilePath);
-            if (sql.exec()) {
-                qInfo() << "Track removed from database:" << selectedFilePath;
-                update_music_table();
-                QMessageBox::information(this, tr("Success"), tr("Track removed from database.") + (deleteFile && fileDeleted ? tr("\nFile also deleted from disk.") : ""));
-            } else {
-                qCritical() << "Database Error deleting track:" << sql.lastError().text() << sql.lastQuery();
-                QMessageBox::critical(this, tr("Database Error"), tr("Failed to remove the track from the database:\n%1").arg(sql.lastError().text()));
-                // If DB delete failed after physical delete, we have an orphan file record potentially
-                if(deleteFile && fileDeleted){
-                     QMessageBox::warning(this, tr("Potential Issue"), tr("The file was deleted from disk, but removing the database record failed. Please check the database."));
-                }
+    // Helper lambdas
+    auto getSelectedPaths = [&]() -> QStringList {
+        QStringList paths;
+        for (const QModelIndex &idx : selectedIndexes) {
+            QModelIndex pathIdx = ui->musicView->model()->index(idx.row(), 7);
+            if (pathIdx.isValid()) {
+                QString p = ui->musicView->model()->data(pathIdx).toString();
+                if (!p.isEmpty()) paths << p;
             }
         }
-    } else if (selectedActionText == actionOpenAudacity) {
-        launchExternalApplication("audacity", selectedFilePath);
-    } else if (selectedActionText == actionGetInfo) {
-        getMediaInfoForFile(selectedFilePath);
+        return paths;
+    };
+    auto getSelectedIds = [&]() -> QList<int> {
+        QList<int> ids;
+        for (const QModelIndex &idx : selectedIndexes) {
+            QModelIndex idIdx = ui->musicView->model()->index(idx.row(), 0);
+            if (idIdx.isValid()) ids << ui->musicView->model()->data(idIdx).toInt();
+        }
+        return ids;
+    };
+
+    if (selectedItem == actAddBottom) {
+        for (const QString &path : getSelectedPaths())
+            ui->playlist->addItem(path);
+        calculate_playlist_total_time();
+
+    } else if (selectedItem == actRetune432) {
+        convertMusicsTo432(getSelectedPaths());
+
+    } else if (selectedItem == actAddTop) {
+        QStringList paths = getSelectedPaths();
+        for (int i = paths.size() - 1; i >= 0; --i)
+            ui->playlist->insertItem(0, paths[i]);
+        calculate_playlist_total_time();
+
+    } else if (selectedItem == actSetGenre1) {
+        bool ok;
+        QString genre = QInputDialog::getText(this, tr("Set Genre 1"),
+            tr("New Genre 1 for %1 tracks:").arg(count), QLineEdit::Normal, "", &ok);
+        if (ok && !genre.isEmpty()) {
+            QSqlQuery q(db);
+            QList<int> ids = getSelectedIds();
+            qDebug() << "Batch Set Genre 1: updating" << ids.size() << "tracks, IDs:" << ids;
+            for (int id : ids) {
+                q.prepare("UPDATE musics SET genre1 = :g WHERE id = :id");
+                q.bindValue(":g", genre);
+                q.bindValue(":id", id);
+                if (!q.exec()) {
+                    qWarning() << "Failed to update genre1 for id" << id << ":" << q.lastError().text();
+                }
+            }
+            update_music_table();
+            ui->statusBar->showMessage(tr("Genre 1 set to '%1' for %2 tracks").arg(genre).arg(ids.size()), 5000);
+        }
+
+    } else if (selectedItem == actSetGenre2) {
+        bool ok;
+        QString genre = QInputDialog::getText(this, tr("Set Genre 2"),
+            tr("New Genre 2 for %1 tracks:").arg(count), QLineEdit::Normal, "", &ok);
+        if (ok && !genre.isEmpty()) {
+            QSqlQuery q(db);
+            for (int id : getSelectedIds()) {
+                q.prepare("UPDATE musics SET genre2 = :g WHERE id = :id");
+                q.bindValue(":g", genre);
+                q.bindValue(":id", id);
+                q.exec();
+            }
+            update_music_table();
+            ui->statusBar->showMessage(tr("Genre 2 set to '%1' for %2 tracks").arg(genre).arg(count), 5000);
+        }
+
+    } else if (selectedItem == actSetArtist) {
+        bool ok;
+        QString artist = QInputDialog::getText(this, tr("Set Artist"),
+            tr("New Artist for %1 tracks:").arg(count), QLineEdit::Normal, "", &ok);
+        if (ok && !artist.isEmpty()) {
+            QSqlQuery q(db);
+            for (int id : getSelectedIds()) {
+                q.prepare("UPDATE musics SET artist = :a WHERE id = :id");
+                q.bindValue(":a", artist);
+                q.bindValue(":id", id);
+                q.exec();
+            }
+            update_music_table();
+            ui->statusBar->showMessage(tr("Artist set to '%1' for %2 tracks").arg(artist).arg(count), 5000);
+        }
+
+    } else if (selectedItem == actSetCountry) {
+        bool ok;
+        QString country = QInputDialog::getText(this, tr("Set Country"),
+            tr("New Country for %1 tracks:").arg(count), QLineEdit::Normal, "", &ok);
+        if (ok && !country.isEmpty()) {
+            QSqlQuery q(db);
+            for (int id : getSelectedIds()) {
+                q.prepare("UPDATE musics SET country = :c WHERE id = :id");
+                q.bindValue(":c", country);
+                q.bindValue(":id", id);
+                q.exec();
+            }
+            update_music_table();
+            ui->statusBar->showMessage(tr("Country set to '%1' for %2 tracks").arg(country).arg(count), 5000);
+        }
+
+    } else if (selectedItem == actDelete) {
+        QStringList paths = getSelectedPaths();
+        QMessageBox::StandardButton go = QMessageBox::question(this, tr("Confirm Deletion"),
+            tr("Are you sure you want to delete %1 track(s) from the database?").arg(paths.size()),
+            QMessageBox::Yes | QMessageBox::No);
+        if (go != QMessageBox::Yes) return;
+
+        QMessageBox::StandardButton rm = QMessageBox::question(this, tr("Delete Files?"),
+            tr("Also delete the %1 file(s) from the hard drive?").arg(paths.size()),
+            QMessageBox::Yes | QMessageBox::No);
+        bool deleteFiles = (rm == QMessageBox::Yes);
+
+        int deleted = 0;
+        QSqlQuery q(db);
+        for (const QString &path : paths) {
+            if (deleteFiles && QFile::exists(path)) {
+                if (!QFile::remove(path))
+                    qWarning() << "Failed to delete file:" << path;
+            }
+            q.prepare("DELETE FROM musics WHERE path = :path");
+            q.bindValue(":path", path);
+            if (q.exec()) deleted++;
+        }
+        update_music_table();
+        ui->statusBar->showMessage(tr("Deleted %1 track(s)").arg(deleted), 5000);
+
+    } else if (selectedItem == actAudacity) {
+        QStringList paths = getSelectedPaths();
+        if (!paths.isEmpty())
+            launchExternalApplication("audacity", paths.first());
+
+    } else if (selectedItem == actInfo) {
+        QStringList paths = getSelectedPaths();
+        if (!paths.isEmpty())
+            getMediaInfoForFile(paths.first());
     }
 }
 
@@ -1116,8 +2548,9 @@ void::player::pubViewContextMenu(const QPoint& pos){
            }
 
        if(selectedMenuItem==openWithAudacity){
-           QProcess sh;
-           sh.startDetached("sh",QStringList()<<"-c"<<"audacity \""+estevalor+"\"");
+           // Argument list instead of a shell string: file names must never
+           // be interpreted by a shell.
+           launchExternalApplication("audacity", estevalor);
        }
 
 
@@ -1364,6 +2797,116 @@ void player::programsViewContextMenu(const QPoint& pos) {
      }
 }
 
+void player::torrentsViewContextMenu(const QPoint& pos) {
+    QPoint globalPos = ui->torrentsView->mapToGlobal(pos);
+    QMenu thisMenu;
+    const QString actionDownload = tr("Download Torrent");
+    const QString actionDownloadAndStream = tr("Download and Stream");
+    const QString actionCopyMagnet = tr("Copy Magnet Link");
+    const QString actionViewDetails = tr("View Details");
+
+    thisMenu.addAction(actionDownload);
+    thisMenu.addAction(actionDownloadAndStream);
+    thisMenu.addSeparator();
+    thisMenu.addAction(actionCopyMagnet);
+    thisMenu.addAction(actionViewDetails);
+
+    QAction* selectedItem = thisMenu.exec(globalPos);
+    if (!selectedItem) return;
+
+    QModelIndexList selectedIndexes = ui->torrentsView->selectionModel()->selectedIndexes();
+    if (selectedIndexes.isEmpty()) return;
+
+    int rowidx = selectedIndexes.first().row();
+    QModelIndex nameIndex = ui->torrentsView->model()->index(rowidx, 0);
+    if (!nameIndex.isValid()) return;
+    
+    // Get the torrent result data
+    QVariant resultData = nameIndex.data(Qt::UserRole);
+    if (!resultData.isValid()) return;
+    
+    TorrentSearchResult result = resultData.value<TorrentSearchResult>();
+    QString selectedActionText = selectedItem->text();
+
+    if (selectedActionText == actionDownload) {
+        // Show legal warning before download
+        QMessageBox::StandardButton reply = QMessageBox::question(this, 
+            tr("Download Confirmation"), 
+            tr("⚠️ LEGAL RESPONSIBILITY ⚠️\n\n"
+               "You are about to download: %1\n\n"
+               "By proceeding, you confirm that:\n"
+               "• You have the legal right to download this content\n"
+               "• The content is not copyrighted or you own the rights\n"
+               "• You comply with all applicable laws\n\n"
+               "XFB is not responsible for any illegal downloads.\n\n"
+               "Do you want to proceed?").arg(result.name),
+            QMessageBox::Yes | QMessageBox::No);
+        
+        if (reply == QMessageBox::Yes && m_torrentDownloadService) {
+            if (!ensureTorrentClient()) {
+                return;
+            }
+            QString downloadId = m_torrentDownloadService->startDownload(result.magnetLink, result.name);
+            if (!downloadId.isEmpty()) {
+                QMessageBox::information(this, tr("Download Started"), 
+                                        tr("Download started for: %1").arg(result.name));
+            }
+        }
+    } else if (selectedActionText == actionDownloadAndStream) {
+        // Show legal warning before download
+        QMessageBox::StandardButton reply = QMessageBox::question(this, 
+            tr("Stream Confirmation"), 
+            tr("⚠️ LEGAL RESPONSIBILITY ⚠️\n\n"
+               "You are about to download and stream: %1\n\n"
+               "By proceeding, you confirm that:\n"
+               "• You have the legal right to access this content\n"
+               "• The content is not copyrighted or you own the rights\n"
+               "• You comply with all applicable laws\n\n"
+               "Streaming will begin once enough data is downloaded.\n\n"
+               "Do you want to proceed?").arg(result.name),
+            QMessageBox::Yes | QMessageBox::No);
+        
+        if (reply == QMessageBox::Yes && m_torrentDownloadService) {
+            if (!ensureTorrentClient()) {
+                return;
+            }
+            QString downloadId = m_torrentDownloadService->startDownload(result.magnetLink, result.name);
+            if (!downloadId.isEmpty()) {
+                m_torrentDownloadService->enableStreaming(downloadId);
+                QMessageBox::information(this, tr("Streaming Started"), 
+                                        tr("Download and streaming started for: %1\n"
+                                           "Playback will begin automatically once ready.").arg(result.name));
+            }
+        }
+    } else if (selectedActionText == actionCopyMagnet) {
+        if (!result.magnetLink.isEmpty()) {
+            QClipboard *clipboard = QApplication::clipboard();
+            clipboard->setText(result.magnetLink);
+            QMessageBox::information(this, tr("Copied"), tr("Magnet link copied to clipboard."));
+        } else {
+            QMessageBox::warning(this, tr("Error"), tr("No magnet link available for this torrent."));
+        }
+    } else if (selectedActionText == actionViewDetails) {
+        QString details = tr("Torrent Details:\n\n"
+                           "Name: %1\n"
+                           "Size: %2\n"
+                           "Seeders: %3\n"
+                           "Leechers: %4\n"
+                           "Upload Date: %5\n"
+                           "Uploader: %6\n"
+                           "Category: %7")
+                         .arg(result.name)
+                         .arg(result.size)
+                         .arg(result.seeders)
+                         .arg(result.leechers)
+                         .arg(result.uploadDate)
+                         .arg(result.uploader)
+                         .arg(result.category);
+        
+        QMessageBox::information(this, tr("Torrent Details"), details);
+    }
+}
+
 
 // Helper to get duration using exiftool (async)
 void player::getDurationForFile(const QString& filePath, std::function<void(const QString&, const QString&)> callback) {
@@ -1439,6 +2982,28 @@ void player::on_btPlay_clicked(){
 }
 
 void player::playNextMedia() {
+    // Check if we're already in a playNextMedia operation to prevent re-entry
+    static thread_local bool inPlayNextMedia = false;
+    if (inPlayNextMedia) {
+        qDebug() << "playNextMedia already in progress, skipping to prevent deadlock";
+        return;
+    }
+    
+    // Set the flag to prevent re-entry
+    inPlayNextMedia = true;
+    
+    // Ensure cleanup on function exit
+    auto guard = [&]() { inPlayNextMedia = false; };
+    QScopeGuard scopeGuard(guard);
+    
+    // Validate UI components
+    if (!ui || !ui->playlist) {
+        qCritical() << "UI or playlist widget is null in playNextMedia!";
+        return;
+    }
+    
+    // All playlist operations run on the main thread — no mutex needed.
+    
     // Increment the playlist index and play the next media
     if (XplaylistUrls.isEmpty()) {
         qDebug() << "Playlist is empty, cannot play next media";
@@ -1452,17 +3017,23 @@ void player::playNextMedia() {
         if (PlayMode == "Playing_Segue") {
             // In segue mode, try to get the next song from the playlist widget
             playNextSong();
+            return;
         } else {
             // Otherwise, stop playback
+            m_manualAdvancing = true;
             Xplayer->stop();
+            m_manualAdvancing = false;
             ui->btPlay->setStyleSheet("");
             ui->btPlay->setText(tr("Play"));
             PlayMode = "stopped";
+            return;
         }
     } else {
         // Play the next media in the playlist
+        m_manualAdvancing = true;
         Xplayer->setSource(XplaylistUrls[XplaylistIndex]);
         Xplayer->play();
+        m_manualAdvancing = false;
     }
 }
 
@@ -1479,12 +3050,43 @@ void player::playPreviousMedia() {
         XplaylistIndex = XplaylistUrls.size() - 1;
     }
 
+    m_manualAdvancing = true;
     Xplayer->setSource(XplaylistUrls[XplaylistIndex]);
     Xplayer->play();
+    m_manualAdvancing = false;
 }
 
 void player::playNextSong(){
+    // Check if we're already in a playNextSong operation to prevent deadlock
+    static thread_local bool inPlayNextSong = false;
+    if (inPlayNextSong) {
+        qDebug() << "playNextSong already in progress, skipping to prevent deadlock";
+        return;
+    }
+    
+    // Set the flag to prevent re-entry
+    inPlayNextSong = true;
+    
+    // Ensure cleanup on function exit
+    auto guard = [&]() { inPlayNextSong = false; };
+    QScopeGuard scopeGuard(guard);
+    
+    // Recursion protection
+    if (s_recursionDepth >= MAX_RECURSION_DEPTH) {
+        qWarning() << "Maximum recursion depth reached in playNextSong, stopping to prevent stack overflow";
+        return;
+    }
+    s_recursionDepth++;
+    
+    // Ensure cleanup on function exit
+    auto recursionGuard = [this]() { s_recursionDepth--; };
+    QScopeGuard recursionScopeGuard(recursionGuard);
 
+    // Validate UI components (no mutex needed for read-only checks)
+    if (!ui || !ui->playlist) {
+        qCritical() << "UI or playlist widget is null in playNextSong!";
+        return;
+    }
 
     QSqlDatabase db = QSqlDatabase::database("xfb_connection");
     if (!db.isOpen()) {
@@ -1500,12 +3102,45 @@ void player::playNextSong(){
     if(PlayMode=="Playing_Segue"){
         qDebug()<<"The white rabit is Playing_segue";
 
+        // All playlist operations run on the main thread — no mutex needed.
+        // The re-entry guard above prevents recursive calls.
+        
+            // Check if playlist has items and validate first item
+            if(ui->playlist->count() <= 0){
+                qDebug()<<"Playlist is empty, cannot play next song";
+                if(autoMode==1){
+                    qDebug()<<"Trying to get more songs since we are in autoMode...";
+                    int currentPlaylistCount = ui->playlist->count();
+                    playlistAboutToFinish();
+                    if(ui->playlist->count() <= currentPlaylistCount) {
+                        qDebug()<<"No new items added to playlist, stopping playback";
+                        Xplayer->stop();
+                        ui->btPlay->setStyleSheet("");
+                        ui->btPlay->setText(tr("Play"));
+                        PlayMode = "stopped";
+                        return;
+                    }
+                    // Songs were added — fall through to play the first one
+                } else {
+                    // Auto Mode is off and the playlist is exhausted: stop
+                    // cleanly and return the Play button to its stopped state.
+                    qDebug()<<"Playlist empty and autoMode off — stopping playback";
+                    Xplayer->stop();
+                    ui->btPlay->setStyleSheet("");
+                    ui->btPlay->setText(tr("Play"));
+                    PlayMode = "stopped";
+                    return;
+                }
+            }
 
-        if(ui->playlist->count()>0){
+            // Safely get the first playlist item
+            QListWidgetItem* firstItem = ui->playlist->item(0);
+            if (!firstItem) {
+                qCritical() << "First playlist item is null despite count > 0!";
+                return;
+            }
 
-
-            QString itemDaPlaylist = ui->playlist->item(0)->text();
-
+            QString itemDaPlaylist = firstItem->text();
             qDebug()<<"itemDaPlaylist has value "<<itemDaPlaylist;
 
             if((lastPlayedSong!=itemDaPlaylist)||(autoMode==0)){
@@ -1516,13 +3151,20 @@ void player::playNextSong(){
                 XplaylistUrls.append(QUrl::fromLocalFile(itemDaPlaylist));
                 XplaylistIndex = 0;
 
+                // Prevent playbackStateChanged from triggering playNextMedia
+                // while we're changing the source
+                m_manualAdvancing = true;
+                onAbout2Finish = 0;  // Reset so playlistAboutToFinish can fire for the new track
+
+                // Clear previous source first to release any stuck AVFoundation session
+                Xplayer->setSource(QUrl());
+
                 // Set the media to play
                 Xplayer->setSource(XplaylistUrls[XplaylistIndex]);
 
                 lastPlayedSong = itemDaPlaylist;
 
                 int dotsNumInString = itemDaPlaylist.count(".");
-
                 qDebug()<<"dotsNumInString has value: "<<dotsNumInString;
 
                 QFileInfo fileName(itemDaPlaylist);
@@ -1537,134 +3179,124 @@ void player::playNextSong(){
                 qDebug()<<"historyList has "<<hlistcout<<" items";
 
                 if(hlistcout > 99){
-                    qDebug()<<"HistoryList is beeing cleaned beacuse it's over 100 records now...";
-                    delete ui->historyList->item(0);
+                    qDebug()<<"HistoryList is being cleaned because it's over 100 records now...";
+                    QListWidgetItem* itemToDelete = ui->historyList->item(0);
+                    if (itemToDelete) {
+                        delete itemToDelete;
+                    }
                 }
 
                 Xplayer->play();
+                
+                // Re-enable automatic advancement now that playback has started
+                m_manualAdvancing = false;
+                
+                // Start the watchdog timer to detect stalled playback
+                m_lastKnownPosition = -1;
+                m_stallCount = 0;
+                m_playbackWatchdog->start();
 
-                delete ui->playlist->item(0);
+                // Safely delete the first playlist item
+                QListWidgetItem* itemToDelete = ui->playlist->item(0);
+                if (itemToDelete) {
+                    delete itemToDelete;
+                }
 
                 if(ui->checkBox_update_last_played_values->isChecked()){
-
-                    QSqlQuery* qry = new QSqlQuery(db);
-                    QString qrystr = "update musics set last_played = '"+now.toString("yyyy-MM-dd || hh:mm:ss")+"' where path = \""+lastPlayedSong+"\"";
-                    qry->exec(qrystr);
-
-                    qrystr = "update musics set played_times = played_times+1 where path = \""+lastPlayedSong+"\"";
-                    qry->exec(qrystr);
-
-                }
-
-            if(ui->checkBox_random_jingles->isChecked()){
-
-                int num = ui->spinBox_random_jingles_interval->value();
-
-                qDebug()<<"Adding a new jingle every "<<num<<" songs.. (setting checkbox to false if value is zero..)";
-
-                if(num==0){
-                    ui->checkBox_random_jingles->setChecked(false);
-
-                } else {
-
-                    if(jingleCadaNumMusicas==num){
-                        jingleCadaNumMusicas = 0;
-                        qDebug()<<"Adding a jingle..";
-
-                        int num = 1;
-                        checkDbOpen();
-                        QSqlQuery query(db);
-                        query.prepare("select path from jingles order by random() limit :num");
-                        query.bindValue(":num", num);
-                        if(query.exec())
-                        {
-                            qDebug() << "SQL query executed: " << query.lastQuery();
-
-                            while(query.next()){
-                                QString path = query.value(0).toString();
-                                ui->playlist->insertItem(0,path);
-
-                                qDebug() << "autoMode random jingle chooser adding: " << path;
-
-                                }
-
-                            } else {
-                            qDebug() << "SQL ERROR: " << query.lastError();
-                            qDebug() << "SQL was: " << query.lastQuery();
-
-                        }
-
-                    } else {
-
-                        jingleCadaNumMusicas++;
-
-                        qDebug()<<"jingleCadaNumMusicas incremented to "<<jingleCadaNumMusicas;
-
+                    // Prepared statements: file paths may contain quotes
+                    QSqlQuery qry(db);
+                    qry.prepare("update musics set last_played = :ts where path = :path");
+                    qry.bindValue(":ts", now.toString("yyyy-MM-dd || hh:mm:ss"));
+                    qry.bindValue(":path", lastPlayedSong);
+                    if (!qry.exec()) {
+                        qWarning() << "Failed to update last_played:" << qry.lastError().text();
                     }
 
+                    qry.prepare("update musics set played_times = played_times+1 where path = :path");
+                    qry.bindValue(":path", lastPlayedSong);
+                    if (!qry.exec()) {
+                        qWarning() << "Failed to update played_times:" << qry.lastError().text();
+                    }
                 }
 
+                if(ui->checkBox_random_jingles->isChecked()){
+                    int num = ui->spinBox_random_jingles_interval->value();
+                    qDebug()<<"Adding a new jingle every "<<num<<" songs.. (setting checkbox to false if value is zero..)";
+
+                    if(num==0){
+                        ui->checkBox_random_jingles->setChecked(false);
+                    } else {
+                        if(jingleCadaNumMusicas==num){
+                            jingleCadaNumMusicas = 0;
+                            qDebug()<<"Adding a jingle..";
+
+                            int jingleNum = 1;
+                            checkDbOpen();
+                            QSqlQuery query(db);
+                            query.prepare("select path from jingles order by random() limit :num");
+                            query.bindValue(":num", jingleNum);
+                            if(query.exec())
+                            {
+                                qDebug() << "SQL query executed: " << query.lastQuery();
+
+                                while(query.next()){
+                                    QString path = query.value(0).toString();
+                                    ui->playlist->insertItem(0,path);
+                                    qDebug() << "autoMode random jingle chooser adding: " << path;
+                                }
+                            } else {
+                                qDebug() << "SQL ERROR: " << query.lastError();
+                                qDebug() << "SQL was: " << query.lastQuery();
+                            }
+                        } else {
+                            jingleCadaNumMusicas++;
+                            qDebug()<<"jingleCadaNumMusicas incremented to "<<jingleCadaNumMusicas;
+                        }
+                    }
+                }
+            } else {
+                qDebug()<<"lastplayesong has the same value that itemdaplaylist...";
             }
-
-
-        } else {
-            qDebug()<<"lastplayesong has the same value that itemdaplaylist...";
-        }
-
     } else {
-
         if(autoMode==1){
-            qDebug()<<"Almost giving up dude.. there's nothing to play.. but trying again since we are in autoMode..";
-            // Prevent infinite recursion by checking if playlist is still empty after playlistAboutToFinish
+            qDebug()<<"PlayMode is not Playing_Segue but autoMode is on.. trying to get songs..";
             int currentPlaylistCount = ui->playlist->count();
             playlistAboutToFinish();
-            if(ui->playlist->count() > currentPlaylistCount) {
-                // Only recurse if new items were added to the playlist
-                playNextSong();
-            } else {
-                qDebug()<<"No new items added to playlist, stopping to prevent infinite recursion";
+            if(ui->playlist->count() <= currentPlaylistCount) {
+                qDebug()<<"No new items added to playlist, stopping";
                 Xplayer->stop();
                 ui->btPlay->setStyleSheet("");
                 ui->btPlay->setText(tr("Play"));
                 PlayMode = "stopped";
+                return;
             }
-            return;
+            // Songs were added but PlayMode isn't segue — just return, user needs to click play
         }
 
         qDebug()<<"I'm giving up dude.. there's nothing to play..";
-        Xplayer->stop();
-        ui->btPlay->setStyleSheet("");
-        ui->btPlay->setText(tr("Play"));
-        PlayMode = "stopped";
-
     }
-
-
-
-
-} else if(PlayMode=="Playing_StopAtNextOne"){
-    qDebug()<<"The white rabit is Playing_StopAtNextOne";
-    Xplayer->stop();
-    ui->btPlay->setStyleSheet("");
-    ui->btPlay->setText(tr("Play"));
-    PlayMode = "stopped";
-
-} else if(PlayMode=="stopped"){
-    qDebug()<<"The white rabit is stopped";
-}
-
-calculate_playlist_total_time();
-
 }
 
 void player::on_btStop_clicked()
 {
+    m_manualAdvancing = true;  // Prevent playbackStateChanged from triggering playNextMedia
+    
+    // Forcefully reset the media player to recover from any stuck state
+    // (AVFoundation on macOS can hang on certain OGG files)
     Xplayer->stop();
+    Xplayer->setSource(QUrl());  // Clear the source to fully release AVFoundation resources
+    
+    m_manualAdvancing = false;
+    m_playbackWatchdog->stop();
+    m_stallCount = 0;
     ui->btPlay->setStyleSheet("");
     ui->btPlay->setText(tr("Play"));
     PlayMode = "stopped";
     XplaylistUrls.clear();
     XplaylistIndex = 0;
+    trackTotalDuration = 0;
+    onAbout2Finish = 0;
+    lastPlayedSong = "";  // Reset so the same song can be played again after stop
 }
 
 void player::on_sliderProgress_sliderMoved(int position)
@@ -1682,66 +3314,42 @@ void player::on_sliderVolume_sliderMoved(int position)
 
 void player::onPositionChanged(qint64 position)
 {
-
      ui->sliderProgress->setValue(position);
 
-    int valor = (position*100)/trackTotalDuration;
-
-    QString tamanhoDoValor = QString::number(valor);
-    //qDebug()<<"Tamanho do valor: "<<tamanhoDoValor;
-
-    QStringList segundoValorTamanhoDoValor = tamanhoDoValor.split("");
-      //qDebug() << "O segundo valor de TamanhoDoValor é: " << segundoValorTamanhoDoValor;
-
-
-    if(segundoValorTamanhoDoValor[2]=="0" && valor != lastTrackPercentage)
-    {
-        qDebug()<<"trackPercentage: "<<valor;
-        lastTrackPercentage = valor;
+    // Guard against division by zero (duration may not be known yet for some formats)
+    if (trackTotalDuration <= 0) {
+        // Just update the elapsed time display without percentage calculations
+        int segundos = position / 1000;
+        int minutos = segundos / 60;
+        segundos = segundos % 60;
+        int horas = minutos / 60;
+        minutos = minutos % 60;
+        QString txtElapsedTimeLable = QString("%1:%2:%3")
+            .arg(horas, 2, 10, QChar('0'))
+            .arg(minutos, 2, 10, QChar('0'))
+            .arg(segundos, 2, 10, QChar('0'));
+        ui->txtDuration->setText(txtElapsedTimeLable);
+        return;
     }
+
+    int valor = (int)((position * 100) / trackTotalDuration);
 
     if(valor >= 80 && onAbout2Finish == 0){
          playlistAboutToFinish();
      }
 
     int segundos = position / 1000;
-    int minutos = 0;
-    int horas = 0;
-    QString xsegundos;
-    QString xminutos;
-    QString xhoras;
-    while(segundos>60)
-    {
-      ++minutos;
-      segundos-=60;
-    }
-    while(minutos>60)
-    {
-      ++horas;
-      minutos-=60;
-    }
+    int minutos = segundos / 60;
+    segundos = segundos % 60;
+    int horas = minutos / 60;
+    minutos = minutos % 60;
 
-    if(segundos<10)
-    {
-      xsegundos = "0"+QString::number(segundos);
-    } else {
-      xsegundos = QString::number(segundos);
-    }
-    if(minutos<10)
-    {
-      xminutos = "0"+QString::number(minutos);
-    } else {
-      xminutos = QString::number(minutos);
-    }
-    if(horas<10)
-    {
-      xhoras = "0"+QString::number(horas);
-    } else {
-      xhoras = QString::number(horas);
-    }
-    QString txtElapsedTimeLable =  xhoras+":"+xminutos+":"+xsegundos+" of "+txtDuration;
+    QString txtElapsedTimeLable = QString("%1:%2:%3 of %4")
+        .arg(horas, 2, 10, QChar('0'))
+        .arg(minutos, 2, 10, QChar('0'))
+        .arg(segundos, 2, 10, QChar('0'))
+        .arg(txtDuration);
     ui->txtDuration->setText(txtElapsedTimeLable);
-
 }
 
 void player::durationChanged(qint64 position)
@@ -1808,7 +3416,7 @@ void player::currentMediaChanged(const QUrl &content)
 
 }
 
-void player::volumeChanged(int volume){
+void player::volumeChanged(float volume){
     qDebug()<<"Volume: "<<volume;
 }
 
@@ -1898,7 +3506,7 @@ void player::lp1_onPositionChanged(qint64 position)
         lp1_Xplayer->stop();
         ui->lp_1_bt_play->setDisabled(false);
         ui->lp_1->setPixmap(QPixmap(":/images/lp_player_p0.png"));
-        movie->stop();
+        if (movie) movie->stop();
         lp_1_paused = false;
         ui->lp_1_bt_pause->setStyleSheet("");
         ui->lbl_lp1_remaining->setText("");
@@ -1966,7 +3574,7 @@ void player::lp1_currentMediaChanged(const QUrl &content)
    qDebug()<<"LP 1 Current Media Changed..";
 }
 
-void player::lp1_volumeChanged(int volume){
+void player::lp1_volumeChanged(float volume){
     qDebug()<<"LP 1 Volume: "<<volume;
 }
 
@@ -2058,7 +3666,7 @@ void player::lp2_onPositionChanged(qint64 position)
         lp2_Xplayer->stop();
         ui->lp_1_bt_play_2->setDisabled(false);
         ui->lp_2->setPixmap(QPixmap(":/images/lp_player_p0.png"));
-        movie->stop();
+        if (movie2) movie2->stop();  // was movie (LP1's animation) — wrong deck
         lp_2_paused = false;
         ui->lp_2_bt_pause->setStyleSheet("");
         ui->lbl_lp2_remaining->setText("");
@@ -2123,7 +3731,7 @@ void player::lp2_currentMediaChanged(const QUrl &content)
     qDebug()<<"LP 2 Current Media Changed..";
 }
 
-void player::lp2_volumeChanged(int volume){
+void player::lp2_volumeChanged(float volume){
     qDebug()<<"LP 2 Volume: "<<volume;
 }
 
@@ -2204,6 +3812,19 @@ void player::update_music_table() {
     } else {
         ui->programsView->setModel(programsmodel);
          qDebug() << "'programs' table model set.";
+        // Configure view if needed
+    }
+
+    // --- Populate Torrents table ---
+    delete ui->torrentsView->model(); // Delete old model
+    QSqlTableModel *torrentsmodel = new QSqlTableModel(this, db); // Pass the CORRECT db handle
+    torrentsmodel->setTable("torrents");
+    if (!torrentsmodel->select()) {
+        qWarning() << "Failed to select 'torrents' table:" << torrentsmodel->lastError().text();
+        delete torrentsmodel;
+    } else {
+        ui->torrentsView->setModel(torrentsmodel);
+         qDebug() << "'torrents' table model set.";
         // Configure view if needed
     }
 
@@ -2374,55 +3995,19 @@ void player::dragEnterEvent(QDragEnterEvent *event)
 
 void player::on_musicView_pressed(const QModelIndex &index)
 {
-
-indexJust3rdDropEvt=0;
-
-QSqlDatabase db = QSqlDatabase::database("xfb_connection");
-    ui->musicView->selectRow(index.row());
-    int rowidx = ui->musicView->selectionModel()->currentIndex().row();
+    indexJust3rdDropEvt=0;
+    int rowidx = index.row();
     estevalor = ui->musicView->model()->data(ui->musicView->model()->index(rowidx,7)).toString();
     qDebug () << "Music path: [" << estevalor << "]";
+    xaction = "drag_to_music_playlist";
 
-            xaction = "drag_to_music_playlist";
-            //check if file exists and avoid adding if it does not
-            bool ha = QFile::exists (estevalor);
-            if(!ha){
-
-                QMessageBox::StandardButton reply;
-                reply = QMessageBox::question(this, "The file does NOT exist?", "It seams like the file does NOT exist on the hard drive... Or there is a problem reading it. Should it be deleted from the database?",
-                                              QMessageBox::Yes|QMessageBox::No);
-                if (reply == QMessageBox::Yes) {
-                    qDebug() << "the file should be deleted from the database cause it does not exist in the hd (or path was changed)";
-                    checkDbOpen();
-                    QSqlQuery* qry=new QSqlQuery(db);
-                      qry->prepare("delete from musics where path = :thpath");
-                      qry->bindValue(":thpath",estevalor);
-
-                     if(qry->exec()){
-                          qDebug() << "Music Deleted from database! last query was:"<< qry->lastQuery();
-                          update_music_table();
-                     } else {
-                         qDebug() << "There was an error deleting the music from the database"<< qry->lastError() << qry->lastQuery();
-                     }
-                } else {
-                  qDebug() << "keeping invalid record in db... please fix path manually..";
-                }
-
-            } else {
-
-                //the file DOES exist .. :-);
-
-                QDrag *drag = new QDrag(this);
-                QMimeData *mimeData = new QMimeData;
-
-                mimeData->setData(text, "drag_to_music_playlist");
-                drag->setMimeData(mimeData);
-                Qt::DropAction dropAction = drag->exec(Qt::CopyAction);
-                qDebug() << "DropAction near 1081 has: " << dropAction;
-
-
-            }
-
+    // Create manual QDrag so the main window's dropEvent receives it
+    QByteArray text = estevalor.toUtf8();
+    QDrag *drag = new QDrag(this);
+    QMimeData *mimeData = new QMimeData;
+    mimeData->setData("drag_to_music_playlist", text);
+    drag->setMimeData(mimeData);
+    drag->exec(Qt::CopyAction);
 }
 
 void player::on_jinglesView_pressed(const QModelIndex &index)
@@ -2589,6 +4174,145 @@ checkDbOpen();
 
 }
 
+void player::on_torrentsView_pressed(const QModelIndex &index)
+{
+    indexJust3rdDropEvt=0;
+
+    ui->torrentsView->selectRow(index.row());
+    int rowidx = ui->torrentsView->selectionModel()->currentIndex().row();
+    
+    // Check if this is a torrent search result (QStandardItemModel) or a database record (QSqlTableModel)
+    QModelIndex nameIndex = ui->torrentsView->model()->index(rowidx, 0);
+    QVariant resultData = nameIndex.data(Qt::UserRole);
+    
+    if (resultData.isValid() && resultData.canConvert<TorrentSearchResult>()) {
+        // This is a search result — show download context menu instead of treating as a local file
+        TorrentSearchResult result = resultData.value<TorrentSearchResult>();
+        
+        QMenu menu(this);
+        QAction *downloadAction = menu.addAction(tr("Download Torrent"));
+        QAction *downloadStreamAction = menu.addAction(tr("Download and Stream"));
+        menu.addSeparator();
+        QAction *copyMagnetAction = menu.addAction(tr("Copy Magnet Link"));
+        
+        QAction *selected = menu.exec(QCursor::pos());
+        if (!selected) return;
+        
+        if (selected == copyMagnetAction) {
+            if (!result.magnetLink.isEmpty()) {
+                QApplication::clipboard()->setText(result.magnetLink);
+                ui->statusBar->showMessage(tr("Magnet link copied to clipboard"), 3000);
+            } else {
+                // Fetch magnet link from the detail page first
+                ui->statusBar->showMessage(tr("Fetching magnet link..."), 0);
+                m_torrentSearchService->fetchMagnetLink(result.torrentUrl, [this](const QString &magnet) {
+                    if (!magnet.isEmpty()) {
+                        QApplication::clipboard()->setText(magnet);
+                        ui->statusBar->showMessage(tr("Magnet link copied to clipboard"), 3000);
+                    } else {
+                        ui->statusBar->showMessage(tr("Could not retrieve magnet link"), 3000);
+                    }
+                });
+            }
+        } else if (selected == downloadAction || selected == downloadStreamAction) {
+            QMessageBox::StandardButton reply = QMessageBox::question(this, 
+                tr("Download Confirmation"), 
+                tr("You are about to download: %1\n\n"
+                   "By proceeding, you confirm that you have the legal right "
+                   "to download this content.\n\n"
+                   "Proceed?").arg(result.name),
+                QMessageBox::Yes | QMessageBox::No);
+            
+            if (reply == QMessageBox::Yes && m_torrentDownloadService) {
+                if (!ensureTorrentClient()) {
+                    return;
+                }
+                bool wantStream = (selected == downloadStreamAction);
+                QString torrentName = result.name;
+                
+                if (!result.magnetLink.isEmpty()) {
+                    // Already have a magnet link — start download directly
+                    QString downloadId = m_torrentDownloadService->startDownload(result.magnetLink, torrentName);
+                    if (!downloadId.isEmpty()) {
+                        if (wantStream) {
+                            m_torrentDownloadService->enableStreaming(downloadId);
+                        }
+                        ui->statusBar->showMessage(tr("Download started: %1").arg(torrentName), 5000);
+                    } else {
+                        QMessageBox::warning(this, tr("Download Error"), 
+                                            tr("Failed to start download."));
+                    }
+                } else {
+                    // Need to fetch the magnet link from the torrent detail page first
+                    ui->statusBar->showMessage(tr("Fetching magnet link for: %1").arg(torrentName), 0);
+                    ui->downloadsPanel->setVisible(true);
+                    m_torrentSearchService->fetchMagnetLink(result.torrentUrl, 
+                        [this, torrentName, wantStream](const QString &magnet) {
+                        if (magnet.isEmpty()) {
+                            QMessageBox::warning(this, tr("Download Error"), 
+                                                tr("Could not retrieve magnet link for this torrent."));
+                            ui->statusBar->showMessage(tr("Failed to get magnet link"), 3000);
+                            return;
+                        }
+                        QString downloadId = m_torrentDownloadService->startDownload(magnet, torrentName);
+                        if (!downloadId.isEmpty()) {
+                            if (wantStream) {
+                                m_torrentDownloadService->enableStreaming(downloadId);
+                            }
+                            ui->statusBar->showMessage(tr("Download started: %1").arg(torrentName), 5000);
+                        } else {
+                            QMessageBox::warning(this, tr("Download Error"), 
+                                                tr("Failed to start download."));
+                        }
+                    });
+                }
+            }
+        }
+        return;
+    }
+    
+    // Original database record handling
+    QSqlDatabase db = QSqlDatabase::database("xfb_connection");
+    checkDbOpen();
+    QSqlTableModel *model = new QSqlTableModel(this, db);
+    model->setTable("torrents");
+    model->select();
+    QString sqlPath = model->index(rowidx, 2).data().toString();
+    qDebug() << sqlPath;
+    xaction = "drag_to_music_playlist";
+    estevalor = sqlPath;
+    
+    bool ha = QFile::exists(sqlPath);
+    if (!ha) {
+        QMessageBox::StandardButton reply;
+        reply = QMessageBox::question(this, "The file does NOT exist?", 
+                                      "It seams like the file does NOT exist on the hard drive... Should it be deleted from the database?",
+                                      QMessageBox::Yes | QMessageBox::No);
+        if (reply == QMessageBox::Yes) {
+            checkDbOpen();
+            qDebug() << "the file should be deleted from the database cause it does not exist in the hd";
+            QSqlQuery *qry = new QSqlQuery(db);
+            qry->prepare("delete from torrents where path = :thpath");
+            qry->bindValue(":thpath", sqlPath);
+            if (qry->exec()) {
+                qDebug() << "Torrent deleted from database!";
+                update_music_table();
+            } else {
+                qDebug() << "Error deleting torrent:" << qry->lastError();
+            }
+            delete qry;
+        }
+    }
+
+    QDrag *drag = new QDrag(this);
+    QMimeData *mimeData = new QMimeData;
+    mimeData->setData(text, "drag_to_music_playlist");
+    drag->setMimeData(mimeData);
+    drag->exec(Qt::CopyAction);
+    
+    delete model;
+}
+
 void player::on_bt_autoMode_clicked()
 {
     if(autoMode == 0){
@@ -2621,15 +4345,16 @@ void player::autoModeGetMoreSongs()
     if(dia == 6) dw = "6";
     if(dia == 7) dw = "7";
 
-    QString qry="select genre from hourgenre where hour="+currentHour+" and day="+dw;
-    qDebug()<<"hourgenre query is: "<<qry;
 checkDbOpen();
     QSqlQuery runQry(db);
+    runQry.prepare("select genre from hourgenre where hour=:hour and day=:day");
+    runQry.bindValue(":hour", currentHour);
+    runQry.bindValue(":day", dw);
     QString currentGenre = "";
 
-    if(runQry.exec(qry)){
+    if(runQry.exec()){
 
-        qDebug()<<"The query was successfull: "<<qry;
+        qDebug()<<"The query was successfull: "<<runQry.lastQuery();
 
         while(runQry.next()){
             currentGenre = runQry.value(0).toString();
@@ -2690,9 +4415,10 @@ checkDbOpen();
         if(autoMode==1){
             //randomly select music from db based on genre for this hour
 
-            QString querystr = "select path from musics where genre1 like '"+currentGenre+"' order by random() limit 1";
             QSqlQuery query(db);
-            if(query.exec(querystr))
+            query.prepare("select path from musics where genre1 like :genre order by random() limit 1");
+            query.bindValue(":genre", currentGenre);
+            if(query.exec())
             {
                 qDebug() << "SQL query executed: " << query.lastQuery();
 
@@ -2742,13 +4468,15 @@ void player::on_actionAdd_a_single_song_triggered()
 
 void player::on_btPlayNext_clicked()
 {
-
-    // Using XplaylistUrls instead of deprecated QMediaPlaylist
-    if (!XplaylistUrls.isEmpty()) {
-        XplaylistUrls.removeAt(0);
-    }
+    qDebug() << "Play Next button clicked";
+    
+    // Suppress the auto-advance that fires when the current source stops
+    m_manualAdvancing = true;
+    
     playNextSong();
-
+    
+    // Re-enable auto-advance after the event loop processes the state change
+    QTimer::singleShot(200, this, [this]() { m_manualAdvancing = false; });
 }
 
 void player::on_actionAdd_all_songs_in_a_folder_triggered()
@@ -2853,11 +4581,11 @@ void player::monitorTakeOver(){
 
 
 
-                            radio1str = "mplayer -volume 100 -playlist "+takeOverStream;
+                            qDebug()<<"Starting mplayer for takeover stream:"<<takeOverStream;
 
-                            qDebug()<<"Full cmd is: "<<radio1str;
-
-                            radio1.start("sh",QStringList()<<"-c"<<radio1str);
+                            radio1.start("mplayer", QStringList()
+                                         << "-volume" << "100"
+                                         << "-playlist" << takeOverStream);
                             radio1.waitForStarted(-1);
                             radio1.closeReadChannel(QProcess::StandardOutput);
                             radio1.closeReadChannel(QProcess::StandardError);
@@ -2895,7 +4623,7 @@ void player::monitorTakeOver(){
 
                             //ping the client
 
-                            connect(stimer, SIGNAL(timeout()), this, SLOT(pingTakeOverClient()));
+                            connect(stimer, &QTimer::timeout, this, &player::pingTakeOverClient);
                             stimer->start(30000);
 
 
@@ -3117,9 +4845,10 @@ void player::server_check_and_schedule_new_programs(){
 
 
                 QSqlQuery sql(db);
-                QString qry = "SELECT path from programs where path='"+file+"'";
+                sql.prepare("SELECT path from programs where path=:path");
+                sql.bindValue(":path", file);
 
-                if(sql.exec(qry)){
+                if(sql.exec()){
                     qDebug()<<"Query ran fine: "<<sql.lastQuery();
 
                     QString ha = "default";
@@ -3142,8 +4871,10 @@ void player::server_check_and_schedule_new_programs(){
 
 
                         QSqlQuery sql_add(db);
-                        QString qry_add = "insert into programs values(NULL,'"+filename+"','"+file+"')";
-                        if(sql_add.exec(qry_add)){
+                        sql_add.prepare("INSERT INTO programs VALUES(NULL, ?, ?)");
+                        sql_add.addBindValue(filename);
+                        sql_add.addBindValue(file);
+                        if(sql_add.exec()){
                             qDebug()<<"Query OK. Program localy added to programs table";
 
                              //schelule it
@@ -3187,9 +4918,15 @@ void player::server_check_and_schedule_new_programs(){
                                                 QString pMin = qhm.value(1).toString();
 
                                                 QSqlQuery addsch(db);
-                                                QString addstr = "insert into scheduler values ('"+pID+"','"+pAno+"','"+pMes+"','"+pDia+"','"+pHora+"','"+pMin+"','1',NULL,NULL,NULL,NULL,NULL,NULL,NULL,'1')";
+                                                addsch.prepare("INSERT INTO scheduler VALUES (?, ?, ?, ?, ?, ?, '1', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '1')");
+                                                addsch.addBindValue(pID);
+                                                addsch.addBindValue(pAno);
+                                                addsch.addBindValue(pMes);
+                                                addsch.addBindValue(pDia);
+                                                addsch.addBindValue(pHora);
+                                                addsch.addBindValue(pMin);
 
-                                                if(addsch.exec(addstr)){
+                                                if(addsch.exec()){
                                                     qDebug()<<"server programs monitorization :: Program scheduled correctly.";
                                                     qDebug()<<nomeDoPrograma<< " :: "<<pAno<<"-"<<pMes<<"-"<<pDia<<" at "<<pHora<<":"<<pMin;
                                                 } else {
@@ -3313,10 +5050,11 @@ void player::server_check_and_schedule_new_programs(){
 
 
 
-                QSqlQuery sql;
-                QString qry = "SELECT path from musics where path='"+file+"'";
+                QSqlQuery sql(db);
+                sql.prepare("SELECT path from musics where path=:path");
+                sql.bindValue(":path", file);
 
-                if(sql.exec(qry)){
+                if(sql.exec()){
                     qDebug()<<"Query ran fine: "<<sql.lastQuery();
 
                     QString ha = "default";
@@ -3375,18 +5113,25 @@ void player::server_check_and_schedule_new_programs(){
 
                         QProcess cmd;
                         QString time;
-                        QString cmdtmpstr = "exiftool \""+file+"\" | grep Duration";
-                        cmd.start("sh",QStringList()<<"-c"<<cmdtmpstr);
+                        // Use QProcess argument list to avoid shell injection via filenames
+                        cmd.start("exiftool", QStringList() << file);
                         cmd.waitForFinished();
                         QString cmdOut = cmd.readAll();
-                        qDebug()<<"Output of exiftool: "<<cmdOut;
+                        // Filter for Duration line
+                        QString durationLine;
+                        for (const QString &line : cmdOut.split("\n")) {
+                            if (line.contains("Duration", Qt::CaseInsensitive)) {
+                                durationLine = line;
+                                break;
+                            }
+                        }
+                        qDebug()<<"Output of exiftool: "<<durationLine;
                         cmd.close();
 
-                        QStringList arraycmd = cmdOut.split(" ");
-                        if(arraycmd.count()>25){
-                            QStringList splitarray = arraycmd[25].split("\n");
-                            qDebug()<<"Total track time is: "<<splitarray[0];
-                            time = splitarray[0];
+                        QStringList arraycmd = durationLine.split(" ");
+                        if(arraycmd.count()>1){
+                            time = arraycmd.last().trimmed();
+                            qDebug()<<"Total track time is: "<<time;
 
                         } else {
                             qDebug()<<"-------------->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>     !!!!!!!!    An exception happend !? ... outputing details of this track: ";
@@ -3399,8 +5144,18 @@ void player::server_check_and_schedule_new_programs(){
                         QSqlQuery sql_add;
                         int played = 0;
                         QString last = "-";
-                        QString qry_add = "insert into musics values(NULL,'"+artist+"','"+song+"','"+g1+"','"+g2+"','"+country+"','"+pub_date+"','"+file+"','"+time+"','"+played+"','"+last+"')";
-                        if(sql_add.exec(qry_add)){
+                        sql_add.prepare("INSERT INTO musics VALUES(NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                        sql_add.addBindValue(artist);
+                        sql_add.addBindValue(song);
+                        sql_add.addBindValue(g1);
+                        sql_add.addBindValue(g2);
+                        sql_add.addBindValue(country);
+                        sql_add.addBindValue(pub_date);
+                        sql_add.addBindValue(file);
+                        sql_add.addBindValue(time);
+                        sql_add.addBindValue(played);
+                        sql_add.addBindValue(last);
+                        if(sql_add.exec()){
                             qDebug()<<"Query OK. Music localy added to musics table :: "<<sql_add.lastQuery();
 
 
@@ -3458,10 +5213,11 @@ void player::server_check_and_schedule_new_programs(){
 
 
 
-        QSqlQuery sql;
-        QString qry = "SELECT path from musics where path='"+file+"'";
+        QSqlQuery sql(db);
+        sql.prepare("SELECT path from musics where path=:path");
+        sql.bindValue(":path", file);
 
-        if(sql.exec(qry)){
+        if(sql.exec()){
             qDebug()<<"Query ran fine: "<<sql.lastQuery();
 
             QString ha = "default";
@@ -3512,18 +5268,25 @@ void player::server_check_and_schedule_new_programs(){
 
                 QProcess cmd;
                 QString time;
-                QString cmdtmpstr = "exiftool \""+file+"\" | grep Duration";
-                cmd.start("sh",QStringList()<<"-c"<<cmdtmpstr);
+                // Use QProcess argument list to avoid shell injection via filenames
+                cmd.start("exiftool", QStringList() << file);
                 cmd.waitForFinished();
                 QString cmdOut = cmd.readAll();
-                qDebug()<<"Output of exiftool: "<<cmdOut;
+                // Filter for Duration line
+                QString durationLine;
+                for (const QString &line : cmdOut.split("\n")) {
+                    if (line.contains("Duration", Qt::CaseInsensitive)) {
+                        durationLine = line;
+                        break;
+                    }
+                }
+                qDebug()<<"Output of exiftool: "<<durationLine;
                 cmd.close();
 
-                QStringList arraycmd = cmdOut.split(" ");
-                if(arraycmd.count()>25){
-                    QStringList splitarray = arraycmd[25].split("\n");
-                    qDebug()<<"Total track time is: "<<splitarray[0];
-                    time = splitarray[0];
+                QStringList arraycmd = durationLine.split(" ");
+                if(arraycmd.count()>1){
+                    time = arraycmd.last().trimmed();
+                    qDebug()<<"Total track time is: "<<time;
 
                 } else {
                     qDebug()<<"-------------->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>     !!!!!!!!    An exception happend !? ... outputing details of this track: ";
@@ -3537,8 +5300,18 @@ void player::server_check_and_schedule_new_programs(){
                 QSqlQuery sql_add;
                 int played = 0;
                 QString last = "-";
-                QString qry_add = "insert into musics values(NULL,'"+artist+"','"+song+"','"+g1+"','"+g2+"','"+country+"','"+pub_date+"','"+file+"','"+time+"','"+played+"','"+last+"')";
-                if(sql_add.exec(qry_add)){
+                sql_add.prepare("INSERT INTO musics VALUES(NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                sql_add.addBindValue(artist);
+                sql_add.addBindValue(song);
+                sql_add.addBindValue(g1);
+                sql_add.addBindValue(g2);
+                sql_add.addBindValue(country);
+                sql_add.addBindValue(pub_date);
+                sql_add.addBindValue(file);
+                sql_add.addBindValue(time);
+                sql_add.addBindValue(played);
+                sql_add.addBindValue(last);
+                if(sql_add.exec()){
                     qDebug()<<"Query OK. Music localy added to musics table :: "<<sql_add.lastQuery();
 
 
@@ -3650,17 +5423,20 @@ void player::server_ftp_check(){
                     qDebug()<<"server_ftp_check() :: The programs date is: "<<dataDoPrograma;
 
                     QSqlQuery qry(db);
-                    QString thisquery = "insert into programs values(NULL,'"+nomeDoPrograma+"','"+fileNameWPath+"')";
-                    if(qry.exec(thisquery)){
+                    qry.prepare("INSERT INTO programs VALUES(NULL, ?, ?)");
+                    qry.addBindValue(nomeDoPrograma);
+                    qry.addBindValue(fileNameWPath);
+                    if(qry.exec()){
                         qDebug()<<"server_ftp_check() :: Query OK. Program added to programs table";
                     } else {
                          qDebug()<<"server_ftp_check() :: Query was not ok while atempting to add to the programs table";
                     }
 
                     QSqlQuery qryid(db);
-                    QString thisqueryid = "select * from programs where path like '"+fileNameWPath+"'";
-                    qDebug()<<"server_ftp_check() :: Select id query is: "<<thisqueryid;
-                    if(qryid.exec(thisqueryid)){
+                    qryid.prepare("SELECT * FROM programs WHERE path LIKE ?");
+                    qryid.addBindValue(fileNameWPath);
+                    qDebug()<<"server_ftp_check() :: Select id query for path:" << fileNameWPath;
+                    if(qryid.exec()){
                         while(qryid.next()){
                             QString pID = qryid.value(0).toString();
                             qDebug()<<"server_ftp_check() :: Query OK. This id is: "<<pID;
@@ -3672,20 +5448,26 @@ void player::server_ftp_check(){
 
                             if(!pAno.isEmpty() && !pMes.isEmpty() && !pDia.isEmpty()){
 
-                                QString qryhourmin = "select hour, min from hourprograms where name like '"+nomeDoPrograma+"'";
-
                                 QSqlQuery qhm(db);
+                                qhm.prepare("SELECT hour, min FROM hourprograms WHERE name LIKE ?");
+                                qhm.addBindValue(nomeDoPrograma);
 
-                                if(qhm.exec(qryhourmin)){
+                                if(qhm.exec()){
 
                                     while(qhm.next()){
                                         QString pHora = qhm.value(0).toString();
                                         QString pMin = qhm.value(1).toString();
 
                                         QSqlQuery addsch(db);
-                                        QString addstr = "insert into scheduler values ('"+pID+"','"+pAno+"','"+pMes+"','"+pDia+"','"+pHora+"','"+pMin+"','1',NULL,NULL,NULL,NULL,NULL,NULL,NULL,'1')";
+                                        addsch.prepare("INSERT INTO scheduler VALUES (?, ?, ?, ?, ?, ?, '1', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '1')");
+                                        addsch.addBindValue(pID);
+                                        addsch.addBindValue(pAno);
+                                        addsch.addBindValue(pMes);
+                                        addsch.addBindValue(pDia);
+                                        addsch.addBindValue(pHora);
+                                        addsch.addBindValue(pMin);
 
-                                        if(addsch.exec(addstr)){
+                                        if(addsch.exec()){
                                             qDebug()<<"server_ftp_check() :: Program scheduled correctly.";
                                             qDebug()<<nomeDoPrograma<< " :: "<<pAno<<"-"<<pMes<<"-"<<pDia<<" at "<<pHora<<":"<<pMin;
                                         } else {
@@ -3839,7 +5621,7 @@ void player::returnTakeOver(){
 void player::stopMplayer(){
 
     QProcess kb;
-    kb.startDetached("sh",QStringList()<<"-c"<<"killall mplayer");
+    kb.startDetached("killall", QStringList() << "mplayer");
     kb.waitForFinished();
 
     qDebug()<<"All instances of mplayer were closed";
@@ -3910,10 +5692,11 @@ if(sched_qry.exec()){
                     //add to playlist
                     QSqlQuery getPath(db);
                     if(is_program=="1"){
-                        getPath.prepare("select path from programs where id='"+schId+"'");
+                        getPath.prepare("SELECT path FROM programs WHERE id=?");
                     } else {
-                        getPath.prepare("select path from pub where id='"+schId+"'");
+                        getPath.prepare("SELECT path FROM pub WHERE id=?");
                     }
+                    getPath.addBindValue(schId);
 
                     if(getPath.exec()){
                         while(getPath.next()){
@@ -3927,7 +5710,13 @@ if(sched_qry.exec()){
                     //delete scheduler row cause its a type 1
 
                     QSqlQuery del_qry(db);
-                    del_qry.prepare("delete from scheduler where id='"+schId+"' and ano='"+ano1+"' and mes='"+mes1+"' and dia='"+dia1+"' and ano='"+ano1+"' and hora='"+hora1+"' and min='"+min1+"'");
+                    del_qry.prepare("DELETE FROM scheduler WHERE id=? AND ano=? AND mes=? AND dia=? AND hora=? AND min=?");
+                    del_qry.addBindValue(schId);
+                    del_qry.addBindValue(ano1);
+                    del_qry.addBindValue(mes1);
+                    del_qry.addBindValue(dia1);
+                    del_qry.addBindValue(hora1);
+                    del_qry.addBindValue(min1);
                     if(del_qry.exec()){
                         qDebug () << "Scheduled rule was deleted!";
                     } else {
@@ -3936,7 +5725,8 @@ if(sched_qry.exec()){
 
                     //check if pub still has other scheduler rules and delete from pub if not
                     QSqlQuery sq(db);
-                    sq.prepare("select count(id) from scheduler where id='"+schId+"'");
+                    sq.prepare("SELECT count(id) FROM scheduler WHERE id=?");
+                    sq.addBindValue(schId);
                     if(sq.exec()){
 
                         while(sq.next()){
@@ -3945,7 +5735,8 @@ if(sched_qry.exec()){
                                 //we can delete it from pub cause no more scheduled rules apply
 
                                 QSqlQuery sd(db);
-                                sd.prepare("delete from pub where id='"+schId+"'");
+                                sd.prepare("DELETE FROM pub WHERE id=?");
+                                sd.addBindValue(schId);
                                 if(sd.exec()){
                                     qDebug () << "Pub rule was deleted!";
                                     update_music_table();
@@ -4013,10 +5804,11 @@ if(sched_qry.exec()){
                 //add to playlist
                 QSqlQuery getPath(db);
                 if(is_program=="1"){
-                    getPath.prepare("select path from programs where id='"+schId+"'");
+                    getPath.prepare("SELECT path FROM programs WHERE id=?");
                 } else {
-                    getPath.prepare("select path from pub where id='"+schId+"'");
+                    getPath.prepare("SELECT path FROM pub WHERE id=?");
                 }
+                getPath.addBindValue(schId);
 
                 if(getPath.exec()){
                     while(getPath.next()){
@@ -4045,13 +5837,16 @@ if(sched_qry.exec()){
 
 void player::on_actionOptions_triggered()
 {
-
-
-    optionsDialog opt;
-    opt.setModal(true);
-    opt.exec();
-    update_music_table();
-
+    // Use show() instead of exec() to avoid blocking the event loop
+    // (exec() blocks QMediaPlayer signal processing and causes audio to stop updating)
+    optionsDialog *opt = new optionsDialog(this);
+    opt->setAttribute(Qt::WA_DeleteOnClose);
+    opt->setModal(true);
+    connect(opt, &QDialog::finished, this, &player::update_music_table);
+    // Re-apply the saved settings immediately (tab visibility, seek bar,
+    // volume lock, torrents tab, FX tab...) instead of requiring a restart
+    connect(opt, &QDialog::finished, this, &player::updateConfig);
+    opt->show();
 }
 
 void player::on_actionAbout_triggered()
@@ -4065,12 +5860,37 @@ void player::on_actionAdd_a_song_from_Youtube_or_Other_triggered()
 {
     externaldownloader* widget = new externaldownloader;
     widget->setAttribute(Qt::WA_DeleteOnClose);
-    
-    // Connect the musicAdded signal to update the music table
+
+    // Refresh the music table when a song is successfully added.
     connect(widget, &externaldownloader::musicAdded, this, &player::update_music_table);
-    
+
     widget->show();
 
+    // The external downloader relies on several command-line tools. Offer to
+    // install any that are missing, on demand and with the user's consent. The
+    // window is shown either way so the user can still fill in details.
+    DependencyChecker depChecker;
+    // yt-dlp is provisioned as a self-updating binary in ~/.local/bin so it can
+    // keep current with YouTube changes via "yt-dlp -U".
+    if (!depChecker.ensureYtDlp(widget).isEmpty()) {
+        // FFmpeg is needed to extract/convert the audio to the chosen format.
+        depChecker.ensureDependency("ffmpeg",
+            tr("yt-dlp needs FFmpeg to extract and convert the downloaded audio to a "
+               "playable format (mp3/ogg)."),
+            widget);
+        // A JavaScript runtime is required by yt-dlp for reliable YouTube
+        // extraction; without it some formats may be missing. Accept either
+        // "node" or "nodejs" (Debian/Ubuntu/Mint historically named it nodejs).
+        depChecker.ensureAnyOf({"node", "nodejs"},
+            tr("YouTube downloads need a JavaScript runtime (Node.js) so yt-dlp can "
+               "reliably extract the available audio formats."),
+            widget);
+        // ExifTool is used to read the track duration when adding it to the library.
+        depChecker.ensureDependency("exiftool",
+            tr("ExifTool is used to read the track's duration when adding it to your "
+               "music library."),
+            widget);
+    }
 }
 
 void player::on_bt_search_clicked()
@@ -4080,7 +5900,12 @@ void player::on_bt_search_clicked()
     QString term = ui->txt_search->text();
 
     QSqlQueryModel *model = new QSqlQueryModel();
-    model->setQuery("select * from musics where artist like '%"+term+"%' or song like '%"+term+"%'");
+    QSqlQuery searchQuery(QSqlDatabase::database("xfb_connection"));
+    searchQuery.prepare("select * from musics where artist like :t1 or song like :t2");
+    searchQuery.bindValue(":t1", "%" + term + "%");
+    searchQuery.bindValue(":t2", "%" + term + "%");
+    searchQuery.exec();
+    model->setQuery(std::move(searchQuery));
     ui->musicView->setModel(model);
 
     ui->musicView->setSortingEnabled(true);
@@ -4108,10 +5933,13 @@ void player::on_bt_apply_filter_clicked()
 
     qDebug () << "132426032015 " << g1_checked << " : " << g2_checked;
 
+    QString selectedGenre1;
+    QString selectedGenre2;
+
     if(g1_checked == true){
         qDebug()<<"g1 is checked";
-        QString selectedGenre1 = ui->cBoxGenre1->currentText();
-        addG1 = " genre1='"+selectedGenre1+"' ";
+        selectedGenre1 = ui->cBoxGenre1->currentText();
+        addG1 = " genre1=:g1 ";
 
 
 
@@ -4123,9 +5951,10 @@ void player::on_bt_apply_filter_clicked()
 
 
         QSqlQuery sql(db);
-        QString qry = "select count(*) from musics where genre1 like '"+selectedGenre1+"'";
+        sql.prepare("select count(*) from musics where genre1 like :genre");
+        sql.bindValue(":genre", selectedGenre1);
 
-        if(sql.exec(qry)){
+        if(sql.exec()){
             qDebug()<<"Query ran fine: "<<sql.lastQuery();
 
 
@@ -4155,13 +5984,13 @@ void player::on_bt_apply_filter_clicked()
     }
     if(g2_checked == true){
         qDebug()<<"g2 is checked";
-        QString selectedGenre2 = ui->cBoxGenre2->currentText();
+        selectedGenre2 = ui->cBoxGenre2->currentText();
         if(g1_checked==true){
              qDebug()<<"both are checked...";
-             addG2 = "and genre2='"+selectedGenre2+"' ";
+             addG2 = "and genre2=:g2 ";
         } else{
             qDebug()<<"Only g2 is checked";
-            addG2 = " genre2='"+selectedGenre2+"' ";
+            addG2 = " genre2=:g2 ";
         }
 
     }
@@ -4169,7 +5998,12 @@ void player::on_bt_apply_filter_clicked()
     if(addG1 != "" || addG2 != ""){
         qDebug() << "making a new table to show with the results...";
         QSqlQueryModel * model = new QSqlQueryModel();
-        model->setQuery("select * from musics where "+addG1+addG2);
+        QSqlQuery filterQuery(db);
+        filterQuery.prepare("select * from musics where "+addG1+addG2);
+        if(g1_checked) filterQuery.bindValue(":g1", selectedGenre1);
+        if(g2_checked) filterQuery.bindValue(":g2", selectedGenre2);
+        filterQuery.exec();
+        model->setQuery(std::move(filterQuery));
         ui->musicView->setModel(model);
     }
 
@@ -4180,7 +6014,9 @@ void player::on_bt_apply_filter_clicked()
 
 void player::on_bt_updateTables_clicked()
 {
+    ui->statusBar->showMessage(tr("Refreshing tables..."), 2000);
     update_music_table();
+    ui->statusBar->showMessage(tr("Tables updated successfully"), 3000);
 }
 /*
 void player::on_bt_youtubeDL_clicked()
@@ -4373,8 +6209,8 @@ void player::RecT5(){
     ui->led_rec->setStyleSheet("background-color:#FFFB00;border-radius:8px;");
     ui->led_rec->show();
 
-    QProcess sh;
-    sh.startDetached("sh",QStringList()<<"-c"<<"rm -f \""+saveFile+"\"");
+    if (!saveFile.isEmpty())
+        QFile::remove(saveFile);
 
     ui->txt_recTime->setText("5");
     ui->txt_recTime->show();
@@ -4573,7 +6409,143 @@ void player::setRecTimeToDefaults(){
 
 
 void player::checkForUpdates(){
-    QMessageBox::information(this,tr("Check for updates"),tr("Please update with 'yay' under Arch-based distros, or clone from XFB github."));
+    if (!m_updateService)
+        return;
+    m_updateCheckManual = true;
+    m_updateService->checkNow(true);
+}
+
+void player::notifyUpdateAvailable(const QString &version, const QUrl &releasePage,
+                                   const QUrl &downloadUrl)
+{
+    QMessageBox box(this);
+    box.setWindowTitle(tr("Update available"));
+    box.setIcon(QMessageBox::Information);
+    box.setText(tr("XFB %1 is available — you are running %2.")
+                    .arg(version, UpdateCheckService::currentVersion()));
+    box.setInformativeText(tr("\"Install now\" downloads the update and opens the installer; "
+                              "XFB will then close so you can relaunch the new version."));
+    QPushButton *installBtn = box.addButton(tr("Install now"), QMessageBox::AcceptRole);
+    QPushButton *notesBtn = box.addButton(tr("Release notes"), QMessageBox::ActionRole);
+    QPushButton *skipBtn = box.addButton(tr("Skip this version"), QMessageBox::DestructiveRole);
+    box.addButton(tr("Later"), QMessageBox::RejectRole);
+    box.exec();
+
+    if (box.clickedButton() == notesBtn) {
+        QDesktopServices::openUrl(releasePage);
+        return;
+    }
+    if (box.clickedButton() == skipBtn) {
+        QSettings settings(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
+                               + "/xfb.conf", QSettings::IniFormat);
+        settings.setValue("SkipUpdateVersion", version);
+        return;
+    }
+    if (box.clickedButton() != installBtn)
+        return;
+
+#ifdef Q_OS_MAC
+    // Homebrew installs upgrade through brew so the cask stays in sync
+    {
+        const QString brew = QStandardPaths::findExecutable(
+            "brew", {"/opt/homebrew/bin", "/usr/local/bin"});
+        if (!brew.isEmpty()) {
+            QProcess probe;
+            probe.start(brew, {"list", "--cask", "xfb"});
+            probe.waitForFinished(8000);
+            if (probe.exitStatus() == QProcess::NormalExit && probe.exitCode() == 0) {
+                QProgressDialog progress(tr("Upgrading XFB with Homebrew..."), QString(), 0, 0, this);
+                progress.setWindowModality(Qt::WindowModal);
+                progress.show();
+
+                QProcess upgrade;
+                upgrade.start(brew, {"upgrade", "--cask", "xfb"});
+                while (upgrade.state() != QProcess::NotRunning) {
+                    upgrade.waitForFinished(200);
+                    qApp->processEvents();
+                }
+                progress.close();
+
+                if (upgrade.exitStatus() == QProcess::NormalExit && upgrade.exitCode() == 0) {
+                    QMessageBox::information(this, tr("Update installed"),
+                        tr("XFB %1 was installed. XFB will now close — "
+                           "launch it again to run the new version.").arg(version));
+                    close();
+                } else {
+                    QMessageBox::warning(this, tr("Update failed"),
+                        tr("Homebrew could not upgrade XFB:\n%1")
+                            .arg(QString::fromLocal8Bit(upgrade.readAllStandardError()).trimmed()));
+                }
+                return;
+            }
+        }
+    }
+#endif
+
+    downloadAndOpenUpdate(downloadUrl, releasePage, version);
+}
+
+void player::downloadAndOpenUpdate(const QUrl &downloadUrl, const QUrl &releasePage,
+                                   const QString &version)
+{
+    // No platform artifact attached to the release: hand over to the browser
+    if (downloadUrl.isEmpty()) {
+        QDesktopServices::openUrl(releasePage);
+        return;
+    }
+
+    const QString downloads = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
+    const QString fileName = downloadUrl.fileName().isEmpty()
+                                 ? QStringLiteral("XFB-%1-update").arg(version)
+                                 : downloadUrl.fileName();
+    const QString targetPath = downloads + "/" + fileName;
+
+    auto *progress = new QProgressDialog(tr("Downloading XFB %1 ...").arg(version),
+                                         tr("Cancel"), 0, 100, this);
+    progress->setWindowModality(Qt::WindowModal);
+    progress->setAutoClose(false);
+    progress->show();
+
+    QNetworkRequest request(downloadUrl);
+    request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
+                         QNetworkRequest::NoLessSafeRedirectPolicy);
+    QNetworkReply *reply = networkManager->get(request);
+
+    connect(progress, &QProgressDialog::canceled, reply, &QNetworkReply::abort);
+    connect(reply, &QNetworkReply::downloadProgress, progress,
+            [progress](qint64 received, qint64 total) {
+        if (total > 0)
+            progress->setValue(static_cast<int>(received * 100 / total));
+    });
+    connect(reply, &QNetworkReply::finished, this, [this, reply, progress, targetPath, version]() {
+        reply->deleteLater();
+        progress->deleteLater();
+        progress->close();
+
+        if (reply->error() != QNetworkReply::NoError) {
+            if (reply->error() != QNetworkReply::OperationCanceledError) {
+                QMessageBox::warning(this, tr("Update failed"),
+                    tr("Could not download the update:\n%1").arg(reply->errorString()));
+            }
+            return;
+        }
+
+        QFile out(targetPath);
+        if (!out.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+            QMessageBox::warning(this, tr("Update failed"),
+                tr("Could not save the update to %1").arg(targetPath));
+            return;
+        }
+        out.write(reply->readAll());
+        out.close();
+
+        QMessageBox::information(this, tr("Update downloaded"),
+            tr("XFB %1 was downloaded to:\n%2\n\nThe installer will open now. "
+               "XFB will close — install the update and launch XFB again.")
+                .arg(version, targetPath));
+        QDesktopServices::openUrl(QUrl::fromLocalFile(targetPath));
+        close();
+    });
 }
 
 void player::on_actionRecord_a_new_Program_triggered()
@@ -4606,24 +6578,24 @@ void player::on_bt_ProgramStopandProcess_clicked()
                 if(Role=="Client"){
 
                         ui->txt_uploadingPrograms->show();
-                        QProcess cmd;
                         destinationProgram = ProgramsPath+"/"+NomeDestePrograma+"."+aExtencaoDesteCoiso;
-                        QString mvcmd = "cp "+saveFile+" "+destinationProgram;
-                        qDebug()<<"Running: "<<mvcmd;
-                        cmd.startDetached("sh",QStringList()<<"-c"<<mvcmd);
-                        cmd.waitForFinished(-1);
-                        cmd.close();
+                        qDebug()<<"Copying"<<saveFile<<"to"<<destinationProgram;
+                        QFile::remove(destinationProgram);
+                        if (!QFile::copy(saveFile, destinationProgram)) {
+                            qWarning()<<"Failed to copy program to"<<destinationProgram;
+                        }
 
                         QMessageBox::StandardButton sendToServer;
 
                         sendToServer = QMessageBox::question(this,tr("Send to server?"),tr("Send programs to the server?"),QMessageBox::Yes|QMessageBox::No);
                         if(sendToServer==QMessageBox::Yes){
 
-                            QString cp2ftp = "cp "+saveFile+" "+FTPPath+"/"+NomeDestePrograma+"."+aExtencaoDesteCoiso;
-                            qDebug()<<"Running: "<<cp2ftp;
-                            cmd.startDetached("sh",QStringList()<<"-c"<<cp2ftp);
-                            cmd.waitForFinished(-1);
-                            cmd.close();
+                            const QString ftpDestination = FTPPath+"/"+NomeDestePrograma+"."+aExtencaoDesteCoiso;
+                            qDebug()<<"Copying"<<saveFile<<"to"<<ftpDestination;
+                            QFile::remove(ftpDestination);
+                            if (!QFile::copy(saveFile, ftpDestination)) {
+                                qWarning()<<"Failed to copy program to"<<ftpDestination;
+                            }
 
                                 qDebug()<<"Sending program to server. This requires ~/.netrc to be configured with the ftp options and FTP Path in the options to point to a folder called 'ftp' that MUST be located in the parent directory of XFB (due to the code of config/serverFtpCmdsPutProgram).";
 
@@ -4650,24 +6622,23 @@ void player::on_bt_ProgramStopandProcess_clicked()
 
                                 qDebug()<<"Program upload finished!";
 
-                                QProcess bashDelThis;
-                                QString fileToRemove = "rm "+FTPPath+"/"+NomeDestePrograma+".ogg";
-                                bashDelThis.start("sh",QStringList()<<"-c"<<fileToRemove);
-                                bashDelThis.waitForFinished();
-                                bashDelThis.close();
-
-                                qDebug()<<"FTP temp file deleted";
+                                QString fileToRemove = FTPPath+"/"+NomeDestePrograma+".ogg";
+                                if (QFile::remove(fileToRemove)) {
+                                    qDebug()<<"FTP temp file deleted:" << fileToRemove;
+                                } else {
+                                    qWarning()<<"Failed to delete FTP temp file:" << fileToRemove;
+                                }
 
                                 QMessageBox::StandardButton answer;
                                 answer = QMessageBox::question(this,tr("Delete local copy?"),tr("Delete the local copy of the program?"), QMessageBox::Yes|QMessageBox::No);
 
                                 if(answer==QMessageBox::Yes){
 
-                                    QProcess bashDoThis;
-                                    QString fileToRemoveStr = "rm "+destinationProgram;
-                                    bashDoThis.start("sh",QStringList()<<"-c"<<fileToRemoveStr);
-                                    bashDoThis.waitForFinished();
-                                    bashDoThis.close();
+                                    if (QFile::remove(destinationProgram)) {
+                                        qDebug()<<"Local program file deleted:" << destinationProgram;
+                                    } else {
+                                        qWarning()<<"Failed to delete local program file:" << destinationProgram;
+                                    }
                                     QMessageBox::information(this,tr("Local file deleted"),tr("The local copy of the file was deleted."));
                                     ui->txt_ProgramName->hide();
                                     ui->bt_ProgramStopandProcess->hide();
@@ -4675,8 +6646,10 @@ void player::on_bt_ProgramStopandProcess_clicked()
                                 } else {
 
                                             QSqlQuery qry(db);
-                                            QString thisquery = "insert into programs values(NULL,'"+NomeDestePrograma+"','"+destinationProgram+"')";
-                                            if(qry.exec(thisquery)){
+                                            qry.prepare("INSERT INTO programs VALUES(NULL, ?, ?)");
+                                            qry.addBindValue(NomeDestePrograma);
+                                            qry.addBindValue(destinationProgram);
+                                            if(qry.exec()){
                                                 qDebug()<<"Query OK. Program localy added to programs table";
                                             } else {
                                                  qDebug()<<"Query was not ok while atempting to localy add to the programs table";
@@ -4757,18 +6730,13 @@ void player::on_actionMake_a_program_from_this_playlist_triggered()
       qDebug()<<"Running Make_a_program_with_the_current_playlist";
 
 
-      QString cmdcp;
-      cmdcp= "rm ../ProgramGenerator/*.ogg";
-      QProcess cmddelP;
-      cmddelP.start("sh",QStringList()<<"-c"<<cmdcp);
-      cmddelP.waitForFinished(-1);
-      cmddelP.close();
+      QDir programGenDir("../ProgramGenerator");
+      const QStringList staleOggs = programGenDir.entryList(QStringList() << "*.ogg", QDir::Files);
+      for (const QString &stale : staleOggs)
+          programGenDir.remove(stale);
        qDebug()<<"temp files from ProgramGenerator folder removed";
 
-      cmdcp= "rm inputs.txt";
-      cmddelP.start("sh",QStringList()<<"-c"<<cmdcp);
-      cmddelP.waitForFinished(-1);
-      cmddelP.close();
+      QFile::remove("inputs.txt");
        qDebug()<<"inputs.txt from bin forlder removed";
 
 
@@ -4800,40 +6768,45 @@ void player::on_actionMake_a_program_from_this_playlist_triggered()
               return;
 
           } else {
-              QString cmdcp = "cp \""+txtItem+"\" ../ProgramGenerator/"+nome;
-              qDebug()<<">> >> >> >> >> Adding audio: ";
-              qDebug()<<cmdcp;
-              QProcess cmd;
-              cmd.start("sh",QStringList()<<"-c"<<cmdcp);
-              cmd.waitForFinished(-1);
-              cmd.close();
-
               contatstr = "../ProgramGenerator/"+nome;
-              QProcess cmd34;
-              cmd34.start("sh",QStringList()<<"-c"<<"echo \"file '"+contatstr+"'\" >> inputs.txt");
-              cmd34.waitForFinished(-1);
-              cmd34.close();
+              qDebug()<<">> >> >> >> >> Adding audio:"<<txtItem<<"->"<<contatstr;
+              QFile::remove(contatstr);
+              if (!QFile::copy(txtItem, contatstr)) {
+                  qWarning()<<"Failed to stage file for program:"<<txtItem;
+              }
+
+              // ffmpeg concat list entry; embedded single quotes are escaped
+              // per the concat demuxer's quoting rules
+              QFile inputsFile("inputs.txt");
+              if (inputsFile.open(QIODevice::Append | QIODevice::Text)) {
+                  QString escaped = contatstr;
+                  escaped.replace("'", "'\\''");
+                  QTextStream(&inputsFile) << "file '" << escaped << "'\n";
+              } else {
+                  qWarning()<<"Could not append to inputs.txt";
+              }
 
           }
 
       }
-      QString cmdconcat = "ffmpeg -f concat -i inputs.txt "+destino;
-      qDebug()<<">> >> >> >> >> Concatenating audio.. the full command is: >> >> >> >> >> >>";
-      qDebug()<<cmdconcat;
+      qDebug()<<">> >> >> >> >> Concatenating audio into:"<<destino;
+      QString concatFfmpeg = FxEngine::ffmpegExecutable();
+      if (concatFfmpeg.isEmpty())
+          concatFfmpeg = "ffmpeg";
       QProcess cmd;
-      cmd.start("sh",QStringList()<<"-c"<<cmdconcat);
+      cmd.start(concatFfmpeg, QStringList()
+                << "-y" << "-f" << "concat" << "-safe" << "0"
+                << "-i" << "inputs.txt" << destino);
       cmd.waitForFinished(300000); //600000 10 minutos
 
 
 
       cmd.close();
       ui->txt_creatingPrograms->hide();
-      QString cmddel = "rm ../ProgramGenerator/*.ogg";
-      qDebug()<<">> >> >> >> >> Removing tmp audio: ";
-      qDebug()<<cmddel;
-      cmd.start("sh",QStringList()<<"-c"<<cmddel);
-      cmd.waitForFinished(-1);
-      cmd.close();
+      qDebug()<<">> >> >> >> >> Removing tmp audio";
+      const QStringList stagedOggs = programGenDir.entryList(QStringList() << "*.ogg", QDir::Files);
+      for (const QString &staged : stagedOggs)
+          programGenDir.remove(staged);
       ui->txt_uploadingPrograms->show();
 
 
@@ -4842,12 +6815,12 @@ void player::on_actionMake_a_program_from_this_playlist_triggered()
       QMessageBox::StandardButton sendToServer;
       sendToServer = QMessageBox::question(this,tr("Send to server?"),tr("Send programs to the server?"),QMessageBox::Yes|QMessageBox::No);
       if(sendToServer==QMessageBox::Yes){
-          QString cp2ftp = "cp "+destino+" "+FTPPath+"/"+NomeDestePrograma+".ogg";
-          qDebug()<<"Running: "<<cp2ftp;
-          QProcess cmd;
-          cmd.startDetached("sh",QStringList()<<"-c"<<cp2ftp);
-          cmd.waitForFinished(-1);
-          cmd.close();
+          const QString ftpProgramCopy = FTPPath+"/"+NomeDestePrograma+".ogg";
+          qDebug()<<"Copying"<<destino<<"to"<<ftpProgramCopy;
+          QFile::remove(ftpProgramCopy);
+          if (!QFile::copy(destino, ftpProgramCopy)) {
+              qWarning()<<"Failed to copy program to"<<ftpProgramCopy;
+          }
 
               qDebug()<<"Sending program to server. This requires ~/.netrc to be configured with the ftp options and FTP Path in the options to point to a folder called 'ftp' that MUST be located in the parent directory of XFB (due to the code of config/serverFtpCmdsPutProgram).";
               QProcess sh,sh2;
@@ -4920,25 +6893,27 @@ void player::on_actionMake_a_program_from_this_playlist_triggered()
                   }
               }
               qDebug()<<"Program uploaded to server!";
-              QProcess bashDelThis;
-              QString fileToRemove = "rm "+FTPPath+"/"+NomeDestePrograma+".ogg";
-              bashDelThis.start("sh",QStringList()<<"-c"<<fileToRemove);
-              bashDelThis.waitForFinished();
-              bashDelThis.close();
-              qDebug()<<"FTP temp file deleted";
+              QString fileToRemove = FTPPath+"/"+NomeDestePrograma+".ogg";
+              if (QFile::remove(fileToRemove)) {
+                  qDebug()<<"FTP temp file deleted:" << fileToRemove;
+              } else {
+                  qWarning()<<"Failed to delete FTP temp file:" << fileToRemove;
+              }
               QMessageBox::StandardButton answer;
               answer = QMessageBox::question(this,tr("Delete local copy?"),tr("Delete the local copy of the program? (The program was sucessfuly uploaded to the server)"), QMessageBox::Yes|QMessageBox::No);
               if(answer==QMessageBox::Yes){
-                  QProcess bashDoThis;
-                  QString fileToRemoveStr = "rm "+destino;
-                  bashDoThis.start("sh",QStringList()<<"-c"<<fileToRemoveStr);
-                  bashDoThis.waitForFinished();
-                  bashDoThis.close();
+                  if (QFile::remove(destino)) {
+                      qDebug()<<"Local file deleted:" << destino;
+                  } else {
+                      qWarning()<<"Failed to delete local file:" << destino;
+                  }
                   QMessageBox::information(this,tr("Local file deleted"),tr("The local copy of the file was deleted."));
               } else {
                           QSqlQuery qry(db);
-                          QString thisquery = "insert into programs values(NULL,'"+NomeDestePrograma+"','"+destino+"')";
-                          if(qry.exec(thisquery)){
+                          qry.prepare("INSERT INTO programs VALUES(NULL, ?, ?)");
+                          qry.addBindValue(NomeDestePrograma);
+                          qry.addBindValue(destino);
+                          if(qry.exec()){
                               qDebug()<<"Query OK. Program localy added to programs table";
                           } else {
                                qDebug()<<"Query was not ok while atempting to localy add to the programs table";
@@ -4948,16 +6923,18 @@ void player::on_actionMake_a_program_from_this_playlist_triggered()
           QMessageBox::StandardButton answer;
           answer = QMessageBox::question(this,tr("Delete local copy?"),tr("Delete the local copy of the program?"), QMessageBox::Yes|QMessageBox::No);
           if(answer==QMessageBox::Yes){
-              QProcess bashDoThis;
-              QString fileToRemoveStr = "rm "+destino;
-              bashDoThis.start("sh",QStringList()<<"-c"<<fileToRemoveStr);
-              bashDoThis.waitForFinished();
-              bashDoThis.close();
+              if (QFile::remove(destino)) {
+                  qDebug()<<"Local file deleted:" << destino;
+              } else {
+                  qWarning()<<"Failed to delete local file:" << destino;
+              }
               QMessageBox::information(this,tr("Local file deleted"),tr("The local copy of the file was deleted."));
           } else {
               QSqlQuery qry(db);
-              QString thisquery = "insert into programs values(NULL,'"+NomeDestePrograma+"','"+destino+"')";
-              if(qry.exec(thisquery)){
+              qry.prepare("INSERT INTO programs VALUES(NULL, ?, ?)");
+              qry.addBindValue(NomeDestePrograma);
+              qry.addBindValue(destino);
+              if(qry.exec()){
                   qDebug()<<"Query OK. Program localy added to programs table";
               } else {
                    qDebug()<<"Query was not ok while atempting to localy add to the programs table";
@@ -5223,6 +7200,77 @@ void player::calculate_playlist_total_time() {
         return;
     }
 
+    // Resolve a duration-reading tool. Prefer ffprobe (bundled with XFB on
+    // Windows, ships with ffmpeg elsewhere); fall back to exiftool. GUI apps
+    // don't always inherit the shell PATH, so also probe common locations and
+    // the application directory (where the bundled ffprobe.exe lives).
+    auto resolveTool = [](const QString &name) -> QString {
+        QString p = QStandardPaths::findExecutable(name);
+        if (!p.isEmpty()) return p;
+        QStringList dirs;
+#if defined(Q_OS_WIN)
+        dirs << QCoreApplication::applicationDirPath();
+#elif defined(Q_OS_MACOS)
+        dirs << "/opt/homebrew/bin" << "/usr/local/bin" << "/opt/local/bin"
+             << (QDir::homePath() + "/.local/bin") << "/usr/bin"
+             << QCoreApplication::applicationDirPath();
+#else
+        dirs << "/usr/local/bin" << "/usr/bin" << (QDir::homePath() + "/.local/bin")
+             << QCoreApplication::applicationDirPath();
+#endif
+        for (const QString &d : dirs) {
+            QString cand = d + "/" + name;
+#ifdef Q_OS_WIN
+            if (!cand.endsWith(".exe", Qt::CaseInsensitive)) cand += ".exe";
+#endif
+            if (QFile::exists(cand)) return cand;
+        }
+        return QString();
+    };
+    const QString ffprobePath = resolveTool("ffprobe");
+    const QString exiftoolPath = ffprobePath.isEmpty() ? resolveTool("exiftool") : QString();
+    if (ffprobePath.isEmpty() && exiftoolPath.isEmpty()) {
+        qWarning() << "Neither ffprobe nor exiftool found; cannot compute playlist duration.";
+    }
+
+    // Parse a duration string ("HH:MM:SS[.ss]", "SS[.ss]", "N/A", "-") into
+    // whole seconds, or -1 if it isn't a usable duration.
+    auto parseDurationSeconds = [](QString s) -> qint64 {
+        s = s.trimmed();
+        const int paren = s.indexOf('(');
+        if (paren > 0) s = s.left(paren).trimmed();
+        if (s.isEmpty() || s == "-" || s.compare("N/A", Qt::CaseInsensitive) == 0)
+            return -1;
+        if (s.contains(':')) {
+            const QStringList parts = s.split(':');
+            if (parts.size() == 3) {
+                bool hOk, mOk, sOk;
+                const int h = parts[0].toInt(&hOk);
+                const int m = parts[1].toInt(&mOk);
+                const double sec = parts[2].toDouble(&sOk);
+                if (hOk && mOk && sOk && h >= 0 && m >= 0 && sec >= 0)
+                    return qint64(h) * 3600 + qint64(m) * 60 + static_cast<qint64>(sec);
+            }
+            return -1;
+        }
+        bool ok;
+        const double d = s.toDouble(&ok);
+        return (ok && d >= 0) ? static_cast<qint64>(d) : -1;
+    };
+
+    // Fall back to the duration XFB stored in the database when the media tool
+    // can't read a file (offline file, unusual container, missing metadata...).
+    QSqlDatabase timeDb = QSqlDatabase::database("xfb_connection");
+    auto dbDurationSeconds = [&](const QString &path) -> qint64 {
+        if (!timeDb.isValid() || !timeDb.isOpen()) return -1;
+        QSqlQuery q(timeDb);
+        q.prepare("SELECT time FROM musics WHERE path = :p");
+        q.bindValue(":p", path);
+        if (q.exec() && q.next())
+            return parseDurationSeconds(q.value(0).toString());
+        return -1;
+    };
+
     for (int i = 0; i < playlistCount; ++i) {
         QListWidgetItem* item = ui->playlist->item(i);
         if (!item) continue; // Should not happen, but safety check
@@ -5230,98 +7278,58 @@ void player::calculate_playlist_total_time() {
         QString filePath = item->text(); // Assuming the item text is the full path
         qInfo().noquote() << "Processing playlist item [" << i+1 << "/" << playlistCount << "]:" << filePath;
 
-        // --- Optional but recommended: Check if file exists ---
-        if (!QFile::exists(filePath)) {
-            qWarning() << "File listed in playlist does not exist:" << filePath;
-            failedFiles++;
-            // Optional: Visually mark the item in the playlist?
-            // item->setForeground(Qt::red); // Example
-            continue; // Skip to the next item
-        }
-        // --- End existence check ---
+        qint64 trackSeconds = -1;
 
+        // 1) Use the duration XFB already stored in the library database. This is
+        //    a fast, indexed lookup and covers the overwhelmingly common case:
+        //    tracks dragged in from the library were probed once at import time
+        //    and their duration is cached in "musics.time". Doing this first
+        //    avoids spawning ffprobe per item — which, over a network share,
+        //    blocked the UI thread for 10-15s while the playlist appeared to
+        //    hang after a drop.
+        trackSeconds = dbDurationSeconds(filePath);
 
-        QProcess process;
-        QString command = "exiftool";
-        QStringList arguments;
-        // Use -T for Tab-separated values (easier parsing) and request only Duration
-        // This should output *just* the duration value if found.
-        arguments << "-T" << "-Duration" << filePath;
-
-        qDebug() << "Running command:" << command << arguments;
-
-        process.setProcessChannelMode(QProcess::MergedChannels); // Combine stdout and stderr for simpler reading if needed
-        process.start(command, arguments);
-
-        // Wait for the process to finish (e.g., 5 seconds timeout per file)
-        if (!process.waitForFinished(5000)) {
-            qWarning() << "Exiftool process timed out for:" << filePath << process.errorString();
-            process.kill();
-            process.waitForFinished(1000);
-            failedFiles++;
-            continue; // Skip this file
-        }
-
-        // Check for exiftool execution errors
-        if (process.exitStatus() != QProcess::NormalExit || process.exitCode() != 0) {
-            qWarning() << "Exiftool process failed for:" << filePath
-                       << "Exit code:" << process.exitCode()
-                       << "Exit status:" << process.exitStatus();
-            QString errorOutput = QString::fromLocal8Bit(process.readAll()); // Read combined output/error
-             qWarning() << "Exiftool output/error:\n" << errorOutput;
-            failedFiles++;
-            continue; // Skip this file
-        }
-
-        // Read the output (should be just the duration value now because of -T)
-        QString durationString = QString::fromLocal8Bit(process.readAllStandardOutput()).trimmed(); // Or fromUtf8
-
-        if (durationString.isEmpty() || durationString == "-") { // Exiftool might output "-" if tag not found
-            qWarning() << "Could not find 'Duration' tag via exiftool for:" << filePath;
-            failedFiles++;
-            continue; // Skip this file
-        }
-
-        qDebug() << "Found Duration string:" << durationString << "for" << filePath;
-
-        // --- Parse the duration string (HH:MM:SS.ss or SS.ss) into seconds ---
-        qint64 currentTrackSeconds = 0;
-        bool parseOk = false;
-
-        if (durationString.contains(':')) {
-            // Format HH:MM:SS.ss
-            QStringList parts = durationString.split(':');
-            if (parts.size() == 3) {
-                bool hOk, mOk, sOk;
-                int hours = parts[0].toInt(&hOk);
-                int minutes = parts[1].toInt(&mOk);
-                // Seconds might have fraction, take integer part
-                double secondsDouble = parts[2].toDouble(&sOk);
-                int seconds = static_cast<int>(secondsDouble); // Truncate fraction
-
-                if (hOk && mOk && sOk && hours >= 0 && minutes >= 0 && minutes < 60 && seconds >= 0 && seconds < 60) {
-                    currentTrackSeconds = (hours * 3600) + (minutes * 60) + seconds;
-                    parseOk = true;
-                }
+        // 2) Only when the database has no usable duration (files not in the
+        //    library, or imported before durations were stored) do we fall back
+        //    to the media tool (ffprobe preferred, exiftool fallback), and only
+        //    if the file is actually present on disk.
+        if (trackSeconds < 0 &&
+            (!ffprobePath.isEmpty() || !exiftoolPath.isEmpty()) && QFile::exists(filePath)) {
+            QProcess process;
+            QString command;
+            QStringList arguments;
+            if (!ffprobePath.isEmpty()) {
+                // ffprobe prints the duration in seconds (e.g. "215.093333").
+                command = ffprobePath;
+                arguments << "-v" << "error"
+                          << "-show_entries" << "format=duration"
+                          << "-of" << "default=noprint_wrappers=1:nokey=1"
+                          << filePath;
+            } else {
+                // exiftool with -T prints just the Duration value (HH:MM:SS[.ss]).
+                command = exiftoolPath;
+                arguments << "-T" << "-Duration" << filePath;
             }
-        } else {
-            // Format SS.ss (seconds only)
-            bool sOk;
-            double secondsDouble = durationString.toDouble(&sOk);
-            if (sOk && secondsDouble >= 0) {
-                currentTrackSeconds = static_cast<qint64>(secondsDouble); // Truncate fraction
-                parseOk = true;
+
+            // Read stdout only so any tool warnings on stderr can't corrupt the
+            // parsed value.
+            process.start(command, arguments);
+            if (process.waitForStarted(5000) && process.waitForFinished(15000) &&
+                process.exitStatus() == QProcess::NormalExit && process.exitCode() == 0) {
+                const QString out = QString::fromLocal8Bit(process.readAllStandardOutput()).trimmed();
+                trackSeconds = parseDurationSeconds(out);
+            } else {
+                process.kill();
+                process.waitForFinished(1000);
             }
         }
 
-        if (parseOk) {
-            qDebug() << "Parsed seconds:" << currentTrackSeconds;
-            totalSeconds += currentTrackSeconds;
+        if (trackSeconds >= 0) {
+            totalSeconds += trackSeconds;
         } else {
-            qWarning() << "Failed to parse duration string:" << durationString << "for file:" << filePath;
+            qWarning() << "Could not determine duration for:" << filePath;
             failedFiles++;
         }
-        // --- End duration parsing ---
 
     } // End for loop
 
@@ -5396,12 +7404,11 @@ void player::on_actionCheck_Database_Data_and_DELETE_all_invalid_records_witouth
                              if(qry->exec()){
                                   qDebug() << "Music Deleted from database and HD! last query was:"<< qry->lastQuery();
 
-                                  QProcess rmthis;
-                                  QString rmthistr = "rm "+path;
-                                  rmthis.start("sh",QStringList()<<"-c"<<rmthistr);
-                                  rmthis.waitForFinished(-1);
-
-
+                                  if (QFile::remove(path)) {
+                                      qDebug() << "File deleted:" << path;
+                                  } else {
+                                      qWarning() << "Failed to delete file:" << path;
+                                  }
 
                                   update_music_table();
                              } else {
@@ -5433,41 +7440,348 @@ void player::on_actionCheck_Database_Data_and_DELETE_all_invalid_records_witouth
 
 void player::on_bt_rol_streaming_play_clicked()
 {
+    QString urlText = ui->txt_rol_stream_url->text().trimmed();
+    if (urlText.isEmpty()) {
+        ui->lbl_rol_streaming_status->setText(tr("Enter a stream URL first (e.g. http://server:8000/stream)"));
+        return;
+    }
 
+    // Convenience: allow "server:8000/stream" without a scheme
+    if (!urlText.contains(QStringLiteral("://")))
+        urlText.prepend(QStringLiteral("http://"));
 
-    QString c = "curl [ip]/XFB/Config/ftpupdate.txt";
-    QProcess pc;
-    pc.start("sh",QStringList()<<"-c"<<c);
-    pc.waitForFinished();
+    const QUrl streamUrl = QUrl::fromUserInput(urlText);
+    if (!streamUrl.isValid() || streamUrl.host().isEmpty()
+        || (streamUrl.scheme() != "http" && streamUrl.scheme() != "https")) {
+        ui->lbl_rol_streaming_status->setText(tr("Invalid stream URL: %1").arg(urlText));
+        return;
+    }
 
-    QString cOut = pc.readAll();
+    // Remember the URL for the next session
+    {
+        QSettings settings(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
+                               + "/xfb.conf", QSettings::IniFormat);
+        settings.setValue("StreamClientURL", urlText);
+    }
 
-    QStringList ServerIP = cOut.split("\n");
+    // Playlist URLs (.m3u/.pls) are resolved to their first stream entry;
+    // everything else (direct Icecast/Shoutcast mounts, HLS .m3u8) plays
+    // natively through QMediaPlayer.
+    const QString path = streamUrl.path().toLower();
+    if ((path.endsWith(QStringLiteral(".m3u")) || path.endsWith(QStringLiteral(".pls")))
+        && !path.endsWith(QStringLiteral(".m3u8"))) {
+        resolveAndPlayStreamPlaylist(streamUrl);
+    } else {
+        startRadioStream(streamUrl);
+    }
+}
 
-    qDebug()<<"Server's IP is now:"<<ServerIP[0];
+void player::startRadioStream(const QUrl &streamUrl)
+{
+    qInfo() << "Streaming client: playing" << streamUrl.toDisplayString();
+    ui->lbl_rol_streaming_status->setText(tr("Connecting to %1 ...").arg(streamUrl.toDisplayString()));
+    RadioPlayer->stop();
+    RadioPlayer->setSource(streamUrl);
+    RadioPlayer->play();
+}
 
+void player::resolveAndPlayStreamPlaylist(const QUrl &playlistUrl)
+{
+    ui->lbl_rol_streaming_status->setText(tr("Fetching playlist %1 ...").arg(playlistUrl.toDisplayString()));
 
+    QNetworkRequest request(playlistUrl);
+    request.setTransferTimeout(10000);
+    QNetworkReply *reply = networkManager->get(request);
 
+    connect(reply, &QNetworkReply::finished, this, [this, reply, playlistUrl]() {
+        reply->deleteLater();
 
-    QString radio1str = "mplayer -playlist http://"+ServerIP[0]+":8000/stream.m3u";
+        if (reply->error() != QNetworkReply::NoError) {
+            ui->lbl_rol_streaming_status->setText(tr("Could not fetch playlist: %1").arg(reply->errorString()));
+            return;
+        }
 
-    qDebug()<<"Full cmd is: "<<radio1str;
+        // Cap what we parse: a stream playlist is tiny, anything huge is bogus
+        const QString body = QString::fromUtf8(reply->read(64 * 1024));
+        QUrl firstEntry;
 
-    radio1.start("sh",QStringList()<<"-c"<<radio1str);
-    radio1.waitForStarted(-1);
-    radio1.closeReadChannel(QProcess::StandardOutput);
-    radio1.closeReadChannel(QProcess::StandardError);
+        for (const QString &rawLine : body.split('\n')) {
+            const QString line = rawLine.trimmed();
+            if (line.isEmpty())
+                continue;
+            if (playlistUrl.path().toLower().endsWith(QStringLiteral(".pls"))) {
+                // PLS format: File1=http://...
+                if (line.startsWith(QStringLiteral("File"), Qt::CaseInsensitive) && line.contains('=')) {
+                    firstEntry = QUrl(line.section('=', 1).trimmed());
+                    break;
+                }
+            } else {
+                // M3U format: first non-comment line
+                if (!line.startsWith('#')) {
+                    firstEntry = QUrl(line);
+                    break;
+                }
+            }
+        }
 
+        // Relative entries are resolved against the playlist location
+        if (firstEntry.isRelative())
+            firstEntry = playlistUrl.resolved(firstEntry);
 
-    ui->bt_rol_streaming_play->setStyleSheet("background-color:#C8EE72");
+        if (!firstEntry.isValid() || firstEntry.host().isEmpty()
+            || (firstEntry.scheme() != "http" && firstEntry.scheme() != "https")) {
+            ui->lbl_rol_streaming_status->setText(tr("Playlist contains no playable stream URL"));
+            return;
+        }
 
+        startRadioStream(firstEntry);
+    });
+}
+
+/* ============================= DJ deck scratching ============================= */
+
+void player::setPlatterRotation(int deck, double degrees)
+{
+    QLabel *platter = (deck == 0) ? ui->lp_1 : ui->lp_2;
+    const QPixmap &base = m_lpPlatterBase[deck];
+    if (base.isNull())
+        return;
+
+    // Compose in the artwork's native size — the label has scaledContents,
+    // so the result is displayed exactly like the original pixmap/movie.
+    // Only the vinyl disc rotates: a rotated copy of the frame is painted
+    // clipped to the record's circle (radius chosen to stay inside the
+    // tonearm needle), while the turntable base and arm stay static.
+    QPixmap frame = base;
+    {
+        QPainter p(&frame);
+        p.setRenderHint(QPainter::SmoothPixmapTransform);
+        p.setRenderHint(QPainter::Antialiasing);
+        const QPointF center(base.width() / 2.0, base.height() / 2.0);
+        const double radius = base.width() * (85.0 / 241.0);
+        QPainterPath discClip;
+        discClip.addEllipse(center, radius, radius);
+        p.setClipPath(discClip);
+        p.translate(center);
+        p.rotate(degrees);
+        p.translate(-center);
+        p.drawPixmap(0, 0, base);
+    }
+    platter->setPixmap(frame);
+}
+
+void player::grabPlatterFrame(int deck)
+{
+    QLabel *platter = (deck == 0) ? ui->lp_1 : ui->lp_2;
+    QMovie *anim = (deck == 0) ? movie : movie2;
+
+    if (m_lpPlatterAnim[deck])
+        m_lpPlatterAnim[deck]->stop();
+
+    if (anim && anim->state() != QMovie::NotRunning) {
+        anim->setPaused(true);
+        m_lpPlatterBase[deck] = anim->currentPixmap();
+    } else {
+        m_lpPlatterBase[deck] = platter->pixmap();
+    }
+    if (m_lpPlatterBase[deck].isNull())
+        m_lpPlatterBase[deck] = QPixmap(":/images/lp_player_p0.png");
+    m_lpPlatterRotation[deck] = 0.0;
+}
+
+void player::restorePlatterMotion(int deck)
+{
+    QLabel *platter = (deck == 0) ? ui->lp_1 : ui->lp_2;
+    QMovie *anim = (deck == 0) ? movie : movie2;
+    if (anim) {
+        platter->setMovie(anim); // setPixmap() during the scratch detached it
+        anim->setPaused(false);
+    } else {
+        platter->setPixmap(QPixmap(":/images/lp_player_p0.png"));
+    }
+}
+
+void player::startPlatterEffectAnimation(int deck, bool backspin)
+{
+    FxPlayer *lp = (deck == 0) ? lp1_Xplayer : lp2_Xplayer;
+    if (!lp || lp->playbackState() != QMediaPlayer::PlayingState || !lp->fxEngineActive())
+        return; // the audio effect will not run either
+
+    grabPlatterFrame(deck);
+
+    auto *anim = new QVariantAnimation(this);
+    anim->setStartValue(0.0);
+    if (backspin) {
+        // Fast whip backwards, matching the ~0.8 s audio backspin
+        anim->setEndValue(-1900.0);
+        anim->setDuration(850);
+        anim->setEasingCurve(QEasingCurve::Linear);
+    } else {
+        // Platter decelerating to a stop over ~1.1 s
+        anim->setEndValue(150.0);
+        anim->setDuration(1100);
+        anim->setEasingCurve(QEasingCurve::OutCubic);
+    }
+    connect(anim, &QVariantAnimation::valueChanged, this, [this, deck](const QVariant &v) {
+        setPlatterRotation(deck, v.toDouble());
+    });
+    m_lpPlatterAnim[deck] = anim;
+    anim->start(QAbstractAnimation::DeleteWhenStopped);
+}
+
+bool player::eventFilter(QObject *watched, QEvent *event)
+{
+    int deck = -1;
+    if (watched == ui->lp_1)
+        deck = 0;
+    else if (watched == ui->lp_2)
+        deck = 1;
+
+    if (deck >= 0) {
+        FxPlayer *lp = (deck == 0) ? lp1_Xplayer : lp2_Xplayer;
+        QLabel *platter = (deck == 0) ? ui->lp_1 : ui->lp_2;
+
+        auto angleAt = [platter](const QPointF &pos) {
+            const QPointF c = platter->rect().center();
+            constexpr double kRadToDeg = 180.0 / 3.14159265358979323846;
+            return std::atan2(pos.y() - c.y(), pos.x() - c.x()) * kRadToDeg;
+        };
+
+        switch (event->type()) {
+        case QEvent::MouseButtonPress: {
+            auto *me = static_cast<QMouseEvent *>(event);
+            if (me->button() == Qt::LeftButton
+                && lp && lp->playbackState() == QMediaPlayer::PlayingState
+                && lp->fxEngineActive()) {
+                m_lpScratching[deck] = true;
+                m_lpLastAngleDeg[deck] = angleAt(me->position());
+                m_lpLastMoveMs[deck] = m_scratchClock.elapsed();
+                lp->scratchBegin();
+                grabPlatterFrame(deck); // freeze the artwork; rotation follows the hand
+                platter->setCursor(Qt::ClosedHandCursor);
+                return true;
+            }
+            break;
+        }
+        case QEvent::MouseMove: {
+            if (!m_lpScratching[deck])
+                break;
+            auto *me = static_cast<QMouseEvent *>(event);
+            const qint64 nowMs = m_scratchClock.elapsed();
+            const qint64 dtMs = std::max<qint64>(1, nowMs - m_lpLastMoveMs[deck]);
+            double dAngle = angleAt(me->position()) - m_lpLastAngleDeg[deck];
+            while (dAngle > 180.0) dAngle -= 360.0;
+            while (dAngle < -180.0) dAngle += 360.0;
+            // A 33 1/3 rpm platter turns 200 degrees per second at speed 1.0
+            const double rate = (dAngle * 1000.0 / dtMs) / 200.0;
+            lp->scratchMove(rate);
+            m_lpLastAngleDeg[deck] += dAngle;
+            m_lpLastMoveMs[deck] = nowMs;
+
+            // The record follows the hand
+            m_lpPlatterRotation[deck] += dAngle;
+            setPlatterRotation(deck, m_lpPlatterRotation[deck]);
+            return true;
+        }
+        case QEvent::MouseButtonRelease: {
+            if (!m_lpScratching[deck])
+                break;
+            m_lpScratching[deck] = false;
+            lp->scratchEnd();
+            restorePlatterMotion(deck);
+            platter->setCursor(Qt::OpenHandCursor);
+            return true;
+        }
+        default:
+            break;
+        }
+    }
+
+    return QMainWindow::eventFilter(watched, event);
+}
+
+/* =========================== ngrok public share link =========================== */
+
+void player::on_bt_ngrok_setup_clicked()
+{
+    if (!NgrokTunnelService::available()) {
+        QMessageBox box(this);
+        box.setWindowTitle(tr("ngrok not installed"));
+        box.setIcon(QMessageBox::Information);
+        box.setText(tr("The 'ngrok' command was not found on this system."));
+        box.setInformativeText(tr("ngrok creates a public link to your streaming server without "
+                                  "any router configuration.\n\n"
+                                  "1) Download it from https://ngrok.com/download\n"
+                                  "   (macOS: brew install ngrok, Linux: snap install ngrok)\n"
+                                  "2) Restart XFB and click Setup again."));
+        QPushButton *openBtn = box.addButton(tr("Open download page"), QMessageBox::AcceptRole);
+        box.addButton(QMessageBox::Close);
+        box.exec();
+        if (box.clickedButton() == openBtn)
+            QDesktopServices::openUrl(QUrl(QStringLiteral("https://ngrok.com/download")));
+        return;
+    }
+
+    bool ok = false;
+    const QString token = QInputDialog::getText(this, tr("ngrok account setup"),
+        tr("Connect your (free) ngrok account:\n\n"
+           "1) Create an account at https://dashboard.ngrok.com\n"
+           "2) Open \"Your Authtoken\" and copy the token\n"
+           "3) Paste it below — it is stored by ngrok itself, not by XFB\n"),
+        QLineEdit::Password, QString(), &ok);
+    if (!ok)
+        return;
+
+    ui->lbl_ngrok_status->setText(tr("Saving authtoken..."));
+    m_ngrokService->configureAuthToken(token);
+}
+
+void player::on_bt_ngrok_clicked()
+{
+    if (m_ngrokService->isRunning()) {
+        m_ngrokService->stop();
+        return;
+    }
+
+    if (!NgrokTunnelService::available()) {
+        on_bt_ngrok_setup_clicked(); // shows the install instructions
+        return;
+    }
+
+    bool portOk = false;
+    const int port = ui->txt_ngrok_port->text().trimmed().toInt(&portOk);
+    if (!portOk || port < 1 || port > 65535) {
+        ui->lbl_ngrok_status->setText(tr("Invalid local port: %1").arg(ui->txt_ngrok_port->text()));
+        return;
+    }
+
+    {
+        QSettings settings(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
+                               + "/xfb.conf", QSettings::IniFormat);
+        settings.setValue("NgrokLocalPort", port);
+    }
+
+    ui->lbl_ngrok_status->setText(tr("Creating public link for localhost:%1 ...").arg(port));
+    m_ngrokService->start(port);
+}
+
+void player::on_bt_ngrok_copy_clicked()
+{
+    const QString url = ui->txt_ngrok_url->text();
+    if (url.isEmpty()) {
+        ui->lbl_ngrok_status->setText(tr("No public link to copy yet — click Share first."));
+        return;
+    }
+    QApplication::clipboard()->setText(url);
+    ui->statusBar->showMessage(tr("Public stream link copied to the clipboard"), 5000);
 }
 
 void player::on_bt_rol_streaming_stop_clicked()
 {
-    radio1.close();
-    radio1.kill();
+    RadioPlayer->stop();
+    RadioPlayer->setSource(QUrl()); // drop the network connection immediately
     ui->bt_rol_streaming_play->setStyleSheet("");
+    ui->lbl_rol_streaming_status->setText(tr("Stopped"));
 }
 
 void player::on_lp_1_bt_play_clicked()
@@ -5481,6 +7795,7 @@ void player::on_lp_1_bt_play_clicked()
     lp1_Xplayer->play();
 
 
+    if (movie) movie->deleteLater(); // don't leak the previous animation
     movie = new QMovie(":/images/lp_anim1.gif");
     ui->lp_1->setMovie(movie);
     movie->start();
@@ -5493,7 +7808,7 @@ void player::on_pushButton_clicked()
     lp1_Xplayer->stop();
     ui->lp_1_bt_play->setDisabled(false);
     ui->lp_1->setPixmap(QPixmap(":/images/lp_player_p0.png"));
-    movie->stop();
+    if (movie) movie->stop(); // null until the first play — avoid crash on early Stop
     lp_1_paused = false;
     ui->lp_1_bt_pause->setStyleSheet("");
 }
@@ -5508,6 +7823,7 @@ void player::on_lp_1_bt_play_2_clicked()
     lp2_Xplayer->setSource(lp2_XplaylistUrls.first());
     lp2_Xplayer->play();
 
+    if (movie2) movie2->deleteLater(); // don't leak the previous animation
     movie2 = new QMovie(":/images/lp_anim1.gif");
     ui->lp_2->setMovie(movie2);
     movie2->start();
@@ -5521,7 +7837,7 @@ void player::on_pushButton_2_clicked()
     lp2_Xplayer->stop();
     ui->lp_1_bt_play_2->setDisabled(false);
     ui->lp_2->setPixmap(QPixmap(":/images/lp_player_p0.png"));
-    movie2->stop();
+    if (movie2) movie2->stop(); // null until the first play — avoid crash on early Stop
     lp_2_paused = false;
     ui->lp_2_bt_pause->setStyleSheet("");
 }
@@ -5560,11 +7876,49 @@ void player::on_lp_2_bt_pause_clicked()
 
 void player::on_bt_sndconv_clicked()
 {
-    QProcess snd;
-    QString sndcmd = "soundconverter";
-    snd.startDetached("sh",QStringList()<<"-c"<<sndcmd);
-
-
+#ifdef Q_OS_MAC
+    // On macOS, try to open a sound converter app
+    // Check for common audio converter apps
+    QStringList macApps = {
+        "/Applications/XLD.app",
+        "/Applications/Switch Audio Converter.app",
+        "/Applications/MediaHuman Audio Converter.app"
+    };
+    for (const QString &app : macApps) {
+        if (QFile::exists(app)) {
+            QProcess::startDetached("open", QStringList() << "-a" << app);
+            return;
+        }
+    }
+    // Fallback: open App Store search for audio converter
+    QMessageBox::information(this, tr("Sound Converter"),
+        tr("No audio converter application found.\n\n"
+           "Recommended free options for macOS:\n"
+           "• XLD (X Lossless Decoder)\n"
+           "• FFmpeg (command line: brew install ffmpeg)\n\n"
+           "You can also use: ffmpeg -i input.ogg output.mp3"));
+#else
+    // Linux: try soundconverter, then gnome-sound-converter
+    QString converter = QStandardPaths::findExecutable("soundconverter");
+    if (converter.isEmpty()) {
+        converter = QStandardPaths::findExecutable("gnome-sound-converter");
+    }
+    if (!converter.isEmpty()) {
+        QProcess::startDetached(converter, QStringList());
+    } else {
+        // Offer to install soundconverter on demand, with consent and progress.
+        DependencyChecker depChecker;
+        if (depChecker.ensureDependency("soundconverter",
+                tr("The Sound Converter lets you convert audio files between formats. "
+                   "It is provided by the \"soundconverter\" program."),
+                this)) {
+            converter = QStandardPaths::findExecutable("soundconverter");
+            if (!converter.isEmpty()) {
+                QProcess::startDetached(converter, QStringList());
+            }
+        }
+    }
+#endif
 }
 
 
@@ -5869,10 +8223,11 @@ void player::on_bt_apply_multi_selection_clicked()
 
 
 
-                               QString qry = "delete from musics where path='"+thisfilename+"'";
                                QSqlQuery sql(db);
+                               sql.prepare("delete from musics where path=:path");
+                               sql.bindValue(":path", thisfilename);
 
-                               if(sql.exec(qry)){
+                               if(sql.exec()){
                                    qDebug()<<"Track removed from the database: "<<thisfilename;
                                } else {
                                    QMessageBox::critical(this,tr("Error"),sql.lastError().text());
@@ -5960,7 +8315,7 @@ void player::on_bt_apply_multi_selection_clicked()
        }
 
        // --- Check for FFMPEG executable ---
-       QString ffmpegPath = QStandardPaths::findExecutable("ffmpeg");
+       QString ffmpegPath = FxEngine::ffmpegExecutable();
        if (ffmpegPath.isEmpty()) {
            qWarning() << "'ffmpeg' command not found in system PATH.";
            QMessageBox::critical(this, "Missing Dependency",
@@ -6207,7 +8562,7 @@ void player::on_bt_apply_multi_selection_clicked()
           }
 
           // --- Check for FFMPEG executable ---
-          QString ffmpegPath = QStandardPaths::findExecutable("ffmpeg");
+          QString ffmpegPath = FxEngine::ffmpegExecutable();
           if (ffmpegPath.isEmpty()) {
               qWarning() << "'ffmpeg' command not found in system PATH.";
               QMessageBox::critical(this, "Missing Dependency",
@@ -6891,7 +9246,7 @@ void player::on_actionConvert_all_musics_in_the_database_to_mp3_triggered()
     }
 
     // --- Check for FFMPEG executable ---
-    QString ffmpegPath = QStandardPaths::findExecutable("ffmpeg");
+    QString ffmpegPath = FxEngine::ffmpegExecutable();
     if (ffmpegPath.isEmpty()) {
         qWarning() << "'ffmpeg' command not found in system PATH.";
         QMessageBox::critical(this, "Missing Dependency",
@@ -7161,7 +9516,7 @@ void player::on_actionConvert_all_musics_in_the_database_to_ogg_triggered()
     }
 
     // --- Check for FFMPEG executable ---
-    QString ffmpegPath = QStandardPaths::findExecutable("ffmpeg");
+    QString ffmpegPath = FxEngine::ffmpegExecutable();
     if (ffmpegPath.isEmpty()) {
         qWarning() << "'ffmpeg' command not found in system PATH.";
         QMessageBox::critical(this, "Missing Dependency",
@@ -7733,7 +10088,12 @@ void player::on_txt_search_returnPressed()
     QString term = ui->txt_search->text();
 
     QSqlQueryModel *model = new QSqlQueryModel();
-    model->setQuery("select * from musics where artist like '%"+term+"%' or song like '%"+term+"%'");
+    QSqlQuery searchQuery(QSqlDatabase::database("xfb_connection"));
+    searchQuery.prepare("select * from musics where artist like :t1 or song like :t2");
+    searchQuery.bindValue(":t1", "%" + term + "%");
+    searchQuery.bindValue(":t2", "%" + term + "%");
+    searchQuery.exec();
+    model->setQuery(std::move(searchQuery));
     ui->musicView->setModel(model);
 
     ui->musicView->setSortingEnabled(true);
@@ -7878,9 +10238,11 @@ void player::on_bt_add_some_random_songs_from_genre_clicked()
     QSqlDatabase db = QSqlDatabase::database("xfb_connection");
     QString num = ui->spinBox_num_of_songs_to_add_random->text();
 checkDbOpen();
-    QString querystr = "select path from musics where genre1 like '"+selectedGenre+"' order by random() limit "+num;
     QSqlQuery query(db);
-    if(query.exec(querystr))
+    query.prepare("select path from musics where genre1 like :genre order by random() limit :num");
+    query.bindValue(":genre", selectedGenre);
+    query.bindValue(":num", num.toInt());
+    if(query.exec())
     {
         qDebug() << "SQL query executed from 201606181026: " << query.lastQuery();
 
@@ -8032,7 +10394,9 @@ void player::ice_timmer() {
         // On Windows, tasklist usually exits with 0 even if not found when filtering.
         // We need to check if the output contains the process name.
         QByteArray output = check_icecast.readAllStandardOutput();
-        if (output.contains("icecast.exe", Qt::CaseInsensitive)) {
+        // QByteArray::contains has no case-sensitivity overload; lowercase the
+        // (ASCII) tasklist output and match the lowercase literal.
+        if (output.toLower().contains("icecast.exe")) {
             is_running = true;
             qDebug() << "tasklist output indicates icecast is running.";
         } else {
@@ -8216,7 +10580,9 @@ void player::butt_timmer() {
 
 #ifdef Q_OS_WIN
         QByteArray output = check_butt.readAllStandardOutput();
-        if (output.contains("butt.exe", Qt::CaseInsensitive)) {
+        // QByteArray::contains has no case-sensitivity overload; lowercase the
+        // (ASCII) tasklist output and match the lowercase literal.
+        if (output.toLower().contains("butt.exe")) {
             is_running = true;
             qDebug() << "tasklist output indicates butt is running.";
         } else {
@@ -9098,6 +11464,53 @@ void player::refreshAdBanner() {
     }
 }
 
+// Make the bottom Music/Jingles/Pub/Programs/Torrents tab widget collapsible:
+// clicking the already-selected tab folds the content pane away (leaving the
+// tab bar), and clicking it again — or selecting another tab — restores it.
+void player::setupCollapsibleTabs()
+{
+    if (!ui || !ui->pubWidget)
+        return;
+
+    QTabWidget *tw = ui->pubWidget;
+    QTabBar *bar = tw->tabBar();
+    if (!bar)
+        return;
+
+    bar->setToolTip(tr("Click the selected tab again to collapse or expand this panel"));
+
+    connect(bar, &QTabBar::tabBarClicked, this, [this, tw](int index) {
+        if (index < 0)
+            return;
+        if (index == tw->currentIndex()) {
+            // Clicking the active tab toggles the content pane.
+            setPubTabsCollapsed(!m_pubTabsCollapsed);
+        } else if (m_pubTabsCollapsed) {
+            // Selecting a different tab while collapsed expands to show it.
+            setPubTabsCollapsed(false);
+        }
+    });
+}
+
+void player::setPubTabsCollapsed(bool collapsed)
+{
+    if (!ui || !ui->pubWidget)
+        return;
+
+    QTabWidget *tw = ui->pubWidget;
+    m_pubTabsCollapsed = collapsed;
+
+    if (collapsed) {
+        // Fold the widget down to just the tab bar so the area above it (the
+        // playlist) gets the freed space. TabPosition is South, so the bar
+        // stays visible.
+        const int barHeight = tw->tabBar() ? tw->tabBar()->sizeHint().height() : 24;
+        tw->setMaximumHeight(barHeight + 4);
+    } else {
+        tw->setMaximumHeight(QWIDGETSIZE_MAX);
+    }
+}
+
 // UI accessor methods for controllers
 QTableView* player::getMusicView() const {
     return ui->musicView;
@@ -9118,3 +11531,701 @@ QSlider* player::getProgressSlider() const {
 QSlider* player::getVolumeSlider() const {
     return ui->sliderVolume;
 }
+
+// Torrent functionality implementations
+
+bool player::ensureTorrentClient()
+{
+    DependencyChecker depChecker;
+    return depChecker.ensureAnyOf({"aria2c", "transmission-cli"},
+        tr("Downloading torrents requires a torrent client. XFB can use aria2 "
+           "(recommended) or transmission-cli to fetch the files."),
+        this);
+}
+
+void player::on_torConnectButton_clicked()
+{
+    if (!ui || !m_torNetworkService) {
+        QMessageBox::warning(this, tr("Tor Connection"), tr("Tor network service is not available."));
+        return;
+    }
+    
+    if (m_torNetworkService->isTorReady()) {
+        QMessageBox::information(this, tr("Tor Connection"), tr("Tor is already connected."));
+        return;
+    }
+
+    // Ensure Tor is available before attempting to connect. Prefer the Tor
+    // that ships with XFB (bundled at <app>/tor/tor.exe on Windows) or one
+    // found on the system; only if none is present do we try to install it via
+    // a package manager (works on Linux/macOS).
+    {
+        bool torAvailable = m_torNetworkService->isTorAvailable();
+        if (!torAvailable) {
+            DependencyChecker depChecker;
+            depChecker.ensureDependency("tor",
+                tr("XFB uses the Tor network to anonymously search for and reach .onion "
+                   "torrent mirrors. The \"tor\" program provides this connection."),
+                this);
+            torAvailable = m_torNetworkService->isTorAvailable();
+        }
+        if (!torAvailable) {
+            updateTorConnectionUI(false);
+            QMessageBox::warning(this, tr("Tor Not Available"),
+                tr("XFB could not find the Tor program needed to connect.\n\n"
+                   "On Linux/macOS, install the \"tor\" package with your package "
+                   "manager. On Windows, reinstall XFB so the bundled Tor is present."));
+            return;
+        }
+    }
+
+    // Show security warning
+    QMessageBox::StandardButton reply = QMessageBox::question(this, 
+        tr("Tor Connection"), 
+        tr("⚠️ SECURITY NOTICE ⚠️\n\n"
+           "You are about to connect to the Tor network. This will:\n"
+           "• Route your traffic through the Tor network for anonymity\n"
+           "• Only allow connections to .onion sites for security\n"
+           "• Block suspicious scripts and external connections\n"
+           "• Enable secure torrent searching\n\n"
+           "Do you want to connect to Tor?"),
+        QMessageBox::Yes | QMessageBox::No);
+    
+    if (reply != QMessageBox::Yes) {
+        return;
+    }
+    
+    if (ui->torConnectButton) {
+        ui->torConnectButton->setEnabled(false);
+        ui->torConnectButton->setText(tr("Connecting..."));
+    }
+    if (ui->torConnectionStatus) {
+        ui->torConnectionStatus->setText(tr("Status: Connecting..."));
+        ui->torConnectionStatus->setStyleSheet("color: orange; font-weight: bold;");
+    }
+    
+    if (m_torNetworkService->connectToTor()) {
+        // Connection started, wait for ready signal
+    } else {
+        QMessageBox::critical(this, tr("Connection Error"), 
+                             tr("Failed to start Tor connection. Please check if Tor is installed."));
+        updateTorConnectionUI(false);
+    }
+}
+
+void player::on_torDisconnectButton_clicked()
+{
+    if (!m_torNetworkService) {
+        return;
+    }
+    
+    QMessageBox::StandardButton reply = QMessageBox::question(this, 
+        tr("Disconnect Tor"), 
+        tr("Are you sure you want to disconnect from Tor?\n\n"
+           "This will disable torrent searching and stop all secure connections."),
+        QMessageBox::Yes | QMessageBox::No);
+    
+    if (reply == QMessageBox::Yes) {
+        m_torNetworkService->disconnectFromTor();
+        updateTorConnectionUI(false);
+    }
+}
+
+void player::on_findOnionButton_clicked()
+{
+    if (!ui || !m_torNetworkService || !m_torNetworkService->isTorReady()) {
+        QMessageBox::warning(this, tr("Tor Required"), 
+                            tr("Please connect to Tor first before searching for onion mirrors."));
+        return;
+    }
+    
+    if (ui->findOnionButton) {
+        ui->findOnionButton->setEnabled(false);
+        ui->findOnionButton->setText(tr("Searching..."));
+    }
+    
+    // Search for 1337x.to onion mirror
+    m_torNetworkService->findOnionMirror("1337x.to");
+}
+
+void player::on_reloadPageButton_clicked()
+{
+    if (!m_torNetworkService || !m_torNetworkService->isTorReady()) {
+        QMessageBox::warning(this, tr("Tor Required"), 
+                            tr("Please connect to Tor first."));
+        return;
+    }
+    
+    QString query = ui->torrentSearchEdit->text().trimmed();
+    if (query.isEmpty()) {
+        QMessageBox::warning(this, tr("No Search Query"), 
+                            tr("Please enter a search query first."));
+        return;
+    }
+    
+    // Clear current results and search again
+    if (m_torrentSearchService) {
+        m_torrentSearchService->cancelSearch();
+        m_torrentSearchService->clearResults();
+        
+        // Start new search
+        m_torrentSearchService->searchTorrents(query);
+    }
+}
+
+void player::updateTorConnectionUI(bool connected)
+{
+    // Add null checks for UI elements to prevent crashes
+    if (!ui) return;
+    
+    if (ui->torConnectButton) ui->torConnectButton->setEnabled(!connected);
+    if (ui->torDisconnectButton) ui->torDisconnectButton->setEnabled(connected);
+    if (ui->torrentSearchEdit) ui->torrentSearchEdit->setEnabled(connected);
+    if (ui->torrentSearchButton) ui->torrentSearchButton->setEnabled(connected);
+    if (ui->findOnionButton) ui->findOnionButton->setEnabled(connected);
+    if (ui->reloadPageButton) ui->reloadPageButton->setEnabled(connected);
+    
+    if (connected) {
+        if (ui->torConnectButton) ui->torConnectButton->setText(tr("Connect to Tor"));
+        if (ui->torConnectionStatus) {
+            ui->torConnectionStatus->setText(tr("Status: Connected & Secure"));
+            ui->torConnectionStatus->setStyleSheet("color: green; font-weight: bold;");
+        }
+        if (ui->torrentWarningLabel) {
+            ui->torrentWarningLabel->setText(tr("⚠️ WARNING: Only download legal content. Tor Status: Connected - Secure browsing enabled."));
+        }
+    } else {
+        if (ui->torConnectButton) ui->torConnectButton->setText(tr("Connect to Tor"));
+        if (ui->torConnectionStatus) {
+            ui->torConnectionStatus->setText(tr("Status: Disconnected"));
+            ui->torConnectionStatus->setStyleSheet("color: red; font-weight: bold;");
+        }
+        if (ui->torrentWarningLabel) {
+            ui->torrentWarningLabel->setText(tr("⚠️ WARNING: Only download legal content. Tor Status: Disconnected - Click \"Connect to Tor\" to enable secure browsing."));
+        }
+    }
+}
+
+void player::onTorReady()
+{
+    updateTorConnectionUI(true);
+    QMessageBox::information(this, tr("Tor Connected"), 
+                            tr("Successfully connected to Tor network. You can now search for torrents securely."));
+}
+
+void player::onTorDisconnected()
+{
+    updateTorConnectionUI(false);
+    ui->statusBar->showMessage(tr("Disconnected from Tor network"), 3000);
+}
+
+void player::updateDownloadsCountLabel()
+{
+    if (!m_torrentDownloadService || !ui) return;
+    int active = m_torrentDownloadService->activeDownloadCount();
+    ui->downloadsCountLabel->setText(QString("(%1 active)").arg(active));
+    // Auto-hide panel when nothing left
+    if (active == 0 && m_torrentDownloadService->getDownloadsModel()->rowCount() == 0) {
+        ui->downloadsPanel->setVisible(false);
+    }
+}
+
+void player::onTorError(const QString &error)
+{
+    updateTorConnectionUI(false);
+    QMessageBox::critical(this, tr("Tor Connection Error"), 
+                         tr("Tor connection failed: %1").arg(error));
+}
+
+void player::onOnionMirrorFound(const QString &clearnetDomain, const QString &onionUrl)
+{
+    Q_UNUSED(clearnetDomain)
+    
+    if (ui && ui->findOnionButton) {
+        ui->findOnionButton->setEnabled(true);
+        ui->findOnionButton->setText(tr("Find 1337x.to Onion"));
+    }
+    
+    QMessageBox::information(this, tr("Onion Mirror Found"), 
+                            tr("Found working onion mirror:\n%1\n\nThis will be used for secure searches.").arg(onionUrl));
+}
+
+void player::onSearchingForOnionMirror(const QString &clearnetDomain)
+{
+    Q_UNUSED(clearnetDomain)
+    if (ui && ui->statusBar) {
+        ui->statusBar->showMessage(tr("Searching for secure onion mirror..."), 0);
+    }
+}
+
+void player::onOnionMirrorSearchFailed(const QString &clearnetDomain)
+{
+    Q_UNUSED(clearnetDomain)
+    
+    if (ui && ui->findOnionButton) {
+        ui->findOnionButton->setEnabled(true);
+        ui->findOnionButton->setText(tr("Find 1337x.to Onion"));
+    }
+    
+    QMessageBox msgBox(this);
+    msgBox.setWindowTitle(tr("Onion Mirror Unavailable"));
+    msgBox.setIcon(QMessageBox::Warning);
+    msgBox.setText(tr("Could not find a working .onion mirror for 1337x.to.\n\n"
+                      "The onion site may be temporarily down or the address may have changed."));
+    msgBox.setInformativeText(tr("Would you like to use the main site (1337x.to) through Tor instead?\n\n"
+                                 "Your traffic will still be routed through the Tor network for anonymity, "
+                                 "but will exit through a Tor exit node to reach the clearnet site."));
+    
+    QPushButton *useClearnetBtn = msgBox.addButton(tr("Use Main Site via Tor"), QMessageBox::AcceptRole);
+    QPushButton *retryBtn = msgBox.addButton(tr("Retry Onion"), QMessageBox::RejectRole);
+    msgBox.addButton(QMessageBox::Cancel);
+    
+    msgBox.exec();
+    
+    if (msgBox.clickedButton() == useClearnetBtn) {
+        if (m_torrentSearchService) {
+            m_torrentSearchService->enableClearnetFallback(true);
+            if (ui && ui->statusBar) {
+                ui->statusBar->showMessage(tr("Clearnet fallback enabled — searches will use 1337x.to through Tor"), 5000);
+            }
+        }
+    } else if (msgBox.clickedButton() == retryBtn) {
+        // Retry the onion mirror search
+        on_findOnionButton_clicked();
+    }
+}
+
+void player::onOnionSitesUnavailable()
+{
+    // This is triggered during a search when onion sites can't be reached
+    QMessageBox msgBox(this);
+    msgBox.setWindowTitle(tr("Onion Sites Unavailable"));
+    msgBox.setIcon(QMessageBox::Warning);
+    msgBox.setText(tr("The .onion mirror for 1337x could not be reached."));
+    msgBox.setInformativeText(tr("Would you like to search using the main site (1337x.to) through Tor?\n\n"
+                                 "Your connection will still be anonymous (routed through Tor), "
+                                 "but will use a Tor exit node instead of staying within the onion network."));
+    
+    QPushButton *useClearnetBtn = msgBox.addButton(tr("Use Main Site via Tor"), QMessageBox::AcceptRole);
+    msgBox.addButton(tr("Cancel Search"), QMessageBox::RejectRole);
+    
+    msgBox.exec();
+    
+    if (msgBox.clickedButton() == useClearnetBtn) {
+        if (m_torrentSearchService) {
+            m_torrentSearchService->enableClearnetFallback(true);
+            // Re-trigger the search with clearnet fallback now enabled
+            QString query = ui->torrentSearchEdit ? ui->torrentSearchEdit->text().trimmed() : QString();
+            if (!query.isEmpty()) {
+                m_torrentSearchService->searchTorrents(query);
+            }
+            if (ui && ui->statusBar) {
+                ui->statusBar->showMessage(tr("Searching 1337x.to through Tor..."), 0);
+            }
+        }
+    }
+}
+
+void player::on_torrentSearchButton_clicked()
+{
+    if (!m_torrentSearchService) {
+        QMessageBox::warning(this, tr("Torrent Search"), tr("Torrent search service is not available."));
+        return;
+    }
+    
+    if (!m_torNetworkService || !m_torNetworkService->isTorReady()) {
+        QMessageBox::warning(this, tr("Tor Required"), 
+                            tr("Please connect to Tor first before searching for torrents.\n\n"
+                               "Click the \"Connect to Tor\" button to establish a secure connection."));
+        return;
+    }
+    
+    QString query = ui->torrentSearchEdit->text().trimmed();
+    if (query.isEmpty()) {
+        QMessageBox::warning(this, tr("Search Error"), tr("Please enter a search query."));
+        return;
+    }
+    
+    // Show legal warning
+    QMessageBox::StandardButton reply = QMessageBox::question(this, 
+        tr("Legal Notice"), 
+        tr("⚠️ IMPORTANT LEGAL NOTICE ⚠️\n\n"
+           "You are about to search for torrents. Please ensure you only download content that:\n"
+           "• You have legal rights to access\n"
+           "• Is not copyrighted or you own the copyright\n"
+           "• Complies with your local laws\n\n"
+           "XFB is not responsible for any illegal use of this feature.\n\n"
+           "Do you understand and agree to use this feature responsibly?"),
+        QMessageBox::Yes | QMessageBox::No);
+    
+    if (reply != QMessageBox::Yes) {
+        return;
+    }
+    
+    m_torrentSearchService->searchTorrents(query);
+}
+
+void player::on_torrentClearButton_clicked()
+{
+    ui->torrentSearchEdit->clear();
+    
+    if (m_torrentSearchService) {
+        m_torrentSearchService->cancelSearch();
+        
+        // Clear results
+        m_torrentSearchService->clearResults();
+    }
+}
+
+void player::on_torrentSearchEdit_returnPressed()
+{
+    on_torrentSearchButton_clicked();
+}
+
+void player::onTorrentSearchResults(const QList<TorrentSearchResult> &results)
+{
+    if (results.isEmpty()) {
+        QMessageBox::information(this, tr("Search Results"), 
+                                tr("No audio torrents found for your search query."));
+    } else {
+        QString message = tr("Found %1 audio torrent(s) matching your search.").arg(results.size());
+        ui->statusBar->showMessage(message, 5000);
+    }
+}
+
+void player::onTorrentSearchError(const QString &error)
+{
+    QMessageBox::warning(this, tr("Search Error"), 
+                        tr("Torrent search failed: %1").arg(error));
+}
+
+void player::onTorrentDownloadCompleted(const QString &downloadId, const QStringList &audioFiles)
+{
+    Q_UNUSED(downloadId)
+    
+    updateDownloadsCountLabel();
+    
+    // Add completed audio files to the music database
+    int added = 0;
+    for (const QString &filePath : audioFiles) {
+        QSqlDatabase db = QSqlDatabase::database("xfb_connection");
+        checkDbOpen();
+        
+        // Check if file already exists in database
+        QSqlQuery checkQuery(db);
+        checkQuery.prepare("SELECT COUNT(*) FROM musics WHERE path = ?");
+        checkQuery.addBindValue(filePath);
+        if (checkQuery.exec() && checkQuery.next() && checkQuery.value(0).toInt() > 0) {
+            continue;  // already in database
+        }
+        
+        QFileInfo fileInfo(filePath);
+        QSqlQuery query(db);
+        query.prepare("INSERT INTO musics (artist, song, genre1, genre2, country, published_date, path, time, played_times, last_played) "
+                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        query.addBindValue("Unknown");                          // artist
+        query.addBindValue(fileInfo.completeBaseName());        // song
+        query.addBindValue("Torrent");                          // genre1
+        query.addBindValue("");                                 // genre2
+        query.addBindValue("");                                 // country
+        query.addBindValue(QDate::currentDate().toString("yyyy-MM-dd")); // published_date
+        query.addBindValue(filePath);                           // path
+        query.addBindValue("");                                 // time
+        query.addBindValue(0);                                  // played_times
+        query.addBindValue("-");                                // last_played
+        
+        if (query.exec()) {
+            added++;
+            qInfo() << "Added torrent audio file to database:" << filePath;
+        } else {
+            qWarning() << "Failed to add torrent file to database:" << query.lastError().text();
+        }
+    }
+    
+    // Update music table
+    update_music_table();
+    
+    // Persist updated download state
+    if (m_torrentDownloadService) {
+        m_torrentDownloadService->saveDownloadState();
+    }
+    
+    // Show notification
+    QString message = tr("Downloaded %1 audio file(s) — %2 added to music library.")
+                        .arg(audioFiles.size()).arg(added);
+    QMessageBox::information(this, tr("Download Complete"), message);
+}
+
+void player::onTorrentStreamingReady(const QString &downloadId, const QString &filePath)
+{
+    Q_UNUSED(downloadId)
+    
+    // Add to playlist and start playing
+    ui->playlist->addItem(filePath);
+    calculate_playlist_total_time();
+    
+    // If not currently playing, start playing this file
+    if (PlayMode == "stopped") {
+        XplaylistUrls.clear();
+        XplaylistUrls.append(QUrl::fromLocalFile(filePath));
+        XplaylistIndex = 0;
+        
+        // Start playback
+        on_btPlay_clicked();
+    }
+    
+    QString message = tr("Streaming started for: %1").arg(QFileInfo(filePath).baseName());
+    ui->statusBar->showMessage(message, 5000);
+}
+
+/* =========================== Audio FX (EQ / Compressor / 432 Hz) =========================== */
+
+void player::applyStoredFxSettings()
+{
+    if (Xplayer)
+        Xplayer->setFxParams(FxSettings::loadChannel(QStringLiteral("Main")));
+    if (lp1_Xplayer)
+        lp1_Xplayer->setFxParams(FxSettings::loadChannel(QStringLiteral("LP1")));
+    if (lp2_Xplayer)
+        lp2_Xplayer->setFxParams(FxSettings::loadChannel(QStringLiteral("LP2")));
+}
+
+void player::openAudioFxDialog()
+{
+    // When the Audio FX tab is visible, jump to it instead of opening a
+    // second control surface.
+    if (m_fxTabPage && ui->tabWidget_2->indexOf(m_fxTabPage) != -1) {
+        ui->tabWidget_2->setCurrentWidget(m_fxTabPage);
+        if (m_fxTabWidget)
+            m_fxTabWidget->reloadFromSettings();
+        return;
+    }
+
+    AudioFxDialog dialog(Xplayer, lp1_Xplayer, lp2_Xplayer, this);
+    dialog.exec();
+}
+
+void player::convertAllMusicsTo432()
+{
+    QSqlDatabase db = QSqlDatabase::database("xfb_connection");
+    if (!db.isOpen()) {
+        QMessageBox::critical(this, tr("Database Error"), tr("Database connection is not open."));
+        return;
+    }
+
+    QStringList paths;
+    QSqlQuery query(db);
+    if (!query.exec("SELECT path FROM musics")) {
+        QMessageBox::critical(this, tr("Database Error"),
+                              tr("Failed to query the musics table: %1").arg(query.lastError().text()));
+        return;
+    }
+    while (query.next())
+        paths << query.value(0).toString();
+
+    convertMusicsTo432(paths);
+}
+
+void player::convertMusicsTo432(const QStringList &paths)
+{
+    if (paths.isEmpty()) {
+        QMessageBox::information(this, tr("Convert to 432 Hz"), tr("No tracks to convert."));
+        return;
+    }
+
+    const QString ffmpegPath = FxEngine::ffmpegExecutable();
+    if (ffmpegPath.isEmpty()) {
+        QMessageBox::critical(this, tr("Missing Dependency"),
+                              tr("The 'ffmpeg' command is required for audio conversion "
+                                 "but was not found.\n\nPlease install ffmpeg and ensure it's accessible."));
+        return;
+    }
+    const QString ffprobePath = FxEngine::ffprobeExecutable();
+
+    // Ask how to convert
+    QMessageBox choice(this);
+    choice.setWindowTitle(tr("Convert to 432 Hz"));
+    choice.setIcon(QMessageBox::Question);
+    choice.setText(tr("Retune %n track(s) from A=440 Hz to A=432 Hz?", "", paths.size()));
+    choice.setInformativeText(tr("\"Replace originals\" overwrites the audio files in place (the "
+                                 "database stays unchanged).\n\n"
+                                 "\"Keep originals\" writes new files with a \"_432Hz\" suffix and "
+                                 "points the database at them, leaving the original files untouched.\n\n"
+                                 "Files already retuned by XFB are detected (via an embedded tag) "
+                                 "and skipped automatically, so a track can never be converted twice.\n\n"
+                                 "Tip: for a non-destructive alternative, enable live 432 Hz playback "
+                                 "in Options instead."));
+    QPushButton *replaceBtn = choice.addButton(tr("Replace originals"), QMessageBox::DestructiveRole);
+    QPushButton *copyBtn = choice.addButton(tr("Keep originals (make _432Hz copies)"), QMessageBox::AcceptRole);
+    choice.addButton(QMessageBox::Cancel);
+    choice.exec();
+
+    const bool replaceMode = (choice.clickedButton() == replaceBtn);
+    if (!replaceMode && choice.clickedButton() != copyBtn)
+        return;
+
+    QSqlDatabase db = QSqlDatabase::database("xfb_connection");
+    QSqlQuery queryUpdate(db);
+    if (!replaceMode) {
+        if (!queryUpdate.prepare("UPDATE musics SET path = :new_path WHERE path = :old_path")) {
+            QMessageBox::critical(this, tr("Database Error"),
+                                  tr("Failed to prepare the database update query."));
+            return;
+        }
+    }
+
+    // A track is "already 432" when it carries the tag we embed during
+    // conversion, or (copy mode) when its file name has the _432Hz suffix.
+    auto isAlready432 = [&ffprobePath](const QString &path) {
+        if (QFileInfo(path).completeBaseName().endsWith(QStringLiteral("_432Hz")))
+            return true;
+        if (ffprobePath.isEmpty())
+            return false;
+        QProcess probe;
+        probe.start(ffprobePath, {"-v", "error",
+                                  "-show_entries", "format_tags:stream_tags",
+                                  "-of", "default=noprint_wrappers=1", path});
+        if (!probe.waitForFinished(10000)) {
+            probe.kill();
+            return false;
+        }
+        const QString tags = QString::fromLocal8Bit(probe.readAllStandardOutput());
+        return tags.contains(QStringLiteral("xfb_tuning=432"), Qt::CaseInsensitive)
+               || tags.contains(QStringLiteral("XFB-432Hz"), Qt::CaseInsensitive);
+    };
+
+    QProgressDialog progressDialog(tr("Retuning tracks to 432 Hz..."), tr("Cancel"), 0,
+                                   paths.size(), this);
+    progressDialog.setWindowModality(Qt::WindowModal);
+    progressDialog.setValue(0);
+    progressDialog.show();
+
+    int successCount = 0;
+    int failCount = 0;
+    int skippedCount = 0;
+    int processed = 0;
+
+    for (const QString &originalPath : paths) {
+        if (progressDialog.wasCanceled())
+            break;
+        progressDialog.setValue(++processed);
+        progressDialog.setLabelText(tr("Retuning %1 of %2:\n%3")
+                                        .arg(processed).arg(paths.size())
+                                        .arg(QFileInfo(originalPath).fileName()));
+        qApp->processEvents();
+
+        const QFileInfo fi(originalPath);
+        if (!fi.exists() || !fi.isFile()) {
+            qWarning() << "432Hz conversion: file not found, skipping:" << originalPath;
+            failCount++;
+            continue;
+        }
+        // Never convert twice: suffix (copy mode) or embedded tag (any mode)
+        if (isAlready432(originalPath)) {
+            skippedCount++;
+            continue;
+        }
+
+        // Determine the source sample rate (default to 44100 when unknown)
+        int sampleRate = 44100;
+        if (!ffprobePath.isEmpty()) {
+            QProcess probe;
+            probe.start(ffprobePath, {"-v", "error", "-select_streams", "a:0",
+                                      "-show_entries", "stream=sample_rate",
+                                      "-of", "csv=p=0", originalPath});
+            if (probe.waitForFinished(10000)) {
+                bool ok = false;
+                const int sr = QString::fromLatin1(probe.readAllStandardOutput()).trimmed().toInt(&ok);
+                if (ok && sr > 0)
+                    sampleRate = sr;
+            }
+        }
+        const int retunedRate = qRound(sampleRate * 432.0 / 440.0);
+        // atempo compensates the slowdown introduced by asetrate, so the
+        // converted file keeps its original duration and BPM
+        const double tempoComp = static_cast<double>(sampleRate) / retunedRate;
+
+        const QString ext = fi.suffix().toLower();
+        const QString tempOut = fi.absolutePath() + "/." + fi.completeBaseName()
+                                + "_432tmp." + fi.suffix();
+
+        QStringList args;
+        args << "-y" << "-nostdin" << "-loglevel" << "error"
+             << "-i" << originalPath
+             << "-vn"
+             << "-map_metadata" << "0"
+             // Durable marker so this file is never converted twice and the
+             // live 432 Hz mode knows not to retune it again
+             << "-metadata" << "XFB_TUNING=432"
+             << "-af" << QString("asetrate=%1,aresample=%2,atempo=%3")
+                             .arg(retunedRate).arg(sampleRate)
+                             .arg(tempoComp, 0, 'f', 8);
+        if (ext == "wav") // WAV drops custom keys; use the standard comment tag
+            args << "-metadata" << "comment=XFB-432Hz";
+        // Sensible encoder quality for lossy targets; lossless formats ignore this
+        if (ext == "mp3")
+            args << "-b:a" << "320k";
+        else if (ext == "ogg" || ext == "oga" || ext == "opus" || ext == "m4a" || ext == "aac")
+            args << "-b:a" << "256k";
+        args << tempOut;
+
+        QProcess ffmpegProcess;
+        ffmpegProcess.start(ffmpegPath, args);
+        if (!ffmpegProcess.waitForFinished(600000)) {
+            qWarning() << "432Hz conversion timed out for:" << originalPath;
+            ffmpegProcess.kill();
+            ffmpegProcess.waitForFinished(1000);
+            QFile::remove(tempOut);
+            failCount++;
+            continue;
+        }
+        if (ffmpegProcess.exitStatus() != QProcess::NormalExit || ffmpegProcess.exitCode() != 0
+            || !QFileInfo::exists(tempOut) || QFileInfo(tempOut).size() == 0) {
+            qWarning() << "432Hz conversion failed for:" << originalPath
+                       << QString::fromLocal8Bit(ffmpegProcess.readAllStandardError());
+            QFile::remove(tempOut);
+            failCount++;
+            continue;
+        }
+
+        if (replaceMode) {
+            if (!QFile::remove(originalPath) || !QFile::rename(tempOut, originalPath)) {
+                qWarning() << "432Hz conversion: could not replace original:" << originalPath;
+                QFile::remove(tempOut);
+                failCount++;
+                continue;
+            }
+        } else {
+            const QString newPath = fi.absolutePath() + "/" + fi.completeBaseName()
+                                    + "_432Hz." + fi.suffix();
+            QFile::remove(newPath); // allow re-running the conversion
+            if (!QFile::rename(tempOut, newPath)) {
+                qWarning() << "432Hz conversion: could not create:" << newPath;
+                QFile::remove(tempOut);
+                failCount++;
+                continue;
+            }
+            queryUpdate.bindValue(":new_path", newPath);
+            queryUpdate.bindValue(":old_path", originalPath);
+            if (!queryUpdate.exec()) {
+                qWarning() << "432Hz conversion: DB update failed for:" << originalPath
+                           << queryUpdate.lastError().text();
+                failCount++;
+                continue;
+            }
+        }
+        successCount++;
+    }
+
+    progressDialog.setValue(paths.size());
+    update_music_table();
+
+    QString summary = tr("432 Hz conversion finished.\n\nConverted: %1\nFailed: %2")
+                          .arg(successCount).arg(failCount);
+    if (skippedCount > 0)
+        summary += tr("\nSkipped (already 432 Hz): %1").arg(skippedCount);
+    QMessageBox::information(this, tr("Convert to 432 Hz"), summary);
+}
+
+
+// End of player.cpp

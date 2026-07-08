@@ -49,9 +49,9 @@ read -p "Commit and push? (y/N) " -n 1 -r
 echo ""
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     git add PKGBUILD .SRCINFO
-    git commit -m "Update to version 2.0.0
+    git commit -m "Update to version 3.14159
 
-- Updated to XFB 2.0.0
+- Updated to XFB 3.14159
 - Enhanced accessibility features with ORCA integration
 - Improved keyboard navigation
 - Added braille display support

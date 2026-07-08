@@ -101,7 +101,7 @@ public:
      */
     void updateEditingState(bool editing, int row = -1, int column = -1);
 
-private:
+public:
     /**
      * @brief Get formatted cell content with context
      * @param row The row index

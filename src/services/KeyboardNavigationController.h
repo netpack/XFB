@@ -14,7 +14,7 @@
 #include <QAbstractItemView>
 #include <QFocusFrame>
 
-class AccessibilityManager;
+#include "AccessibilityManager.h"
 
 /**
  * @brief Controller for comprehensive keyboard navigation throughout XFB
@@ -193,7 +193,7 @@ public slots:
      * @param old Previously focused widget
      * @param now Currently focused widget
      */
-    void onFocusChanged(QWidget* old, QWidget* now);
+    void onFocusChanged(QObject* focusObject);
 
     /**
      * @brief Execute a keyboard shortcut action
@@ -333,14 +333,35 @@ private:
      * @param view Item view widget
      * @param index Model index of current cell
      */
-    void announceGridCell(QAbstractItemView* view, const QModelIndex& index);
+    void announceGridCell(QAbstractItemView* view, const QModelIndex& index) {
+        if (!m_accessibilityManager || !view || !index.isValid()) {
+            return;
+        }
+
+        QString announcement = index.data(Qt::DisplayRole).toString();
+        if (!announcement.isEmpty()) {
+            m_accessibilityManager->announceMessage(announcement, AccessibilityManager::Priority::Normal);
+        }
+    }
 
     /**
      * @brief Announce list item information
      * @param list List widget
      * @param row Current row
      */
-    void announceListItem(QListWidget* list, int row);
+    void announceListItem(QListWidget* list, int row) {
+        if (!m_accessibilityManager || !list || row < 0 || row >= list->count()) {
+            return;
+        }
+
+        QListWidgetItem* item = list->item(row);
+        if (item) {
+            QString announcement = item->text();
+            if (!announcement.isEmpty()) {
+                m_accessibilityManager->announceMessage(announcement, AccessibilityManager::Priority::Normal);
+            }
+        }
+    }
 
     // Member variables
     AccessibilityManager* m_accessibilityManager;

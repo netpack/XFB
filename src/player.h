@@ -2,34 +2,47 @@
 #define PLAYER_H
 
 #include <QMainWindow>
-#include <QtMultimedia/QMediaPlayer>
-// QMediaPlaylist replaced with QList<QUrl>
-#include <QtSql>
-#include <QtMultimedia/QMediaRecorder>
-#include <QUrl>
-#include <QByteArray>
-#include <QComboBox>
-#include <QMainWindow>
-#include <QObject>
-#include <QPixmap>
-#include <QPushButton>
-#include <QSlider>
-#include <QWidget>
-#include <QTime>
-#include <QNetworkReply>
-#include <QNetworkAccessManager>
-#include <QTableView>
-#include <QUrl>
-#include <QLabel>
-#include <QFrame>
-#include <QtQuickWidgets/QQuickWidget>
-#include <QtWebEngineQuick/QtWebEngineQuick>
+#include <QMediaPlayer>
+#include <QMediaRecorder>
 #include <QMediaFormat>
-// Qt6 multimedia includes
-#include <QtMultimedia/QAudioOutput>
-#include <QtMultimedia/QMediaDevices>
-#include <QtMultimedia/QAudioInput>
 #include <QMediaCaptureSession>
+#include <QAudioOutput>
+#include <QAudioInput>
+#include <QSqlDatabase>
+#include <QUrl>
+#include <QTimer>
+#include <QElapsedTimer>
+#include <QMutex>
+#include <QMutexLocker>
+#include <QPixmap>
+#include <QPointer>
+#include <QProcess>
+#include <QVariantAnimation>
+
+// Forward declarations (prefer these over heavy includes in headers)
+class QCloseEvent;
+class QComboBox;
+class QPushButton;
+class QSlider;
+class QTableView;
+class QLabel;
+class QFrame;
+class QNetworkReply;
+class QNetworkAccessManager;
+class QQuickWidget;
+class QToolButton;
+class QMovie;
+
+// Project forward declarations
+class TorNetworkService;
+class TorrentSearchService;
+class TorrentDownloadService;
+class NgrokTunnelService;
+class UpdateCheckService;
+class AudioFxWidget;
+
+#include "services/TorrentTypes.h"
+#include "audio/FxPlayer.h"
 
 namespace Ui {
 class player;
@@ -41,24 +54,32 @@ class player : public QMainWindow
     friend class PlayerUIController;
 
 public:
-    explicit player(QWidget *parent = 0);
+    explicit player(QWidget *parent = nullptr);
     ~player();
-    int onAbout2Finish;
+
+protected:
+    void closeEvent(QCloseEvent *event) override;
+    /** Turns the LP platter labels into scratchable jog wheels. */
+    bool eventFilter(QObject *watched, QEvent *event) override;
+
+public:
+    // Public state
+    int onAbout2Finish = 0;
     QSqlDatabase adb;
     QString saveFile;
-    QTimer *recTimer = nullptr; // Will be initialized in constructor
-    int recSecs;
-    int recMins;
-    int recHours;
-    int server_this_day_of_the_week;
+    QTimer *recTimer = nullptr;
+    int recSecs = 0;
+    int recMins = 0;
+    int recHours = 0;
+    int server_this_day_of_the_week = 0;
     QString lp1_total_time;
-    int lp1_total_time_int;
+    int lp1_total_time_int = 0;
     QString lp2_total_time;
-    int lp2_total_time_int;
-    QTimer *stimer = new QTimer(this);
-    QTimer *icetimer = new QTimer(this);
-    QTimer *butt_timer = new QTimer(this);
-    QTimer *adRefreshTimer = new QTimer(this);
+    int lp2_total_time_int = 0;
+    QTimer *stimer = nullptr;
+    QTimer *icetimer = nullptr;
+    QTimer *butt_timer = nullptr;
+    QTimer *adRefreshTimer = nullptr;
     
     // UI accessor methods for controllers
     QTableView* getMusicView() const;
@@ -84,15 +105,15 @@ private slots:
     void onPositionChanged(qint64 position);
     void durationChanged(qint64 position);
     void currentMediaChanged(const QUrl &content); // Changed from QMediaContent
-    void volumeChanged(int volume);
+    void volumeChanged(float volume);
     void lp1_onPositionChanged(qint64 position);
     void lp1_durationChanged(qint64 position);
     void lp1_currentMediaChanged(const QUrl &content); // Changed from QMediaContent
-    void lp1_volumeChanged(int volume);
+    void lp1_volumeChanged(float volume);
     void lp2_onPositionChanged(qint64 position);
     void lp2_durationChanged(qint64 position);
     void lp2_currentMediaChanged(const QUrl &content); // Changed from QMediaContent
-    void lp2_volumeChanged(int volume);
+    void lp2_volumeChanged(float volume);
 
     // Add new methods for playlist management
     void playNextMedia(); // New method to handle playlist progression
@@ -105,12 +126,14 @@ private slots:
     void jinglesViewContextMenu(const QPoint&);
     void pubViewContextMenu(const QPoint&);
     void programsViewContextMenu(const QPoint&);
+    void torrentsViewContextMenu(const QPoint&);
     void dropEvent(QDropEvent *);
     void dragEnterEvent(QDragEnterEvent *);
     void on_musicView_pressed(const QModelIndex &index);
     void on_jinglesView_pressed(const QModelIndex &index);
     void on_pubView_pressed(const QModelIndex &index);
     void on_programsView_pressed(const QModelIndex &index);
+    void on_torrentsView_pressed(const QModelIndex &index);
     void autoModeGetMoreSongs();
     void on_bt_autoMode_clicked();
     void on_actionAdd_a_single_song_triggered();
@@ -208,42 +231,119 @@ private slots:
     void triggerPingFailureActions();
     bool killProcessByName(const QString &processName);
     
+    // Torrent functionality
+    void on_torConnectButton_clicked();
+    void on_torDisconnectButton_clicked();
+    void on_torrentSearchButton_clicked();
+    void on_torrentClearButton_clicked();
+    void on_torrentSearchEdit_returnPressed();
+    void on_findOnionButton_clicked();
+    void on_reloadPageButton_clicked();
+    void onTorrentSearchResults(const QList<TorrentSearchResult> &results);
+    void onTorrentSearchError(const QString &error);
+    void onTorrentDownloadCompleted(const QString &downloadId, const QStringList &audioFiles);
+    void onTorrentStreamingReady(const QString &downloadId, const QString &filePath);
+
+    // Ensures a torrent client (aria2 or transmission-cli) is installed,
+    // prompting the user to install one on demand. Returns true if available.
+    bool ensureTorrentClient();
+    
+    // Tor connection management
+    void onTorReady();
+    void onTorDisconnected();
+    void onTorError(const QString &error);
+    void onOnionMirrorFound(const QString &clearnetDomain, const QString &onionUrl);
+    void onSearchingForOnionMirror(const QString &clearnetDomain);
+    void onOnionMirrorSearchFailed(const QString &clearnetDomain);
+    void onOnionSitesUnavailable();
+    void updateTorConnectionUI(bool connected);
+    void updateDownloadsCountLabel();
+    
     // Accessibility initialization
+    void registerAccessibilityServices();
     void initializeAccessibility();
-private:
-    Ui::player *ui;
-    QMediaPlayer *Xplayer;
-    QList<QUrl> XplaylistUrls;  // Store URLs instead of using QMediaPlaylist
-    int XplaylistIndex = 0;     // Track current index
 
-    QMediaPlayer *lp1_Xplayer;
-    QList<QUrl> lp1_XplaylistUrls;  // Store URLs for LP1
-    int lp1_XplaylistIndex = 0;     // Track current index
+    // Audio FX (EQ / compressor / 432 Hz)
+    void openAudioFxDialog();
+    void applyStoredFxSettings();
+    void convertAllMusicsTo432();
+    void convertMusicsTo432(const QStringList &paths);
 
-    QMediaPlayer *lp2_Xplayer;
-    QList<QUrl> lp2_XplaylistUrls;  // Store URLs for LP2
-    int lp2_XplaylistIndex = 0;     // Track current index
+    // Streaming client (listen to a network stream)
+    void startRadioStream(const QUrl &streamUrl);
+    void resolveAndPlayStreamPlaylist(const QUrl &playlistUrl);
 
-    QAudioOutput *XplayerOutput;
-    QAudioOutput *lp1_XplayerOutput;
-    QAudioOutput *lp2_XplayerOutput;
+    // ngrok public share link for the streaming server
+    void on_bt_ngrok_setup_clicked();
+    void on_bt_ngrok_clicked();
+    void on_bt_ngrok_copy_clicked();
 
-    // Media recording components
-    QMediaCaptureSession *captureSession;
-    QMediaRecorder *audioRecorder;
-    QAudioInput *audioInput;
+    // Update notifications
+    void notifyUpdateAvailable(const QString &version, const QUrl &releasePage,
+                               const QUrl &downloadUrl);
+    void downloadAndOpenUpdate(const QUrl &downloadUrl, const QUrl &releasePage,
+                               const QString &version);
 
-    // Google Ads banner webview
-    QQuickWidget *adBanner;
+  private:
+    Ui::player *ui = nullptr;
 
-    int indexcanal;
-    qint64 trackTotalDuration;
-    int autoMode,recMode,indexJust3rdDropEvt,lastTrackPercentage,Port,tmpFullScreen;
-    QString aExtencaoDesteCoiso, txt_selected_db, ask_normalize_new_files,estevalor,xaction,text,txtDuration,lastPlayedSong,Role,recDevice,SavePath,NomeDestePrograma,ProgramsPath,MusicPath,JinglePath,Server_URL,User,Pass,destinationProgram,FTPPath,TakeOverPath,PlayMode,genrehour,ComHour,codec,contentamento;
-    QMediaPlayer RadioPlayer;
+    // Media players (FxPlayer mirrors the QMediaPlayer API and adds the
+    // optional FX chain: 432 Hz retune, equalizer and compressor)
+    FxPlayer *Xplayer = nullptr;
+    QList<QUrl> XplaylistUrls;
+    int XplaylistIndex = 0;
+
+    FxPlayer *lp1_Xplayer = nullptr;
+    QList<QUrl> lp1_XplaylistUrls;
+    int lp1_XplaylistIndex = 0;
+
+    FxPlayer *lp2_Xplayer = nullptr;
+    QList<QUrl> lp2_XplaylistUrls;
+    int lp2_XplaylistIndex = 0;
+
+    // Audio outputs
+    QAudioOutput *XplayerOutput = nullptr;
+    QAudioOutput *lp1_XplayerOutput = nullptr;
+    QAudioOutput *lp2_XplayerOutput = nullptr;
+
+    // Media recording
+    QMediaCaptureSession *captureSession = nullptr;
+    QMediaRecorder *audioRecorder = nullptr;
+    QAudioInput *audioInput = nullptr;
+
+    // Ad banner
+    QQuickWidget *adBanner = nullptr;
+
+    // Collapsible bottom tab area (Music/Jingles/Pub/Programs/Torrents)
+    void setupCollapsibleTabs();
+    void setPubTabsCollapsed(bool collapsed);
+    bool m_pubTabsCollapsed = false;
+
+    // Toggle button (tab-bar corner) that shows/hides the side panel
+    // (Search/Filters/Extras toolbox + the moved Playlist controls).
+    QToolButton *m_sidePanelToggle = nullptr;
+
+    // State variables
+    int indexcanal = 0;
+    qint64 trackTotalDuration = 0;
+    int autoMode = 0;
+    int recMode = 0;
+    int indexJust3rdDropEvt = 0;
+    int lastTrackPercentage = 0;
+    int Port = 0;
+    int tmpFullScreen = 0;
+    QString aExtencaoDesteCoiso, txt_selected_db, ask_normalize_new_files, estevalor, xaction, text, txtDuration, lastPlayedSong, recDevice, SavePath, NomeDestePrograma, ProgramsPath, MusicPath, JinglePath, Server_URL, User, Pass, destinationProgram, FTPPath, TakeOverPath, genrehour, ComHour, codec, contentamento;
+    QString Role = "Client"; // Default to Client mode
+    QString PlayMode = "stopped"; // Default playback state
+    // Streaming client player. Uses FxPlayer because the plain QMediaPlayer
+    // ffmpeg backend cannot play endless Icecast/Shoutcast streams (it stays
+    // in LoadingMedia forever); FxPlayer routes stream URLs through the
+    // ffmpeg-CLI engine, which handles them robustly (with reconnect).
+    FxPlayer *RadioPlayer = nullptr;
+    QAudioOutput *RadioPlayerOutput = nullptr; // audio sink for the streaming client
     QProcess radio1;
-    QMovie* movie;
-    QMovie* movie2;
+    QMovie *movie = nullptr;
+    QMovie *movie2 = nullptr;
     bool Disable_Volume = false;
     bool normalization_soft = false;
     bool fullScreen = false;
@@ -265,7 +365,51 @@ private:
     QString recDeviceDesc;
     QMediaFormat::AudioCodec recCodec = QMediaFormat::AudioCodec::Unspecified;
     QMediaFormat::FileFormat recContainer = QMediaFormat::FileFormat();
-    QNetworkAccessManager *networkManager;
+    QNetworkAccessManager *networkManager = nullptr;
+    
+    // Torrent services
+    TorNetworkService *m_torNetworkService = nullptr;
+    TorrentSearchService *m_torrentSearchService = nullptr;
+    TorrentDownloadService *m_torrentDownloadService = nullptr;
+
+    // ngrok tunnel for the public streaming link
+    NgrokTunnelService *m_ngrokService = nullptr;
+
+    // Update notifications
+    UpdateCheckService *m_updateService = nullptr;
+    bool m_updateCheckManual = false;
+
+    // Audio FX tab (inserted after the DJ tab; visibility via ShowFxTab)
+    AudioFxWidget *m_fxTabWidget = nullptr;
+    QWidget *m_fxTabPage = nullptr;
+
+    // LP deck scratching state (index 0 = deck 1, 1 = deck 2)
+    QElapsedTimer m_scratchClock;
+    bool m_lpScratching[2] = {false, false};
+    double m_lpLastAngleDeg[2] = {0.0, 0.0};
+    qint64 m_lpLastMoveMs[2] = {0, 0};
+
+    // Platter rotation rendering (scratch follows the hand; brake/backspin
+    // play a matching deceleration/backspin animation)
+    QPixmap m_lpPlatterBase[2];
+    double m_lpPlatterRotation[2] = {0.0, 0.0};
+    QPointer<QVariantAnimation> m_lpPlatterAnim[2];
+    void setPlatterRotation(int deck, double degrees);
+    void grabPlatterFrame(int deck);
+    void restorePlatterMotion(int deck);
+    void startPlatterEffectAnimation(int deck, bool backspin);
+    
+    // Thread safety for playlist operations
+    mutable QMutex m_playlistMutex;
+    static int s_recursionDepth;
+    static const int MAX_RECURSION_DEPTH = 5;
+    bool m_manualAdvancing = false;
+    
+    // Watchdog timer to detect stalled playback
+    QTimer *m_playbackWatchdog = nullptr;
+    qint64 m_lastKnownPosition = -1;
+    int m_stallCount = 0;
+    
     void launchExternalApplication(const QString &appName, const QString &filePath);
     void getMediaInfoForFile(const QString &filePath);
     void runServerCheckScript(const QString &scriptName, const QString &fileToCheck, const QString &successMessage, const QString &failureMessage);

@@ -11,8 +11,9 @@
 #include <QTimer>
 
 class WidgetAccessibilityEnhancer;
-// Temporarily disabled for beta build:
-// class KeyboardNavigationController;
+class KeyboardNavigationController;
+class PlayerKeyboardNavigationEnhancer;
+class DatabaseGridKeyboardNavigationEnhancer;
 // class PlayerKeyboardNavigationEnhancer;
 // class DatabaseGridKeyboardNavigationEnhancer;
 class AudioFeedbackService;
@@ -163,8 +164,7 @@ public:
      * @brief Get the keyboard navigation controller (temporarily disabled for beta build)
      * @return nullptr (keyboard navigation controller disabled)
      */
-    // KeyboardNavigationController* keyboardNavigationController() const { return m_keyboardNavigationController; }
-    void* keyboardNavigationController() const { return nullptr; }
+    KeyboardNavigationController* keyboardNavigationController() const { return m_keyboardNavigationController; }
 
     /**
      * @brief Initialize player-specific accessibility enhancements
@@ -334,10 +334,9 @@ private:
     bool m_accessibilityEnabled;
     VerbosityLevel m_verbosityLevel;
     WidgetAccessibilityEnhancer* m_widgetEnhancer;
-    // Temporarily disabled for beta build:
-    // KeyboardNavigationController* m_keyboardNavigationController;
-    // PlayerKeyboardNavigationEnhancer* m_playerKeyboardEnhancer;
-    // DatabaseGridKeyboardNavigationEnhancer* m_databaseGridKeyboardEnhancer;
+    KeyboardNavigationController* m_keyboardNavigationController;
+    PlayerKeyboardNavigationEnhancer* m_playerKeyboardEnhancer;
+    DatabaseGridKeyboardNavigationEnhancer* m_databaseGridKeyboardEnhancer;
     AudioFeedbackService* m_audioFeedbackService;
     PlayerAudioFeedbackIntegration* m_playerAudioFeedbackIntegration;
     BackgroundOperationFeedback* m_backgroundOperationFeedback;

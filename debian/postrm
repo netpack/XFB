@@ -5,9 +5,9 @@ set -e
 
 case "$1" in
     purge)
-        echo "Purging XFB configuration..."
+        echo "Purging XFB configuration and data..."
         
-        # Remove configuration files
+        # Remove system configuration files
         rm -rf /etc/xfb || true
         
         # Remove log files
@@ -16,22 +16,40 @@ case "$1" in
         # Remove logrotate configuration
         rm -f /etc/logrotate.d/xfb || true
         
-        # Remove user configuration directories (optional - user data)
-        # Uncomment if you want to remove all user data on purge
-        # find /home -name ".xfb" -type d -exec rm -rf {} + 2>/dev/null || true
+        # Remove launcher script and symlinks created by postinst
+        rm -f /usr/bin/xfb-launcher || true
+        rm -f /usr/bin/xfb || true
+        
+        # Remove shared data directory
+        rm -rf /usr/share/xfb || true
+        
+        # Remove documentation
+        rm -rf /usr/share/doc/xfb || true
+        
+        # Remove man page
+        rm -f /usr/share/man/man1/xfb.1.gz || true
+        
+        # Note: User config in ~/.config/XFB/ is intentionally preserved
+        # Users can manually remove it with: rm -rf ~/.config/XFB/
         
         echo "XFB configuration purged."
+        echo "Note: User data in ~/.config/XFB/ was preserved."
+        echo "Remove it manually if desired: rm -rf ~/.config/XFB/"
         ;;
         
     remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+        # Remove launcher script and symlinks
+        rm -f /usr/bin/xfb-launcher || true
+        rm -f /usr/bin/xfb || true
+        
         # Update desktop database
         if command -v update-desktop-database >/dev/null 2>&1; then
-            update-desktop-database -q /usr/share/applications || true
+            update-desktop-database -q /usr/share/applications 2>/dev/null || true
         fi
         
         # Update icon cache
         if command -v gtk-update-icon-cache >/dev/null 2>&1; then
-            gtk-update-icon-cache -q /usr/share/pixmaps || true
+            gtk-update-icon-cache -q /usr/share/pixmaps 2>/dev/null || true
         fi
         ;;
         

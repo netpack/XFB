@@ -4,7 +4,7 @@
 
 set -e
 
-VERSION="2.0.0"
+VERSION="3.14159"
 PKGREL="1"
 
 echo "=========================================="
@@ -57,12 +57,12 @@ echo "Committing changes..."
 git add PKGBUILD .SRCINFO
 git commit -m "Update to version $VERSION-$PKGREL
 
-- Updated to XFB 2.0.0
-- Enhanced accessibility features with ORCA integration
-- Improved keyboard navigation
-- Added braille display support
-- Performance optimizations
-- Updated dependencies
+- Updated to XFB 3.14159
+- Live audio FX engine (10-band EQ, compressor, 432 Hz retune) via ffmpeg
+- DJ decks with scratchable jog wheels
+- Streaming client for Icecast/Shoutcast stations
+- ffmpeg promoted to a hard dependency; added xfb.install
+- Accessibility and keyboard navigation improvements
 "
 
 echo ""

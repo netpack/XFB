@@ -16,7 +16,11 @@ AccessibleTableInterface::AccessibleTableInterface(QTableView* tableView, Access
 AccessibleTableInterface::~AccessibleTableInterface()
 {
     // Clean up cell interfaces
-    qDeleteAll(m_cellInterfaces);
+    for (QAccessibleInterface* iface : m_cellInterfaces) {
+        if (auto* item = dynamic_cast<AccessibleTableCellInterface*>(iface)) {
+            delete item;
+        }
+    }
     m_cellInterfaces.clear();
 }
 
@@ -75,7 +79,7 @@ int AccessibleTableInterface::indexOfChild(const QAccessibleInterface* child) co
     }
 
     const AccessibleTableCellInterface* cellInterface = 
-        qobject_cast<const AccessibleTableCellInterface*>(child);
+        dynamic_cast<const AccessibleTableCellInterface*>(child);
     
     if (!cellInterface) {
         return -1;
@@ -486,7 +490,11 @@ void AccessibleTableInterface::modelChange(QAccessibleTableModelChangeEvent* eve
     }
 
     // Clear cached cell interfaces when model changes
-    qDeleteAll(m_cellInterfaces);
+    for (QAccessibleInterface* iface : m_cellInterfaces) {
+        if (auto* item = dynamic_cast<AccessibleTableCellInterface*>(iface)) {
+            delete item;
+        }
+    }
     m_cellInterfaces.clear();
 
     // Announce model changes if accessibility manager is available

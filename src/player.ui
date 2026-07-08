@@ -69,7 +69,7 @@
         <verstretch>100</verstretch>
        </sizepolicy>
       </property>
-      <layout class="QGridLayout" name="gridLayout_2" rowstretch="0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0">
+      <layout class="QGridLayout" name="gridLayout_2" rowstretch="0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0">
        <property name="leftMargin">
         <number>0</number>
        </property>
@@ -85,7 +85,7 @@
        <property name="spacing">
         <number>0</number>
        </property>
-       <item row="20" column="0" rowspan="4" colspan="2">
+       <item row="1" column="0" colspan="2">
         <widget class="QTabWidget" name="tabWidget_2">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -102,7 +102,7 @@
           <bool>false</bool>
          </property>
          <property name="currentIndex">
-          <number>0</number>
+          <number>3</number>
          </property>
          <property name="iconSize">
           <size>
@@ -812,10 +812,238 @@
             <string>|</string>
            </property>
           </widget>
+          <widget class="QDial" name="lp1_dial_filter">
+           <property name="geometry">
+            <rect>
+             <x>260</x>
+             <y>198</y>
+             <width>48</width>
+             <height>48</height>
+            </rect>
+           </property>
+           <property name="toolTip">
+            <string>DJ filter: turn left for low-pass, right for high-pass, centre = off</string>
+           </property>
+           <property name="minimum">
+            <number>-100</number>
+           </property>
+           <property name="maximum">
+            <number>100</number>
+           </property>
+           <property name="value">
+            <number>0</number>
+           </property>
+           <property name="notchesVisible">
+            <bool>true</bool>
+           </property>
+          </widget>
+          <widget class="QLabel" name="lbl_lp1_filter">
+           <property name="geometry">
+            <rect>
+             <x>260</x>
+             <y>246</y>
+             <width>48</width>
+             <height>14</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>Filter</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignmentFlag::AlignCenter</set>
+           </property>
+          </widget>
+          <widget class="QDial" name="lp1_dial_echo">
+           <property name="geometry">
+            <rect>
+             <x>314</x>
+             <y>198</y>
+             <width>48</width>
+             <height>48</height>
+            </rect>
+           </property>
+           <property name="toolTip">
+            <string>Echo: dry to full echo-out tail</string>
+           </property>
+           <property name="minimum">
+            <number>0</number>
+           </property>
+           <property name="maximum">
+            <number>100</number>
+           </property>
+           <property name="value">
+            <number>0</number>
+           </property>
+           <property name="notchesVisible">
+            <bool>true</bool>
+           </property>
+          </widget>
+          <widget class="QLabel" name="lbl_lp1_echo">
+           <property name="geometry">
+            <rect>
+             <x>314</x>
+             <y>246</y>
+             <width>48</width>
+             <height>14</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>Echo</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignmentFlag::AlignCenter</set>
+           </property>
+          </widget>
+          <widget class="QPushButton" name="lp1_bt_brake">
+           <property name="geometry">
+            <rect>
+             <x>368</x>
+             <y>200</y>
+             <width>86</width>
+             <height>21</height>
+            </rect>
+           </property>
+           <property name="toolTip">
+            <string>Vinyl brake: the platter spins down to a stop</string>
+           </property>
+           <property name="text">
+            <string>Brake</string>
+           </property>
+          </widget>
+          <widget class="QPushButton" name="lp1_bt_backspin">
+           <property name="geometry">
+            <rect>
+             <x>368</x>
+             <y>226</y>
+             <width>86</width>
+             <height>21</height>
+            </rect>
+           </property>
+           <property name="toolTip">
+            <string>Backspin: whips the record backwards, then stops</string>
+           </property>
+           <property name="text">
+            <string>Backspin</string>
+           </property>
+          </widget>
+          <widget class="QDial" name="lp2_dial_filter">
+           <property name="geometry">
+            <rect>
+             <x>620</x>
+             <y>198</y>
+             <width>48</width>
+             <height>48</height>
+            </rect>
+           </property>
+           <property name="toolTip">
+            <string>DJ filter: turn left for low-pass, right for high-pass, centre = off</string>
+           </property>
+           <property name="minimum">
+            <number>-100</number>
+           </property>
+           <property name="maximum">
+            <number>100</number>
+           </property>
+           <property name="value">
+            <number>0</number>
+           </property>
+           <property name="notchesVisible">
+            <bool>true</bool>
+           </property>
+          </widget>
+          <widget class="QLabel" name="lbl_lp2_filter">
+           <property name="geometry">
+            <rect>
+             <x>620</x>
+             <y>246</y>
+             <width>48</width>
+             <height>14</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>Filter</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignmentFlag::AlignCenter</set>
+           </property>
+          </widget>
+          <widget class="QDial" name="lp2_dial_echo">
+           <property name="geometry">
+            <rect>
+             <x>674</x>
+             <y>198</y>
+             <width>48</width>
+             <height>48</height>
+            </rect>
+           </property>
+           <property name="toolTip">
+            <string>Echo: dry to full echo-out tail</string>
+           </property>
+           <property name="minimum">
+            <number>0</number>
+           </property>
+           <property name="maximum">
+            <number>100</number>
+           </property>
+           <property name="value">
+            <number>0</number>
+           </property>
+           <property name="notchesVisible">
+            <bool>true</bool>
+           </property>
+          </widget>
+          <widget class="QLabel" name="lbl_lp2_echo">
+           <property name="geometry">
+            <rect>
+             <x>674</x>
+             <y>246</y>
+             <width>48</width>
+             <height>14</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>Echo</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignmentFlag::AlignCenter</set>
+           </property>
+          </widget>
+          <widget class="QPushButton" name="lp2_bt_brake">
+           <property name="geometry">
+            <rect>
+             <x>728</x>
+             <y>200</y>
+             <width>86</width>
+             <height>21</height>
+            </rect>
+           </property>
+           <property name="toolTip">
+            <string>Vinyl brake: the platter spins down to a stop</string>
+           </property>
+           <property name="text">
+            <string>Brake</string>
+           </property>
+          </widget>
+          <widget class="QPushButton" name="lp2_bt_backspin">
+           <property name="geometry">
+            <rect>
+             <x>728</x>
+             <y>226</y>
+             <width>86</width>
+             <height>21</height>
+            </rect>
+           </property>
+           <property name="toolTip">
+            <string>Backspin: whips the record backwards, then stops</string>
+           </property>
+           <property name="text">
+            <string>Backspin</string>
+           </property>
+          </widget>
          </widget>
         </widget>
        </item>
-       <item row="24" column="0">
+       <item row="2" column="0">
         <widget class="QTabWidget" name="pubWidget">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -856,7 +1084,7 @@
           <enum>QTabWidget::TabPosition::South</enum>
          </property>
          <property name="currentIndex">
-          <number>0</number>
+          <number>4</number>
          </property>
          <property name="iconSize">
           <size>
@@ -936,10 +1164,10 @@
               <bool>true</bool>
              </property>
              <property name="selectionMode">
-              <enum>QAbstractItemView::SelectionMode::ContiguousSelection</enum>
+              <enum>QAbstractItemView::SelectionMode::ExtendedSelection</enum>
              </property>
              <property name="selectionBehavior">
-              <enum>QAbstractItemView::SelectionBehavior::SelectItems</enum>
+              <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
              </property>
              <property name="iconSize">
               <size>
@@ -1176,12 +1404,432 @@
            </item>
           </layout>
          </widget>
+         <widget class="QWidget" name="tabTorrents">
+          <attribute name="icon">
+           <iconset resource="resources.qrc">
+            <normaloff>:/icons/flat/pirate-32.png</normaloff>:/icons/flat/pirate-32.png</iconset>
+          </attribute>
+          <attribute name="title">
+           <string>Torrents</string>
+          </attribute>
+          <layout class="QVBoxLayout" name="verticalLayout_torrents">
+           <property name="spacing">
+            <number>5</number>
+           </property>
+           <property name="leftMargin">
+            <number>5</number>
+           </property>
+           <property name="topMargin">
+            <number>5</number>
+           </property>
+           <property name="rightMargin">
+            <number>5</number>
+           </property>
+           <property name="bottomMargin">
+            <number>5</number>
+           </property>
+           <item>
+            <widget class="QFrame" name="torrentControlFrame">
+             <property name="frameShape">
+              <enum>QFrame::Shape::StyledPanel</enum>
+             </property>
+             <property name="frameShadow">
+              <enum>QFrame::Shadow::Raised</enum>
+             </property>
+             <layout class="QVBoxLayout" name="torrentControlLayout">
+              <item>
+               <layout class="QHBoxLayout" name="torrentConnectionLayout">
+                <item>
+                 <widget class="QPushButton" name="torConnectButton">
+                  <property name="text">
+                   <string>Connect to Tor</string>
+                  </property>
+                  <property name="icon">
+                   <iconset resource="resources.qrc">
+                    <normaloff>:/icons/network-connect.png</normaloff>:/icons/network-connect.png</iconset>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="torDisconnectButton">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>Disconnect</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QLabel" name="torConnectionStatus">
+                  <property name="styleSheet">
+                   <string notr="true">color: red; font-weight: bold;</string>
+                  </property>
+                  <property name="text">
+                   <string>Status: Disconnected</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <spacer name="horizontalSpacer_tor">
+                  <property name="orientation">
+                   <enum>Qt::Orientation::Horizontal</enum>
+                  </property>
+                  <property name="sizeHint" stdset="0">
+                   <size>
+                    <width>40</width>
+                    <height>20</height>
+                   </size>
+                  </property>
+                 </spacer>
+                </item>
+               </layout>
+              </item>
+              <item>
+               <layout class="QHBoxLayout" name="torrentUtilsLayout">
+                <item>
+                 <widget class="QPushButton" name="findOnionButton">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>Find 1337x.to Onion</string>
+                  </property>
+                  <property name="icon">
+                   <iconset resource="resources.qrc">
+                    <normaloff>:/icons/ic_menu_search.png</normaloff>:/icons/ic_menu_search.png</iconset>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="reloadPageButton">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>Reload Results</string>
+                  </property>
+                  <property name="icon">
+                   <iconset resource="resources.qrc">
+                    <normaloff>:/icons/view-refresh.png</normaloff>:/icons/view-refresh.png</iconset>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <spacer name="horizontalSpacer_utils">
+                  <property name="orientation">
+                   <enum>Qt::Orientation::Horizontal</enum>
+                  </property>
+                  <property name="sizeHint" stdset="0">
+                   <size>
+                    <width>40</width>
+                    <height>20</height>
+                   </size>
+                  </property>
+                 </spacer>
+                </item>
+               </layout>
+              </item>
+              <item>
+               <layout class="QHBoxLayout" name="torrentSearchLayout">
+                <item>
+                 <widget class="QLabel" name="labelTorrentSearch">
+                  <property name="text">
+                   <string>Search Torrents:</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QLineEdit" name="torrentSearchEdit">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="placeholderText">
+                   <string>Enter search query for audio torrents...</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="torrentSearchButton">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>Search</string>
+                  </property>
+                  <property name="icon">
+                   <iconset resource="resources.qrc">
+                    <normaloff>:/icons/ic_menu_search.png</normaloff>:/icons/ic_menu_search.png</iconset>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="torrentClearButton">
+                  <property name="text">
+                   <string>Clear</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="torrentWarningLabel">
+             <property name="styleSheet">
+              <string notr="true">color: orange; font-weight: bold; padding: 5px;</string>
+             </property>
+             <property name="text">
+              <string>⚠️ WARNING: Only download legal content. Tor Status: Disconnected - Click &quot;Connect to Tor&quot; to enable secure browsing.</string>
+             </property>
+             <property name="wordWrap">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QProgressBar" name="torrentSearchProgress">
+             <property name="visible">
+              <bool>false</bool>
+             </property>
+             <property name="value">
+              <number>0</number>
+             </property>
+             <property name="textVisible">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QTableView" name="torrentsView">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="font">
+              <font>
+               <kerning>false</kerning>
+              </font>
+             </property>
+             <property name="acceptDrops">
+              <bool>true</bool>
+             </property>
+             <property name="frameShape">
+              <enum>QFrame::Shape::NoFrame</enum>
+             </property>
+             <property name="frameShadow">
+              <enum>QFrame::Shadow::Plain</enum>
+             </property>
+             <property name="alternatingRowColors">
+              <bool>true</bool>
+             </property>
+             <property name="selectionBehavior">
+              <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
+             </property>
+             <property name="sortingEnabled">
+              <bool>true</bool>
+             </property>
+             <attribute name="horizontalHeaderCascadingSectionResizes">
+              <bool>false</bool>
+             </attribute>
+             <attribute name="horizontalHeaderDefaultSectionSize">
+              <number>100</number>
+             </attribute>
+             <attribute name="horizontalHeaderHighlightSections">
+              <bool>false</bool>
+             </attribute>
+             <attribute name="horizontalHeaderStretchLastSection">
+              <bool>true</bool>
+             </attribute>
+             <attribute name="verticalHeaderVisible">
+              <bool>false</bool>
+             </attribute>
+             <attribute name="verticalHeaderDefaultSectionSize">
+              <number>48</number>
+             </attribute>
+            </widget>
+           </item>
+           <item>
+            <widget class="QFrame" name="downloadsPanel">
+             <property name="visible">
+              <bool>false</bool>
+             </property>
+             <property name="frameShape">
+              <enum>QFrame::Shape::StyledPanel</enum>
+             </property>
+             <layout class="QVBoxLayout" name="downloadsPanelLayout">
+              <property name="spacing">
+               <number>3</number>
+              </property>
+              <property name="topMargin">
+               <number>4</number>
+              </property>
+              <property name="bottomMargin">
+               <number>4</number>
+              </property>
+              <item>
+               <layout class="QHBoxLayout" name="downloadsToolbar">
+                <item>
+                 <widget class="QPushButton" name="downloadsCollapseButton">
+                  <property name="text">
+                   <string>▼</string>
+                  </property>
+                  <property name="maximumSize">
+                   <size>
+                    <width>28</width>
+                    <height>28</height>
+                   </size>
+                  </property>
+                  <property name="minimumSize">
+                   <size>
+                    <width>28</width>
+                    <height>28</height>
+                   </size>
+                  </property>
+                  <property name="flat">
+                   <bool>true</bool>
+                  </property>
+                  <property name="toolTip">
+                   <string>Collapse/Expand Downloads</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QLabel" name="downloadsTitle">
+                  <property name="text">
+                   <string>Downloads</string>
+                  </property>
+                  <property name="styleSheet">
+                   <string notr="true">font-weight: bold;</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QLabel" name="downloadsCountLabel">
+                  <property name="text">
+                   <string>(0 active)</string>
+                  </property>
+                  <property name="styleSheet">
+                   <string notr="true">color: gray;</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <spacer name="downloadsToolbarSpacer">
+                  <property name="orientation">
+                   <enum>Qt::Horizontal</enum>
+                  </property>
+                 </spacer>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="downloadCancelSelectedButton">
+                  <property name="text">
+                   <string>Cancel Selected</string>
+                  </property>
+                  <property name="maximumSize">
+                   <size>
+                    <width>120</width>
+                    <height>16777215</height>
+                   </size>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="downloadRetryButton">
+                  <property name="text">
+                   <string>Retry</string>
+                  </property>
+                  <property name="maximumSize">
+                   <size>
+                    <width>70</width>
+                    <height>16777215</height>
+                   </size>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="downloadCancelAllButton">
+                  <property name="text">
+                   <string>Cancel All</string>
+                  </property>
+                  <property name="maximumSize">
+                   <size>
+                    <width>90</width>
+                    <height>16777215</height>
+                   </size>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="downloadClearFinishedButton">
+                  <property name="text">
+                   <string>Clear Finished</string>
+                  </property>
+                  <property name="maximumSize">
+                   <size>
+                    <width>110</width>
+                    <height>16777215</height>
+                   </size>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="downloadOpenFolderButton">
+                  <property name="text">
+                   <string>Open Folder</string>
+                  </property>
+                  <property name="maximumSize">
+                   <size>
+                    <width>100</width>
+                    <height>16777215</height>
+                   </size>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+              <item>
+               <widget class="QTableView" name="downloadsTableView">
+                <property name="minimumSize">
+                 <size>
+                  <width>0</width>
+                  <height>60</height>
+                 </size>
+                </property>
+                <property name="alternatingRowColors">
+                 <bool>true</bool>
+                </property>
+                <property name="selectionBehavior">
+                 <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
+                </property>
+                <property name="selectionMode">
+                 <enum>QAbstractItemView::SelectionMode::SingleSelection</enum>
+                </property>
+                <attribute name="horizontalHeaderStretchLastSection">
+                 <bool>true</bool>
+                </attribute>
+                <attribute name="verticalHeaderVisible">
+                 <bool>false</bool>
+                </attribute>
+                <attribute name="verticalHeaderDefaultSectionSize">
+                 <number>26</number>
+                </attribute>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+          </layout>
+         </widget>
         </widget>
        </item>
-       <item row="0" column="1" rowspan="5">
+       <item row="0" column="1">
         <widget class="QFrame" name="frame">
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
@@ -1194,8 +1842,8 @@
          </property>
          <property name="maximumSize">
           <size>
-           <width>251</width>
-           <height>16777215</height>
+           <width>350</width>
+           <height>140</height>
           </size>
          </property>
          <property name="font">
@@ -1277,10 +1925,10 @@
          </widget>
         </widget>
        </item>
-       <item row="0" column="0" rowspan="5">
+       <item row="0" column="0">
         <widget class="QFrame" name="frame_4">
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+          <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
@@ -1289,6 +1937,12 @@
           <size>
            <width>0</width>
            <height>129</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>140</height>
           </size>
          </property>
          <property name="frameShape">
@@ -1519,7 +2173,7 @@
             <family>Noto Sans [monotype]</family>
             <pointsize>20</pointsize>
             <italic>true</italic>
-
+            <bold>true</bold>
            </font>
           </property>
           <property name="styleSheet">
@@ -1634,7 +2288,7 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
             <family>Noto Sans [monotype]</family>
             <pointsize>20</pointsize>
             <italic>true</italic>
-
+            <bold>true</bold>
            </font>
           </property>
           <property name="styleSheet">
@@ -1678,7 +2332,7 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
             <family>Noto Sans [monotype]</family>
             <pointsize>20</pointsize>
             <italic>true</italic>
-
+            <bold>true</bold>
            </font>
           </property>
           <property name="styleSheet">
@@ -1733,7 +2387,6 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
          <zorder>txtNowPlaying</zorder>
          <zorder>bt_ProgramStopandProcess</zorder>
          <zorder>txtDuration</zorder>
-         <zorder>layoutWidget</zorder>
          <zorder>txt_creatingPrograms</zorder>
          <zorder>txt_loading</zorder>
          <zorder>txt_uploadingPrograms</zorder>
@@ -1744,7 +2397,7 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
          <zorder>bt_pause_rec</zorder>
         </widget>
        </item>
-       <item row="24" column="1">
+       <item row="2" column="1">
         <widget class="QToolBox" name="page_FTP_Connection">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -1755,7 +2408,7 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
          <property name="minimumSize">
           <size>
            <width>0</width>
-           <height>207</height>
+           <height>0</height>
           </size>
          </property>
          <property name="maximumSize">
@@ -1776,7 +2429,7 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
             <x>0</x>
             <y>0</y>
             <width>350</width>
-            <height>222</height>
+            <height>249</height>
            </rect>
           </property>
           <attribute name="icon">
@@ -1838,7 +2491,7 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
             <x>0</x>
             <y>0</y>
             <width>350</width>
-            <height>222</height>
+            <height>249</height>
            </rect>
           </property>
           <attribute name="icon">
@@ -1920,7 +2573,7 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
             <x>0</x>
             <y>0</y>
             <width>350</width>
-            <height>222</height>
+            <height>249</height>
            </rect>
           </property>
           <attribute name="icon">
@@ -2059,7 +2712,7 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
             <x>0</x>
             <y>0</y>
             <width>350</width>
-            <height>222</height>
+            <height>249</height>
            </rect>
           </property>
           <property name="styleSheet">
@@ -2073,9 +2726,6 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
            <string>Streaming Client</string>
           </attribute>
           <widget class="QPushButton" name="bt_rol_streaming_play">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
            <property name="geometry">
             <rect>
              <x>230</x>
@@ -2083,6 +2733,9 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
              <width>31</width>
              <height>21</height>
             </rect>
+           </property>
+           <property name="toolTip">
+            <string>Play the stream</string>
            </property>
            <property name="text">
             <string/>
@@ -2102,13 +2755,10 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
             </rect>
            </property>
            <property name="text">
-            <string>[comming soon]</string>
+            <string>Listen to a network stream:</string>
            </property>
           </widget>
           <widget class="QPushButton" name="bt_rol_streaming_stop">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
            <property name="geometry">
             <rect>
              <x>290</x>
@@ -2117,12 +2767,82 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
              <height>21</height>
             </rect>
            </property>
+           <property name="toolTip">
+            <string>Stop the stream</string>
+           </property>
            <property name="text">
             <string/>
            </property>
            <property name="icon">
             <iconset resource="resources.qrc">
              <normaloff>:/icons/media-playback-stop.png</normaloff>:/icons/media-playback-stop.png</iconset>
+           </property>
+          </widget>
+          <widget class="QLineEdit" name="txt_rol_stream_url">
+           <property name="geometry">
+            <rect>
+             <x>10</x>
+             <y>40</y>
+             <width>311</width>
+             <height>24</height>
+            </rect>
+           </property>
+           <property name="toolTip">
+            <string>Direct stream URL (Icecast/Shoutcast) or an .m3u/.pls playlist</string>
+           </property>
+           <property name="placeholderText">
+            <string>http://your-server:8000/stream</string>
+           </property>
+          </widget>
+          <widget class="QLabel" name="lbl_rol_streaming_status">
+           <property name="geometry">
+            <rect>
+             <x>10</x>
+             <y>72</y>
+             <width>311</width>
+             <height>36</height>
+            </rect>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">color: rgb(98, 135, 255);</string>
+           </property>
+           <property name="text">
+            <string>Stopped</string>
+           </property>
+           <property name="wordWrap">
+            <bool>true</bool>
+           </property>
+          </widget>
+          <widget class="QLabel" name="lbl_rol_volume">
+           <property name="geometry">
+            <rect>
+             <x>10</x>
+             <y>115</y>
+             <width>100</width>
+             <height>17</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>Volume:</string>
+           </property>
+          </widget>
+          <widget class="QSlider" name="slider_rol_volume">
+           <property name="geometry">
+            <rect>
+             <x>10</x>
+             <y>135</y>
+             <width>311</width>
+             <height>20</height>
+            </rect>
+           </property>
+           <property name="maximum">
+            <number>100</number>
+           </property>
+           <property name="value">
+            <number>80</number>
+           </property>
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
            </property>
           </widget>
          </widget>
@@ -2135,7 +2855,7 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
             <x>0</x>
             <y>0</y>
             <width>350</width>
-            <height>222</height>
+            <height>249</height>
            </rect>
           </property>
           <attribute name="icon">
@@ -2243,6 +2963,118 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
            </property>
            <property name="text">
             <string>Stopped</string>
+           </property>
+          </widget>
+          <widget class="QLabel" name="lbl_ngrok_title">
+           <property name="geometry">
+            <rect>
+             <x>10</x>
+             <y>152</y>
+             <width>136</width>
+             <height>17</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>Public link (ngrok):</string>
+           </property>
+          </widget>
+          <widget class="QLineEdit" name="txt_ngrok_port">
+           <property name="geometry">
+            <rect>
+             <x>150</x>
+             <y>150</y>
+             <width>45</width>
+             <height>22</height>
+            </rect>
+           </property>
+           <property name="toolTip">
+            <string>Local port of your streaming server</string>
+           </property>
+           <property name="text">
+            <string>8888</string>
+           </property>
+          </widget>
+          <widget class="QPushButton" name="bt_ngrok_setup">
+           <property name="geometry">
+            <rect>
+             <x>202</x>
+             <y>150</y>
+             <width>55</width>
+             <height>22</height>
+            </rect>
+           </property>
+           <property name="toolTip">
+            <string>Configure your ngrok account (one-time)</string>
+           </property>
+           <property name="text">
+            <string>Setup</string>
+           </property>
+          </widget>
+          <widget class="QPushButton" name="bt_ngrok">
+           <property name="geometry">
+            <rect>
+             <x>262</x>
+             <y>150</y>
+             <width>60</width>
+             <height>22</height>
+            </rect>
+           </property>
+           <property name="toolTip">
+            <string>Create a public share link for your stream</string>
+           </property>
+           <property name="text">
+            <string>Share</string>
+           </property>
+          </widget>
+          <widget class="QLineEdit" name="txt_ngrok_url">
+           <property name="geometry">
+            <rect>
+             <x>10</x>
+             <y>176</y>
+             <width>252</width>
+             <height>24</height>
+            </rect>
+           </property>
+           <property name="toolTip">
+            <string>Share this link with your listeners</string>
+           </property>
+           <property name="readOnly">
+            <bool>true</bool>
+           </property>
+           <property name="placeholderText">
+            <string>No public link yet</string>
+           </property>
+          </widget>
+          <widget class="QPushButton" name="bt_ngrok_copy">
+           <property name="geometry">
+            <rect>
+             <x>267</x>
+             <y>176</y>
+             <width>55</width>
+             <height>24</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>Copy</string>
+           </property>
+          </widget>
+          <widget class="QLabel" name="lbl_ngrok_status">
+           <property name="geometry">
+            <rect>
+             <x>10</x>
+             <y>204</y>
+             <width>312</width>
+             <height>42</height>
+            </rect>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">color: rgb(98, 135, 255);</string>
+           </property>
+           <property name="text">
+            <string>Stopped</string>
+           </property>
+           <property name="wordWrap">
+            <bool>true</bool>
            </property>
           </widget>
           <widget class="QPushButton" name="bt_takeOver">
@@ -2563,7 +3395,7 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
          <number>2</number>
         </property>
         <property name="text">
-         <string>XFB Versão 1.24 by Netpack - Online Solutions! :: www.netpack.pt</string>
+         <string>XFB v3.14159 by Netpack - Online Solutions! :: www.netpack.pt</string>
         </property>
         <property name="alignment">
          <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
@@ -2583,7 +3415,7 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
      <x>0</x>
      <y>0</y>
      <width>1472</width>
-     <height>22</height>
+     <height>37</height>
     </rect>
    </property>
    <property name="font">
@@ -2664,7 +3496,7 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
      <string notr="true">color: rgb(117, 117, 175); border-right: 1px solid rgb(124, 124, 186); border-left: 1px solid rgb(124, 124, 186); border-bottom: 1px solid rgb(124, 124, 186);</string>
     </property>
     <property name="title">
-     <string>XFB</string>
+     <string>Options</string>
     </property>
     <widget class="QMenu" name="menuClient_3">
      <property name="title">
@@ -2687,8 +3519,8 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
       <string>Server</string>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>:/usr/share/icons/Mint-X/apps/48/radio.png</normaloff>:/usr/share/icons/Mint-X/apps/48/radio.png</iconset>
+      <iconset resource="resources.qrc">
+       <normaloff>:/icons/earth.png</normaloff>:/icons/earth.png</iconset>
      </property>
      <addaction name="actionForce_an_FTP_Check"/>
      <addaction name="actionForce_monitorization"/>
