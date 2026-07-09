@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://netpack.pt/img/xfb-home.webp" alt="XFB Screenshot" width="800"/>
+  <img src="https://netpack.pt/img/xfb-home2.webp" alt="XFB Screenshot" width="800"/>
   <h1>XFB - Radio Automation Software</h1>
   <p><strong>The Open-Source Solution for Radio Broadcasting</strong></p>
 
