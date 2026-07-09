@@ -1,7 +1,7 @@
 <div align="center">
   <img src="https://netpack.pt/img/xfb-home.webp" alt="XFB Screenshot" width="800"/>
   <h1>XFB - Radio Automation Software</h1>
-  <p><strong>The Open-Source Solution for Professional Radio Broadcasting, rebuilt with Qt6.</strong></p>
+  <p><strong>The Open-Source Solution for Radio Broadcasting</strong></p>
 
   <p>
     <a href="https://github.com/netpack/XFB/releases"><img src="https://img.shields.io/github/v/release/netpack/XFB?display_name=tag&sort=semver" alt="Latest Release"></a>
