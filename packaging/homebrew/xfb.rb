@@ -15,7 +15,9 @@ cask "xfb" do
 
   # The published dmg is currently built for Apple Silicon only
   depends_on arch: :arm64
-  depends_on macos: ">= :big_sur"
+  # Symbol form means "this version or later" (the ">= :big_sur" string
+  # comparison form was deprecated by Homebrew)
+  depends_on macos: :big_sur
 
   # The live audio FX engine (EQ / compressor / 432 Hz) and the format
   # conversions decode through the ffmpeg CLI
