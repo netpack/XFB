@@ -67,7 +67,7 @@ RUN cp /src/README.md /src/pkg-root/usr/share/doc/xfb/ 2>/dev/null || true
 
 # Write the control file
 RUN echo "Package: xfb\n\
-Version: 3.141592-1\n\
+Version: 3.1415926-1\n\
 Section: sound\n\
 Priority: optional\n\
 Architecture: ${TARGETARCH}\n\
@@ -99,7 +99,7 @@ RUN printf '%s\n' \
     chmod 0755 /src/pkg-root/DEBIAN/postinst /src/pkg-root/DEBIAN/postrm
 
 # Build the .deb (filename includes the target architecture)
-RUN dpkg-deb --build /src/pkg-root /src/xfb_3.141592-1_${TARGETARCH}.deb
+RUN dpkg-deb --build /src/pkg-root /src/xfb_3.1415926-1_${TARGETARCH}.deb
 
 # Copy to output on run
-CMD ["sh", "-c", "cp /src/xfb_3.141592-1_*.deb /output/ && echo 'Package built:' /src/xfb_3.141592-1_*.deb"]
+CMD ["sh", "-c", "cp /src/xfb_3.1415926-1_*.deb /output/ && echo 'Package built:' /src/xfb_3.1415926-1_*.deb"]
