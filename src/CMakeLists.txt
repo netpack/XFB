@@ -18,7 +18,10 @@ set(SOURCES
     audio/FxDsp.cpp
     audio/FxEngine.cpp
     audio/FxPlayer.cpp
+    audio/WaveformStore.cpp
     dialogs/AudioFxDialog.cpp
+    # Playlist sound-wave view (crossfade preparation)
+    PlaylistWaveView.cpp
     # Essential service layer (working components only)
     services/IService.cpp
     services/ServiceContainer.cpp

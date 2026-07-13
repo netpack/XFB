@@ -16,6 +16,8 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include "externaldownloader.h"
 #include "aboutus.h"
 #include "audio/FxEngine.h"
+#include "audio/WaveformStore.h"
+#include "PlaylistWaveView.h"
 #include "dialogs/AudioFxDialog.h"
 #include "secretstore.h"
 #include "services/NgrokTunnelService.h"
@@ -82,6 +84,7 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include <QPainterPath>
 #include <QScrollArea>
 #include <QSlider>
+#include <QSpinBox>
 #include <QSplitter>
 #include <QTabWidget>
 #include <QTabBar>
@@ -324,6 +327,83 @@ player::player(QWidget *parent) :
         ui->playlist->setParent(playlistTab);
         playlistVbox->addWidget(ui->playlist);
         qDebug() << "Playlist tab now full-width; controls moved into side toolbox";
+
+        // Sound-wave view of the playlist (crossfade preparation). The
+        // toggle lives in a thin bar above the playlist; its state persists
+        // in xfb.conf (PlaylistWaveView) and is restored by updateConfig().
+        m_waveStore = new WaveformStore(this);
+        m_waveView = new PlaylistWaveView(ui->playlist, m_waveStore, this);
+        m_waveView->setNowPlayingProvider([this]() {
+            return (Xplayer && Xplayer->source().isLocalFile())
+                       ? Xplayer->source().toLocalFile() : QString();
+        });
+
+        auto *waveBar = new QWidget(playlistTab);
+        auto *waveBarLayout = new QHBoxLayout(waveBar);
+        waveBarLayout->setContentsMargins(4, 2, 4, 2);
+        waveBarLayout->setSpacing(4);
+        m_waveViewToggle = new QToolButton(waveBar);
+        m_waveViewToggle->setText(tr("Wave view"));
+        m_waveViewToggle->setCheckable(true);
+        m_waveViewToggle->setToolTip(tr("Show each track's sound wave and prepare crossfades: "
+                                        "drag a track's wave left to start it before the previous "
+                                        "track ends, use the round button to preview the transition."));
+        waveBarLayout->addWidget(m_waveViewToggle);
+
+        // Max overlap window (how early the next track can be dragged to
+        // start before the previous one ends). Persisted in xfb.conf;
+        // shown only while the wave view is active.
+        m_maxOverlapBox = new QWidget(waveBar);
+        auto *maxOverlapLayout = new QHBoxLayout(m_maxOverlapBox);
+        maxOverlapLayout->setContentsMargins(12, 0, 0, 0);
+        maxOverlapLayout->setSpacing(4);
+        auto *maxOverlapLabel = new QLabel(tr("Max overlap:"), m_maxOverlapBox);
+        m_maxOverlapSpin = new QSpinBox(m_maxOverlapBox);
+        m_maxOverlapSpin->setRange(5, 180);
+        m_maxOverlapSpin->setSuffix(tr(" s"));
+        m_maxOverlapSpin->setToolTip(tr("How early the next track can be dragged to start "
+                                        "before the previous one ends. Increase this when a "
+                                        "track has a long quiet tail you want the next one "
+                                        "to start over."));
+        {
+            QSettings waveSettings(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
+                                       + "/xfb.conf", QSettings::IniFormat);
+            const int maxOverlapSecs =
+                qBound(5, waveSettings.value("MaxOverlapSeconds", 25).toInt(), 180);
+            PlaylistWaveView::setMaxOverlapMs(qint64(maxOverlapSecs) * 1000);
+            m_maxOverlapSpin->setValue(maxOverlapSecs);
+        }
+        connect(m_maxOverlapSpin, qOverload<int>(&QSpinBox::valueChanged),
+                this, [this](int secs) {
+            PlaylistWaveView::setMaxOverlapMs(qint64(secs) * 1000);
+            QSettings waveSettings(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
+                                       + "/xfb.conf", QSettings::IniFormat);
+            waveSettings.setValue("MaxOverlapSeconds", secs);
+            if (m_waveView)
+                m_waveView->refresh(); // the strips rescale to the new window
+        });
+        maxOverlapLayout->addWidget(maxOverlapLabel);
+        maxOverlapLayout->addWidget(m_maxOverlapSpin);
+        m_maxOverlapBox->setVisible(false); // shown when wave view turns on
+        waveBarLayout->addWidget(m_maxOverlapBox);
+
+        waveBarLayout->addStretch();
+        playlistVbox->insertWidget(0, waveBar);
+
+        // The playing track leaves the playlist when it starts, so its wave
+        // and volume line live on in this strip (shown while wave view is on)
+        m_nowPlayingWave = new NowPlayingWaveStrip(m_waveStore, playlistTab);
+        playlistVbox->insertWidget(1, m_nowPlayingWave);
+        connect(m_nowPlayingWave, &NowPlayingWaveStrip::envelopeEdited,
+                this, [this](const QVector<QPointF> &points) {
+            // Live edit of the on-air track's line: onPositionChanged
+            // applies it on the next tick
+            m_activeEnvelope = points;
+            m_activeEnvelopePath = m_nowPlayingWave->track();
+        });
+
+        connect(m_waveViewToggle, &QToolButton::toggled,
+                this, &player::setPlaylistWaveView);
     }
     
     // Verify UI was properly initialized
@@ -432,6 +512,21 @@ player::player(QWidget *parent) :
         lp2_Xplayer->setAudioOutput(lp2_XplayerOutput);
         lp2_XplaylistIndex = 0;
         qDebug() << "LP2 player created successfully";
+
+        // Overlap segue tail player: plays out (and fades) the end of the
+        // outgoing track while the next one starts on the main player.
+        m_tailOutput = new QAudioOutput(this);
+        m_tailPlayer = new FxPlayer(this);
+        m_tailPlayer->setAudioOutput(m_tailOutput);
+        m_tailFade = new QVariantAnimation(this);
+        connect(m_tailFade, &QVariantAnimation::valueChanged, this, [this](const QVariant &v) {
+            if (m_tailOutput)
+                m_tailOutput->setVolume(v.toFloat());
+        });
+        connect(m_tailFade, &QVariantAnimation::finished, this, [this]() {
+            if (m_tailPlayer)
+                m_tailPlayer->stop();
+        });
 
         // Restore persisted FX settings (EQ / compressor / 432 Hz retune)
         applyStoredFxSettings();
@@ -546,6 +641,17 @@ player::player(QWidget *parent) :
         connect(Xplayer, &FxPlayer::durationChanged, this, &player::durationChanged);
         connect(Xplayer, &FxPlayer::sourceChanged, this, &player::currentMediaChanged);
         connect(Xplayer->audioOutput(), &QAudioOutput::volumeChanged, this, &player::volumeChanged);
+        // The wave view ghosts the playing track behind the first playlist row
+        connect(Xplayer, &FxPlayer::sourceChanged, this, [this](const QUrl &url) {
+            if (m_waveView)
+                m_waveView->refresh();
+            if (m_nowPlayingWave) {
+                const bool local = url.isLocalFile();
+                m_nowPlayingWave->setTrack(local ? url.toLocalFile() : QString());
+                m_nowPlayingWave->setVisible(local && m_waveView
+                                             && m_waveView->isActive());
+            }
+        });
         qDebug() << "Main player signals connected";
 
         // Handle media player errors (e.g., codec issues, corrupt files)
@@ -1993,6 +2099,11 @@ void player::updateConfig() {
         qDebug() << "ShowFxTab setting:" << showFxTab;
     }
 
+    // Restore the playlist sound-wave view (crossfade preparation) state
+    bool waveView = settings.value("PlaylistWaveView", false).toBool();
+    if (m_waveViewToggle && m_waveViewToggle->isChecked() != waveView)
+        m_waveViewToggle->setChecked(waveView); // toggled() applies it
+
     // Re-apply the FX chain settings (covers the 432 Hz switch in the
     // Options dialog; no-op during construction, before the players exist)
     applyStoredFxSettings();
@@ -2221,11 +2332,32 @@ void::player::playlistContextMenu(const QPoint& pos){
     QString remove = tr("Remove this track from the playlist");
     QString moveToTop = tr("Send this track to the top of the playlist");
     QString moveToBottom = tr("Send this track to the bottom of the playlist");
+    QString addVolumeLine = tr("Add a volume line");
+    QString resetVolumeLine = tr("Reset the volume line");
+    QString removeVolumeLine = tr("Remove the volume line");
 
 
     thisMenu.addAction(remove);
     thisMenu.addAction(moveToTop);
     thisMenu.addAction(moveToBottom);
+
+    // Volume line (Sonar-style envelope drawn over the track's waveform in
+    // the wave view): offer Add or Remove depending on the clicked track
+    int menuRow = ui->playlist->selectionModel()->currentIndex().row();
+    QListWidgetItem *menuItem = ui->playlist->item(menuRow);
+    const bool hasVolumeLine = menuItem
+        && !menuItem->data(PlaylistWaveView::VolumeEnvelopeRole).toString().isEmpty();
+    thisMenu.addSeparator();
+    thisMenu.setToolTipsVisible(true);
+    QAction *volAction = thisMenu.addAction(hasVolumeLine ? removeVolumeLine
+                                                          : addVolumeLine);
+    volAction->setToolTip(tr("A volume line controls the track's volume over time: "
+                             "double-click the line to add points, drag points (or "
+                             "the line between them) to shape the volume, "
+                             "double-click a point to reset it to 0 dB, "
+                             "right-click a point to remove it."));
+    if (hasVolumeLine)
+        thisMenu.addAction(resetVolumeLine); // back to a flat 0 dB line
 
 
     QAction* selectedItem = thisMenu.exec(globalPos);
@@ -2238,13 +2370,37 @@ void::player::playlistContextMenu(const QPoint& pos){
             delete ui->playlist->item(rowidx);
             calculate_playlist_total_time();
         }
+        // takeItem/insertItem move the same item object, so the crossfade
+        // overlap stored on it (wave view) survives the move
         if(selectedListItem==moveToTop){
-            delete ui->playlist->item(rowidx);
-            ui->playlist->insertItem(0,estevalor);
+            QListWidgetItem *moved = ui->playlist->takeItem(rowidx);
+            if (moved)
+                ui->playlist->insertItem(0, moved);
         }
         if(selectedListItem==moveToBottom){
-            delete ui->playlist->item(rowidx);
-            ui->playlist->addItem(estevalor);
+            QListWidgetItem *moved = ui->playlist->takeItem(rowidx);
+            if (moved)
+                ui->playlist->addItem(moved);
+        }
+        if(selectedListItem==addVolumeLine){
+            if (QListWidgetItem *it = ui->playlist->item(rowidx)) {
+                // A flat 100% line (like Sonar's freshly added envelope);
+                // the user double-clicks it in the wave view to add points
+                it->setData(PlaylistWaveView::VolumeEnvelopeRole,
+                            PlaylistWaveView::encodeEnvelope({QPointF(0.0, 1.0)}));
+                // The line is edited in the wave view, so switch it on
+                if (m_waveViewToggle && !m_waveViewToggle->isChecked())
+                    m_waveViewToggle->setChecked(true);
+            }
+        }
+        if(selectedListItem==resetVolumeLine){
+            if (QListWidgetItem *it = ui->playlist->item(rowidx))
+                it->setData(PlaylistWaveView::VolumeEnvelopeRole,
+                            PlaylistWaveView::encodeEnvelope({QPointF(0.0, 1.0)}));
+        }
+        if(selectedListItem==removeVolumeLine){
+            if (QListWidgetItem *it = ui->playlist->item(rowidx))
+                it->setData(PlaylistWaveView::VolumeEnvelopeRole, QVariant());
         }
 
 
@@ -3164,6 +3320,24 @@ void player::playNextSong(){
 
                 lastPlayedSong = itemDaPlaylist;
 
+                // Capture the track's volume line before its item is deleted;
+                // onPositionChanged applies it while this track plays
+                m_activeEnvelope = PlaylistWaveView::parseEnvelope(
+                    firstItem->data(PlaylistWaveView::VolumeEnvelopeRole).toString());
+                m_activeEnvelopePath = itemDaPlaylist;
+                if (m_nowPlayingWave)
+                    m_nowPlayingWave->setEnvelope(m_activeEnvelope);
+
+                // Apply the level for position 0 right away (a track without
+                // a line restores the plain slider volume) so the first
+                // instants don't play at the previous track's envelope level
+                if (XplayerOutput) {
+                    const double base = ui->sliderVolume->value() / 100.0;
+                    XplayerOutput->setVolume(float(base
+                        * PlaylistWaveView::envelopeGainAt(m_activeEnvelope, 0)));
+                    m_envelopeApplied = !m_activeEnvelope.isEmpty();
+                }
+
                 int dotsNumInString = itemDaPlaylist.count(".");
                 qDebug()<<"dotsNumInString has value: "<<dotsNumInString;
 
@@ -3280,7 +3454,9 @@ void player::playNextSong(){
 void player::on_btStop_clicked()
 {
     m_manualAdvancing = true;  // Prevent playbackStateChanged from triggering playNextMedia
-    
+
+    stopTailPlayer(); // silence a crossfade tail that may still be fading out
+
     // Forcefully reset the media player to recover from any stuck state
     // (AVFoundation on macOS can hang on certain OGG files)
     Xplayer->stop();
@@ -3316,6 +3492,25 @@ void player::onPositionChanged(qint64 position)
 {
      ui->sliderProgress->setValue(position);
 
+    if (m_nowPlayingWave)
+        m_nowPlayingWave->setPlayhead(position);
+
+    // Volume line: shape the playing track's volume along its envelope
+    // (slider volume stays the reference level the line scales from)
+    if (!m_activeEnvelope.isEmpty() && Xplayer && XplayerOutput
+            && Xplayer->source().isLocalFile()
+            && Xplayer->source().toLocalFile() == m_activeEnvelopePath) {
+        const double base = ui->sliderVolume->value() / 100.0;
+        const double gain = PlaylistWaveView::envelopeGainAt(m_activeEnvelope, position);
+        XplayerOutput->setVolume(float(base * gain));
+        m_envelopeApplied = true;
+    } else if (m_envelopeApplied) {
+        // The line no longer applies (new track without one): restore
+        m_envelopeApplied = false;
+        if (XplayerOutput)
+            XplayerOutput->setVolume(ui->sliderVolume->value() / 100.0);
+    }
+
     // Guard against division by zero (duration may not be known yet for some formats)
     if (trackTotalDuration <= 0) {
         // Just update the elapsed time display without percentage calculations
@@ -3338,6 +3533,26 @@ void player::onPositionChanged(qint64 position)
          playlistAboutToFinish();
      }
 
+    // Overlap segue: when the next playlist item defines a crossfade
+    // overlap (set by dragging its wave in the playlist wave view), start
+    // it that many ms before the current track ends.
+    if (PlayMode == "Playing_Segue" && !m_manualAdvancing && !m_overlapSegueFired
+            && position > 0 && ui->playlist->count() > 0) {
+        const qint64 overlapMs =
+            ui->playlist->item(0)->data(PlaylistWaveView::OverlapRole).toLongLong();
+        if (overlapMs > 0) {
+            const qint64 remaining = trackTotalDuration - position;
+            if (remaining > 0 && remaining <= overlapMs) {
+                m_overlapSegueFired = true; // re-armed by the next durationChanged
+                // Deferred: don't switch sources from inside a player signal
+                QTimer::singleShot(0, this, [this, remaining]() {
+                    startOverlapSegue(remaining);
+                });
+                return;
+            }
+        }
+    }
+
     int segundos = position / 1000;
     int minutos = segundos / 60;
     segundos = segundos % 60;
@@ -3357,6 +3572,7 @@ void player::durationChanged(qint64 position)
     qDebug()<<"Xplayer durationChanged changed to "<<position;
     ui->sliderProgress->setMaximum(position);
     trackTotalDuration = position;
+    m_overlapSegueFired = false; // new media: re-arm the overlap segue
 
     int segundos = position / 1000;
     int minutos = 0;
@@ -3744,6 +3960,74 @@ void player::playlistAboutToFinish()
     if(numItemsInPlaylist==0)
         autoModeGetMoreSongs();
 
+    // If the next track defines a crossfade overlap, preload the current
+    // track into the tail player now so the handoff at the segue point is
+    // instantaneous (this fires once per track, at ~80% of its duration).
+    if (m_tailPlayer && ui->playlist->count() > 0
+            && ui->playlist->item(0)->data(PlaylistWaveView::OverlapRole).toLongLong() > 0
+            && Xplayer && Xplayer->source().isLocalFile()
+            && m_tailPlayer->playbackState() != QMediaPlayer::PlayingState
+            && m_tailPlayer->source() != Xplayer->source()) {
+        qDebug() << "Overlap segue: preloading tail player with" << Xplayer->source();
+        m_tailPlayer->setSource(Xplayer->source());
+    }
+}
+
+void player::startOverlapSegue(qint64 fadeMs)
+{
+    qDebug() << "Overlap segue: starting the next track" << fadeMs
+             << "ms before the current one ends";
+
+    // Snapshot the outgoing track BEFORE playNextSong() switches the source
+    const QUrl endingSource = Xplayer->source();
+    const qint64 endingPos = Xplayer->position();
+
+    if (m_tailPlayer && endingSource.isLocalFile()) {
+        if (m_tailFade->state() == QAbstractAnimation::Running)
+            m_tailFade->stop();
+        const float startVolume = XplayerOutput ? XplayerOutput->volume() : 1.0f;
+        m_tailOutput->setVolume(startVolume);
+        if (m_tailPlayer->source() != endingSource) // normally preloaded at 80%
+            m_tailPlayer->setSource(endingSource);
+        m_tailPlayer->play();
+        m_tailPlayer->setPosition(endingPos);
+        m_tailFade->setStartValue(double(startVolume));
+        m_tailFade->setEndValue(0.0);
+        // Absolute sanity bound, not the UI window: saved playlists may
+        // carry overlaps larger than the current "Max overlap" setting
+        m_tailFade->setDuration(int(qBound(qint64(200), fadeMs, qint64(600000))));
+        m_tailFade->start();
+    }
+
+    // From the state machine's point of view this is just a manual advance;
+    // playNextSong() guards the source switch with m_manualAdvancing itself.
+    playNextSong();
+}
+
+void player::stopTailPlayer()
+{
+    if (m_tailFade && m_tailFade->state() == QAbstractAnimation::Running)
+        m_tailFade->stop();
+    if (m_tailPlayer)
+        m_tailPlayer->stop();
+}
+
+void player::setPlaylistWaveView(bool on)
+{
+    if (m_waveView)
+        m_waveView->setActive(on);
+    if (m_waveViewToggle && m_waveViewToggle->isChecked() != on)
+        m_waveViewToggle->setChecked(on);
+    if (m_nowPlayingWave)
+        m_nowPlayingWave->setVisible(on && Xplayer
+                                     && Xplayer->source().isLocalFile());
+    if (m_maxOverlapBox)
+        m_maxOverlapBox->setVisible(on);
+
+    QSettings settings(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
+                           + "/xfb.conf", QSettings::IniFormat);
+    if (settings.value("PlaylistWaveView", false).toBool() != on)
+        settings.setValue("PlaylistWaveView", on);
 }
 
 
@@ -6062,7 +6346,20 @@ void player::on_actionSave_Playlist_triggered()
                QString txtItem = ui->playlist->item(i)->text();
                qDebug()<<"Xml adding file "<<txtItem;
 
-               xmlWriter.writeTextElement("track",txtItem);
+               // The crossfade overlap and volume line set in the wave view
+               // travel with the track as attributes (older XFB versions
+               // simply ignore them)
+               const qint64 overlapMs =
+                   ui->playlist->item(i)->data(PlaylistWaveView::OverlapRole).toLongLong();
+               const QString volumeLine = ui->playlist->item(i)
+                   ->data(PlaylistWaveView::VolumeEnvelopeRole).toString();
+               xmlWriter.writeStartElement("track");
+               if (overlapMs > 0)
+                   xmlWriter.writeAttribute("overlap", QString::number(overlapMs));
+               if (!volumeLine.isEmpty())
+                   xmlWriter.writeAttribute("volenv", volumeLine);
+               xmlWriter.writeCharacters(txtItem);
+               xmlWriter.writeEndElement();
             }
 
         xmlWriter.writeEndElement();
@@ -6124,9 +6421,29 @@ void player::on_actionLoad_Playlist_triggered()
                     }
 
                     if(Rxml.name()==QStringLiteral("track")){
+                        // Attributes must be read before readElementText()
+                        // Sanity-bound only (10 min): the overlap must survive
+                        // loading even when it exceeds the current Max overlap
+                        // setting, so the saved crossfade point is not lost
+                        const qint64 overlapMs = qBound(qint64(0),
+                            qint64(Rxml.attributes().value(QStringLiteral("overlap")).toLongLong()),
+                            qint64(600000));
+                        const QString volumeLine =
+                            Rxml.attributes().value(QStringLiteral("volenv")).toString();
                         QString track = Rxml.readElementText();
                         qDebug()<<"Rxml.readElementText(): "<<track;
-                        ui->playlist->addItem(track);
+                        auto *item = new QListWidgetItem(track);
+                        if (overlapMs > 0)
+                            item->setData(PlaylistWaveView::OverlapRole, overlapMs);
+                        if (!volumeLine.isEmpty()) {
+                            // Re-encode through the parser to sanitize the input
+                            const QVector<QPointF> env =
+                                PlaylistWaveView::parseEnvelope(volumeLine);
+                            if (!env.isEmpty())
+                                item->setData(PlaylistWaveView::VolumeEnvelopeRole,
+                                              PlaylistWaveView::encodeEnvelope(env));
+                        }
+                        ui->playlist->addItem(item);
                     }
 
 
@@ -6134,6 +6451,9 @@ void player::on_actionLoad_Playlist_triggered()
                 }
     }
     file.close();
+    calculate_playlist_total_time();
+    if (m_waveView)
+        m_waveView->refresh();
 }
 
 
@@ -11164,6 +11484,7 @@ void player::MainsetVol5(){
     XplayerOutput->setVolume(0.05); // Qt6 uses 0.0-1.0 range for volume
 }
 void player::MainStop(){
+    stopTailPlayer();
     Xplayer->stop();
     ui->btPlay->setStyleSheet("");
     ui->btPlay->setText(tr("Play"));
@@ -11990,6 +12311,10 @@ void player::applyStoredFxSettings()
 {
     if (Xplayer)
         Xplayer->setFxParams(FxSettings::loadChannel(QStringLiteral("Main")));
+    // The overlap-segue tail player carries the end of a track that started
+    // on the main channel, so it must sound identical (432 Hz retune, EQ...)
+    if (m_tailPlayer)
+        m_tailPlayer->setFxParams(FxSettings::loadChannel(QStringLiteral("Main")));
     if (lp1_Xplayer)
         lp1_Xplayer->setFxParams(FxSettings::loadChannel(QStringLiteral("LP1")));
     if (lp2_Xplayer)

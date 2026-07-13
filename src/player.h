@@ -15,15 +15,18 @@
 #include <QMutex>
 #include <QMutexLocker>
 #include <QPixmap>
+#include <QPointF>
 #include <QPointer>
 #include <QProcess>
 #include <QVariantAnimation>
+#include <QVector>
 
 // Forward declarations (prefer these over heavy includes in headers)
 class QCloseEvent;
 class QComboBox;
 class QPushButton;
 class QSlider;
+class QSpinBox;
 class QTableView;
 class QLabel;
 class QFrame;
@@ -40,6 +43,9 @@ class TorrentDownloadService;
 class NgrokTunnelService;
 class UpdateCheckService;
 class AudioFxWidget;
+class WaveformStore;
+class PlaylistWaveView;
+class NowPlayingWaveStrip;
 
 #include "services/TorrentTypes.h"
 #include "audio/FxPlayer.h"
@@ -383,6 +389,40 @@ private slots:
     // Audio FX tab (inserted after the DJ tab; visibility via ShowFxTab)
     AudioFxWidget *m_fxTabWidget = nullptr;
     QWidget *m_fxTabPage = nullptr;
+
+    // Playlist sound-wave view (crossfade preparation). The store extracts
+    // waveforms with ffmpeg; the view paints them into ui->playlist and
+    // lets the user drag each track's wave to set its overlap with the
+    // previous one (persisted in playlist XML files).
+    WaveformStore *m_waveStore = nullptr;
+    PlaylistWaveView *m_waveView = nullptr;
+    QToolButton *m_waveViewToggle = nullptr;
+    // Wave + volume line of the track on air (its playlist item is gone)
+    NowPlayingWaveStrip *m_nowPlayingWave = nullptr;
+    // "Max overlap" control: how early the next track can be dragged to
+    // start (tracks with long silent tails need more than the default)
+    QWidget *m_maxOverlapBox = nullptr;
+    QSpinBox *m_maxOverlapSpin = nullptr;
+    void setPlaylistWaveView(bool on);
+
+    // Overlap segue: when the next playlist item defines an overlap, the
+    // dying tail of the current track is handed to this dedicated player
+    // (faded out by m_tailFade) while the next track starts on Xplayer —
+    // the main playback state machine never notices the difference.
+    FxPlayer *m_tailPlayer = nullptr;
+    QAudioOutput *m_tailOutput = nullptr;
+    QVariantAnimation *m_tailFade = nullptr;
+    bool m_overlapSegueFired = false;
+    void startOverlapSegue(qint64 fadeMs);
+    void stopTailPlayer();
+
+    // Volume line (envelope) of the track playing on Xplayer, captured from
+    // its playlist item when playback starts. Applied on every position
+    // tick as sliderVolume * envelopeGainAt(position); m_envelopeApplied
+    // makes sure the slider volume is restored when the line stops applying.
+    QVector<QPointF> m_activeEnvelope;
+    QString m_activeEnvelopePath;
+    bool m_envelopeApplied = false;
 
     // LP deck scratching state (index 0 = deck 1, 1 = deck 2)
     QElapsedTimer m_scratchClock;
