@@ -513,7 +513,7 @@ background-color: rgb(83, 28, 28);</string>
     <item>
      <widget class="QPushButton" name="bt_youtube_getPlaylist">
       <property name="toolTip">
-       <string>Download every video in a YouTube playlist (paste a link containing &quot;list=&quot;)</string>
+       <string>Download every entry of a YouTube playlist (link containing &quot;list=&quot;) or SoundCloud set (soundcloud.com/artist/sets/...)</string>
       </property>
       <property name="text">
        <string>Get Playlist!</string>

@@ -1038,6 +1038,14 @@ DownloadResult processDownloadTask(
 
 
 // --- Playlist download ----------------------------------------------------
+
+// A SoundCloud set (album/playlist), e.g. https://soundcloud.com/bandua/sets/bandua
+static bool isSoundCloudSetUrl(const QString &url)
+{
+    return url.contains("soundcloud.com/", Qt::CaseInsensitive) &&
+           url.contains("/sets/", Qt::CaseInsensitive);
+}
+
 // Aggregate result for downloading every entry of a playlist.
 struct PlaylistResult {
     int total = 0;       // entries discovered in the playlist
@@ -1106,19 +1114,29 @@ PlaylistResult processPlaylistDownloadTask(
     }
 
     // Enumerate the playlist entries without downloading any media. We print one
-    // line per entry as "id<US>title<US>uploader", using the ASCII Unit
-    // Separator (0x1F) as a delimiter so it can't collide with text in titles.
+    // line per entry as "id<US>title<US>uploader<US>webpage_url<US>url", using
+    // the ASCII Unit Separator (0x1F) as a delimiter so it can't collide with
+    // text in titles.
+    //
+    // YouTube playlists are enumerated with "--flat-playlist" (cheap: one index
+    // request, titles included). SoundCloud sets can NOT use the flat index —
+    // its flat entries carry no title/uploader (both "NA") and some are bare
+    // api-v2.soundcloud.com URLs. Without --flat-playlist yt-dlp fetches each
+    // track's metadata (~1s per track, still no media download since --print
+    // implies --simulate), which yields real titles and canonical permalinks.
+    const bool soundcloudSet = isSoundCloudSetUrl(playlistUrl);
     const QChar US(0x1f);
-    appendOutput("Fetching playlist entries...");
+    appendOutput(soundcloudSet ? "Fetching SoundCloud set entries (with metadata)..."
+                               : "Fetching playlist entries...");
     QStringList entryLines;
     {
         QProcess listProc;
         QStringList listArgs;
-        listArgs << "--flat-playlist"
-                 << "--ignore-errors"
+        if (!soundcloudSet) listArgs << "--flat-playlist";
+        listArgs << "--ignore-errors"
                  << "--no-warnings"
                  << "--print"
-                 << QString("%(id)s%1%(title)s%1%(uploader)s").arg(US)
+                 << QString("%(id)s%1%(title)s%1%(uploader)s%1%(webpage_url)s%1%(url)s").arg(US)
                  << playlistUrl;
         listProc.start(ytdlpPath, listArgs);
         if (!listProc.waitForStarted(15000)) {
@@ -1128,8 +1146,9 @@ PlaylistResult processPlaylistDownloadTask(
             agg.consoleOutput = consoleLines.join("\n");
             return agg;
         }
-        // Reading a playlist index is network-bound; cap it generously.
-        if (!listProc.waitForFinished(180000)) {
+        // Reading a playlist index is network-bound; cap it generously. The
+        // per-track metadata pass for SoundCloud sets gets a higher cap.
+        if (!listProc.waitForFinished(soundcloudSet ? 300000 : 180000)) {
             listProc.kill();
             listProc.waitForFinished(2000);
             appendOutput("Timed out while reading the playlist.");
@@ -1143,7 +1162,8 @@ PlaylistResult processPlaylistDownloadTask(
     if (entryLines.isEmpty()) {
         agg.fatal = true;
         agg.message = "No playlist entries were found. Make sure the link points to a public "
-                      "playlist (it should contain \"list=\").";
+                      "YouTube playlist (containing \"list=\") or SoundCloud set "
+                      "(soundcloud.com/<artist>/sets/<set>).";
         appendOutput(agg.message);
         agg.consoleOutput = consoleLines.join("\n");
         return agg;
@@ -1159,6 +1179,8 @@ PlaylistResult processPlaylistDownloadTask(
         const QString id = parts.value(0).trimmed();
         const QString title = parts.value(1).trimmed();
         const QString uploader = parts.value(2).trimmed();
+        const QString webpageUrl = parts.value(3).trimmed();
+        const QString entryUrl = parts.value(4).trimmed();
 
         if (id.isEmpty() || id == "NA") {
             appendOutput(QString("[%1/%2] Skipping entry with no video id.")
@@ -1167,7 +1189,18 @@ PlaylistResult processPlaylistDownloadTask(
             continue;
         }
 
-        const QString videoUrl = "https://www.youtube.com/watch?v=" + id;
+        // Pick the URL to download. webpage_url is the canonical page (set by
+        // the full-metadata pass; "NA" for flat entries). Flat entries put the
+        // entry link in url instead. YouTube ids keep the historical watch-URL
+        // construction as a last resort.
+        QString videoUrl;
+        if (webpageUrl.startsWith("http")) {
+            videoUrl = webpageUrl;
+        } else if (entryUrl.startsWith("http")) {
+            videoUrl = entryUrl;
+        } else {
+            videoUrl = "https://www.youtube.com/watch?v=" + id;
+        }
 
         // Guess Artist/Song from the title. "Artist - Song" is the common form
         // for music; otherwise fall back to the channel name (minus YouTube's
@@ -1361,13 +1394,15 @@ void externaldownloader::getPlaylist() {
 
     QString ylink = ui->txt_videoLink->text().trimmed();
 
-    // A playlist link must carry a "list=" parameter. Unlike single downloads we
-    // must NOT strip query parameters after '&', since that is where the list id
-    // lives in "watch?v=...&list=..." URLs.
-    if (ylink.isEmpty() || !ylink.contains("list=")) {
+    // A YouTube playlist link must carry a "list=" parameter (unlike single
+    // downloads we must NOT strip query parameters after '&', since that is
+    // where the list id lives in "watch?v=...&list=..." URLs). SoundCloud sets
+    // are recognized by their .../sets/... path instead.
+    if (ylink.isEmpty() || (!ylink.contains("list=") && !isSoundCloudSetUrl(ylink))) {
         QMessageBox::warning(this, tr("Not a Playlist"),
-            tr("Please paste a playlist link in the Video Link field. It should contain "
-               "\"list=\", e.g. https://www.youtube.com/playlist?list=..."));
+            tr("Please paste a playlist link in the Video Link field: a YouTube playlist "
+               "(containing \"list=\", e.g. https://www.youtube.com/playlist?list=...) or "
+               "a SoundCloud set (e.g. https://soundcloud.com/artist/sets/name)."));
         ui->bt_youtube_getIt->setEnabled(true);
         if (ui->bt_youtube_getPlaylist) ui->bt_youtube_getPlaylist->setEnabled(true);
         ui->frame_loading->hide();
@@ -1429,17 +1464,17 @@ void externaldownloader::getPlaylist() {
 void externaldownloader::on_bt_youtube_getPlaylist_clicked()
 {
     const QString ylink = ui->txt_videoLink->text().trimmed();
-    if (ylink.isEmpty() || !ylink.contains("list=")) {
+    if (ylink.isEmpty() || (!ylink.contains("list=") && !isSoundCloudSetUrl(ylink))) {
         QMessageBox::information(this, tr("Playlist Downloader"),
-            tr("Please paste a YouTube playlist link in the Video Link field. "
-               "It should contain \"list=\", e.g. "
-               "https://www.youtube.com/playlist?list=..."));
+            tr("Please paste a playlist link in the Video Link field: a YouTube playlist "
+               "(containing \"list=\", e.g. https://www.youtube.com/playlist?list=...) or "
+               "a SoundCloud set (e.g. https://soundcloud.com/artist/sets/name)."));
         return;
     }
 
     const auto reply = QMessageBox::question(this, tr("Download Whole Playlist?"),
-        tr("This downloads every video in the playlist as audio and adds them to your "
-           "library. Artist and Song are guessed from each video's title, and the genres "
+        tr("This downloads every entry of the playlist as audio and adds them to your "
+           "library. Artist and Song are guessed from each entry's title, and the genres "
            "selected above are applied to all of them.\n\nThis can take a while. Continue?"),
         QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
     if (reply != QMessageBox::Yes) {
