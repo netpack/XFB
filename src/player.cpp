@@ -6482,6 +6482,33 @@ void player::notifyUpdateAvailable(const QString &version, const QUrl &releasePa
     }
 #endif
 
+#ifdef Q_OS_LINUX
+    // Pacman installs (Arch/AUR) can't use the .deb release asset: the package
+    // manager owns the files, so point the user at the AUR instead
+    {
+        const QString pacman = QStandardPaths::findExecutable("pacman");
+        if (!pacman.isEmpty()) {
+            QProcess probe;
+            probe.start(pacman, {"-Qo", QCoreApplication::applicationFilePath()});
+            probe.waitForFinished(8000);
+            if (probe.exitStatus() == QProcess::NormalExit && probe.exitCode() == 0) {
+                QMessageBox::information(this, tr("Update with your package manager"),
+                    tr("This copy of XFB is managed by pacman, so the update comes "
+                       "from the AUR. Run your AUR helper, for example:\n\n"
+                       "    yay -Syu xfb\n\n"
+                       "then launch XFB again to run version %1.").arg(version));
+                return;
+            }
+        }
+        // The release asset is a .deb, which only dpkg-based systems can install
+        if (QStandardPaths::findExecutable("dpkg").isEmpty()
+            && QStandardPaths::findExecutable("apt").isEmpty()) {
+            QDesktopServices::openUrl(releasePage);
+            return;
+        }
+    }
+#endif
+
     downloadAndOpenUpdate(downloadUrl, releasePage, version);
 }
 
