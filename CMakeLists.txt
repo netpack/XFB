@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(XFB VERSION 3.14159 LANGUAGES CXX)
+project(XFB VERSION 3.141592 LANGUAGES CXX)
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 17)

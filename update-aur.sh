@@ -4,8 +4,8 @@
 
 set -e
 
-VERSION="3.14159"
-PKGREL="2"
+VERSION="3.141592"
+PKGREL="1"
 
 echo "=========================================="
 echo "Updating XFB on AUR to version $VERSION"
@@ -66,10 +66,10 @@ echo "Committing changes..."
 git add PKGBUILD .SRCINFO xfb.install
 git commit -m "Update to version $VERSION-$PKGREL
 
-- Fix white application icon background: install the transparent hicolor
-  icons (16-512px + scalable SVG) from XFB.iconset instead of the
-  flattened root xfb_icon.png; the pixmaps fallback is transparent too
-- Refresh the hicolor icon cache in the install scriptlets
+- Updated to XFB 3.141592
+- Download full SoundCloud sets in the external downloader
+- Options -> Install all dependencies (one-click external tool setup)
+- Transparent application icon (hicolor + scalable SVG)
 "
 
 echo ""
