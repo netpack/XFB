@@ -7,7 +7,7 @@
 #   ./build-deb-docker.sh arm64      # builds arm64 only
 #   ./build-deb-docker.sh amd64 arm64
 #
-# Produces: output/xfb_3.141592-1_<arch>.deb
+# Produces: output/xfb_<version>-1_<arch>.deb
 
 set -e
 
@@ -50,9 +50,9 @@ done
 echo ""
 echo "✅ Done! Packages are in ./output:"
 for ARCH in "${ARCHES[@]}"; do
-    echo "  output/xfb_3.141592-1_${ARCH}.deb"
+    echo "  output/xfb_<version>-1_${ARCH}.deb"
 done
 echo ""
 echo "To install on Debian/Ubuntu (matching your machine's architecture):"
-echo "  sudo dpkg -i xfb_3.141592-1_<arch>.deb"
+echo "  sudo dpkg -i xfb_<version>-1_<arch>.deb"
 echo "  sudo apt-get install -f  # fix any missing dependencies"
