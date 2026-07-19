@@ -4,7 +4,7 @@
 
 set -e
 
-VERSION="3.1415926"
+VERSION="3.14159265"
 ARCH="amd64"
 DEB_FILE="xfb_${VERSION}-1_${ARCH}.deb"
 

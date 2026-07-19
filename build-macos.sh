@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 
 # Configuration
 PROJECT_NAME="XFB"
-VERSION="3.1415926"
+VERSION="3.14159265"
 BUILD_DIR="build"
 APP_NAME="XFB.app"
 DMG_NAME="XFB-${VERSION}-macOS"

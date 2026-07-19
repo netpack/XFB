@@ -5,7 +5,7 @@
 !define COMPANYNAME "Netpack - Online Solutions"
 !define DESCRIPTION "XFB Radio Automation Software"
 !ifndef VERSION
-  !define VERSION "3.1415926"
+  !define VERSION "3.14159265"
 !endif
 ; Target architecture: "x64" (default) or "arm64". Passed by build-windows.bat
 ; via /DARCH=...; affects the output filename and the displayed name.

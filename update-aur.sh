@@ -4,7 +4,7 @@
 
 set -e
 
-VERSION="3.1415926"
+VERSION="3.14159265"
 PKGREL="1"
 
 echo "=========================================="
@@ -66,11 +66,11 @@ echo "Committing changes..."
 git add PKGBUILD .SRCINFO xfb.install
 git commit -m "Update to version $VERSION-$PKGREL
 
-- Updated to XFB 3.1415926
-- Playlist wave view with per-track waveforms (toggle above the playlist)
-- Crossfade preparation: drag the next track's wave to set the overlap
-- Sonar-style volume lines per track, editable live on the playing track
-- Overlaps and volume lines are saved in playlist XML files
+- Updated to XFB 3.14159265
+- Gapless main-playlist transitions with engine crossfades and auto-cue
+- Auto-mix: one-click crossfade preparation for the playlist
+- Dockable UI layout, themes with accent color, track artwork, level meter
+- Torrent privacy hardening: kill-switch, consent dialog, DHT/PEX off, VPN warning
 "
 
 echo ""
