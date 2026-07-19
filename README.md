@@ -22,7 +22,7 @@ XFB is an open-source radio automation software developed by [Frédéric Bogaert
 - **432 Hz Playback** — Retune everything from A=440 to A=432 in real time without touching your files, or batch-convert one track, a selection, or the whole library (Database menu / music table right-click)
 - **Live Recording** — Record programs directly within the application
 - **Streaming Client** — Listen to any Icecast/Shoutcast stream or .m3u/.pls playlist from within XFB (with automatic reconnect), e.g. to monitor your station's output
-- **Torrent Search** — Search and download music via Tor-routed onion sites
+- **Torrent Search** — Search music via Tor-routed onion sites (searching is anonymised; the BitTorrent download itself is not — your IP is visible to peers)
 - **Accessibility** — ORCA screen reader support, keyboard navigation, audio feedback
 - **Cross-Platform** — Runs on macOS, Linux (Debian/Arch), and Windows
 

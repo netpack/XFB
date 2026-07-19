@@ -1471,6 +1471,16 @@
                  </widget>
                 </item>
                 <item>
+                 <widget class="QLabel" name="vpnStatusLabel">
+                  <property name="styleSheet">
+                   <string notr="true">color: #d08000; font-weight: bold;</string>
+                  </property>
+                  <property name="text">
+                   <string>VPN: off</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
                  <spacer name="horizontalSpacer_tor">
                   <property name="orientation">
                    <enum>Qt::Orientation::Horizontal</enum>
@@ -2193,7 +2203,7 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
             <x>510</x>
             <y>45</y>
             <width>581</width>
-            <height>25</height>
+            <height>20</height>
            </rect>
           </property>
           <property name="sizePolicy">

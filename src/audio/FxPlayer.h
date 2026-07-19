@@ -43,6 +43,30 @@ public:
     void setSource(const QUrl &source);
     QUrl source() const { return m_source; }
 
+    /**
+     * Gapless: preload the upcoming local track so the next setSource()
+     * starts instantly. The FX engine spawns the decoder ahead of time and
+     * hands off without breaking the audio stream; plain playback preloads
+     * the media on a standby QMediaPlayer and swaps it in. A preload that
+     * doesn't match the eventual setSource() is discarded automatically.
+     */
+    void prepareNext(const QUrl &url);
+    /** True when prepareNext() is armed for exactly this source. */
+    bool hasPreparedNext(const QUrl &url) const;
+    /**
+     * FX engine only: the next preloaded handoff crossfades — the outgoing
+     * track keeps playing inside the engine mix, fading over fadeMs,
+     * instead of being cut when the new source is adopted.
+     */
+    void setNextCrossfade(qint64 fadeMs);
+
+    /**
+     * Rebuild the FX engine's audio sink on the current default device.
+     * The stall watchdog calls this: a wedged output device otherwise
+     * survives recovery and stalls every following track too.
+     */
+    void resetAudioSink();
+
     void play();
     void pause();
     void stop();
@@ -77,6 +101,8 @@ public:
 signals:
     void positionChanged(qint64 position);
     void durationChanged(qint64 duration);
+    /** Output peaks 0..1 for the level meter (FX-engine playback only). */
+    void levels(float left, float right);
     void sourceChanged(const QUrl &media);
     void playbackStateChanged(QMediaPlayer::PlaybackState newState);
     void mediaStatusChanged(QMediaPlayer::MediaStatus status);
@@ -87,10 +113,15 @@ private:
 
     template <typename F> void engineCall(F &&f);
     bool wantFxFor(const QUrl &url) const;
+    void connectPassthrough(QMediaPlayer *p);
+    void discardPrepared();
     void switchToFx(QMediaPlayer::PlaybackState resumeState, qint64 resumePos);
     void switchToPassthrough(QMediaPlayer::PlaybackState resumeState, qint64 resumePos);
 
     QMediaPlayer *m_qt = nullptr;
+    QMediaPlayer *m_qtStandby = nullptr; // preloads the next track (gapless swap)
+    QUrl m_preparedUrl;                  // armed prepareNext() target
+    bool m_preparedInEngine = false;     // preload lives in the FX engine
     QAudioOutput *m_output = nullptr;
 
     QThread m_engineThread;

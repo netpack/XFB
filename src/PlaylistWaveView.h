@@ -60,6 +60,16 @@ public:
     static QString encodeEnvelope(const QVector<QPointF> &points);
     static double envelopeGainAt(const QVector<QPointF> &points, qint64 positionMs);
 
+    /** Auto-mix quietness threshold, in % of a track's own max peak
+     *  (AutoMixThresholdPercent in xfb.conf; no UI control). */
+    static int autoMixThresholdPercent();
+    static void setAutoMixThresholdPercent(int percent);
+
+    /** How long the track stays quiet (below the auto-mix threshold) at
+     *  its head / tail. An all-quiet track returns its full duration. */
+    static qint64 quietHeadMs(const WaveformData &data, int thresholdPercent);
+    static qint64 quietTailMs(const WaveformData &data, int thresholdPercent);
+
     PlaylistWaveView(QListWidget *list, WaveformStore *store, QObject *parent = nullptr);
 
     void setActive(bool active);
@@ -74,10 +84,24 @@ public:
 
     void stopPreview();
 
+    /** Auto-mix: compute and set the crossfade overlap of every transition
+     *  from the waveforms, so each track starts where the previous one goes
+     *  quiet. rows empty = the whole playlist; otherwise only the
+     *  transitions INTO those rows. Existing overlaps are recomputed.
+     *  Asynchronous when waveforms still need extraction; may finish (and
+     *  emit autoMixFinished) before returning when everything is cached. */
+    void autoMix(const QVector<int> &rows = {});
+    void cancelAutoMix();
+    bool autoMixActive() const { return m_autoMixActive; }
+
     void paint(QPainter *painter, const QStyleOptionViewItem &option,
                const QModelIndex &index) const override;
 
     bool eventFilter(QObject *watched, QEvent *event) override;
+
+signals:
+    void autoMixProgress(int done, int total);
+    void autoMixFinished(int applied, int skipped, bool canceled);
 
 private:
     struct StripGeometry
@@ -139,7 +163,25 @@ private:
     QVector<QPointF> m_previewPrevEnv;
     QVector<QPointF> m_previewNextEnv;
 
+    // Auto-mix: one queued analysis per distinct prev/cur path pair; rows
+    // are re-resolved by path when a result is applied, so the playlist may
+    // mutate (playback consumes row 0) while waveforms extract.
+    struct AutoMixTransition
+    {
+        QString prevPath;
+        QString curPath;
+    };
+    void processAutoMixQueue();
+    void finishAutoMix(bool canceled);
+
+    QVector<AutoMixTransition> m_autoMixPending;
+    bool m_autoMixActive = false;
+    int m_autoMixTotal = 0;
+    int m_autoMixApplied = 0;
+    int m_autoMixSkipped = 0;
+
     static qint64 s_maxOverlapMs;
+    static int s_autoMixThresholdPercent;
 };
 
 /**

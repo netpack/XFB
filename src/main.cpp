@@ -1,4 +1,5 @@
 #include "player.h"
+#include "ThemeManager.h"
 
 #include <QApplication>
 #include <QCoreApplication>
@@ -196,52 +197,9 @@ static void setupApplicationIcon(QApplication& app)
 #endif
 }
 
-// Apply the dark or light theme palette and stylesheet
-static void applyTheme(QApplication& app, bool darkMode)
-{
-    QPalette palette;
-    QString qssFilePath;
-
-    if (darkMode) {
-        palette.setColor(QPalette::Window, QColor(53, 53, 53));
-        palette.setColor(QPalette::WindowText, Qt::white);
-        palette.setColor(QPalette::Base, QColor(42, 42, 42));
-        palette.setColor(QPalette::AlternateBase, QColor(66, 66, 66));
-        palette.setColor(QPalette::ToolTipBase, Qt::white);
-        palette.setColor(QPalette::ToolTipText, Qt::white);
-        palette.setColor(QPalette::Text, Qt::white);
-        palette.setColor(QPalette::Button, QColor(53, 53, 53));
-        palette.setColor(QPalette::ButtonText, Qt::white);
-        palette.setColor(QPalette::BrightText, Qt::red);
-        palette.setColor(QPalette::Highlight, QColor(129, 129, 194));
-        palette.setColor(QPalette::HighlightedText, Qt::black);
-        qssFilePath = ":/resources/darkstylesheet.qss";
-    } else {
-        palette.setColor(QPalette::Window, QColor(255, 255, 255));
-        palette.setColor(QPalette::WindowText, Qt::black);
-        palette.setColor(QPalette::Base, QColor(245, 245, 245));
-        palette.setColor(QPalette::AlternateBase, QColor(232, 232, 232));
-        palette.setColor(QPalette::ToolTipBase, Qt::black);
-        palette.setColor(QPalette::ToolTipText, Qt::white);
-        palette.setColor(QPalette::Text, Qt::black);
-        palette.setColor(QPalette::Button, QColor(240, 240, 240));
-        palette.setColor(QPalette::ButtonText, Qt::black);
-        palette.setColor(QPalette::BrightText, Qt::red);
-        palette.setColor(QPalette::Highlight, QColor(129, 129, 194));
-        palette.setColor(QPalette::HighlightedText, Qt::white);
-        qssFilePath = ":/resources/stylesheet.qss";
-    }
-
-    app.setPalette(palette);
-
-    QFile styleFile(qssFilePath);
-    if (styleFile.open(QFile::ReadOnly | QFile::Text)) {
-        app.setStyleSheet(QLatin1String(styleFile.readAll()));
-        styleFile.close();
-    } else {
-        qWarning() << "Could not open stylesheet:" << qssFilePath;
-    }
-}
+// Theming lives in ThemeManager now: it reads Theme/AccentColor from
+// xfb.conf (migrating the legacy DarkMode bool) and generates the palette
+// and stylesheet for the selected theme.
 
 // Ensure the config directory exists and copy default config if needed
 static QString setupConfiguration(QApplication& app)
@@ -319,7 +277,11 @@ static void applyInstallerDefaults(QSettings& settings)
     }
     if (!darkStr.isEmpty()) {
         // Store a real bool so downstream .toBool() reads are unambiguous.
-        settings.setValue("DarkMode", darkStr.compare("true", Qt::CaseInsensitive) == 0);
+        const bool dark = darkStr.compare("true", Qt::CaseInsensitive) == 0;
+        settings.setValue("DarkMode", dark);
+        // The theme system supersedes DarkMode; map the installer choice.
+        settings.setValue("Theme", dark ? QStringLiteral("dark")
+                                        : QStringLiteral("light"));
     }
     settings.setValue("InstallerDefaultsToken", token);
     settings.sync();
@@ -479,7 +441,6 @@ int main(int argc, char *argv[])
 
     QString language = settings.value("Language", "en").toString();
     bool fullScreen = settings.value("FullScreen", false).toBool();
-    bool darkMode = settings.value("DarkMode", false).toBool();
 
     // Apply the configured application font size before building any widgets so
     // the whole UI inherits it. 0/unset keeps the platform default. Widgets
@@ -507,7 +468,7 @@ int main(int argc, char *argv[])
 
     // 9. Theme
     showSplashMessage(QObject::tr("Applying theme..."));
-    applyTheme(app, darkMode);
+    ThemeManager::apply(&app);
 
     // 10. Create main window
     showSplashMessage(QObject::tr("Loading main window..."));

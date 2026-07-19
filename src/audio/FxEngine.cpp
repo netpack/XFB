@@ -30,6 +30,27 @@ QString findTool(const QString &name)
     path = QStandardPaths::findExecutable(name, extraDirs);
     return path;
 }
+
+/** Parse `ffprobe -show_entries format=duration:format_tags:stream_tags`
+    output: fills the duration and flags files already retuned to 432 Hz. */
+void parseProbeOutput(const QString &out, qint64 *durationMs, bool *is432)
+{
+    // Files converted by XFB carry an embedded tuning marker; they must
+    // not be retuned a second time by the live 432 Hz mode.
+    if (out.contains(QStringLiteral("xfb_tuning=432"), Qt::CaseInsensitive)
+        || out.contains(QStringLiteral("XFB-432Hz"), Qt::CaseInsensitive)) {
+        *is432 = true;
+    }
+
+    const QRegularExpression durRe(QStringLiteral("^duration=([0-9.]+)"),
+                                   QRegularExpression::MultilineOption);
+    const QRegularExpressionMatch dm = durRe.match(out);
+    if (dm.hasMatch()) {
+        const double secs = dm.captured(1).toDouble();
+        if (secs > 0)
+            *durationMs = static_cast<qint64>(secs * 1000.0);
+    }
+}
 } // namespace
 
 FxEngine::FxEngine(QObject *parent)
@@ -39,6 +60,21 @@ FxEngine::FxEngine(QObject *parent)
     m_chunk16.resize(kChunkFrames * kChannels);
     m_djFilter.setup(kSampleRate);
     m_echo.setup(kSampleRate);
+
+    // Follow audio-device changes (headphones unplugged, Bluetooth/AirPlay
+    // dropped): the sink is bound to the device it was opened on, so it
+    // must be rebuilt on the new default or playback wedges silently.
+    QMediaDevices *devices = new QMediaDevices(this);
+    connect(devices, &QMediaDevices::audioOutputsChanged, this, [this]() {
+        const QAudioDevice def = QMediaDevices::defaultAudioOutput();
+        if (!m_sink || def.isNull() || def.id() == m_sinkDeviceId)
+            return;
+        qDebug() << "FxEngine: default audio output changed, rebuilding sink";
+        const bool wasActive = (m_state == State::Playing && m_io);
+        teardownSink();
+        if (wasActive && !ensureSink())
+            failTrack(tr("Audio output device disappeared"));
+    });
 }
 
 FxEngine::~FxEngine()
@@ -68,6 +104,18 @@ bool FxEngine::available()
 
 void FxEngine::setSource(const QString &pathOrUrl)
 {
+    // Gapless handoff: the upcoming track was preloaded and its decoder is
+    // already running — adopt it instead of cold-starting a new one. A
+    // short track's decoder may have exited already with all of its PCM
+    // still buffered, which is just as usable.
+    if (!pathOrUrl.isEmpty() && pathOrUrl == m_nextPath && m_nextProc
+            && (m_nextProc->state() == QProcess::Running
+                || m_nextProc->bytesAvailable() > 0)) {
+        adoptPreloaded();
+        return;
+    }
+
+    cancelPreload();
     stop();
     m_path = pathOrUrl;
     m_durationMs = 0;
@@ -101,9 +149,15 @@ void FxEngine::play()
         return;
     }
 
-    startProcessAt(startAt);
-    if (!m_proc)
-        return; // failTrack already emitted
+    if (m_procPreloaded && startAt == 0 && m_proc
+            && m_proc->state() == QProcess::Running) {
+        // Adopted preloaded decoder: already decoding from position 0
+        m_procPreloaded = false;
+    } else {
+        startProcessAt(startAt);
+        if (!m_proc)
+            return; // failTrack already emitted
+    }
 
     m_state = State::Playing;
 
@@ -145,6 +199,7 @@ void FxEngine::pause()
     }
     m_pausedPosMs = std::max<qint64>(0, currentPositionMs() - bufferedMs);
 
+    stopTailMix(); // pausing mid-crossfade drops the fading tail
     stopProcess();
     if (m_pumpTimer)
         m_pumpTimer->stop();
@@ -156,7 +211,12 @@ void FxEngine::pause()
 
 void FxEngine::stop()
 {
+    cancelPreload();
+    stopTailMix();
     stopProcess();
+    m_procPreloaded = false;
+    m_finishEmitted = false;
+    m_nextCrossfadeMs = 0;
     m_scratchActive = false;
     m_scratchMode = 0;
     m_scratchBuf.clear();
@@ -171,6 +231,9 @@ void FxEngine::stop()
     m_framesTaken = 0;
     m_pausedPosMs = 0;
     m_producedAudio = false;
+    m_meterPeakL = 0.0f;
+    m_meterPeakR = 0.0f;
+    emit levels(0.0f, 0.0f); // let the meter fall silent
     resetDspState();
 }
 
@@ -209,6 +272,11 @@ void FxEngine::setVolume(float linearVolume)
 
 void FxEngine::setParams(const FxParams &params)
 {
+    // A preloaded decoder was spawned with the previous filter chain; a
+    // retune toggle would make it play at the wrong pitch.
+    if (m_params.retune432 != params.retune432)
+        cancelPreload();
+
     m_params = params;
     m_eq.configure(kSampleRate, m_params);
     m_comp.configure(kSampleRate, m_params);
@@ -241,34 +309,25 @@ void FxEngine::shutdown()
 
 // ------------------------------------------------------------------- internals
 
-void FxEngine::startProcessAt(qint64 positionMs)
+QProcess *FxEngine::spawnDecoder(const QString &path, qint64 positionMs,
+                                 bool retune, bool isLive, bool waitForStart,
+                                 QString *error)
 {
-    stopProcess();
-
     const QString ffmpeg = ffmpegExecutable();
     if (ffmpeg.isEmpty()) {
-        failTrack(tr("ffmpeg not found — audio FX engine unavailable"));
-        return;
+        if (error)
+            *error = tr("ffmpeg not found — audio FX engine unavailable");
+        return nullptr;
     }
-    if (!m_isLive && !QFile::exists(m_path)) {
-        failTrack(tr("File not found: %1").arg(m_path));
-        return;
+    if (!isLive && !QFile::exists(path)) {
+        if (error)
+            *error = tr("File not found: %1").arg(path);
+        return nullptr;
     }
-
-    m_baseMs = m_isLive ? 0 : positionMs;
-    m_framesTaken = 0;
-    m_partialFrame.clear();
-    m_fifo.clear();
-    // The timeline jumps: played-audio history and any scratch in progress
-    // are no longer valid.
-    m_history.clear();
-    m_scratchActive = false;
-    m_scratchBuf.clear();
-    resetDspState();
 
     QStringList args;
     args << "-nostdin" << "-loglevel" << "error";
-    if (m_isLive) {
+    if (isLive) {
         // Network streams are paced by the server; make ffmpeg ride out
         // short network hiccups instead of exiting.
         args << "-reconnect" << "1"
@@ -276,23 +335,39 @@ void FxEngine::startProcessAt(qint64 positionMs)
              << "-reconnect_delay_max" << "5";
     } else {
         args << "-re"; // decode paced at realtime: keeps process buffering bounded
+        // Plain -re leaves the pipeline (and so the sink) only as full as
+        // ffmpeg's small startup burst, so scheduling hiccups and track
+        // seams could run the sink dry and click. Front-load a few seconds
+        // at full speed where ffmpeg supports it (>= 6.1), then pace.
+        static const bool haveInitialBurst = [] {
+            QProcess probe;
+            probe.start(ffmpegExecutable(), {"-h", "long"});
+            probe.waitForFinished(3000);
+            return probe.readAllStandardOutput().contains("readrate_initial_burst");
+        }();
+        // 12 s: also gives the auto-cue tail trim enough decoded lookahead
+        // to chop long encoded outro silences (YouTube rips) off the fifo.
+        if (haveInitialBurst)
+            args << "-readrate_initial_burst" << "12";
         if (positionMs > 0)
             args << "-ss" << QString::number(positionMs / 1000.0, 'f', 3);
     }
-    args << "-i" << m_path
+    args << "-i" << path
          << "-vn" << "-sn" << "-dn";
-    if (m_retuneOn && !m_sourceIs432) {
+    if (retune) {
         // A440 -> A432 pitch shift with tempo preserved: reinterpret the
         // sample rate to lower the pitch, resample back to the engine rate,
         // then atempo restores the original speed (so the track length does
-        // not change). atempo uses the exact inverse of the applied ratio.
-        // Files that were already converted to 432 Hz (detected via the
-        // embedded XFB_TUNING tag or the _432Hz suffix) are played as-is.
+        // not change). The input is normalized to the engine rate FIRST:
+        // asetrate is an absolute rate, so without the leading aresample a
+        // 44.1 kHz file (typical MP3) came out +6.9% sharp and fast instead
+        // of 1.8% flat. Files that were already converted to 432 Hz
+        // (embedded XFB_TUNING tag or _432Hz suffix) are played as-is.
         const int retunedRate = qRound(kSampleRate * 432.0 / 440.0);
-        const double tempoComp = static_cast<double>(kSampleRate) / retunedRate;
-        args << "-af" << QString("asetrate=%1,aresample=%2,atempo=%3")
-                             .arg(retunedRate)
+        const double tempoComp = 440.0 / 432.0;
+        args << "-af" << QString("aresample=%1,asetrate=%2,aresample=%1,atempo=%3")
                              .arg(kSampleRate)
+                             .arg(retunedRate)
                              .arg(tempoComp, 0, 'f', 8);
     }
     args << "-f" << "f32le"
@@ -301,18 +376,46 @@ void FxEngine::startProcessAt(qint64 positionMs)
          << "-ar" << QString::number(kSampleRate)
          << "-";
 
-    m_proc = new QProcess(this);
-    m_proc->setReadChannel(QProcess::StandardOutput);
-    connect(m_proc, &QProcess::errorOccurred, this, [this](QProcess::ProcessError err) {
-        if (err == QProcess::FailedToStart)
-            failTrack(tr("Failed to start ffmpeg for FX playback"));
-    });
-
-    m_proc->start(ffmpeg, args);
-    if (!m_proc->waitForStarted(3000)) {
-        failTrack(tr("ffmpeg did not start (FX playback)"));
-        return;
+    QProcess *proc = new QProcess(this);
+    proc->setReadChannel(QProcess::StandardOutput);
+    proc->start(ffmpeg, args);
+    if (waitForStart && !proc->waitForStarted(3000)) {
+        if (error)
+            *error = tr("ffmpeg did not start (FX playback)");
+        proc->kill();
+        proc->deleteLater();
+        return nullptr;
     }
+    return proc;
+}
+
+void FxEngine::startProcessAt(qint64 positionMs)
+{
+    stopProcess();
+    stopTailMix(); // a timeline jump ends any crossfade still fading
+    m_procPreloaded = false;
+
+    m_baseMs = m_isLive ? 0 : positionMs;
+    m_framesTaken = 0;
+    m_partialFrame.clear();
+    m_fifo.clear();
+    // Auto-cue: skip encoded leading silence only when the track starts
+    // from the top (a user seek must land exactly where asked), and trim
+    // the encoded trailing silence for any local decode.
+    m_leadSkipped = m_isLive || positionMs > 0;
+    m_tailTrimmed = m_isLive;
+    // The timeline jumps: played-audio history and any scratch in progress
+    // are no longer valid.
+    m_history.clear();
+    m_scratchActive = false;
+    m_scratchBuf.clear();
+    resetDspState();
+
+    QString error;
+    m_proc = spawnDecoder(m_path, positionMs, m_retuneOn && !m_sourceIs432,
+                          m_isLive, /*waitForStart*/ true, &error);
+    if (!m_proc)
+        failTrack(error);
 }
 
 void FxEngine::stopProcess()
@@ -329,8 +432,197 @@ void FxEngine::stopProcess()
     proc->deleteLater();
 }
 
+// ------------------------------------------------------------ gapless preload
+
+void FxEngine::preloadNext(const QString &path)
+{
+    if (!path.isEmpty() && path == m_nextPath && (m_nextProc || m_nextProbe))
+        return; // this track is already being preloaded
+
+    cancelPreload();
+
+    if (path.isEmpty() || !QFile::exists(path) || ffmpegExecutable().isEmpty())
+        return; // nothing to preload — setSource() will take the normal path
+
+    m_nextPath = path;
+    m_nextDurationMs = 0;
+    m_nextIs432 = QFileInfo(path).completeBaseName()
+                      .endsWith(QStringLiteral("_432Hz"));
+
+    const QString ffprobe = ffprobeExecutable();
+    if (ffprobe.isEmpty()) {
+        spawnPreloadDecoder(); // no duration metadata, but still gapless
+        return;
+    }
+
+    // The probe runs asynchronously: the current track is still playing,
+    // and a blocking wait here would starve the pump.
+    m_nextProbe = new QProcess(this);
+    QProcess *probe = m_nextProbe;
+    connect(probe, &QProcess::finished, this,
+            [this, probe, path](int, QProcess::ExitStatus) {
+        probe->deleteLater();
+        if (probe != m_nextProbe || path != m_nextPath)
+            return; // canceled or superseded meanwhile
+        m_nextProbe = nullptr;
+        parseProbeOutput(QString::fromLocal8Bit(probe->readAllStandardOutput()),
+                         &m_nextDurationMs, &m_nextIs432);
+        spawnPreloadDecoder();
+    });
+    QTimer::singleShot(5000, probe, [probe] {
+        // A wedged probe must not block the preload forever; killing it
+        // still fires finished() and the decoder spawns without a duration.
+        if (probe->state() != QProcess::NotRunning)
+            probe->kill();
+    });
+    probe->start(ffprobe, {"-v", "error",
+                           "-show_entries", "format=duration:format_tags:stream_tags",
+                           "-of", "default=noprint_wrappers=1", path});
+}
+
+void FxEngine::cancelPreload()
+{
+    m_nextPath.clear();
+
+    // Reap asynchronously: cancelPreload can run while a track is playing
+    // (superseded preload, mid-track source switch), and waiting for the
+    // kill here would starve the pump.
+    const auto reap = [this](QProcess *p) {
+        if (!p)
+            return;
+        p->disconnect(this);
+        if (p->state() != QProcess::NotRunning) {
+            connect(p, &QProcess::finished, p, &QObject::deleteLater);
+            p->kill(); // SIGKILL: finished always follows and deletes it
+        } else {
+            p->deleteLater();
+        }
+    };
+
+    QProcess *probe = m_nextProbe;
+    m_nextProbe = nullptr;
+    reap(probe);
+
+    QProcess *proc = m_nextProc;
+    m_nextProc = nullptr;
+    reap(proc);
+}
+
+void FxEngine::spawnPreloadDecoder()
+{
+    if (m_nextPath.isEmpty() || m_nextProc)
+        return;
+    QString error;
+    const bool retune = m_params.retune432 && !m_nextIs432;
+    // No waitForStarted here: the current track is still playing and a
+    // blocked engine thread would starve the pump (audible dropout).
+    m_nextProc = spawnDecoder(m_nextPath, 0, retune, false,
+                              /*waitForStart*/ false, &error);
+    if (!m_nextProc) {
+        qWarning() << "FxEngine: gapless preload failed:" << error;
+        m_nextPath.clear(); // setSource() will fall back to a cold start
+        return;
+    }
+    QProcess *proc = m_nextProc;
+    connect(proc, &QProcess::errorOccurred, this,
+            [this, proc](QProcess::ProcessError err) {
+        if (err == QProcess::FailedToStart && proc == m_nextProc) {
+            qWarning() << "FxEngine: preload ffmpeg failed to start";
+            m_nextProc = nullptr;
+            m_nextPath.clear();
+            proc->deleteLater();
+        }
+    });
+    qDebug() << "FxEngine: preload decoder ready for" << m_nextPath;
+}
+
+void FxEngine::adoptPreloaded()
+{
+    // After a natural end the finish was announced early (m_finishEmitted)
+    // and the pump kept running: the sink still holds the old track's tail,
+    // so the new audio queues right behind it — a sample-continuous handoff.
+    const bool seamless = m_finishEmitted && m_state == State::Playing;
+    // Overlap segue with a crossfade armed: the outgoing decoder moves to
+    // the tail mix and fades out inside the same stream — no cut either.
+    const bool crossfade = !seamless && m_state == State::Playing
+                           && m_nextCrossfadeMs > 0 && !m_scratchActive
+                           && (m_proc || !m_fifo.empty());
+    qDebug() << "FxEngine: adopting preloaded decoder for" << m_nextPath
+             << "seamless=" << seamless << "crossfade=" << crossfade
+             << "state=" << int(m_state);
+
+    if (crossfade) {
+        stopTailMix();
+        m_tailProc = m_proc; // keeps decoding; drained by mixTail()
+        m_proc = nullptr;
+        if (m_tailProc)
+            m_tailProc->disconnect(this);
+        m_tailPartial = m_partialFrame;
+        m_tailFifo = std::move(m_fifo);
+        m_fifo = std::vector<float>();
+        m_tailGain = 1.0;
+        m_tailGainStep = 1000.0 / (double(qMax(qint64(200), m_nextCrossfadeMs))
+                                   * kSampleRate);
+    } else {
+        stopProcess(); // the old decoder (already exited after a natural end)
+        if (!seamless) {
+            // Mid-play cut (manual skip) or engine already stopped: the
+            // sink content belongs to the old track — start a clean stream.
+            if (m_sink)
+                m_sink->reset();
+            m_io = (m_state == State::Playing && m_sink) ? m_sink->start() : nullptr;
+        }
+    }
+    m_nextCrossfadeMs = 0;
+
+    m_proc = m_nextProc;
+    m_nextProc = nullptr;
+    m_path = m_nextPath;
+    m_nextPath.clear();
+    m_durationMs = m_nextDurationMs;
+    m_sourceIs432 = m_nextIs432;
+    m_isLive = false;
+
+    m_partialFrame.clear();
+    m_fifo.clear();
+    m_history.clear();
+    m_scratchActive = false;
+    m_scratchMode = 0;
+    m_scratchBuf.clear();
+    if (crossfade) {
+        // The stream is continuous: zeroing the EQ/compressor state here
+        // would click. Only refresh the retune flag for future respawns.
+        m_retuneOn = m_params.retune432;
+    } else {
+        resetDspState();
+    }
+
+    m_baseMs = 0;
+    m_framesTaken = 0;
+    m_pausedPosMs = 0;
+    m_producedAudio = false;
+    m_finishEmitted = false;
+    m_procPreloaded = true; // play() must not respawn the decoder
+
+    // Auto-cue the adopted track. During a crossfade the chunk-drop skip
+    // would discard mixed tail audio, and the overlap was computed from
+    // the real waveform anyway — so only non-crossfade starts skip.
+    m_leadSkipped = crossfade;
+    m_tailTrimmed = false;
+
+    emit durationChanged(m_durationMs);
+}
+
 bool FxEngine::ensureSink()
 {
+    // A sink opened on a device that is no longer the default is stale:
+    // rebuild on the current default instead of writing into the void.
+    if (m_sink) {
+        const QAudioDevice def = QMediaDevices::defaultAudioOutput();
+        if (def.isNull() || def.id() != m_sinkDeviceId)
+            teardownSink();
+    }
+
     if (!m_sink) {
         const QAudioDevice device = QMediaDevices::defaultAudioOutput();
         if (device.isNull())
@@ -350,6 +642,7 @@ bool FxEngine::ensureSink()
         }
 
         m_sink = new QAudioSink(device, fmt, this);
+        m_sinkDeviceId = device.id();
         const int bytesPerFrame = m_sinkIsFloat ? 8 : 4;
         m_sink->setBufferSize(kSampleRate * bytesPerFrame * 350 / 1000); // ~350 ms
     }
@@ -368,6 +661,16 @@ void FxEngine::teardownSink()
         m_sink = nullptr;
     }
     m_io = nullptr;
+    m_sinkDeviceId.clear();
+}
+
+void FxEngine::rebuildSink()
+{
+    qDebug() << "FxEngine: rebuilding audio sink on request";
+    const bool wasActive = (m_state == State::Playing && m_io);
+    teardownSink();
+    if (wasActive && !ensureSink())
+        failTrack(tr("No usable audio output device for the FX engine"));
 }
 
 void FxEngine::resetDspState()
@@ -395,25 +698,10 @@ void FxEngine::probeLocalSource(const QString &filePath)
                               "-show_entries", "format=duration:format_tags:stream_tags",
                               "-of", "default=noprint_wrappers=1", filePath});
         if (probe.waitForFinished(5000)) {
-            const QString out = QString::fromLocal8Bit(probe.readAllStandardOutput());
-
-            // Files converted by XFB carry an embedded tuning marker; they
-            // must not be retuned a second time by the live 432 Hz mode.
-            if (out.contains(QStringLiteral("xfb_tuning=432"), Qt::CaseInsensitive)
-                || out.contains(QStringLiteral("XFB-432Hz"), Qt::CaseInsensitive)) {
-                m_sourceIs432 = true;
-            }
-
-            const QRegularExpression durRe(QStringLiteral("^duration=([0-9.]+)"),
-                                           QRegularExpression::MultilineOption);
-            const QRegularExpressionMatch dm = durRe.match(out);
-            if (dm.hasMatch()) {
-                const double secs = dm.captured(1).toDouble();
-                if (secs > 0) {
-                    m_durationMs = static_cast<qint64>(secs * 1000.0);
-                    return;
-                }
-            }
+            parseProbeOutput(QString::fromLocal8Bit(probe.readAllStandardOutput()),
+                             &m_durationMs, &m_sourceIs432);
+            if (m_durationMs > 0)
+                return;
         } else {
             probe.kill();
         }
@@ -450,32 +738,90 @@ qint64 FxEngine::currentPositionMs() const
     return m_baseMs + inputFramesConsumed() * 1000 / kSampleRate;
 }
 
-void FxEngine::readProcessOutput()
+namespace
 {
-    if (!m_proc)
+/** Move decoded PCM from a decoder process into a float FIFO, keeping
+    sub-frame leftovers in `partial` between reads. */
+void drainDecoder(QProcess *proc, QByteArray &partial, std::vector<float> &fifo)
+{
+    if (!proc)
         return;
 
-    QByteArray data = m_proc->readAllStandardOutput();
+    QByteArray data = proc->readAllStandardOutput();
     if (data.isEmpty())
         return;
 
-    if (!m_partialFrame.isEmpty()) {
-        data.prepend(m_partialFrame);
-        m_partialFrame.clear();
+    if (!partial.isEmpty()) {
+        data.prepend(partial);
+        partial.clear();
     }
 
-    constexpr int bytesPerInFrame = sizeof(float) * kChannels;
+    constexpr int bytesPerInFrame = sizeof(float) * 2; // kChannels
     const int completeBytes = (data.size() / bytesPerInFrame) * bytesPerInFrame;
     if (completeBytes < data.size()) {
-        m_partialFrame = data.mid(completeBytes);
+        partial = data.mid(completeBytes);
         data.truncate(completeBytes);
     }
     if (data.isEmpty())
         return;
 
     const float *samples = reinterpret_cast<const float *>(data.constData());
-    const int frames = completeBytes / bytesPerInFrame;
-    m_fifo.insert(m_fifo.end(), samples, samples + frames * kChannels);
+    fifo.insert(fifo.end(), samples, samples + completeBytes / sizeof(float));
+}
+} // namespace
+
+void FxEngine::readProcessOutput()
+{
+    drainDecoder(m_proc, m_partialFrame, m_fifo);
+}
+
+void FxEngine::setNextCrossfade(qint64 fadeMs)
+{
+    m_nextCrossfadeMs = qMax(qint64(0), fadeMs);
+}
+
+void FxEngine::mixTail(float *out, int frames)
+{
+    if (!m_tailProc && m_tailFifo.empty())
+        return;
+
+    drainDecoder(m_tailProc, m_tailPartial, m_tailFifo);
+
+    const int avail = static_cast<int>(m_tailFifo.size() / kChannels);
+    const int n = std::min(frames, avail);
+    for (int i = 0; i < n * kChannels; i += kChannels) {
+        const float g = static_cast<float>(m_tailGain);
+        out[i] += m_tailFifo[i] * g;
+        out[i + 1] += m_tailFifo[i + 1] * g;
+        m_tailGain = std::max(0.0, m_tailGain - m_tailGainStep);
+    }
+    if (n > 0)
+        m_tailFifo.erase(m_tailFifo.begin(), m_tailFifo.begin() + n * kChannels);
+
+    const bool exhausted = m_tailFifo.empty()
+        && (!m_tailProc || m_tailProc->state() == QProcess::NotRunning)
+        && (!m_tailProc || m_tailProc->bytesAvailable() == 0);
+    if (m_tailGain <= 0.0 || exhausted)
+        stopTailMix();
+}
+
+void FxEngine::stopTailMix()
+{
+    if (m_tailProc) {
+        QProcess *proc = m_tailProc;
+        m_tailProc = nullptr;
+        proc->disconnect(this);
+        if (proc->state() != QProcess::NotRunning) {
+            connect(proc, &QProcess::finished, proc, &QObject::deleteLater);
+            proc->kill(); // async reap: never block the pump
+        } else {
+            proc->deleteLater();
+        }
+    }
+    m_tailPartial.clear();
+    m_tailFifo.clear();
+    m_tailGain = 0.0;
+    m_tailGainStep = 0.0;
 }
 
 int FxEngine::fillChunk(float *out, int maxFrames)
@@ -509,6 +855,12 @@ void FxEngine::applyFxChain(float *chunk, int frames)
 
 void FxEngine::writeChunkToSink(const float *chunk, int frames)
 {
+    // Feed the level meter from the final samples actually sent out
+    for (int i = 0; i < frames * kChannels; i += kChannels) {
+        m_meterPeakL = std::max(m_meterPeakL, std::abs(chunk[i]));
+        m_meterPeakR = std::max(m_meterPeakR, std::abs(chunk[i + 1]));
+    }
+
     if (m_sinkIsFloat) {
         m_io->write(reinterpret_cast<const char *>(chunk),
                     static_cast<qint64>(frames) * kChannels * sizeof(float));
@@ -533,6 +885,27 @@ void FxEngine::pump()
 
     readProcessOutput();
 
+    // Auto-cue, tail side: once the decoder has delivered everything, chop
+    // the encoded trailing silence off the fifo so the track finishes where
+    // its audio does (YouTube rips carry seconds of outro silence, which a
+    // gapless handoff would otherwise play in full).
+    if (!m_tailTrimmed && m_proc && m_proc->state() == QProcess::NotRunning
+            && m_proc->bytesAvailable() == 0) {
+        m_tailTrimmed = true;
+        size_t end = m_fifo.size();
+        while (end >= static_cast<size_t>(kChannels)
+               && std::abs(m_fifo[end - 1]) <= kSilenceFloor
+               && std::abs(m_fifo[end - 2]) <= kSilenceFloor) {
+            end -= kChannels;
+        }
+        if (end < m_fifo.size()) {
+            qDebug() << "FxEngine: auto-cue trimmed"
+                     << (m_fifo.size() - end) / kChannels * 1000 / kSampleRate
+                     << "ms of trailing silence";
+            m_fifo.resize(end);
+        }
+    }
+
     const int bytesPerOutFrame = m_sinkIsFloat ? 8 : 4;
 
     while (true) {
@@ -547,14 +920,61 @@ void FxEngine::pump()
             break;
         }
 
+        // Auto-cue, head side: drop whole-silent chunks until the first
+        // audible frame so the track starts where its audio does.
+        if (!m_leadSkipped) {
+            int firstLoud = -1;
+            for (int i = 0; i < got * kChannels; ++i) {
+                if (std::abs(m_chunk[i]) > kSilenceFloor) {
+                    firstLoud = i / kChannels;
+                    break;
+                }
+            }
+            if (firstLoud < 0) {
+                if (currentPositionMs() - m_baseMs > kLeadSkipCapMs)
+                    m_leadSkipped = true; // quiet piece, stop scanning
+                continue; // silent lead: consume without writing
+            }
+            m_leadSkipped = true;
+            if (firstLoud > 0) {
+                std::memmove(m_chunk.data(),
+                             m_chunk.data() + firstLoud * kChannels,
+                             (got - firstLoud) * kChannels * sizeof(float));
+            }
+            const int audible = got - firstLoud;
+            mixTail(m_chunk.data(), audible);
+            applyFxChain(m_chunk.data(), audible);
+            writeChunkToSink(m_chunk.data(), audible);
+            continue;
+        }
+
+        mixTail(m_chunk.data(), got); // fading crossfade tail, when active
         applyFxChain(m_chunk.data(), got);
         writeChunkToSink(m_chunk.data(), got);
     }
 
-    // Emit the playback position roughly four times per second
+    // Level meter: emit the accumulated output peaks ~22 times per second,
+    // scaled by the sink volume so the LEDs track what is actually audible.
+    if (++m_meterEmitDivider >= 3) {
+        m_meterEmitDivider = 0;
+        emit levels(std::min(1.0f, m_meterPeakL * m_volume),
+                    std::min(1.0f, m_meterPeakR * m_volume));
+        m_meterPeakL = 0.0f;
+        m_meterPeakR = 0.0f;
+    }
+
+    // Emit the playback position roughly four times per second. Report the
+    // audible position: the decode position runs up to a full sink buffer
+    // (~350 ms) ahead of the speakers, which made the volume line, the
+    // crossfade trigger and the tail handoff all act early.
     if (++m_positionEmitDivider >= 16) {
         m_positionEmitDivider = 0;
-        emit positionChanged(currentPositionMs());
+        qint64 bufferedMs = 0;
+        if (m_sink && m_io) {
+            const qint64 bufferedBytes = m_sink->bufferSize() - m_sink->bytesFree();
+            bufferedMs = (bufferedBytes / bytesPerOutFrame) * 1000 / kSampleRate;
+        }
+        emit positionChanged(std::max<qint64>(0, currentPositionMs() - bufferedMs));
     }
 }
 
@@ -575,6 +995,21 @@ void FxEngine::maybeFinish()
         return;
     }
 
+    // Early finish: when the next track is already preloaded, announce the
+    // end while the sink is still draining the tail. The handoff then
+    // adopts the new decoder under the live sink and playback is gapless.
+    if (!m_finishEmitted && m_nextProc
+            && (m_nextProc->state() == QProcess::Running
+                || m_nextProc->bytesAvailable() > 0)) {
+        m_finishEmitted = true;
+        stopProcess();
+        qDebug() << "FxEngine: early finish, handoff armed for" << m_nextPath;
+        const qint64 finalPos = (m_durationMs > 0) ? m_durationMs : currentPositionMs();
+        emit positionChanged(finalPos);
+        emit playbackFinished();
+        return; // the pump keeps ticking until the handoff (or full drain)
+    }
+
     // Wait for the sink to drain what has already been written
     if (m_sink && m_sink->bytesFree() < m_sink->bufferSize())
         return;
@@ -591,8 +1026,11 @@ void FxEngine::maybeFinish()
     m_baseMs = 0;
     m_framesTaken = 0;
     m_producedAudio = false;
-    emit positionChanged(finalPos);
-    emit playbackFinished();
+    if (!m_finishEmitted) {
+        emit positionChanged(finalPos);
+        emit playbackFinished();
+    }
+    m_finishEmitted = false;
 }
 
 // ---------------------------------------------------------- DJ / scratch mode

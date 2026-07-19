@@ -9,6 +9,7 @@
 #include "commonFunctions.h"
 #include "secretstore.h"
 #include "audio/FxParams.h"
+#include "ThemeManager.h"
 #include <QDebug>
 #include "player.h"
 #include <QAudio>
@@ -77,9 +78,24 @@ optionsDialog::optionsDialog(QWidget *parent) :
     ui->checkBox_disableVolume->setChecked(settings.value("Disable_Volume", false).toBool());
     ui->checkBox_Normalize_Soft->setChecked(settings.value("Normalize_Soft", false).toBool());
     ui->checkBox_fullScreen->setChecked(settings.value("FullScreen", false).toBool());
-    ui->checkBox_darkMode->setChecked(settings.value("DarkMode", false).toBool());
+
+    // Theme + accent color (ThemeManager owns the ids and defaults)
+    ui->combo_theme->clear();
+    const QStringList themeIds = ThemeManager::themeIds();
+    for (const QString &themeId : themeIds)
+        ui->combo_theme->addItem(ThemeManager::themeName(themeId), themeId);
+    const int themeIndex = themeIds.indexOf(ThemeManager::configuredTheme());
+    ui->combo_theme->setCurrentIndex(themeIndex >= 0 ? themeIndex : 0);
+    m_accentColor = ThemeManager::configuredAccent();
+    updateAccentButton();
+    connect(ui->combo_theme, qOverload<int>(&QComboBox::currentIndexChanged),
+            this, [this](int) { updateAccentButton(); });
     ui->checkBox_enableTorrents->setChecked(settings.value("EnableTorrents", false).toBool());
     ui->checkBox_showFxTab->setChecked(settings.value("ShowFxTab", true).toBool());
+    ui->checkBox_autoAutoMix->setChecked(settings.value("AutoAutoMix", false).toBool());
+    ui->checkBox_levelMeter->setChecked(settings.value("ShowLevelMeter", false).toBool());
+    ui->combo_levelMeterPos->setCurrentIndex(
+        settings.value("LevelMeterPlacement", "volume").toString() == "side" ? 1 : 0);
     ui->checkBox_retune432->setChecked(FxSettings::loadRetune432());
 
     // Application font size. 0/unset means "use the current default"; fall back
@@ -169,17 +185,41 @@ optionsDialog::optionsDialog(QWidget *parent) :
     ui->checkBox_ytdlpEmbedMetadata->setChecked(settings.value("MusicEmbedMetadata", true).toBool());
 
     qDebug() << "Finished loading settings in options dialog.";
+    // Dialog styling comes from the application-wide theme (ThemeManager)
+}
 
-    // Re-apply direct styling AFTER loading dark mode setting
-    bool finalDarkMode = ui->checkBox_darkMode->isChecked(); // Use the UI value now
-    qDebug() << "[StyleFix] OptionsDialog applying direct style for dark mode:" << finalDarkMode;
-    if (finalDarkMode) {
-        this->setStyleSheet("QDialog { background-color: #353535; color: #bbbbbb; }");
-    } else {
-        this->setStyleSheet("QDialog { background-color: #ffffff; color: #333333; }");
+void optionsDialog::updateAccentButton()
+{
+    // The button doubles as the swatch: theme default or the custom pick
+    const QString themeId = ui->combo_theme->currentData().toString();
+    const QColor effective = m_accentColor.isValid()
+                                 ? m_accentColor
+                                 : ThemeManager::themeAccent(themeId);
+    ui->bt_accentColor->setStyleSheet(
+        QStringLiteral("background-color: %1; border: 1px solid palette(mid); "
+                       "border-radius: 3px;")
+            .arg(effective.name(QColor::HexRgb)));
+    ui->bt_accentReset->setEnabled(m_accentColor.isValid());
+}
+
+void optionsDialog::on_bt_accentColor_clicked()
+{
+    const QString themeId = ui->combo_theme->currentData().toString();
+    const QColor initial = m_accentColor.isValid()
+                               ? m_accentColor
+                               : ThemeManager::themeAccent(themeId);
+    const QColor picked =
+        QColorDialog::getColor(initial, this, tr("Pick the accent color"));
+    if (picked.isValid()) {
+        m_accentColor = picked;
+        updateAccentButton();
     }
+}
 
-
+void optionsDialog::on_bt_accentReset_clicked()
+{
+    m_accentColor = QColor();
+    updateAccentButton();
 }
 
 
@@ -214,9 +254,18 @@ void optionsDialog::saveSettings2Db()
     settings.setValue("Normalize_Soft", ui->checkBox_Normalize_Soft->isChecked());
     settings.setValue("Disable_Volume", ui->checkBox_disableVolume->isChecked());
     settings.setValue("FullScreen", ui->checkBox_fullScreen->isChecked());
-    settings.setValue("DarkMode", ui->checkBox_darkMode->isChecked());
+    settings.setValue("Theme", ui->combo_theme->currentData().toString());
+    settings.setValue("AccentColor",
+                      m_accentColor.isValid() ? m_accentColor.name(QColor::HexRgb)
+                                              : QString());
+    // DarkMode is kept in sync by ThemeManager::apply() for legacy readers;
+    // the theme itself is applied after the sync() below.
     settings.setValue("EnableTorrents", ui->checkBox_enableTorrents->isChecked());
     settings.setValue("ShowFxTab", ui->checkBox_showFxTab->isChecked());
+    settings.setValue("AutoAutoMix", ui->checkBox_autoAutoMix->isChecked());
+    settings.setValue("ShowLevelMeter", ui->checkBox_levelMeter->isChecked());
+    settings.setValue("LevelMeterPlacement",
+                      ui->combo_levelMeterPos->currentIndex() == 1 ? "side" : "volume");
     FxSettings::saveRetune432(ui->checkBox_retune432->isChecked());
 
     // Application font size — persist and apply immediately (a restart ensures
@@ -340,6 +389,10 @@ void optionsDialog::saveSettings2Db()
     // QSettings automatically saves on destruction or explicitly via sync()
     settings.sync(); // Force save to file immediately
     SecretStore::restrictFile(settings.fileName()); // config may hold credentials: owner-only
+
+    // Re-theme the whole application now that Theme/AccentColor are saved,
+    // so Save gives instant visual feedback.
+    ThemeManager::apply(qobject_cast<QApplication *>(QApplication::instance()));
     qDebug() << "Settings save attempt finished for" << settings.fileName();
     if (settings.status() != QSettings::NoError) {
         qWarning() << "Error during QSettings sync:" << settings.status();
@@ -360,13 +413,15 @@ void optionsDialog::on_pushButton_clicked()
 {
     saveSettings2Db();
 
-    this->hide();
+    // accept() (not hide()) so QDialog::finished fires: the player relies
+    // on it to re-apply settings live (level meter, seek bar, FX tab...).
+    // hide() also leaked the dialog, since WA_DeleteOnClose never triggered.
+    this->accept();
 }
 
 void optionsDialog::on_pushButton_2_clicked()
 {
-    //update_music_table();
-    this->hide();
+    this->reject(); // close without saving; finished still fires
 }
 
 void optionsDialog::on_bt_pwd_clicked()
@@ -515,6 +570,46 @@ void optionsDialog::on_cbox_enableNetworking_toggled(bool checked)
     ui->txt_port->setEnabled(checked);
     ui->txt_user->setEnabled(checked);
     ui->txt_password->setEnabled(checked);
+}
+
+void optionsDialog::on_checkBox_enableTorrents_clicked(bool checked)
+{
+    // Only when the user turns the feature ON here, and only the first time
+    // ever (guarded by TorrentPrivacyConsent). This is a clicked() handler, so
+    // it does not fire for the programmatic setChecked() done while loading.
+    if (!checked)
+        return;
+
+    QString configFilePath = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
+                             + "/xfb.conf";
+    QSettings settings(configFilePath, QSettings::IniFormat);
+    if (settings.value("TorrentPrivacyConsent", false).toBool())
+        return; // the disclosure has already been acknowledged
+
+    QMessageBox box(this);
+    box.setIcon(QMessageBox::Warning);
+    box.setWindowTitle(tr("Before you enable Torrents"));
+    box.setText(tr("Please read how private this feature really is."));
+    box.setInformativeText(tr(
+        "• Searching is anonymised through the Tor network.\n\n"
+        "• Downloading is NOT anonymous. BitTorrent transfers cannot be "
+        "routed through Tor, so while a download runs your real IP address "
+        "is visible to the tracker and to the other peers sharing that file.\n\n"
+        "• XFB minimises this: it disables DHT/peer-exchange, injects no extra "
+        "trackers, requires encryption and stops uploading as soon as a "
+        "download finishes — but it cannot hide your IP during the transfer.\n\n"
+        "• You are responsible for complying with the copyright law that "
+        "applies to you. Only download content you are legally entitled to.\n\n"
+        "Enable the Torrents feature with these limitations understood?"));
+    QPushButton *accept = box.addButton(tr("I understand — enable"), QMessageBox::AcceptRole);
+    box.addButton(QMessageBox::Cancel);
+    box.setDefaultButton(QMessageBox::Cancel);
+    box.exec();
+
+    if (box.clickedButton() == accept)
+        settings.setValue("TorrentPrivacyConsent", true);
+    else
+        ui->checkBox_enableTorrents->setChecked(false); // declined — revert
 }
 
 void optionsDialog::on_bt_browseSavePath_clicked()

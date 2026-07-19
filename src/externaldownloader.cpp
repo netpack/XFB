@@ -368,13 +368,22 @@ DownloadResult processDownloadTask(
 
     } // End of initial scope, db object persists
 
-    // 1. Sanitize Artist/Song for Filename (Optional - yt-dlp's template often handles this)
-    // If you still want manual sanitization:
-    // QString safeArtist = sanitizeFilenameComponent(yartist);
-    // QString safeSong = sanitizeFilenameComponent(ysong);
-    // If relying on yt-dlp:
-    QString safeArtist = yartist; // Use original for metadata, yt-dlp handles filename
-    QString safeSong = ysong;
+    // 1. Sanitize Artist/Song for the filename. A "/" in a title (SoundCloud
+    //    tracks like "Artist / Song") becomes a directory separator in the
+    //    yt-dlp output template and sends the file into an unintended
+    //    subdirectory with trailing/leading-space names; the rest of the set
+    //    is illegal on Windows. The database keeps the original artist/song
+    //    text — only the on-disk name is sanitized.
+    const auto sanitizeFilenameComponent = [](QString s) {
+        static const QRegularExpression illegalChars(
+            QStringLiteral("[/\\\\:*?\"<>|]"));
+        s.replace(illegalChars, QStringLiteral("-"));
+        static const QRegularExpression spaceRuns(QStringLiteral("\\s{2,}"));
+        s.replace(spaceRuns, QStringLiteral(" "));
+        return s.trimmed();
+    };
+    QString safeArtist = sanitizeFilenameComponent(yartist);
+    QString safeSong = sanitizeFilenameComponent(ysong);
 
     if (safeArtist.isEmpty() || safeSong.isEmpty()) {
         result.success = false;
@@ -1521,21 +1530,24 @@ void externaldownloader::on_pushButton_clicked()
     addgenre.setModal(true);
     addgenre.exec();
 
+    // Refresh the genre combos with any genre just added. One query object
+    // per model: setQuery(std::move(...)) guts the source query, so reusing
+    // it for the second combo dereferenced a null d-pointer (segfault).
     QSqlDatabase db = QSqlDatabase::database("xfb_connection");
-    QSqlQueryModel * model=new QSqlQueryModel();
-    QSqlQueryModel * model2=new QSqlQueryModel();
-    QSqlQuery* qry=new QSqlQuery(db);
 
-    qry->prepare("select name from genres1");
-    qry->exec();
-    model->setQuery(std::move(*qry));
+    QSqlQueryModel *model = new QSqlQueryModel(this);
+    QSqlQuery qry(db);
+    qry.prepare("select name from genres1 order by name");
+    qry.exec();
+    model->setQuery(std::move(qry));
     ui->cbox_g1->setModel(model);
 
-    qry->prepare("select name from genres1");
-    qry->exec();
-    model2->setQuery(std::move(*qry));
+    QSqlQueryModel *model2 = new QSqlQueryModel(this);
+    QSqlQuery qry2(db);
+    qry2.prepare("select name from genres1 order by name");
+    qry2.exec();
+    model2->setQuery(std::move(qry2));
     ui->cbox_g2->setModel(model2);
-
 }
 
 void externaldownloader::on_bt_close_clicked()

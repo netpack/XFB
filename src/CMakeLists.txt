@@ -22,6 +22,12 @@ set(SOURCES
     dialogs/AudioFxDialog.cpp
     # Playlist sound-wave view (crossfade preparation)
     PlaylistWaveView.cpp
+    # Stereo LED output level meter (Options toggle)
+    LevelMeter.cpp
+    # Track artwork (cover icons + the Artwork dock panel)
+    ArtworkStore.cpp
+    # Theme support (palette + generated stylesheet)
+    ThemeManager.cpp
     # Essential service layer (working components only)
     services/IService.cpp
     services/ServiceContainer.cpp

@@ -5,6 +5,7 @@
 
 #include <QAudioOutput>
 #include <QContextMenuEvent>
+#include <QDebug>
 #include <QFileInfo>
 #include <QListWidget>
 #include <QMenu>
@@ -27,6 +28,25 @@ constexpr int kPreviewBtnSize = 22;
 constexpr int kPreviewLeadMs = 6000;   // audition starts this long before the segue
 constexpr int kPreviewTailMs = 4000;   // and keeps playing this long into the next track
 constexpr double kPreviewVolume = 0.85;
+
+// Auto-mix silence scanning: a moment counts as "loud" only as part of a
+// run of kSustainPeaks consecutive peaks at/above the threshold, so a
+// click in an otherwise faded tail doesn't count as the song still going.
+constexpr int kSustainPeaks = 3; // 3 × 20 ms
+// Tracks whose loudest peak sits below this (≈ -30 dBFS) are all quiet.
+constexpr int kMinLoudPeak = 8;
+
+// Threshold in peak units (0..255) for one track, relative to its own max
+// peak so differently mastered tracks trim comparably; -1 = all quiet.
+int autoMixThreshold(const WaveformData &data, int thresholdPercent)
+{
+    int maxPeak = 0;
+    for (quint8 p : data.peaks)
+        maxPeak = qMax(maxPeak, int(p));
+    if (maxPeak < kMinLoudPeak)
+        return -1;
+    return qMax(1, maxPeak * thresholdPercent / 100);
+}
 
 QString formatDuration(qint64 ms)
 {
@@ -184,6 +204,18 @@ void PlaylistWaveView::setMaxOverlapMs(qint64 ms)
     s_maxOverlapMs = qBound(qint64(5000), ms, qint64(300000));
 }
 
+int PlaylistWaveView::s_autoMixThresholdPercent = 5;
+
+int PlaylistWaveView::autoMixThresholdPercent()
+{
+    return s_autoMixThresholdPercent;
+}
+
+void PlaylistWaveView::setAutoMixThresholdPercent(int percent)
+{
+    s_autoMixThresholdPercent = qBound(1, percent, 50);
+}
+
 QVector<QPointF> PlaylistWaveView::parseEnvelope(const QString &encoded)
 {
     QVector<QPointF> points;
@@ -235,6 +267,40 @@ double PlaylistWaveView::envelopeGainAt(const QVector<QPointF> &points, qint64 p
     return points.last().y();
 }
 
+qint64 PlaylistWaveView::quietHeadMs(const WaveformData &data, int thresholdPercent)
+{
+    const int threshold = autoMixThreshold(data, thresholdPercent);
+    if (threshold < 0)
+        return data.durationMs;
+    int run = 0;
+    for (int i = 0; i < data.peaks.size(); ++i) {
+        run = data.peaks[i] >= threshold ? run + 1 : 0;
+        if (run >= kSustainPeaks)
+            return qint64(i - kSustainPeaks + 1) * WaveformStore::MsPerPeak;
+    }
+    return data.durationMs;
+}
+
+qint64 PlaylistWaveView::quietTailMs(const WaveformData &data, int thresholdPercent)
+{
+    const int threshold = autoMixThreshold(data, thresholdPercent);
+    if (threshold < 0)
+        return data.durationMs;
+    int run = 0;
+    for (int i = data.peaks.size() - 1; i >= 0; --i) {
+        run = data.peaks[i] >= threshold ? run + 1 : 0;
+        if (run >= kSustainPeaks) {
+            // Scanning backwards, so this is the last sustained-loud run in
+            // the track and it ends just before peak index i + kSustainPeaks.
+            // Any rounding remainder past the peak buffer is quiet too.
+            const qint64 loudEndMs =
+                qint64(i + kSustainPeaks) * WaveformStore::MsPerPeak;
+            return qMax(qint64(0), data.durationMs - loudEndMs);
+        }
+    }
+    return data.durationMs;
+}
+
 PlaylistWaveView::PlaylistWaveView(QListWidget *list, WaveformStore *store, QObject *parent)
     : QStyledItemDelegate(parent)
     , m_list(list)
@@ -246,6 +312,10 @@ PlaylistWaveView::PlaylistWaveView(QListWidget *list, WaveformStore *store, QObj
     connect(m_store, &WaveformStore::waveformReady, this, [this](const QString &) {
         if (m_active)
             m_list->viewport()->update();
+        // Outside the m_active gate: a running auto-mix pass keeps applying
+        // even if the wave view is toggled off meanwhile (the overlaps are
+        // honoured by playback either way).
+        processAutoMixQueue();
     });
 
     // New rows appear all the time (auto mode, drag & drop, context menus):
@@ -389,6 +459,133 @@ void PlaylistWaveView::setRowOverlap(int row, qint64 overlapMs)
 {
     if (QListWidgetItem *item = m_list->item(row))
         item->setData(OverlapRole, clampedOverlap(row, overlapMs));
+}
+
+void PlaylistWaveView::autoMix(const QVector<int> &rows)
+{
+    if (m_autoMixActive)
+        return;
+
+    QVector<int> targets = rows;
+    if (targets.isEmpty())
+        for (int row = 0; row < m_list->count(); ++row)
+            targets.append(row);
+
+    m_autoMixPending.clear();
+    m_autoMixApplied = 0;
+    m_autoMixSkipped = 0;
+
+    QStringList fetchPaths;
+    for (int row : targets) {
+        QListWidgetItem *item = m_list->item(row);
+        if (!item)
+            continue;
+        const AutoMixTransition t{previousTrackPath(row), item->text()};
+        if (t.prevPath.isEmpty() || t.curPath.isEmpty()) {
+            // Row 0 with nothing (local) on air has no transition to mix
+            ++m_autoMixSkipped;
+            continue;
+        }
+        const bool queued = std::any_of(
+            m_autoMixPending.cbegin(), m_autoMixPending.cend(),
+            [&t](const AutoMixTransition &p) {
+                return p.prevPath == t.prevPath && p.curPath == t.curPath;
+            });
+        if (queued)
+            continue;
+        m_autoMixPending.append(t);
+        if (!fetchPaths.contains(t.prevPath))
+            fetchPaths.append(t.prevPath);
+        if (!fetchPaths.contains(t.curPath))
+            fetchPaths.append(t.curPath);
+    }
+
+    m_autoMixTotal = m_autoMixPending.size() + m_autoMixSkipped;
+    if (m_autoMixTotal == 0) {
+        finishAutoMix(false); // empty playlist: report "nothing to do"
+        return;
+    }
+
+    // Active (and the queue fully populated) before the fetches: fetch()
+    // emits waveformReady synchronously for missing files, which re-enters
+    // processAutoMixQueue().
+    m_autoMixActive = true;
+    emit autoMixProgress(m_autoMixApplied + m_autoMixSkipped, m_autoMixTotal);
+    for (const QString &path : fetchPaths)
+        m_store->fetch(path);
+    processAutoMixQueue();
+}
+
+void PlaylistWaveView::cancelAutoMix()
+{
+    // WaveformStore has no job cancel: extractions already queued keep
+    // running in the background, which just warms the disk cache.
+    if (m_autoMixActive)
+        finishAutoMix(true);
+}
+
+void PlaylistWaveView::processAutoMixQueue()
+{
+    if (!m_autoMixActive)
+        return;
+
+    for (int i = 0; i < m_autoMixPending.size();) {
+        const WaveformData *prev = m_store->peek(m_autoMixPending[i].prevPath);
+        const WaveformData *cur = m_store->peek(m_autoMixPending[i].curPath);
+        if (!prev || !cur) {
+            ++i; // still extracting
+            continue;
+        }
+
+        // Take the pair off the queue before anything that may pump events
+        // (QProgressDialog::setValue on the progress signal): a nested
+        // waveformReady must never process it a second time.
+        const AutoMixTransition t = m_autoMixPending.takeAt(i);
+
+        if (prev->failed || cur->failed || !prev->ready() || !cur->ready()) {
+            ++m_autoMixSkipped; // can't recompute: leave the overlap alone
+        } else {
+            const int thr = autoMixThresholdPercent();
+            const qint64 tailQuiet = quietTailMs(*prev, thr);
+            const qint64 headQuiet = quietHeadMs(*cur, thr);
+            const qint64 overlapMs = tailQuiet + headQuiet;
+
+            // The playlist may have mutated since the pass started
+            // (playback consumes row 0): apply by path pair, to every row
+            // that still matches.
+            bool applied = false;
+            for (int row = 0; row < m_list->count(); ++row) {
+                QListWidgetItem *item = m_list->item(row);
+                if (item && item->text() == t.curPath
+                        && previousTrackPath(row) == t.prevPath) {
+                    setRowOverlap(row, overlapMs);
+                    applied = true;
+                }
+            }
+            applied ? ++m_autoMixApplied : ++m_autoMixSkipped;
+            qDebug() << "Auto-mix:" << QFileInfo(t.curPath).fileName()
+                     << "tail quiet" << tailQuiet << "ms, head quiet"
+                     << headQuiet << "ms -> overlap" << overlapMs << "ms"
+                     << (applied ? "" : "(row gone, skipped)");
+        }
+
+        emit autoMixProgress(m_autoMixApplied + m_autoMixSkipped, m_autoMixTotal);
+        if (!m_autoMixActive)
+            return; // canceled (or finished by a nested call) mid-emit
+        i = 0;      // nested calls may have shrunk the queue: rescan
+    }
+
+    if (m_autoMixPending.isEmpty())
+        finishAutoMix(false);
+}
+
+void PlaylistWaveView::finishAutoMix(bool canceled)
+{
+    // Cleared before emitting so a re-entrant call can't finish twice
+    m_autoMixActive = false;
+    m_autoMixPending.clear();
+    m_list->viewport()->update();
+    emit autoMixFinished(m_autoMixApplied, m_autoMixSkipped, canceled);
 }
 
 void PlaylistWaveView::paint(QPainter *painter, const QStyleOptionViewItem &option,

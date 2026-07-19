@@ -17,7 +17,10 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include "aboutus.h"
 #include "audio/FxEngine.h"
 #include "audio/WaveformStore.h"
+#include "ArtworkStore.h"
 #include "PlaylistWaveView.h"
+#include "LevelMeter.h"
+#include "ThemeManager.h"
 #include "dialogs/AudioFxDialog.h"
 #include "secretstore.h"
 #include "services/NgrokTunnelService.h"
@@ -45,6 +48,8 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include <QAudioOutput>
 #include <QNetworkAccessManager>
 #include <QNetworkInformation>
+#include <QNetworkInterface>
+#include <QHostAddress>
 #include <QHttpPart>
 #include <QGraphicsView>
 #include <QGraphicsScene>
@@ -90,6 +95,9 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include <QTabBar>
 #include <QToolBox>
 #include <QToolButton>
+#include <QDockWidget>
+#include <QMenu>
+#include <QSignalBlocker>
 
 #ifdef XFB_HAS_WEBENGINE
 #include <QtWebEngineQuick>
@@ -110,6 +118,15 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 
 // Static variable definition for recursion protection
 int player::s_recursionDepth = 0;
+
+// Version tag of the QMainWindow dock layout stored in xfb.conf — bump it
+// when the set of docks changes so stale layouts are discarded.
+// v2: the artwork panel moved from its own dock into the side panel.
+static constexpr int kLayoutStateVersion = 2;
+
+// Item data role holding the audio file of a history row (its text is a
+// timestamped line, not a path), so its artwork icon can be found again.
+static constexpr int kArtworkPathRole = Qt::UserRole + 103;
 
 class ClickableTextBrowser : public QTextBrowser {
 public:
@@ -195,12 +212,15 @@ player::player(QWidget *parent) :
         throw;
     }
 
-    // Fix grid layout: the UI file's QGridLayout has 25 rows but only 3 have widgets.
-    // Empty rows consume space that creates a visible gap. Replace with a VBoxLayout
-    // and use QSplitter for user-resizable side panels.
+    // Rebuild the .ui grid into a customizable dock layout: the Playlist /
+    // History / DJ tabs stay as the central area and every other section
+    // becomes a panel the user can drag somewhere else, float as its own
+    // window or hide (View menu). The arrangement is saved on exit and
+    // restored on the next start; View → Reset the layout brings back the
+    // classic arrangement below.
     if (ui->gridLayout_2) {
         QWidget *parentWidget = ui->widget;
-        
+
         // Reparent widgets to a temporary holder so they survive layout deletion
         QWidget tempHolder;
         ui->frame_4->setParent(&tempHolder);
@@ -208,59 +228,83 @@ player::player(QWidget *parent) :
         ui->tabWidget_2->setParent(&tempHolder);
         ui->pubWidget->setParent(&tempHolder);
         ui->page_FTP_Connection->setParent(&tempHolder);
-        
-        // Delete the old grid layout
+
+        // Delete the old grid layout (and neutralize the dangling ui pointer)
         QLayout *oldLayout = parentWidget->layout();
         QLayoutItem *item;
         while ((item = oldLayout->takeAt(0)) != nullptr) {
             delete item;
         }
         delete oldLayout;
-        
-        // Build a clean VBoxLayout
+        ui->gridLayout_2 = nullptr;
+
+        // Central area: the main tabs inside a thin splitter (kept as the
+        // level meter's vertical docking spot — see updateConfig).
         QVBoxLayout *vbox = new QVBoxLayout(parentWidget);
         vbox->setContentsMargins(0, 0, 0, 0);
         vbox->setSpacing(0);
-        
-        // Top row: player controls + clock — resizable splitter
-        QSplitter *topSplitter = new QSplitter(Qt::Horizontal, parentWidget);
-        topSplitter->setChildrenCollapsible(false);
-        ui->frame_4->setParent(topSplitter);
-        ui->frame->setParent(topSplitter);
+        m_middleSplitter = new QSplitter(Qt::Horizontal, parentWidget);
+        m_middleSplitter->setChildrenCollapsible(false);
+        ui->tabWidget_2->setParent(m_middleSplitter);
+        m_middleSplitter->addWidget(ui->tabWidget_2);
+        vbox->addWidget(m_middleSplitter);
+
         ui->frame->setMinimumWidth(200);
         ui->frame->setMaximumWidth(16777215); // remove the 350 cap
-        topSplitter->addWidget(ui->frame_4);
-        topSplitter->addWidget(ui->frame);
-        topSplitter->setStretchFactor(0, 1); // frame_4 stretches
-        topSplitter->setStretchFactor(1, 0); // frame stays compact
-        topSplitter->setSizes({1000, 350});
-        vbox->addWidget(topSplitter, 0);
-        
-        // Middle row: Playlist/History/DJ/FX tabs + the side toolbox —
-        // resizable splitter. The toolbox lives up here (rather than beside the
-        // music lists) so that collapsing the bottom music tabs hands their
-        // vertical space to this area — the DJ and Audio FX tabs.
-        QSplitter *middleSplitter = new QSplitter(Qt::Horizontal, parentWidget);
-        middleSplitter->setChildrenCollapsible(false);
-        ui->tabWidget_2->setParent(middleSplitter);
-        ui->page_FTP_Connection->setParent(middleSplitter);
         ui->page_FTP_Connection->setMaximumWidth(16777215); // remove the 350 cap
         ui->page_FTP_Connection->setMinimumWidth(150);
-        middleSplitter->addWidget(ui->tabWidget_2);
-        middleSplitter->addWidget(ui->page_FTP_Connection);
-        middleSplitter->setStretchFactor(0, 1); // the tabs stretch
-        middleSplitter->setStretchFactor(1, 0); // toolbox stays compact
-        middleSplitter->setSizes({1000, 350});
-        middleSplitter->setCollapsible(0, false);
-        // Don't allow dragging the side panel down to nothing — that left it
-        // impossible to restore. Hiding/showing is done with the toggle below.
-        middleSplitter->setCollapsible(1, false);
-        vbox->addWidget(middleSplitter, 1);
+
+        // Dock panels. The object names are what saveState()/restoreState()
+        // key the stored layout on — never rename them.
+        auto makeDock = [this](const QString &objectName, const QString &title,
+                               QWidget *content) {
+            auto *dock = new QDockWidget(title, this);
+            dock->setObjectName(objectName);
+            dock->setWidget(content);
+            return dock;
+        };
+        m_dockPlayer = makeDock(QStringLiteral("dockPlayer"),
+                                tr("Player controls"), ui->frame_4);
+        m_dockClock = makeDock(QStringLiteral("dockClock"),
+                               tr("Clock"), ui->frame);
+        m_dockLibrary = makeDock(QStringLiteral("dockLibrary"),
+                                 tr("Library"), ui->pubWidget);
+
+        // Track artwork: the store extracts covers in the background and
+        // this panel shows the cover of the track on air. It sits at the
+        // top of the side panel rather than in a dock of its own, so
+        // collapsing the side panel reclaims the whole right column for
+        // the tabs (a separate artwork dock kept the column open).
+        m_artStore = new ArtworkStore(this);
+        m_artPanel = new NowPlayingArtPanel(m_artStore, this);
+        auto *sideContainer = new QWidget(this);
+        auto *sideVbox = new QVBoxLayout(sideContainer);
+        sideVbox->setContentsMargins(0, 0, 0, 0);
+        sideVbox->setSpacing(0);
+        sideVbox->addWidget(m_artPanel, 0);
+        sideVbox->addWidget(ui->page_FTP_Connection, 1);
+        m_dockSide = makeDock(QStringLiteral("dockSide"),
+                              tr("Side panel"), sideContainer);
+
+        // Top and bottom docks span the full window width so the default
+        // arrangement mirrors the classic XFB layout.
+        setCorner(Qt::TopLeftCorner, Qt::TopDockWidgetArea);
+        setCorner(Qt::TopRightCorner, Qt::TopDockWidgetArea);
+        setCorner(Qt::BottomLeftCorner, Qt::BottomDockWidgetArea);
+        setCorner(Qt::BottomRightCorner, Qt::BottomDockWidgetArea);
+        setDockNestingEnabled(true);
+
+        addDockWidget(Qt::TopDockWidgetArea, m_dockPlayer);
+        addDockWidget(Qt::TopDockWidgetArea, m_dockClock);
+        addDockWidget(Qt::RightDockWidgetArea, m_dockSide);
+        addDockWidget(Qt::BottomDockWidgetArea, m_dockLibrary);
+        resizeDocks({m_dockPlayer, m_dockClock}, {1100, 360}, Qt::Horizontal);
+        resizeDocks({m_dockSide}, {330}, Qt::Horizontal);
+        resizeDocks({m_dockLibrary}, {260}, Qt::Vertical);
 
         // Always-visible toggle in the tab-bar corner to show/hide the side
-        // panel (Search / Filters / Extras / Playlist). Hiding a QSplitter child
-        // reclaims its space for the tabs, and the corner button guarantees the
-        // panel can always be brought back.
+        // panel (Search / Filters / Extras / Playlist) — kept from the
+        // pre-dock days; it now drives the dock's visibility.
         m_sidePanelToggle = new QToolButton(ui->tabWidget_2);
         m_sidePanelToggle->setCheckable(true);
         m_sidePanelToggle->setChecked(true);
@@ -269,20 +313,96 @@ player::player(QWidget *parent) :
         m_sidePanelToggle->setToolTip(tr("Show or hide the side panel (Search, Filters, Extras, Playlist)"));
         ui->tabWidget_2->setCornerWidget(m_sidePanelToggle, Qt::TopRightCorner);
         connect(m_sidePanelToggle, &QToolButton::toggled, this, [this](bool on) {
-            if (ui->page_FTP_Connection)
-                ui->page_FTP_Connection->setVisible(on);
+            if (m_dockSide)
+                m_dockSide->setVisible(on);
             if (m_sidePanelToggle)
                 m_sidePanelToggle->setArrowType(on ? Qt::RightArrow : Qt::LeftArrow);
         });
+        connect(m_dockSide, &QDockWidget::visibilityChanged, this, [this](bool visible) {
+            if (!m_sidePanelToggle)
+                return;
+            QSignalBlocker blocker(m_sidePanelToggle);
+            m_sidePanelToggle->setChecked(visible);
+            m_sidePanelToggle->setArrowType(visible ? Qt::RightArrow : Qt::LeftArrow);
+        });
 
-        // Bottom row: Music/Jingles/Pub/Programs/Torrents tabs — full width,
-        // pinned to the bottom of the window. Collapsing them (click the active
-        // tab) folds this row down to just the tab bar, giving all of its space
-        // to the middle area above.
-        ui->pubWidget->setParent(parentWidget);
-        vbox->addWidget(ui->pubWidget, 1);
-        
-        qDebug() << "Replaced gridLayout_2 with VBoxLayout + resizable QSplitters";
+        // View menu: per-panel visibility, plus locking and resetting the
+        // whole arrangement.
+        QMenu *viewMenu = new QMenu(tr("View"), this);
+        const QList<QDockWidget *> allDocks = {m_dockPlayer, m_dockClock,
+                                               m_dockSide, m_dockLibrary};
+        for (QDockWidget *dock : allDocks)
+            viewMenu->addAction(dock->toggleViewAction());
+        // The artwork panel lives inside the side panel; this toggle only
+        // shows/hides it there (persisted separately from the dock state).
+        QAction *artworkAction = viewMenu->addAction(tr("Artwork"));
+        artworkAction->setCheckable(true);
+        {
+            QSettings settings(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
+                                   + "/xfb.conf", QSettings::IniFormat);
+            const bool showArt = settings.value("ShowArtworkPanel", true).toBool();
+            artworkAction->setChecked(showArt);
+            m_artPanel->setVisible(showArt);
+        }
+        connect(artworkAction, &QAction::toggled, this, [this](bool on) {
+            if (m_artPanel)
+                m_artPanel->setVisible(on);
+            QSettings settings(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
+                                   + "/xfb.conf", QSettings::IniFormat);
+            settings.setValue("ShowArtworkPanel", on);
+        });
+        viewMenu->addSeparator();
+        m_lockLayoutAction = viewMenu->addAction(tr("Lock the layout"));
+        m_lockLayoutAction->setCheckable(true);
+        m_lockLayoutAction->setToolTip(tr("Hide the panel title bars and prevent the panels "
+                                          "from being moved or closed"));
+        connect(m_lockLayoutAction, &QAction::toggled, this, [this](bool locked) {
+            setLayoutLocked(locked);
+            QSettings settings(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
+                                   + "/xfb.conf", QSettings::IniFormat);
+            settings.setValue("LayoutLocked", locked);
+        });
+        QAction *resetLayoutAction = viewMenu->addAction(tr("Reset the layout"));
+        connect(resetLayoutAction, &QAction::triggered,
+                this, &player::resetDockLayout);
+        if (ui->menuHelp && ui->menuHelp->menuAction())
+            ui->menuBar->insertMenu(ui->menuHelp->menuAction(), viewMenu);
+        else
+            ui->menuBar->addMenu(viewMenu);
+
+        // The bottom logo strip joins the status bar so the dock panels get
+        // the full bottom edge of the window: logo on the left (a normal
+        // status-bar widget — Qt hides it briefly while a temporary status
+        // message shows), info line permanent on the right.
+        if (ui->txt_bottom_info && ui->NetpackLogo && ui->statusBar) {
+            ui->statusBar->addWidget(ui->NetpackLogo);
+            ui->statusBar->addPermanentWidget(ui->txt_bottom_info);
+            if (ui->gridLayout && ui->horizontalLayout_11) {
+                ui->gridLayout->removeItem(ui->horizontalLayout_11);
+                delete ui->horizontalLayout_11;
+                ui->horizontalLayout_11 = nullptr;
+            }
+        }
+
+        // Remember this default arrangement (for View → Reset the layout),
+        // then bring back whatever the user had last time.
+        m_defaultLayoutState = saveState(kLayoutStateVersion);
+        {
+            QSettings settings(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
+                                   + "/xfb.conf", QSettings::IniFormat);
+            const QByteArray state = settings.value("MainWindowState").toByteArray();
+            if (!state.isEmpty() && !restoreState(state, kLayoutStateVersion))
+                qWarning() << "Could not restore the saved panel layout, using defaults";
+            if (!settings.value("FullScreen", false).toBool()) {
+                const QByteArray geometry = settings.value("MainWindowGeometry").toByteArray();
+                if (!geometry.isEmpty())
+                    restoreGeometry(geometry);
+            }
+            if (settings.value("LayoutLocked", false).toBool())
+                m_lockLayoutAction->setChecked(true); // triggers setLayoutLocked
+        }
+
+        qDebug() << "Rebuilt the main window into a customizable dock layout";
     }
 
     // Make the Music/Jingles/Pub/Programs/Torrents tab area collapsible:
@@ -372,6 +492,14 @@ player::player(QWidget *parent) :
                 qBound(5, waveSettings.value("MaxOverlapSeconds", 25).toInt(), 180);
             PlaylistWaveView::setMaxOverlapMs(qint64(maxOverlapSecs) * 1000);
             m_maxOverlapSpin->setValue(maxOverlapSecs);
+
+            // Auto-mix quietness threshold (% of a track's own max peak).
+            // Config-only — written back once so the key is discoverable.
+            const int autoMixThr =
+                qBound(1, waveSettings.value("AutoMixThresholdPercent", 5).toInt(), 50);
+            PlaylistWaveView::setAutoMixThresholdPercent(autoMixThr);
+            if (!waveSettings.contains("AutoMixThresholdPercent"))
+                waveSettings.setValue("AutoMixThresholdPercent", autoMixThr);
         }
         connect(m_maxOverlapSpin, qOverload<int>(&QSpinBox::valueChanged),
                 this, [this](int secs) {
@@ -386,6 +514,41 @@ player::player(QWidget *parent) :
         maxOverlapLayout->addWidget(m_maxOverlapSpin);
         m_maxOverlapBox->setVisible(false); // shown when wave view turns on
         waveBarLayout->addWidget(m_maxOverlapBox);
+
+        // Auto-mix: crossfade-prep the whole playlist in one click
+        m_autoMixButton = new QToolButton(waveBar);
+        m_autoMixButton->setText(tr("Auto-mix"));
+        m_autoMixButton->setToolTip(tr("Analyze every transition in the playlist and set the "
+                                       "crossfade overlaps automatically: each track starts "
+                                       "where the previous one goes quiet. Existing overlaps "
+                                       "are recomputed."));
+        m_autoMixButton->setVisible(false); // shown when wave view turns on
+        waveBarLayout->addWidget(m_autoMixButton);
+        connect(m_autoMixButton, &QToolButton::clicked,
+                this, [this]() { startAutoMix({}); });
+
+        // Connected once here rather than in startAutoMix(): with every
+        // waveform already cached, autoMix() finishes before it returns.
+        connect(m_waveView, &PlaylistWaveView::autoMixProgress,
+                this, [this](int done, int total) {
+            if (m_autoMixProgress) {
+                m_autoMixProgress->setMaximum(total);
+                m_autoMixProgress->setValue(done);
+            }
+        });
+        connect(m_waveView, &PlaylistWaveView::autoMixFinished,
+                this, [this](int applied, int skipped, bool canceled) {
+            if (m_autoMixProgress)
+                m_autoMixProgress->deleteLater();
+            if (m_autoMixButton)
+                m_autoMixButton->setEnabled(true);
+            ui->statusBar->showMessage(
+                canceled
+                    ? tr("Auto-mix canceled — %1 transition(s) set").arg(applied)
+                    : tr("Auto-mix: %1 transition(s) set, %2 skipped")
+                          .arg(applied).arg(skipped),
+                5000);
+        });
 
         waveBarLayout->addStretch();
         playlistVbox->insertWidget(0, waveBar);
@@ -404,6 +567,20 @@ player::player(QWidget *parent) :
 
         connect(m_waveViewToggle, &QToolButton::toggled,
                 this, &player::setPlaylistWaveView);
+
+        // Track artwork: every playlist row gets its cover as an icon
+        // (extracted in the background, cached on disk); history rows are
+        // tagged with their file when they are added so they get one too.
+        ui->playlist->setIconSize(QSize(28, 28));
+        if (ui->historyList)
+            ui->historyList->setIconSize(QSize(20, 20));
+        connect(ui->playlist->model(), &QAbstractItemModel::rowsInserted, this,
+                [this](const QModelIndex &, int first, int last) {
+            for (int row = first; row <= last; ++row)
+                requestItemArtwork(ui->playlist->item(row), QString());
+        });
+        connect(m_artStore, &ArtworkStore::artworkReady,
+                this, &player::onArtworkReady);
     }
     
     // Verify UI was properly initialized
@@ -466,8 +643,47 @@ player::player(QWidget *parent) :
     connect(adRefreshTimer, &QTimer::timeout, this, &player::refreshAdBanner);
     adRefreshTimer->start();*/
 
+    // Stereo output level meter next to the volume slider. Created hidden;
+    // updateConfig() below applies the saved Options visibility.
+    m_levelMeter = new LevelMeter(this);
+    m_levelMeter->setVisible(false);
+    ui->horizontalLayout_7->insertWidget(2, m_levelMeter);
+
+    // Clicking the seek bar's groove (page/single steps) must also seek:
+    // those actions emit neither sliderMoved nor sliderReleased. Deferred a
+    // tick so the slider's value has settled before we read it.
+    connect(ui->sliderProgress, &QAbstractSlider::actionTriggered, this,
+            [this](int action) {
+        if (action == QAbstractSlider::SliderPageStepAdd
+            || action == QAbstractSlider::SliderPageStepSub
+            || action == QAbstractSlider::SliderSingleStepAdd
+            || action == QAbstractSlider::SliderSingleStepSub) {
+            QTimer::singleShot(0, this, [this]() {
+                if (!ui->sliderProgress->isSliderDown())
+                    Xplayer->setPosition(ui->sliderProgress->value());
+            });
+        }
+    });
+
+    // Auto Auto-mix (Options): every track added to the playlist gets its
+    // crossfade overlap computed right away, silently in the background —
+    // same engine as the Auto-mix button, without the progress dialog.
+    connect(ui->playlist->model(), &QAbstractItemModel::rowsInserted, this,
+            [this](const QModelIndex &, int first, int last) {
+        if (!m_autoAutoMix || !m_waveView)
+            return;
+        QVector<int> rows;
+        for (int r = first; r <= last; ++r)
+            rows.append(r);
+        // Deferred one tick: the inserter may still be filling item roles
+        QTimer::singleShot(0, this, [this, rows]() {
+            if (m_autoAutoMix && m_waveView && !m_waveView->autoMixActive())
+                m_waveView->autoMix(rows);
+        });
+    });
+
     qDebug() << "Initializing database and UI components";
-    
+
     // Initialize database connection with error handling
     try {
         updateConfig();
@@ -476,6 +692,7 @@ player::player(QWidget *parent) :
             // Don't throw here, let the app try to continue
         } else {
             qDebug() << "Database opened successfully";
+            seedDefaultGenres();
         }
     } catch (const std::exception& e) {
         qCritical() << "Exception during database initialization:" << e.what();
@@ -640,6 +857,7 @@ player::player(QWidget *parent) :
         connect(Xplayer, &FxPlayer::positionChanged, this, &player::onPositionChanged);
         connect(Xplayer, &FxPlayer::durationChanged, this, &player::durationChanged);
         connect(Xplayer, &FxPlayer::sourceChanged, this, &player::currentMediaChanged);
+        connect(Xplayer, &FxPlayer::levels, m_levelMeter, &LevelMeter::setLevels);
         connect(Xplayer->audioOutput(), &QAudioOutput::volumeChanged, this, &player::volumeChanged);
         // The wave view ghosts the playing track behind the first playlist row
         connect(Xplayer, &FxPlayer::sourceChanged, this, [this](const QUrl &url) {
@@ -651,6 +869,9 @@ player::player(QWidget *parent) :
                 m_nowPlayingWave->setVisible(local && m_waveView
                                              && m_waveView->isActive());
             }
+            if (m_artPanel)
+                m_artPanel->setTrack(url.isLocalFile() ? url.toLocalFile()
+                                                       : QString());
         });
         qDebug() << "Main player signals connected";
 
@@ -688,8 +909,10 @@ player::player(QWidget *parent) :
         // Connect media player signals for playlist management
         connect(Xplayer, &FxPlayer::playbackStateChanged, [this](QMediaPlayer::PlaybackState state) {
             if (state == QMediaPlayer::StoppedState && PlayMode == "Playing_Segue" && !m_manualAdvancing) {
-                // When playback stops, play the next media if in segue mode
-                QTimer::singleShot(100, this, &player::playNextMedia);
+                // When playback stops, play the next media if in segue mode.
+                // A 0 ms shot still defers through the event loop (no
+                // re-entry) but adds no dead air between tracks.
+                QTimer::singleShot(0, this, &player::playNextMedia);
             }
         });
         qDebug() << "Main player playlist signals connected";
@@ -721,7 +944,12 @@ player::player(QWidget *parent) :
         }
         
         qint64 currentPos = Xplayer->position();
-        if (currentPos == m_lastKnownPosition && currentPos > 0) {
+        // Position stuck at 0 counts as a stall too: a wedged audio output
+        // device leaves the FX engine "playing" at 0 with no error emitted,
+        // so excluding 0 here made that failure completely silent. The first
+        // tick after play() never strikes (m_lastKnownPosition starts at -1),
+        // so a track still gets ~9 s to produce its first frames.
+        if (currentPos == m_lastKnownPosition) {
             m_stallCount++;
             qWarning() << "Playback stall detected! Position stuck at" << currentPos << "ms (count:" << m_stallCount << ")";
             
@@ -733,6 +961,11 @@ player::player(QWidget *parent) :
                 m_manualAdvancing = true;
                 Xplayer->stop();
                 Xplayer->setSource(QUrl()); // Release stuck AVFoundation session
+                // Rebuild the FX engine's audio sink: a wedged output device
+                // is the usual cause of a frozen position, and reusing the
+                // same sink would stall every following track too, leaving
+                // playback stuck in a recovery loop.
+                Xplayer->resetAudioSink();
                 m_manualAdvancing = false;
                 m_stallCount = 0;
                 m_playbackWatchdog->stop();
@@ -937,9 +1170,10 @@ checkDbOpen();
 
     update_music_table();
 
-   /*Bottom info*/
+   /*Bottom info — single line, it lives in the status bar now*/
    QDir dir; QString cpath = dir.absolutePath();
-   QString binfo = ui->txt_bottom_info->text()+"\n"+cpath+"\n"+Role;
+   QString binfo = ui->txt_bottom_info->text().replace('\n', QStringLiteral("  •  "))
+                   + "  •  " + cpath + "  •  " + Role;
    ui->txt_bottom_info->setText(binfo);
 
    /*Default button states*/
@@ -984,18 +1218,9 @@ checkDbOpen();
         qDebug() << "Skipping donation dialog (--no-dialogs flag)";
     }
 
-   // Directly set style on the status bar
-   if(darkMode){
-       qDebug("Loading darkmode");
-       ui->statusBar->setStyleSheet("background-color: #353535 !important; color: #ffffff; border: none; margin: 0; padding: 0;");
-
-   } else {
-       qDebug("Loading lightmode");
-       this->setStyleSheet("background-color: #ffffff");
-       ui->statusBar->setStyleSheet("background-color: #ffffff !important; color: #303030; border: none; margin: 0; padding: 0;");
-
-
-   }
+   // Theming (palette + stylesheet) is applied application-wide by
+   // ThemeManager (main.cpp at startup, updateConfig on options changes) —
+   // no per-widget style overrides needed here anymore.
 
    // Initialize torrent services with error handling (only if GUI is available)
    if (!QApplication::arguments().contains("--version") && 
@@ -1064,159 +1289,26 @@ checkDbOpen();
                }
            }
 
-           m_torNetworkService = new TorNetworkService(this);
-           m_torrentSearchService = new TorrentSearchService(this);
-           m_torrentDownloadService = new TorrentDownloadService(this);
-           
-           // Initialize the services safely
-           if (m_torNetworkService && !m_torNetworkService->initialize()) {
-               qWarning() << "Failed to initialize TorNetworkService";
-           }
-           if (m_torrentSearchService && !m_torrentSearchService->initialize()) {
-               qWarning() << "Failed to initialize TorrentSearchService";
-           }
-           if (m_torrentDownloadService && !m_torrentDownloadService->initialize()) {
-               qWarning() << "Failed to initialize TorrentDownloadService";
+           // Bring the Tor/torrent services up only when the feature is
+           // enabled. A disabled feature creates no services, opens no ports
+           // and never touches the network — this is the real kill-switch.
+           // ensureTorrentServices() is idempotent and is also called when
+           // the Options toggle turns the feature on at runtime.
+           {
+               QSettings torCfg(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
+                                    + "/xfb.conf", QSettings::IniFormat);
+               if (torCfg.value("EnableTorrents", false).toBool())
+                   ensureTorrentServices();
            }
        } catch (const std::exception& e) {
            qWarning() << "Exception during torrent service initialization:" << e.what();
-           // Set services to nullptr if initialization fails
            m_torNetworkService = nullptr;
            m_torrentSearchService = nullptr;
            m_torrentDownloadService = nullptr;
        }
    } else {
-       // Set services to nullptr for command line usage or minimal mode
+       // Command-line / minimal mode: no torrent services at all
        qDebug() << "Skipping torrent services initialization";
-       m_torNetworkService = nullptr;
-       m_torrentSearchService = nullptr;
-       m_torrentDownloadService = nullptr;
-   }
-   
-   // Connect torrent services with null checks
-   if (m_torrentSearchService && m_torNetworkService) {
-       m_torrentSearchService->setTorService(m_torNetworkService);
-   }
-   if (m_torrentDownloadService && m_torNetworkService) {
-       m_torrentDownloadService->setTorService(m_torNetworkService);
-   }
-   
-   // Connect torrent network signals with null checks
-   if (m_torNetworkService) {
-       connect(m_torNetworkService, &TorNetworkService::torReady,
-               this, &player::onTorReady);
-       connect(m_torNetworkService, &TorNetworkService::torStopped,
-               this, &player::onTorDisconnected);
-       connect(m_torNetworkService, &TorNetworkService::torError,
-               this, &player::onTorError);
-       connect(m_torNetworkService, &TorNetworkService::onionMirrorFound,
-               this, &player::onOnionMirrorFound);
-       connect(m_torNetworkService, &TorNetworkService::searchingForOnionMirror,
-               this, &player::onSearchingForOnionMirror);
-       connect(m_torNetworkService, &TorNetworkService::onionMirrorSearchFailed,
-               this, &player::onOnionMirrorSearchFailed);
-   }
-   
-   // Connect torrent search signals with null checks
-   if (m_torrentSearchService) {
-       connect(m_torrentSearchService, &TorrentSearchService::resultsReady,
-               this, &player::onTorrentSearchResults);
-       connect(m_torrentSearchService, &TorrentSearchService::searchError,
-               this, &player::onTorrentSearchError);
-       connect(m_torrentSearchService, &TorrentSearchService::searchProgress,
-               ui->torrentSearchProgress, &QProgressBar::setValue);
-       connect(m_torrentSearchService, &TorrentSearchService::searchStarted,
-               [this]() { ui->torrentSearchProgress->setVisible(true); });
-       connect(m_torrentSearchService, &TorrentSearchService::searchFinished,
-               [this]() { ui->torrentSearchProgress->setVisible(false); });
-       connect(m_torrentSearchService, &TorrentSearchService::onionSitesUnavailable,
-               this, &player::onOnionSitesUnavailable);
-   }
-   
-   // Connect torrent download signals with null checks
-   if (m_torrentDownloadService) {
-       connect(m_torrentDownloadService, &TorrentDownloadService::downloadCompleted,
-               this, &player::onTorrentDownloadCompleted);
-       connect(m_torrentDownloadService, &TorrentDownloadService::streamingReady,
-               this, &player::onTorrentStreamingReady);
-
-       // Show downloads panel whenever a download starts
-       connect(m_torrentDownloadService, &TorrentDownloadService::downloadStarted,
-               this, [this](const QString &) {
-           ui->downloadsPanel->setVisible(true);
-           updateDownloadsCountLabel();
-       });
-       connect(m_torrentDownloadService, &TorrentDownloadService::downloadProgress,
-               this, [this](const QString &, double) {
-           updateDownloadsCountLabel();
-       });
-       connect(m_torrentDownloadService, &TorrentDownloadService::downloadError,
-               this, [this](const QString &, const QString &error) {
-           ui->statusBar->showMessage(tr("Download error: %1").arg(error), 5000);
-           updateDownloadsCountLabel();
-       });
-       connect(m_torrentDownloadService, &TorrentDownloadService::downloadCancelled,
-               this, [this](const QString &) {
-           updateDownloadsCountLabel();
-       });
-       connect(m_torrentDownloadService, &TorrentDownloadService::downloadsChanged,
-               this, [this]() {
-           updateDownloadsCountLabel();
-       });
-
-       // Wire the downloads table view to the model
-       ui->downloadsTableView->setModel(m_torrentDownloadService->getDownloadsModel());
-       // Allow user to resize all columns freely; last column stretches to fill
-       ui->downloadsTableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Interactive);
-       ui->downloadsTableView->horizontalHeader()->setStretchLastSection(true);
-       ui->downloadsTableView->setColumnWidth(0, 300);  // Name
-       ui->downloadsTableView->setColumnWidth(1, 80);   // Progress
-       ui->downloadsTableView->setColumnWidth(2, 120);  // Status
-   }
-
-   // Downloads panel buttons
-   if (m_torrentDownloadService) {
-       connect(ui->downloadCancelSelectedButton, &QPushButton::clicked, this, [this]() {
-           QModelIndex idx = ui->downloadsTableView->currentIndex();
-           if (idx.isValid()) {
-               QString dlId = m_torrentDownloadService->downloadIdForRow(idx.row());
-               if (!dlId.isEmpty()) {
-                   m_torrentDownloadService->cancelDownload(dlId);
-                   ui->statusBar->showMessage(tr("Download cancelled"), 3000);
-               }
-           }
-       });
-       connect(ui->downloadCancelAllButton, &QPushButton::clicked, this, [this]() {
-           m_torrentDownloadService->cancelAllDownloads();
-           ui->statusBar->showMessage(tr("All downloads cancelled"), 3000);
-       });
-       connect(ui->downloadClearFinishedButton, &QPushButton::clicked, this, [this]() {
-           m_torrentDownloadService->removeCompleted();
-           if (m_torrentDownloadService->activeDownloadCount() == 0) {
-               ui->downloadsPanel->setVisible(false);
-           }
-       });
-       connect(ui->downloadOpenFolderButton, &QPushButton::clicked, this, [this]() {
-           QDesktopServices::openUrl(QUrl::fromLocalFile(m_torrentDownloadService->downloadDirectory()));
-       });
-       connect(ui->downloadRetryButton, &QPushButton::clicked, this, [this]() {
-           QModelIndex idx = ui->downloadsTableView->currentIndex();
-           if (idx.isValid()) {
-               QString dlId = m_torrentDownloadService->downloadIdForRow(idx.row());
-               if (!dlId.isEmpty()) {
-                   if (m_torrentDownloadService->retryDownload(dlId)) {
-                       ui->statusBar->showMessage(tr("Retrying download..."), 3000);
-                   } else {
-                       ui->statusBar->showMessage(tr("Cannot retry this download"), 3000);
-                   }
-               }
-           }
-       });
-   }
-   
-   // Set torrents view model with null check
-   if (m_torrentSearchService) {
-       ui->torrentsView->setModel(m_torrentSearchService->getResultsModel());
    }
 
    // --- Make torrentsView and downloadsPanel resizable via QSplitter ---
@@ -1642,6 +1734,15 @@ void player::initializeAccessibility()
 
 void player::closeEvent(QCloseEvent *event)
 {
+    // Persist the panel layout FIRST — the macOS branch below never returns.
+    {
+        QSettings settings(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
+                               + "/xfb.conf", QSettings::IniFormat);
+        settings.setValue("MainWindowState", saveState(kLayoutStateVersion));
+        settings.setValue("MainWindowGeometry", saveGeometry());
+        settings.sync();
+    }
+
     // Force immediate clean exit on macOS to prevent crash-on-close.
     // All cleanup that matters (Tor process, database) is handled by the OS
     // when the process terminates. The Tor child process will receive SIGHUP.
@@ -2005,7 +2106,10 @@ void player::updateConfig() {
     disableSeekBar = settings.value("Disable_Seek_Bar", false).toBool();
     normalization_soft = settings.value("Normalize_Soft", false).toBool();
     Disable_Volume = settings.value("Disable_Volume", false).toBool();
-    darkMode = settings.value("DarkMode", false).toBool();
+    // Re-apply the configured theme (palette + stylesheet) so options-dialog
+    // changes take effect live; darkMode reflects the resolved theme.
+    ThemeManager::apply(qobject_cast<QApplication *>(QApplication::instance()));
+    darkMode = ThemeManager::currentIsDark();
     bool enableTorrents = settings.value("EnableTorrents", false).toBool();
 
     // Read recording info (description and potentially enum data)
@@ -2029,6 +2133,35 @@ void player::updateConfig() {
 
     // --- Apply settings to UI or internal state AFTER reading ALL settings ---
     qDebug() << "Applying loaded configuration settings...";
+
+    // Auto Auto-mix: overlaps computed automatically for new playlist items
+    m_autoAutoMix = settings.value("AutoAutoMix", false).toBool();
+
+    // Stereo LED output meter: visibility and docking position. Horizontal
+    // lives in the volume-slider strip; vertical docks between the main
+    // tabs and the side panel. NEVER touch ui->gridLayout_2 here — the
+    // startup revamp above deleted it, so that pointer dangles (this was a
+    // startup segfault).
+    if (m_levelMeter) {
+        const bool showMeter = settings.value("ShowLevelMeter", false).toBool();
+        const bool wantVertical = m_middleSplitter
+            && settings.value("LevelMeterPlacement", "volume").toString() == "side";
+
+        if (wantVertical != m_levelMeterVertical) {
+            m_levelMeter->setParent(nullptr); // detach from the current host
+            m_levelMeter->setMeterOrientation(wantVertical ? Qt::Vertical
+                                                           : Qt::Horizontal);
+            if (wantVertical)
+                m_middleSplitter->insertWidget(1, m_levelMeter);
+            else
+                ui->horizontalLayout_7->insertWidget(2, m_levelMeter);
+            m_levelMeterVertical = wantVertical;
+        }
+
+        if (!showMeter)
+            m_levelMeter->clear();
+        m_levelMeter->setVisible(showMeter);
+    }
 
     // Example: Update UI elements based on loaded settings
     if (disableSeekBar) {
@@ -2070,13 +2203,22 @@ void player::updateConfig() {
     // Show or hide the Torrents tab based on the EnableTorrents setting
     if (ui && ui->pubWidget) {
         int torrentsTabIndex = ui->pubWidget->indexOf(ui->tabTorrents);
+        // The one-time privacy disclosure is handled where the user actually
+        // turns the feature on (optionsDialog::on_checkBox_enableTorrents_clicked),
+        // not here — updateConfig runs on every startup and must never prompt.
         if (enableTorrents) {
+            // Bring the services up on demand (idempotent). ensureTorrentServices
+            // is what actually creates them — the tab is just the entry point.
+            ensureTorrentServices();
             // Re-add the tab if it was previously removed
             if (torrentsTabIndex == -1) {
                 ui->pubWidget->addTab(ui->tabTorrents,
                     QIcon(":/icons/flat/pirate-32.png"), tr("Torrents"));
             }
         } else {
+            // Turning the feature off is a real kill-switch: stop any Tor
+            // connection and running downloads before hiding the tab.
+            shutdownTorrentActivity();
             // Remove the tab (widget is not deleted, just hidden from the tab bar)
             if (torrentsTabIndex != -1) {
                 ui->pubWidget->removeTab(torrentsTabIndex);
@@ -2122,6 +2264,54 @@ void player::showTime()
     ui->txt_horas->display(text+segundos);
 }
 
+void player::seedDefaultGenres()
+{
+    // One-shot top-up: brings installs whose database predates the
+    // comprehensive default genre list up to date (fresh installs already
+    // get it from the bundled adb.db). Runs once — genres the user deletes
+    // afterwards are never re-added.
+    QSettings settings(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
+                           + "/xfb.conf", QSettings::IniFormat);
+    if (settings.value("DefaultGenresSeeded", false).toBool())
+        return;
+
+    QSqlDatabase db = QSqlDatabase::database("xfb_connection");
+    if (!db.isOpen())
+        return; // flag stays unset: retried on the next launch
+
+    static const char *const kDefaults[] = {
+        "50s", "60s", "70s", "80s", "90s", "2000s", "2010s",
+        "Acoustic", "Alternative", "Ambient", "Blues", "Bossa Nova",
+        "Chillout", "Classical", "Country", "Dance", "Deep House", "Disco",
+        "Downtempo", "Drum & Bass", "Dub", "Dubstep", "EDM", "Electronic",
+        "Fado", "Folk", "Funk", "Garage", "Gospel", "Grunge", "Hip-Hop",
+        "House", "Indie", "Instrumental", "Jazz", "Kizomba", "Latin",
+        "Lo-Fi", "Lounge", "Metal", "New Age", "Oldies", "Opera", "Pop",
+        "Psytrance", "Punk", "Rap", "Reggaeton", "RnB", "Rock",
+        "Rockabilly", "Salsa", "Samba", "Ska", "Soul", "Soundtrack",
+        "Swing", "Synthwave", "Techno", "Trance", "Trap", "Trip-Hop",
+        "World",
+    };
+
+    QSqlQuery countQry(db);
+    countQry.exec("select count(*) from genres1");
+    const int before = countQry.next() ? countQry.value(0).toInt() : 0;
+
+    QSqlQuery qry(db);
+    for (const char *const g : kDefaults) {
+        qry.prepare("insert into genres1 (name) select :n where not exists "
+                    "(select 1 from genres1 where name = :n collate nocase)");
+        qry.bindValue(":n", QString::fromUtf8(g));
+        if (!qry.exec())
+            qWarning() << "Genre top-up failed for" << g << ":" << qry.lastError().text();
+    }
+
+    countQry.exec("select count(*) from genres1");
+    const int after = countQry.next() ? countQry.value(0).toInt() : before;
+    settings.setValue("DefaultGenresSeeded", true);
+    qInfo() << "Default genre top-up complete," << (after - before) << "genre(s) added";
+}
+
 bool player::checkDbOpen() {
 
     QString resourceDbPath = ":/adb.db";
@@ -2160,15 +2350,12 @@ bool player::checkDbOpen() {
         return false;
     }
 
-    bool copyRequired = !persistentFile.exists();
-    if (persistentFile.exists() && resourceInfo.lastModified() > QFileInfo(persistentFile).lastModified()) {
-        qInfo() << "Resource database is newer. Removing old persistent copy.";
-        if (!persistentFile.remove()) {
-             qWarning() << "Could not remove existing persistent database file:" << persistentFile.errorString() << "- Check if it's locked by another process.";
-             // Decide if you want to proceed or fail here. Maybe try opening anyway?
-        }
-        copyRequired = true;
-    }
+    // The bundled adb.db is ONLY a first-run skeleton. It must never
+    // replace an existing user database: the old "resource is newer" rule
+    // here silently wiped a real music library the moment a rebuild
+    // touched the bundled file (2026-07-17). Copy solely when the user
+    // has no database yet.
+    const bool copyRequired = !persistentFile.exists();
 
     if (copyRequired) {
         qInfo() << "Attempting to copy database from resource to:" << persistentDbPath;
@@ -2184,6 +2371,24 @@ bool player::checkDbOpen() {
             } else {
                  qInfo() << "Database copied successfully and permissions set for" << persistentDbPath;
             }
+        }
+    }
+
+    // Daily safety net: keep dated copies of the user database (last 7
+    // days). The library db is small, so this is cheap — and it makes any
+    // future regression in this area recoverable instead of fatal.
+    if (!copyRequired && persistentFile.exists()) {
+        const QString backupDirPath = specificAppDataPath + "/backups";
+        QDir().mkpath(backupDirPath);
+        const QString backupPath = backupDirPath + "/adb-"
+            + QDate::currentDate().toString("yyyyMMdd") + ".db";
+        if (!QFile::exists(backupPath)) {
+            if (QFile::copy(persistentDbPath, backupPath))
+                qInfo() << "Database backup created:" << backupPath;
+            QDir backupDir(backupDirPath, "adb-*.db", QDir::Name, QDir::Files);
+            QStringList backups = backupDir.entryList();
+            while (backups.size() > 7)
+                QFile::remove(backupDirPath + "/" + backups.takeFirst());
         }
     }
 
@@ -2335,6 +2540,7 @@ void::player::playlistContextMenu(const QPoint& pos){
     QString addVolumeLine = tr("Add a volume line");
     QString resetVolumeLine = tr("Reset the volume line");
     QString removeVolumeLine = tr("Remove the volume line");
+    QString autoMixThis = tr("Auto-mix the transition into this track");
 
 
     thisMenu.addAction(remove);
@@ -2359,6 +2565,10 @@ void::player::playlistContextMenu(const QPoint& pos){
     if (hasVolumeLine)
         thisMenu.addAction(resetVolumeLine); // back to a flat 0 dB line
 
+    thisMenu.addSeparator();
+    QAction *autoMixAction = thisMenu.addAction(autoMixThis);
+    autoMixAction->setToolTip(tr("Compute this track's crossfade overlap from the sound "
+                                 "waves: it will start where the previous track goes quiet."));
 
     QAction* selectedItem = thisMenu.exec(globalPos);
     if(selectedItem){
@@ -2401,6 +2611,12 @@ void::player::playlistContextMenu(const QPoint& pos){
         if(selectedListItem==removeVolumeLine){
             if (QListWidgetItem *it = ui->playlist->item(rowidx))
                 it->setData(PlaylistWaveView::VolumeEnvelopeRole, QVariant());
+        }
+        if(selectedListItem==autoMixThis){
+            // The result is inspected in the wave view, so switch it on
+            if (m_waveViewToggle && !m_waveViewToggle->isChecked())
+                m_waveViewToggle->setChecked(true);
+            startAutoMix({rowidx});
         }
 
 
@@ -3002,6 +3218,9 @@ void player::torrentsViewContextMenu(const QPoint& pos) {
             if (!ensureTorrentClient()) {
                 return;
             }
+            if (!confirmDownloadNetworkExposure()) {
+                return; // no VPN and the user chose not to proceed
+            }
             QString downloadId = m_torrentDownloadService->startDownload(result.magnetLink, result.name);
             if (!downloadId.isEmpty()) {
                 QMessageBox::information(this, tr("Download Started"), 
@@ -3025,6 +3244,9 @@ void player::torrentsViewContextMenu(const QPoint& pos) {
         if (reply == QMessageBox::Yes && m_torrentDownloadService) {
             if (!ensureTorrentClient()) {
                 return;
+            }
+            if (!confirmDownloadNetworkExposure()) {
+                return; // no VPN and the user chose not to proceed
             }
             QString downloadId = m_torrentDownloadService->startDownload(result.magnetLink, result.name);
             if (!downloadId.isEmpty()) {
@@ -3303,8 +3525,9 @@ void player::playNextSong(){
                 qDebug()<<"lastplayesong != itemdaplaylist";
 
                 // Clear current playlist and add new media
+                const QUrl nextUrl = QUrl::fromLocalFile(itemDaPlaylist);
                 XplaylistUrls.clear();
-                XplaylistUrls.append(QUrl::fromLocalFile(itemDaPlaylist));
+                XplaylistUrls.append(nextUrl);
                 XplaylistIndex = 0;
 
                 // Prevent playbackStateChanged from triggering playNextMedia
@@ -3312,11 +3535,15 @@ void player::playNextSong(){
                 m_manualAdvancing = true;
                 onAbout2Finish = 0;  // Reset so playlistAboutToFinish can fire for the new track
 
-                // Clear previous source first to release any stuck AVFoundation session
-                Xplayer->setSource(QUrl());
+                // Clear the previous source first to release any stuck
+                // AVFoundation session — but not when this track was
+                // preloaded: the clear would tear down the primed pipeline
+                // and reintroduce the very gap the preload removes.
+                if (!Xplayer->hasPreparedNext(nextUrl))
+                    Xplayer->setSource(QUrl());
 
                 // Set the media to play
-                Xplayer->setSource(XplaylistUrls[XplaylistIndex]);
+                Xplayer->setSource(nextUrl);
 
                 lastPlayedSong = itemDaPlaylist;
 
@@ -3348,7 +3575,13 @@ void player::playNextSong(){
                 QDateTime now = QDateTime::currentDateTime();
                 QString text = now.toString("yyyy-MM-dd || hh:mm:ss ||");
                 QString historyNewLine = text + " " + baseName;
-                ui->historyList->addItem(historyNewLine);
+                {
+                    auto *historyItem = new QListWidgetItem(historyNewLine);
+                    // Tag the row with its file so it gets the cover icon
+                    historyItem->setData(kArtworkPathRole, itemDaPlaylist);
+                    ui->historyList->addItem(historyItem);
+                    requestItemArtwork(historyItem, itemDaPlaylist);
+                }
                 int hlistcout = ui->historyList->count();
                 qDebug()<<"historyList has "<<hlistcout<<" items";
 
@@ -3472,13 +3705,17 @@ void player::on_btStop_clicked()
     XplaylistIndex = 0;
     trackTotalDuration = 0;
     onAbout2Finish = 0;
+    m_nextPrepared = false;
     lastPlayedSong = "";  // Reset so the same song can be played again after stop
 }
 
-void player::on_sliderProgress_sliderMoved(int position)
+void player::on_sliderProgress_sliderReleased()
 {
-    //qDebug()<<"progreess slider mooved "<<position;
-    Xplayer->setPosition(position);
+    // Seek once, where the user dropped the handle. Seeking on every
+    // sliderMoved event restarted the FX decoder dozens of times per drag,
+    // and the periodic position updates yanked the handle back mid-drag
+    // (onPositionChanged now leaves the slider alone while it's held).
+    Xplayer->setPosition(ui->sliderProgress->value());
 }
 
 void player::on_sliderVolume_sliderMoved(int position)
@@ -3490,7 +3727,10 @@ void player::on_sliderVolume_sliderMoved(int position)
 
 void player::onPositionChanged(qint64 position)
 {
-     ui->sliderProgress->setValue(position);
+    // Never move the slider while the user is holding it — the playback
+    // ticks would drag the handle back to the playing position mid-grab
+    if (!ui->sliderProgress->isSliderDown())
+        ui->sliderProgress->setValue(position);
 
     if (m_nowPlayingWave)
         m_nowPlayingWave->setPlayhead(position);
@@ -3553,6 +3793,36 @@ void player::onPositionChanged(qint64 position)
         }
     }
 
+    // Gapless: shortly before this track ends, hand the upcoming playlist
+    // item to the player so the transition starts instantly (the FX engine
+    // preloads its decoder and hands off without breaking the stream; plain
+    // playback preloads the media on a standby player). When a crossfade
+    // overlap is set, arm the preload before that segue fires instead.
+    if (PlayMode == "Playing_Segue" && !m_manualAdvancing && !m_nextPrepared
+            && position > 0 && trackTotalDuration > 0 && ui->playlist->count() > 0) {
+        const qint64 overlapMs =
+            ui->playlist->item(0)->data(PlaylistWaveView::OverlapRole).toLongLong();
+        const qint64 horizon = qMax(qint64(5000), overlapMs + 2000);
+        const qint64 remaining = trackTotalDuration - position;
+        if (remaining > 0 && remaining <= horizon) {
+            m_nextPrepared = true; // re-armed by the next durationChanged
+            const QString nextPath = ui->playlist->item(0)->text();
+            if (QFileInfo::exists(nextPath))
+                Xplayer->prepareNext(QUrl::fromLocalFile(nextPath));
+
+            // Warm up the tail player as well: auto-mix sets the overlap
+            // asynchronously after the item is added, so the 80% preload in
+            // playlistAboutToFinish usually ran too early to see it. Probing
+            // the outgoing track now keeps the segue from paying that cost
+            // as a hole in the crossfade.
+            if (overlapMs > 0 && m_tailPlayer
+                    && Xplayer->source().isLocalFile()
+                    && m_tailPlayer->playbackState() != QMediaPlayer::PlayingState
+                    && m_tailPlayer->source() != Xplayer->source())
+                m_tailPlayer->setSource(Xplayer->source());
+        }
+    }
+
     int segundos = position / 1000;
     int minutos = segundos / 60;
     segundos = segundos % 60;
@@ -3573,6 +3843,7 @@ void player::durationChanged(qint64 position)
     ui->sliderProgress->setMaximum(position);
     trackTotalDuration = position;
     m_overlapSegueFired = false; // new media: re-arm the overlap segue
+    m_nextPrepared = false;      // new media: re-arm the gapless preload
 
     int segundos = position / 1000;
     int minutos = 0;
@@ -3982,15 +4253,32 @@ void player::startOverlapSegue(qint64 fadeMs)
     const QUrl endingSource = Xplayer->source();
     const qint64 endingPos = Xplayer->position();
 
-    if (m_tailPlayer && endingSource.isLocalFile()) {
+    // When the FX engine drives playback and the next track is already
+    // preloaded, the engine crossfades internally: the outgoing decoder
+    // keeps feeding the same audio stream, faded out per sample — no cut,
+    // no tail-player spin-up, sample-continuous. The tail player remains
+    // the fallback for plain playback or when no preload is armed.
+    QUrl nextUrl;
+    if (ui->playlist->count() > 0)
+        nextUrl = QUrl::fromLocalFile(ui->playlist->item(0)->text());
+    const bool engineMix = Xplayer->fxEngineActive() && !nextUrl.isEmpty()
+                           && Xplayer->hasPreparedNext(nextUrl);
+
+    if (engineMix) {
+        Xplayer->setNextCrossfade(qBound(qint64(200), fadeMs, qint64(600000)));
+    } else if (m_tailPlayer && endingSource.isLocalFile()) {
         if (m_tailFade->state() == QAbstractAnimation::Running)
             m_tailFade->stop();
         const float startVolume = XplayerOutput ? XplayerOutput->volume() : 1.0f;
         m_tailOutput->setVolume(startVolume);
-        if (m_tailPlayer->source() != endingSource) // normally preloaded at 80%
+        if (m_tailPlayer->source() != endingSource) // normally preloaded earlier
             m_tailPlayer->setSource(endingSource);
-        m_tailPlayer->play();
+        // Seek BEFORE play: a stopped-state seek is only remembered, so the
+        // decoder spawns once, already at the tail position. The previous
+        // play-then-seek order spawned it twice (from 0, then again at the
+        // seek), which opened an audible hole at the start of the crossfade.
         m_tailPlayer->setPosition(endingPos);
+        m_tailPlayer->play();
         m_tailFade->setStartValue(double(startVolume));
         m_tailFade->setEndValue(0.0);
         // Absolute sanity bound, not the UI window: saved playlists may
@@ -4023,11 +4311,34 @@ void player::setPlaylistWaveView(bool on)
                                      && Xplayer->source().isLocalFile());
     if (m_maxOverlapBox)
         m_maxOverlapBox->setVisible(on);
+    if (m_autoMixButton)
+        m_autoMixButton->setVisible(on);
+    // A running auto-mix pass is deliberately not canceled here: the
+    // overlaps it sets are honoured by playback whether the view is on or
+    // off, and the progress dialog's Cancel button still works.
 
     QSettings settings(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
                            + "/xfb.conf", QSettings::IniFormat);
     if (settings.value("PlaylistWaveView", false).toBool() != on)
         settings.setValue("PlaylistWaveView", on);
+}
+
+void player::startAutoMix(const QVector<int> &rows)
+{
+    if (!m_waveView || m_waveView->autoMixActive())
+        return;
+
+    m_waveView->autoMix(rows);
+    if (!m_waveView->autoMixActive())
+        return; // everything was cached: finished synchronously, no dialog
+
+    if (m_autoMixButton)
+        m_autoMixButton->setEnabled(false);
+    m_autoMixProgress = new QProgressDialog(tr("Auto-mix: analyzing waveforms..."),
+                                            tr("Cancel"), 0, 0, this);
+    m_autoMixProgress->setWindowModality(Qt::WindowModal);
+    connect(m_autoMixProgress, &QProgressDialog::canceled,
+            m_waveView, &PlaylistWaveView::cancelAutoMix);
 }
 
 
@@ -4510,6 +4821,9 @@ void player::on_torrentsView_pressed(const QModelIndex &index)
             if (reply == QMessageBox::Yes && m_torrentDownloadService) {
                 if (!ensureTorrentClient()) {
                     return;
+                }
+                if (!confirmDownloadNetworkExposure()) {
+                    return; // no VPN and the user chose not to proceed
                 }
                 bool wantStream = (selected == downloadStreamAction);
                 QString torrentName = result.name;
@@ -6199,9 +6513,21 @@ void player::on_bt_search_clicked()
 
 void player::on_bt_reset_clicked()
 {
+    // Show the full list immediately. The old bare setQuery() ran on Qt's
+    // default database connection — the app's data lives on the named
+    // "xfb_connection", so the view stayed stale until a manual search
+    // (which uses the right connection) refreshed it.
+    ui->txt_search->clear();
+    checkDbOpen();
+    delete ui->musicView->model();
     QSqlQueryModel *modelo = new QSqlQueryModel();
-    modelo->setQuery("select * from musics");
+    QSqlQuery all(QSqlDatabase::database("xfb_connection"));
+    all.exec("select * from musics");
+    modelo->setQuery(std::move(all));
     ui->musicView->setModel(modelo);
+    ui->musicView->setSortingEnabled(true);
+    ui->musicView->hideColumn(0);
+    ui->musicView->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 }
 
 void player::on_bt_apply_filter_clicked()
@@ -11838,6 +12164,90 @@ void player::setPubTabsCollapsed(bool collapsed)
     }
 }
 
+void player::setLayoutLocked(bool locked)
+{
+    m_layoutLocked = locked;
+    const QList<QDockWidget *> docks = {m_dockPlayer, m_dockClock,
+                                        m_dockSide, m_dockLibrary};
+    for (QDockWidget *dock : docks) {
+        if (!dock)
+            continue;
+        if (locked && !dock->isFloating()) {
+            // An empty title-bar widget hides the bar entirely, so the
+            // locked layout looks like one seamless window.
+            if (!dock->titleBarWidget())
+                dock->setTitleBarWidget(new QWidget(dock));
+            dock->setFeatures(QDockWidget::NoDockWidgetFeatures);
+        } else {
+            QWidget *old = dock->titleBarWidget();
+            dock->setTitleBarWidget(nullptr);
+            delete old;
+            dock->setFeatures(QDockWidget::DockWidgetMovable
+                              | QDockWidget::DockWidgetFloatable
+                              | QDockWidget::DockWidgetClosable);
+        }
+    }
+}
+
+void player::resetDockLayout()
+{
+    if (m_defaultLayoutState.isEmpty())
+        return;
+    if (m_lockLayoutAction && m_lockLayoutAction->isChecked())
+        m_lockLayoutAction->setChecked(false); // unlock so the reset is visible
+    restoreState(m_defaultLayoutState, kLayoutStateVersion);
+    const QList<QDockWidget *> docks = {m_dockPlayer, m_dockClock,
+                                        m_dockSide, m_dockLibrary};
+    for (QDockWidget *dock : docks) {
+        if (dock) {
+            dock->setFloating(false);
+            dock->show();
+        }
+    }
+}
+
+void player::requestItemArtwork(QListWidgetItem *item, const QString &path)
+{
+    if (!item || !m_artStore)
+        return;
+    // Playlist rows carry the file path as their text; history rows carry
+    // it in kArtworkPathRole (set when they are added).
+    const QString file = !path.isEmpty()
+                             ? path
+                             : (item->data(kArtworkPathRole).isValid()
+                                    ? item->data(kArtworkPathRole).toString()
+                                    : item->text());
+    if (file.isEmpty() || !QFileInfo::exists(file))
+        return;
+    if (const ArtworkData *art = m_artStore->fetch(file)) {
+        if (art->ready())
+            item->setIcon(QIcon(art->pixmap));
+    }
+    // Not cached yet: onArtworkReady() sets the icon when extraction ends
+}
+
+void player::onArtworkReady(const QString &path)
+{
+    const ArtworkData *art = m_artStore ? m_artStore->peek(path) : nullptr;
+    if (!art || !art->ready() || !ui)
+        return;
+    const QIcon icon(art->pixmap);
+    if (ui->playlist) {
+        for (int i = 0; i < ui->playlist->count(); ++i) {
+            QListWidgetItem *item = ui->playlist->item(i);
+            if (item && item->text() == path)
+                item->setIcon(icon);
+        }
+    }
+    if (ui->historyList) {
+        for (int i = 0; i < ui->historyList->count(); ++i) {
+            QListWidgetItem *item = ui->historyList->item(i);
+            if (item && item->data(kArtworkPathRole).toString() == path)
+                item->setIcon(icon);
+        }
+    }
+}
+
 // UI accessor methods for controllers
 QTableView* player::getMusicView() const {
     return ui->musicView;
@@ -12000,6 +12410,250 @@ void player::on_reloadPageButton_clicked()
     }
 }
 
+bool player::isVpnActive(QString *ifaceName) const
+{
+    // Heuristic: a tunnel-style interface that is up, running, not loopback,
+    // and carries a real (non-link-local) IPv4 address. VPN detection can
+    // never be certain, so we bias toward *not* reporting a VPN when unsure —
+    // for a warn-only feature a missed VPN just shows an extra warning, while
+    // a false positive would wrongly suppress it.
+    const auto interfaces = QNetworkInterface::allInterfaces();
+    for (const QNetworkInterface &iface : interfaces) {
+        const auto flags = iface.flags();
+        if (!flags.testFlag(QNetworkInterface::IsUp)
+                || !flags.testFlag(QNetworkInterface::IsRunning)
+                || flags.testFlag(QNetworkInterface::IsLoopBack))
+            continue;
+
+        const QString name = iface.name();
+        const QString human = iface.humanReadableName();
+        const bool tunnelLike =
+            name.startsWith("utun") ||   // macOS VPNs
+            name.startsWith("tun")  ||   // OpenVPN / generic tun (Linux/mac)
+            name.startsWith("tap")  ||
+            name.startsWith("wg")   ||   // WireGuard
+            name.startsWith("ppp")  ||   // PPTP / L2TP
+            name.startsWith("ipsec")||
+            human.contains("VPN", Qt::CaseInsensitive) ||
+            human.contains("WireGuard", Qt::CaseInsensitive) ||
+            human.contains("OpenVPN", Qt::CaseInsensitive) ||
+            human.contains("TAP", Qt::CaseInsensitive);
+        if (!tunnelLike)
+            continue;
+
+        for (const QNetworkAddressEntry &entry : iface.addressEntries()) {
+            const QHostAddress ip = entry.ip();
+            if (ip.protocol() == QAbstractSocket::IPv4Protocol
+                    && !ip.isLoopback() && !ip.isLinkLocal()) {
+                if (ifaceName)
+                    *ifaceName = name;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+bool player::confirmDownloadNetworkExposure()
+{
+    if (isVpnActive())
+        return true; // a VPN is up — proceed without nagging
+
+    // No VPN: warn, but never block (the user chose warn-only).
+    QMessageBox box(this);
+    box.setIcon(QMessageBox::Warning);
+    box.setWindowTitle(tr("No VPN detected"));
+    box.setText(tr("You are about to download a torrent without a VPN."));
+    box.setInformativeText(tr(
+        "BitTorrent transfers cannot be routed through Tor. Without a VPN, your "
+        "real IP address is visible to the tracker and to the other peers sharing "
+        "this file.\n\n"
+        "For more privacy, connect a VPN that allows peer-to-peer traffic and then "
+        "start the download again.\n\n"
+        "Download anyway?"));
+    QPushButton *proceed = box.addButton(tr("Download anyway"), QMessageBox::AcceptRole);
+    box.addButton(QMessageBox::Cancel);
+    box.setDefaultButton(QMessageBox::Cancel);
+    box.exec();
+    return box.clickedButton() == proceed;
+}
+
+void player::updateVpnStatusLabel()
+{
+    if (!ui || !ui->vpnStatusLabel)
+        return;
+    QString iface;
+    if (isVpnActive(&iface)) {
+        ui->vpnStatusLabel->setText(tr("VPN: on (%1)").arg(iface));
+        ui->vpnStatusLabel->setStyleSheet("color: green; font-weight: bold;");
+        ui->vpnStatusLabel->setToolTip(tr("A VPN tunnel is active — torrent downloads egress through it."));
+    } else {
+        ui->vpnStatusLabel->setText(tr("VPN: off"));
+        ui->vpnStatusLabel->setStyleSheet("color: #d08000; font-weight: bold;");
+        ui->vpnStatusLabel->setToolTip(tr("No VPN detected. Downloading exposes your real IP to peers; "
+                                          "connect a VPN that allows P2P for more privacy."));
+    }
+}
+
+void player::ensureTorrentServices()
+{
+    // Idempotent: the services live for the rest of the session once created.
+    // Toggling the feature off stops their activity (shutdownTorrentActivity)
+    // but does not destroy them, so these signal/button connections are made
+    // exactly once and never double-fire.
+    if (m_torNetworkService)
+        return;
+
+    m_torNetworkService = new TorNetworkService(this);
+    m_torrentSearchService = new TorrentSearchService(this);
+    m_torrentDownloadService = new TorrentDownloadService(this);
+
+    if (m_torNetworkService && !m_torNetworkService->initialize())
+        qWarning() << "Failed to initialize TorNetworkService";
+    if (m_torrentSearchService && !m_torrentSearchService->initialize())
+        qWarning() << "Failed to initialize TorrentSearchService";
+    if (m_torrentDownloadService && !m_torrentDownloadService->initialize())
+        qWarning() << "Failed to initialize TorrentDownloadService";
+
+    if (m_torrentSearchService && m_torNetworkService)
+        m_torrentSearchService->setTorService(m_torNetworkService);
+    if (m_torrentDownloadService && m_torNetworkService)
+        m_torrentDownloadService->setTorService(m_torNetworkService);
+
+    // Tor network signals
+    if (m_torNetworkService) {
+        connect(m_torNetworkService, &TorNetworkService::torReady,
+                this, &player::onTorReady);
+        connect(m_torNetworkService, &TorNetworkService::torStopped,
+                this, &player::onTorDisconnected);
+        connect(m_torNetworkService, &TorNetworkService::torError,
+                this, &player::onTorError);
+        connect(m_torNetworkService, &TorNetworkService::onionMirrorFound,
+                this, &player::onOnionMirrorFound);
+        connect(m_torNetworkService, &TorNetworkService::searchingForOnionMirror,
+                this, &player::onSearchingForOnionMirror);
+        connect(m_torNetworkService, &TorNetworkService::onionMirrorSearchFailed,
+                this, &player::onOnionMirrorSearchFailed);
+    }
+
+    // Torrent search signals
+    if (m_torrentSearchService) {
+        connect(m_torrentSearchService, &TorrentSearchService::resultsReady,
+                this, &player::onTorrentSearchResults);
+        connect(m_torrentSearchService, &TorrentSearchService::searchError,
+                this, &player::onTorrentSearchError);
+        connect(m_torrentSearchService, &TorrentSearchService::searchProgress,
+                ui->torrentSearchProgress, &QProgressBar::setValue);
+        connect(m_torrentSearchService, &TorrentSearchService::searchStarted,
+                [this]() { ui->torrentSearchProgress->setVisible(true); });
+        connect(m_torrentSearchService, &TorrentSearchService::searchFinished,
+                [this]() { ui->torrentSearchProgress->setVisible(false); });
+        connect(m_torrentSearchService, &TorrentSearchService::onionSitesUnavailable,
+                this, &player::onOnionSitesUnavailable);
+    }
+
+    // Torrent download signals
+    if (m_torrentDownloadService) {
+        connect(m_torrentDownloadService, &TorrentDownloadService::downloadCompleted,
+                this, &player::onTorrentDownloadCompleted);
+        connect(m_torrentDownloadService, &TorrentDownloadService::streamingReady,
+                this, &player::onTorrentStreamingReady);
+        connect(m_torrentDownloadService, &TorrentDownloadService::downloadStarted,
+                this, [this](const QString &) {
+            ui->downloadsPanel->setVisible(true);
+            updateDownloadsCountLabel();
+        });
+        connect(m_torrentDownloadService, &TorrentDownloadService::downloadProgress,
+                this, [this](const QString &, double) {
+            updateDownloadsCountLabel();
+        });
+        connect(m_torrentDownloadService, &TorrentDownloadService::downloadError,
+                this, [this](const QString &, const QString &error) {
+            ui->statusBar->showMessage(tr("Download error: %1").arg(error), 5000);
+            updateDownloadsCountLabel();
+        });
+        connect(m_torrentDownloadService, &TorrentDownloadService::downloadCancelled,
+                this, [this](const QString &) {
+            updateDownloadsCountLabel();
+        });
+        connect(m_torrentDownloadService, &TorrentDownloadService::downloadsChanged,
+                this, [this]() {
+            updateDownloadsCountLabel();
+        });
+
+        ui->downloadsTableView->setModel(m_torrentDownloadService->getDownloadsModel());
+        ui->downloadsTableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Interactive);
+        ui->downloadsTableView->horizontalHeader()->setStretchLastSection(true);
+        ui->downloadsTableView->setColumnWidth(0, 300);  // Name
+        ui->downloadsTableView->setColumnWidth(1, 80);   // Progress
+        ui->downloadsTableView->setColumnWidth(2, 120);  // Status
+
+        // Downloads-panel buttons
+        connect(ui->downloadCancelSelectedButton, &QPushButton::clicked, this, [this]() {
+            QModelIndex idx = ui->downloadsTableView->currentIndex();
+            if (idx.isValid()) {
+                QString dlId = m_torrentDownloadService->downloadIdForRow(idx.row());
+                if (!dlId.isEmpty()) {
+                    m_torrentDownloadService->cancelDownload(dlId);
+                    ui->statusBar->showMessage(tr("Download cancelled"), 3000);
+                }
+            }
+        });
+        connect(ui->downloadCancelAllButton, &QPushButton::clicked, this, [this]() {
+            m_torrentDownloadService->cancelAllDownloads();
+            ui->statusBar->showMessage(tr("All downloads cancelled"), 3000);
+        });
+        connect(ui->downloadClearFinishedButton, &QPushButton::clicked, this, [this]() {
+            m_torrentDownloadService->removeCompleted();
+            if (m_torrentDownloadService->activeDownloadCount() == 0)
+                ui->downloadsPanel->setVisible(false);
+        });
+        connect(ui->downloadOpenFolderButton, &QPushButton::clicked, this, [this]() {
+            QDesktopServices::openUrl(QUrl::fromLocalFile(m_torrentDownloadService->downloadDirectory()));
+        });
+        connect(ui->downloadRetryButton, &QPushButton::clicked, this, [this]() {
+            QModelIndex idx = ui->downloadsTableView->currentIndex();
+            if (idx.isValid()) {
+                QString dlId = m_torrentDownloadService->downloadIdForRow(idx.row());
+                if (!dlId.isEmpty()) {
+                    if (m_torrentDownloadService->retryDownload(dlId))
+                        ui->statusBar->showMessage(tr("Retrying download..."), 3000);
+                    else
+                        ui->statusBar->showMessage(tr("Cannot retry this download"), 3000);
+                }
+            }
+        });
+    }
+
+    if (m_torrentSearchService)
+        ui->torrentsView->setModel(m_torrentSearchService->getResultsModel());
+
+    // Live VPN indicator: refresh the status label every few seconds so it
+    // tracks the user connecting/dropping a VPN while the tab is open.
+    if (!m_vpnStatusTimer) {
+        m_vpnStatusTimer = new QTimer(this);
+        m_vpnStatusTimer->setInterval(4000);
+        connect(m_vpnStatusTimer, &QTimer::timeout, this, &player::updateVpnStatusLabel);
+    }
+    m_vpnStatusTimer->start();
+    updateVpnStatusLabel();
+}
+
+void player::shutdownTorrentActivity()
+{
+    // Turning the feature off must stop all torrent network activity: cancel
+    // any running downloads (kills the aria2c/transmission processes) and drop
+    // the Tor connection. The service objects stay alive but idle — they bind
+    // no ports and make no requests until explicitly driven again.
+    if (m_torrentDownloadService)
+        m_torrentDownloadService->cancelAllDownloads();
+    if (m_torNetworkService)
+        m_torNetworkService->disconnectFromTor();
+    if (m_vpnStatusTimer)
+        m_vpnStatusTimer->stop();
+    updateTorConnectionUI(false);
+}
+
 void player::updateTorConnectionUI(bool connected)
 {
     // Add null checks for UI elements to prevent crashes
@@ -12015,11 +12669,12 @@ void player::updateTorConnectionUI(bool connected)
     if (connected) {
         if (ui->torConnectButton) ui->torConnectButton->setText(tr("Connect to Tor"));
         if (ui->torConnectionStatus) {
-            ui->torConnectionStatus->setText(tr("Status: Connected & Secure"));
+            // Be precise: Tor anonymises SEARCH only, not the download.
+            ui->torConnectionStatus->setText(tr("Status: Search anonymised via Tor — downloads are NOT anonymous"));
             ui->torConnectionStatus->setStyleSheet("color: green; font-weight: bold;");
         }
         if (ui->torrentWarningLabel) {
-            ui->torrentWarningLabel->setText(tr("⚠️ WARNING: Only download legal content. Tor Status: Connected - Secure browsing enabled."));
+            ui->torrentWarningLabel->setText(tr("⚠️ Search is routed through Tor. Downloading is NOT: while a download runs your real IP is visible to the tracker and peers. Only download content you are legally entitled to."));
         }
     } else {
         if (ui->torConnectButton) ui->torConnectButton->setText(tr("Connect to Tor"));
@@ -12028,7 +12683,7 @@ void player::updateTorConnectionUI(bool connected)
             ui->torConnectionStatus->setStyleSheet("color: red; font-weight: bold;");
         }
         if (ui->torrentWarningLabel) {
-            ui->torrentWarningLabel->setText(tr("⚠️ WARNING: Only download legal content. Tor Status: Disconnected - Click \"Connect to Tor\" to enable secure browsing."));
+            ui->torrentWarningLabel->setText(tr("⚠️ Only download content you are legally entitled to. Click \"Connect to Tor\" to anonymise searching (note: downloading is never anonymous)."));
         }
     }
 }
@@ -12036,8 +12691,10 @@ void player::updateTorConnectionUI(bool connected)
 void player::onTorReady()
 {
     updateTorConnectionUI(true);
-    QMessageBox::information(this, tr("Tor Connected"), 
-                            tr("Successfully connected to Tor network. You can now search for torrents securely."));
+    QMessageBox::information(this, tr("Tor Connected"),
+                            tr("Connected to the Tor network. Your torrent SEARCHES are now anonymised.\n\n"
+                               "Downloading a torrent is still not anonymous — during the transfer your "
+                               "real IP is visible to the tracker and peers."));
 }
 
 void player::onTorDisconnected()
@@ -12100,8 +12757,9 @@ void player::onOnionMirrorSearchFailed(const QString &clearnetDomain)
     msgBox.setText(tr("Could not find a working .onion mirror for 1337x.to.\n\n"
                       "The onion site may be temporarily down or the address may have changed."));
     msgBox.setInformativeText(tr("Would you like to use the main site (1337x.to) through Tor instead?\n\n"
-                                 "Your traffic will still be routed through the Tor network for anonymity, "
-                                 "but will exit through a Tor exit node to reach the clearnet site."));
+                                 "Your search traffic will still be routed through the Tor network, "
+                                 "but will exit through a Tor exit node to reach the clearnet site. "
+                                 "(Downloading remains non-anonymous either way.)"));
     
     QPushButton *useClearnetBtn = msgBox.addButton(tr("Use Main Site via Tor"), QMessageBox::AcceptRole);
     QPushButton *retryBtn = msgBox.addButton(tr("Retry Onion"), QMessageBox::RejectRole);

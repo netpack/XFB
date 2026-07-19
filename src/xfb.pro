@@ -21,6 +21,9 @@ SOURCES += \
     audio/FxPlayer.cpp \
     audio/WaveformStore.cpp \
     PlaylistWaveView.cpp \
+    LevelMeter.cpp \
+    ArtworkStore.cpp \
+    ThemeManager.cpp \
     dialogs/AudioFxDialog.cpp \
     add_music_single.cpp \
     add_full_dir.cpp \
@@ -80,6 +83,9 @@ HEADERS += \
     audio/FxPlayer.h \
     audio/WaveformStore.h \
     PlaylistWaveView.h \
+    LevelMeter.h \
+    ArtworkStore.h \
+    ThemeManager.h \
     dialogs/AudioFxDialog.h \
     add_music_single.h \
     add_full_dir.h \

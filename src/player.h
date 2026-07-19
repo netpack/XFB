@@ -22,8 +22,11 @@
 #include <QVector>
 
 // Forward declarations (prefer these over heavy includes in headers)
+class QAction;
 class QCloseEvent;
 class QComboBox;
+class QDockWidget;
+class QListWidgetItem;
 class QPushButton;
 class QSlider;
 class QSpinBox;
@@ -32,8 +35,10 @@ class QLabel;
 class QFrame;
 class QNetworkReply;
 class QNetworkAccessManager;
+class QProgressDialog;
 class QQuickWidget;
 class QToolButton;
+class QSplitter;
 class QMovie;
 
 // Project forward declarations
@@ -46,6 +51,9 @@ class AudioFxWidget;
 class WaveformStore;
 class PlaylistWaveView;
 class NowPlayingWaveStrip;
+class LevelMeter;
+class ArtworkStore;
+class NowPlayingArtPanel;
 
 #include "services/TorrentTypes.h"
 #include "audio/FxPlayer.h"
@@ -104,7 +112,7 @@ public slots:
 private slots:
     void on_actionOpen_triggered();
     void on_btPlay_clicked();
-    void on_sliderProgress_sliderMoved(int position);
+    void on_sliderProgress_sliderReleased();
     void on_sliderVolume_sliderMoved(int position);
     void on_btStop_clicked();
     // Update these method signatures to work with Qt6
@@ -231,6 +239,7 @@ private slots:
     void rmConfirmTakeOver();
     void returnTakeOver();
     void stopMplayer();
+    void seedDefaultGenres();
     void monitorTakeOver();
     void on_bt_pause_rec_clicked();
     void deleteFilesByPattern(const QString &dirPath, const QString &pattern);
@@ -265,7 +274,18 @@ private slots:
     void onOnionSitesUnavailable();
     void updateTorConnectionUI(bool connected);
     void updateDownloadsCountLabel();
-    
+    // Real kill-switch for the torrent feature: services are created lazily
+    // only when EnableTorrents is on (ensureTorrentServices, idempotent), and
+    // all their network activity is stopped when it is turned off.
+    void ensureTorrentServices();
+    void shutdownTorrentActivity();
+    // BitTorrent peer traffic can't go through Tor, so the download exposes the
+    // real IP. XFB can't route it for the user, but it detects whether a VPN is
+    // active and warns (never blocks) before downloading without one.
+    bool isVpnActive(QString *ifaceName = nullptr) const;
+    bool confirmDownloadNetworkExposure();
+    void updateVpnStatusLabel();
+
     // Accessibility initialization
     void registerAccessibilityServices();
     void initializeAccessibility();
@@ -330,6 +350,25 @@ private slots:
     // (Search/Filters/Extras toolbox + the moved Playlist controls).
     QToolButton *m_sidePanelToggle = nullptr;
 
+    // Customizable dock layout: every main section except the central tabs
+    // is a movable/floatable/closable panel. The arrangement persists in
+    // xfb.conf (MainWindowState/MainWindowGeometry/LayoutLocked).
+    QDockWidget *m_dockPlayer = nullptr;  // transport + now playing (frame_4)
+    QDockWidget *m_dockClock = nullptr;   // clock + auto mode (frame)
+    QDockWidget *m_dockLibrary = nullptr; // Music/Jingles/... tabs (pubWidget)
+    QDockWidget *m_dockSide = nullptr;    // artwork + side toolbox
+    QAction *m_lockLayoutAction = nullptr;
+    QByteArray m_defaultLayoutState; // for View → Reset the layout
+    bool m_layoutLocked = false;
+    void setLayoutLocked(bool locked);
+    void resetDockLayout();
+
+    // Track artwork (cover icons + the Artwork panel)
+    ArtworkStore *m_artStore = nullptr;
+    NowPlayingArtPanel *m_artPanel = nullptr;
+    void requestItemArtwork(QListWidgetItem *item, const QString &path);
+    void onArtworkReady(const QString &path);
+
     // State variables
     int indexcanal = 0;
     qint64 trackTotalDuration = 0;
@@ -378,6 +417,7 @@ private slots:
     TorNetworkService *m_torNetworkService = nullptr;
     TorrentSearchService *m_torrentSearchService = nullptr;
     TorrentDownloadService *m_torrentDownloadService = nullptr;
+    QTimer *m_vpnStatusTimer = nullptr; // refreshes the Torrents-tab VPN indicator
 
     // ngrok tunnel for the public streaming link
     NgrokTunnelService *m_ngrokService = nullptr;
@@ -404,6 +444,11 @@ private slots:
     QWidget *m_maxOverlapBox = nullptr;
     QSpinBox *m_maxOverlapSpin = nullptr;
     void setPlaylistWaveView(bool on);
+    // Auto-mix: one click computes every transition's crossfade overlap
+    // from the waveforms (quiet tail of one track + quiet head of the next)
+    QToolButton *m_autoMixButton = nullptr;
+    QPointer<QProgressDialog> m_autoMixProgress;
+    void startAutoMix(const QVector<int> &rows);
 
     // Overlap segue: when the next playlist item defines an overlap, the
     // dying tail of the current track is handed to this dedicated player
@@ -413,6 +458,16 @@ private slots:
     QAudioOutput *m_tailOutput = nullptr;
     QVariantAnimation *m_tailFade = nullptr;
     bool m_overlapSegueFired = false;
+    // Gapless: the next playlist item was handed to Xplayer->prepareNext()
+    // for the currently playing track (re-armed on each durationChanged)
+    bool m_nextPrepared = false;
+    // Options: auto-mix every track as it is added to the playlist
+    bool m_autoAutoMix = false;
+    // Options: stereo LED output meter (horizontal in the volume strip, or
+    // vertical between the main tabs and the side panel)
+    LevelMeter *m_levelMeter = nullptr;
+    bool m_levelMeterVertical = false; // current docking (starts horizontal)
+    QSplitter *m_middleSplitter = nullptr; // main tabs | side panel splitter
     void startOverlapSegue(qint64 fadeMs);
     void stopTailPlayer();
 

@@ -112,10 +112,26 @@ QString TorrentDownloadService::startDownload(const QString &magnetLink, const Q
 
     QString downloadId = QString::number(QDateTime::currentMSecsSinceEpoch());
 
+    // The torrent title is attacker-controlled metadata; never let it escape
+    // the download directory. Reduce it to a single safe leaf name (dropping
+    // any path separators or "..") before building a filesystem path — this
+    // path drives the post-download audio scan, so a "../" title must not be
+    // able to make us walk (and auto-import) an arbitrary directory.
+    QString safeLeaf = QFileInfo(name).fileName();
+    safeLeaf.remove(QRegularExpression("[/\\\\]"));
+    while (safeLeaf.startsWith('.'))
+        safeLeaf.remove(0, 1);
+    if (safeLeaf.isEmpty())
+        safeLeaf = downloadId;
+    const QString baseDir = QDir(m_downloadDirectory).absolutePath();
+    QString candidate = QDir::cleanPath(QDir(baseDir).filePath(safeLeaf));
+    if (candidate != baseDir && !candidate.startsWith(baseDir + "/"))
+        candidate = QDir(baseDir).filePath(downloadId); // paranoia fallback
+
     TorrentDownload dl;
     dl.magnetLink = magnetLink;
-    dl.name = name;
-    dl.downloadPath = QDir(m_downloadDirectory).filePath(name);
+    dl.name = name;                 // original title kept for display only
+    dl.downloadPath = candidate;
     dl.status = "starting";
     dl.progress = 0.0;
     dl.isStreaming = false;
@@ -242,74 +258,48 @@ bool TorrentDownloadService::startTorrentClientForDownload(const QString &downlo
     // Clean and prepare the magnet link for the torrent client
     QString magnet = dl.magnetLink;
     if (magnet.startsWith("magnet:")) {
-        // Step 1: Strip .onion tracker URLs — the torrent client can't reach them without Tor proxy
-        // Also strip any tracker that's clearly unreachable (dead/invalid)
+        // Strip .onion tracker URLs — the torrent client can't reach them
+        // without a Tor proxy (peer traffic is not proxied). We deliberately
+        // do NOT inject public trackers: announcing to extra trackers only
+        // broadcasts the user's real IP more widely. The download uses only
+        // the trackers the magnet already carries (plus DHT/PEX if enabled,
+        // which the privacy-hardened client settings below turn off).
         QRegularExpression onionTrackerRe("&tr=[^&]*\\.onion[^&]*", QRegularExpression::CaseInsensitiveOption);
         int removed = 0;
         while (magnet.contains(onionTrackerRe)) {
             magnet.remove(onionTrackerRe);
             removed++;
         }
-        if (removed > 0) {
-            ErrorHandler::logMessage(ErrorHandler::ErrorSeverity::Info, "TorrentDownloadService",
-                             QString("Stripped %1 .onion tracker(s) from magnet link").arg(removed));
-        }
-
-        // Step 2: Inject well-known public trackers so the client can find peers.
-        // Use both HTTP and UDP trackers — UDP may be blocked by some firewalls/NATs.
-        QStringList publicTrackers = {
-            // HTTP/HTTPS trackers (more reliable through NAT/firewalls)
-            "http://tracker.opentrackr.org:1337/announce",
-            "https://tracker.lilithraws.org:443/announce",
-            "http://tracker.openbittorrent.com:80/announce",
-            "https://opentracker.i2p.rocks:443/announce",
-            "http://tracker.bt4g.com:2095/announce",
-            "http://tracker.files.fm:6969/announce",
-            "http://tracker.gbitt.info:80/announce",
-            // UDP trackers
-            "udp://tracker.opentrackr.org:1337/announce",
-            "udp://open.stealth.si:80/announce",
-            "udp://tracker.torrent.eu.org:451/announce",
-            "udp://exodus.desync.com:6969/announce",
-            "udp://open.demonii.com:1337/announce",
-            "udp://tracker.openbittorrent.com:6969/announce",
-            "udp://tracker.moeking.me:6969/announce",
-            "udp://explodie.org:6969/announce",
-            "udp://tracker.tiny-vps.com:6969/announce",
-            "udp://tracker.pomf.se:80/announce",
-            "udp://p4p.arenabg.com:1337/announce"
-        };
-        for (const QString &tracker : publicTrackers) {
-            QString encoded = QUrl::toPercentEncoding(tracker);
-            if (!magnet.contains(encoded) && !magnet.contains(tracker)) {
-                magnet += "&tr=" + encoded;
-            }
-        }
+        // Redacted: never log the magnet link or its infohash to disk.
         ErrorHandler::logMessage(ErrorHandler::ErrorSeverity::Info, "TorrentDownloadService",
-                         QString("Prepared magnet link: stripped %1 onion trackers, injected %2 public trackers")
-                         .arg(removed).arg(publicTrackers.size()));
-        ErrorHandler::logMessage(ErrorHandler::ErrorSeverity::Info, "TorrentDownloadService",
-                         QString("Final magnet (first 200 chars): %1").arg(magnet.left(200)));
+                         QString("Prepared magnet: stripped %1 onion tracker(s); no public trackers injected").arg(removed));
     }
 
     QStringList args;
     QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
 
     if (m_torrentClient.contains("transmission-cli")) {
-        // Create a config directory with DHT/PEX/LPD enabled but NO incoming connections
+        // Privacy-hardened config: no peer-discovery broadcast (DHT/PEX/LPD
+        // off), no incoming/listening port, encryption required, and stop
+        // seeding as soon as the download completes so we don't keep
+        // uploading (real IP is exposed to peers — minimise that window).
         QString configDir = QDir(m_downloadDirectory).filePath(".transmission-config");
         QDir().mkpath(configDir);
         QString settingsPath = QDir(configDir).filePath("settings.json");
         QFile settingsFile(settingsPath);
         if (settingsFile.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
             QJsonObject settings;
-            settings["dht-enabled"] = true;
-            settings["pex-enabled"] = true;
-            settings["lpd-enabled"] = true;
+            settings["dht-enabled"] = false;              // don't broadcast to the DHT
+            settings["pex-enabled"] = false;              // no peer exchange
+            settings["lpd-enabled"] = false;              // no local (LAN) peer discovery
             settings["port-forwarding-enabled"] = false;  // no UPnP/NAT-PMP
             settings["peer-port-random-on-start"] = false;
             settings["peer-port"] = 0;                    // disable listening port
             settings["encryption"] = 2;                   // require encrypted connections
+            settings["ratio-limit"] = 0;                  // stop seeding at ratio 0…
+            settings["ratio-limit-enabled"] = true;       // …i.e. as soon as complete
+            settings["idle-seeding-limit"] = 1;           // and never idle-seed
+            settings["idle-seeding-limit-enabled"] = true;
             settings["download-dir"] = m_downloadDirectory;
         settingsFile.write(QJsonDocument(settings).toJson());
             settingsFile.close();
@@ -318,15 +308,14 @@ bool TorrentDownloadService::startTorrentClientForDownload(const QString &downlo
              << "-w" << m_downloadDirectory
              << magnet;
     } else if (m_torrentClient.contains("aria2c")) {
-        // Use high ephemeral port range instead of port 0 (which disables listening
-        // entirely and can cause exit code 28 timeouts on sparse swarms).
-        // Ports 49152-65535 are ephemeral — outbound-initiated connections on these
-        // won't trigger macOS firewall prompts.
-        args << "--enable-dht=true"
-             << "--dht-listen-port=49152-65535"
-             << "--listen-port=49152-65535"
-             << "--bt-enable-lpd=true"
-             << "--enable-peer-exchange=true"
+        // Privacy-hardened: DHT/LPD/PEX all off so the client only talks to
+        // the trackers the magnet already carries (no wider IP broadcast),
+        // encryption required, and seeding stops immediately on completion.
+        args << "--enable-dht=false"
+             << "--bt-enable-lpd=false"
+             << "--enable-peer-exchange=false"
+             << "--bt-require-crypto=true"
+             << "--bt-min-crypto-level=arc4"
              << "--bt-tracker-connect-timeout=30"
              << "--bt-tracker-timeout=30"
              << "--connect-timeout=60"
@@ -351,8 +340,9 @@ bool TorrentDownloadService::startTorrentClientForDownload(const QString &downlo
     proc->setProcessEnvironment(env);
     proc->setProcessChannelMode(QProcess::SeparateChannels);
 
+    // Redacted: don't log the argument list (it ends with the magnet link).
     ErrorHandler::logMessage(ErrorHandler::ErrorSeverity::Info, "TorrentDownloadService",
-                     QString("Starting: %1 %2").arg(m_torrentClient, args.join(" ").left(300)));
+                     QString("Starting torrent client: %1").arg(QFileInfo(m_torrentClient).fileName()));
 
     proc->start(m_torrentClient, args);
 

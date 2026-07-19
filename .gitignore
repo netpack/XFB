@@ -117,6 +117,8 @@ dmg_temp/
 # Generated MOC / QML cache artifacts
 *.moc
 src/resources_qmlcache.qrc
+src/*_qml.cpp
+src/qmlcache_loader.cpp
 
 # One-off local debug/test scripts
 /fix-qt-*.sh

@@ -46,6 +46,30 @@ public:
 public slots:
     /** Accepts a local file path or an http(s) stream URL (live mode). */
     void setSource(const QString &pathOrUrl);
+    /**
+     * Gapless: probe the next local file and spawn its decoder ahead of
+     * time. When the following setSource() names the same file it adopts
+     * the running decoder instead of cold-starting one, and — after a
+     * natural end of the current track — keeps the sink alive so the
+     * audio stream never breaks.
+     */
+    void preloadNext(const QString &path);
+    /** Drop any preloaded next track (probe and decoder). */
+    void cancelPreload();
+    /**
+     * Arm a crossfade for the next preloaded handoff: instead of cutting,
+     * the outgoing decoder keeps feeding the mix, faded out over fadeMs,
+     * while the incoming track continues the same sink stream — a
+     * sample-continuous crossfade with no second audio pipeline.
+     */
+    void setNextCrossfade(qint64 fadeMs);
+    /**
+     * Tear down the audio sink so the next start reopens it on the current
+     * default device. Called by the stall watchdog: a wedged or vanished
+     * output device otherwise poisons every following track (the sink is
+     * normally reused forever) and recovery loops without ever recovering.
+     */
+    void rebuildSink();
     void play();
     void pause();
     void stop();
@@ -71,6 +95,8 @@ public slots:
 signals:
     void positionChanged(qint64 positionMs);
     void durationChanged(qint64 durationMs);
+    /** Linear output peaks (0..1, post-FX, volume applied) for the meter. */
+    void levels(float left, float right);
     /** Natural end of the current track (media fully played). */
     void playbackFinished();
     /** Fatal engine error for the current track. */
@@ -80,6 +106,11 @@ private slots:
     void pump();
 
 private:
+    QProcess *spawnDecoder(const QString &path, qint64 positionMs,
+                           bool retune, bool isLive, bool waitForStart,
+                           QString *error);
+    void spawnPreloadDecoder();
+    void adoptPreloaded();
     void startProcessAt(qint64 positionMs);
     void stopProcess();
     bool ensureSink();
@@ -91,6 +122,8 @@ private:
     qint64 currentPositionMs() const;
     int fillChunk(float *out, int maxFrames);
     void readProcessOutput();
+    void mixTail(float *out, int frames);
+    void stopTailMix();
     void maybeFinish();
     void failTrack(const QString &message);
     void applyFxChain(float *chunk, int frames);
@@ -104,6 +137,10 @@ private:
     static constexpr int kSampleRate = 48000;
     static constexpr int kChannels = 2;
     static constexpr int kChunkFrames = 2048;
+    // Auto-cue: silence floor (~-50 dBFS) and the most leading silence a
+    // track may have skipped before playback proceeds normally.
+    static constexpr float kSilenceFloor = 0.0032f;
+    static constexpr qint64 kLeadSkipCapMs = 15000;
 
     // Transport
     enum class State { Stopped, Playing, Paused };
@@ -122,10 +159,32 @@ private:
     QProcess *m_proc = nullptr;
     QByteArray m_partialFrame;    // leftover bytes (< one PCM frame) between reads
 
+    // Gapless preload of the upcoming track
+    QString m_nextPath;
+    QProcess *m_nextProc = nullptr;  // decoder already running ahead of time
+    QProcess *m_nextProbe = nullptr; // async ffprobe (a blocking probe would starve the pump)
+    qint64 m_nextDurationMs = 0;
+    bool m_nextIs432 = false;
+    bool m_procPreloaded = false;    // m_proc was adopted, already decoding from 0
+    bool m_finishEmitted = false;    // playbackFinished sent early, handoff pending
+    bool m_leadSkipped = true;       // auto-cue: leading silence already handled
+    bool m_tailTrimmed = true;       // auto-cue: trailing silence already handled
+
+    // Engine-internal crossfade: at an overlap handoff the outgoing decoder
+    // moves here and keeps feeding the mix (faded out per sample) while the
+    // adopted track continues the same sink stream.
+    QProcess *m_tailProc = nullptr;
+    QByteArray m_tailPartial;
+    std::vector<float> m_tailFifo;
+    double m_tailGain = 0.0;
+    double m_tailGainStep = 0.0;     // per-frame decrement
+    qint64 m_nextCrossfadeMs = 0;    // armed by setNextCrossfade()
+
     // Output
     QAudioSink *m_sink = nullptr;
     QIODevice *m_io = nullptr;
     bool m_sinkIsFloat = true;
+    QByteArray m_sinkDeviceId;    // device the sink was opened on
 
     // DSP (the 432 Hz retune itself runs inside the ffmpeg filter chain so
     // the tempo can be preserved; EQ and compressor run in-process)
@@ -154,6 +213,11 @@ private:
 
     QTimer *m_pumpTimer = nullptr;
     int m_positionEmitDivider = 0;
+
+    // Output level meter accumulation (peaks between emissions)
+    float m_meterPeakL = 0.0f;
+    float m_meterPeakR = 0.0f;
+    int m_meterEmitDivider = 0;
 };
 
 #endif // FXENGINE_H

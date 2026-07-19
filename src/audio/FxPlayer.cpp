@@ -3,6 +3,8 @@
 #include <QAudioOutput>
 #include <QDebug>
 
+#include <utility>
+
 #include "FxEngine.h"
 
 FxPlayer::FxPlayer(QObject *parent)
@@ -10,32 +12,7 @@ FxPlayer::FxPlayer(QObject *parent)
 {
     // Passthrough path
     m_qt = new QMediaPlayer(this);
-
-    connect(m_qt, &QMediaPlayer::positionChanged, this, [this](qint64 p) {
-        if (m_mode == Mode::Passthrough && !m_switching)
-            emit positionChanged(p);
-    });
-    connect(m_qt, &QMediaPlayer::durationChanged, this, [this](qint64 d) {
-        if (m_mode == Mode::Passthrough && !m_switching)
-            emit durationChanged(d);
-    });
-    connect(m_qt, &QMediaPlayer::sourceChanged, this, [this](const QUrl &u) {
-        if (m_mode == Mode::Passthrough && !m_switching)
-            emit sourceChanged(u);
-    });
-    connect(m_qt, &QMediaPlayer::playbackStateChanged, this, [this](QMediaPlayer::PlaybackState s) {
-        if (m_mode == Mode::Passthrough && !m_switching)
-            emit playbackStateChanged(s);
-    });
-    connect(m_qt, &QMediaPlayer::mediaStatusChanged, this, [this](QMediaPlayer::MediaStatus s) {
-        if (m_mode == Mode::Passthrough && !m_switching)
-            emit mediaStatusChanged(s);
-    });
-    connect(m_qt, &QMediaPlayer::errorOccurred, this,
-            [this](QMediaPlayer::Error e, const QString &msg) {
-        if (m_mode == Mode::Passthrough && !m_switching)
-            emit errorOccurred(e, msg);
-    });
+    connectPassthrough(m_qt);
 
     // FX path (worker thread)
     m_engine = new FxEngine();
@@ -55,6 +32,10 @@ FxPlayer::FxPlayer(QObject *parent)
             m_fxDuration = d;
             emit durationChanged(d);
         }
+    });
+    connect(m_engine, &FxEngine::levels, this, [this](float l, float r) {
+        if (m_mode == Mode::Fx)
+            emit levels(l, r);
     });
     connect(m_engine, &FxEngine::playbackFinished, this, [this]() {
         if (m_mode != Mode::Fx || m_fxState == QMediaPlayer::StoppedState)
@@ -106,6 +87,38 @@ void FxPlayer::engineCall(F &&f)
     QMetaObject::invokeMethod(engine, [engine, f]() { f(engine); }, Qt::QueuedConnection);
 }
 
+void FxPlayer::connectPassthrough(QMediaPlayer *p)
+{
+    // Forward signals only from the player currently fronting playback:
+    // after a gapless swap the retired instance stays alive as the standby
+    // and must go quiet (p != m_qt).
+    connect(p, &QMediaPlayer::positionChanged, this, [this, p](qint64 v) {
+        if (p == m_qt && m_mode == Mode::Passthrough && !m_switching)
+            emit positionChanged(v);
+    });
+    connect(p, &QMediaPlayer::durationChanged, this, [this, p](qint64 d) {
+        if (p == m_qt && m_mode == Mode::Passthrough && !m_switching)
+            emit durationChanged(d);
+    });
+    connect(p, &QMediaPlayer::sourceChanged, this, [this, p](const QUrl &u) {
+        if (p == m_qt && m_mode == Mode::Passthrough && !m_switching)
+            emit sourceChanged(u);
+    });
+    connect(p, &QMediaPlayer::playbackStateChanged, this, [this, p](QMediaPlayer::PlaybackState s) {
+        if (p == m_qt && m_mode == Mode::Passthrough && !m_switching)
+            emit playbackStateChanged(s);
+    });
+    connect(p, &QMediaPlayer::mediaStatusChanged, this, [this, p](QMediaPlayer::MediaStatus s) {
+        if (p == m_qt && m_mode == Mode::Passthrough && !m_switching)
+            emit mediaStatusChanged(s);
+    });
+    connect(p, &QMediaPlayer::errorOccurred, this,
+            [this, p](QMediaPlayer::Error e, const QString &msg) {
+        if (p == m_qt && m_mode == Mode::Passthrough && !m_switching)
+            emit errorOccurred(e, msg);
+    });
+}
+
 bool FxPlayer::fxAvailable()
 {
     return FxEngine::available();
@@ -147,6 +160,15 @@ void FxPlayer::setAudioOutput(QAudioOutput *output)
 
 void FxPlayer::setSource(const QUrl &source)
 {
+    const bool useHandoff = !source.isEmpty() && source == m_preparedUrl;
+    const bool handoffInEngine = useHandoff && m_preparedInEngine;
+    if (useHandoff) {
+        m_preparedUrl.clear(); // consumed below (engine- or standby-side)
+        m_preparedInEngine = false;
+    } else {
+        discardPrepared();
+    }
+
     m_source = source;
     m_fxPos = 0;
     m_fxDuration = 0;
@@ -162,6 +184,8 @@ void FxPlayer::setSource(const QUrl &source)
         m_mode = Mode::Fx;
         m_fxState = QMediaPlayer::StoppedState;
         const QString path = source.isLocalFile() ? source.toLocalFile() : source.toString();
+        // The engine adopts its preloaded decoder when one is armed for
+        // this path; otherwise this is the normal cold start.
         engineCall([path](FxEngine *e) { e->setSource(path); });
 
         emit sourceChanged(m_source);
@@ -171,10 +195,91 @@ void FxPlayer::setSource(const QUrl &source)
         if (m_mode == Mode::Fx) {
             engineCall([](FxEngine *e) { e->setSource(QString()); });
             m_fxState = QMediaPlayer::StoppedState;
+        } else if (handoffInEngine) {
+            // Prepared in the engine but playing passthrough (FX toggled
+            // off since): the orphaned preload must not keep decoding.
+            engineCall([](FxEngine *e) { e->cancelPreload(); });
         }
         m_mode = Mode::Passthrough;
-        m_qt->setSource(source); // forwards sourceChanged & mediaStatus signals
+
+        if (useHandoff && !handoffInEngine && m_qtStandby
+                && (m_qtStandby->mediaStatus() == QMediaPlayer::LoadedMedia
+                    || m_qtStandby->mediaStatus() == QMediaPlayer::BufferedMedia)) {
+            // Gapless swap: the standby already holds this source fully
+            // loaded, so play() starts without the media-load latency.
+            m_switching = true;
+            m_qt->stop();
+            m_qt->setSource(QUrl());
+            m_qt->setAudioOutput(nullptr);
+            std::swap(m_qt, m_qtStandby);
+            m_qt->setAudioOutput(m_output);
+            m_switching = false;
+            emit sourceChanged(m_source);
+            emit durationChanged(m_qt->duration());
+            emit mediaStatusChanged(m_qt->mediaStatus());
+        } else {
+            m_qt->setSource(source); // forwards sourceChanged & mediaStatus signals
+        }
     }
+}
+
+void FxPlayer::prepareNext(const QUrl &url)
+{
+    if (url.isEmpty() || !url.isLocalFile())
+        return;
+    if (url == m_preparedUrl)
+        return; // already armed
+    discardPrepared();
+
+    // Decide where the preload lives from what setSource() will pick for
+    // this track (m_fxFailedForTrack is per-track state, so ignore it).
+    const bool nextWantsFx = fxAvailable() && (m_params.anyActive() || m_preferEngine);
+    if (nextWantsFx) {
+        const QString path = url.toLocalFile();
+        engineCall([path](FxEngine *e) { e->preloadNext(path); });
+        m_preparedInEngine = true;
+    } else {
+        if (!m_qtStandby) {
+            m_qtStandby = new QMediaPlayer(this);
+            connectPassthrough(m_qtStandby);
+        }
+        m_qtStandby->setSource(url); // loads without an audio output
+        m_preparedInEngine = false;
+    }
+    m_preparedUrl = url;
+}
+
+bool FxPlayer::hasPreparedNext(const QUrl &url) const
+{
+    if (url.isEmpty() || url != m_preparedUrl)
+        return false;
+    if (m_preparedInEngine)
+        return true; // optimistic: the engine cold-starts on a stale preload
+    return m_qtStandby
+           && (m_qtStandby->mediaStatus() == QMediaPlayer::LoadedMedia
+               || m_qtStandby->mediaStatus() == QMediaPlayer::BufferedMedia);
+}
+
+void FxPlayer::resetAudioSink()
+{
+    engineCall([](FxEngine *e) { e->rebuildSink(); });
+}
+
+void FxPlayer::setNextCrossfade(qint64 fadeMs)
+{
+    engineCall([fadeMs](FxEngine *e) { e->setNextCrossfade(fadeMs); });
+}
+
+void FxPlayer::discardPrepared()
+{
+    if (m_preparedUrl.isEmpty())
+        return;
+    if (m_preparedInEngine)
+        engineCall([](FxEngine *e) { e->cancelPreload(); });
+    else if (m_qtStandby)
+        m_qtStandby->setSource(QUrl());
+    m_preparedUrl.clear();
+    m_preparedInEngine = false;
 }
 
 void FxPlayer::play()
@@ -206,6 +311,8 @@ void FxPlayer::pause()
 
 void FxPlayer::stop()
 {
+    discardPrepared(); // an explicit stop invalidates any armed next track
+
     if (m_mode == Mode::Fx) {
         engineCall([](FxEngine *e) { e->stop(); });
         m_fxPos = 0;

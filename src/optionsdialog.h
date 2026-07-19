@@ -8,6 +8,7 @@ class player;
 
 #include <QtMultimedia/QAudioInput>
 #include <QByteArray>
+#include <QColor>
 #include <QComboBox>
 #include <QMainWindow>
 #include <QObject>
@@ -49,6 +50,10 @@ private slots:
     void on_f_bt_del_jingles_table_clicked();
     void on_f_bt_del_pub_table_clicked();
     void on_cbox_enableNetworking_toggled(bool checked);
+    // Shown once, only when the user ticks the Torrents checkbox here — never
+    // at startup. Uses clicked() (user action) not toggled() (also fires on the
+    // programmatic setChecked at load).
+    void on_checkBox_enableTorrents_clicked(bool checked);
     void on_bt_browseSavePath_clicked();
     void on_bt_browse_programPath_clicked();
     void on_bt_browseFTPlocalFolder_clicked();
@@ -59,8 +64,15 @@ private slots:
 
     void on_bt_browseTakeOverlocalFolder_clicked();
 
+    // Theme accent color (empty/invalid = the theme's own default)
+    void on_bt_accentColor_clicked();
+    void on_bt_accentReset_clicked();
+
 private:
+    void updateAccentButton();
+
     Ui::optionsDialog *ui;
+    QColor m_accentColor; // invalid when using the theme default
     QString txt_selected_db;
     QString disableSeekBar;
     QString Normalize_Soft;

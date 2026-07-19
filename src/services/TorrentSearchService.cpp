@@ -76,9 +76,10 @@ void TorrentSearchService::searchTorrents(const QString &query)
     m_currentSiteIndex = 0;
     m_retryCount = 0;
     
-    ErrorHandler::logMessage(ErrorHandler::ErrorSeverity::Info, "TorrentSearchService", 
-                     QString("Starting torrent search for: %1").arg(m_currentQuery));
-    
+    // Redacted: don't record the user's search terms to disk.
+    ErrorHandler::logMessage(ErrorHandler::ErrorSeverity::Info, "TorrentSearchService",
+                     QString("Starting torrent search (%1 chars)").arg(m_currentQuery.size()));
+
     clearResults();
     emit searchStarted();
     m_searchTimeout->start();
@@ -199,9 +200,10 @@ void TorrentSearchService::searchNextSite()
     QString encodedQuery = QUrl::toPercentEncoding(m_currentQuery);
     QUrl searchUrl(siteUrl + "/search/" + encodedQuery + "/1/");
     
-    ErrorHandler::logMessage(ErrorHandler::ErrorSeverity::Info, "TorrentSearchService", 
-                     QString("Searching: %1").arg(searchUrl.toString()));
-    
+    // Redacted: the URL embeds the query — log only the site host.
+    ErrorHandler::logMessage(ErrorHandler::ErrorSeverity::Info, "TorrentSearchService",
+                     QString("Searching site: %1").arg(searchUrl.host()));
+
     QNetworkReply *reply = m_torService->makeRequest(searchUrl);
     if (reply) {
         m_activeReplies.append(reply);
@@ -245,14 +247,11 @@ void TorrentSearchService::handleSearchReply()
     } else {
         QString html = QString::fromUtf8(reply->readAll());
         
-        ErrorHandler::logMessage(ErrorHandler::ErrorSeverity::Info, "TorrentSearchService", 
-                         QString("Received %1 bytes from %2").arg(html.size()).arg(reply->url().toString()));
-        
-        // Debug: log first 500 chars to diagnose what the site is returning
-        QString preview = html.left(500).simplified();
-        ErrorHandler::logMessage(ErrorHandler::ErrorSeverity::Info, "TorrentSearchService", 
-                         QString("Response preview: %1").arg(preview));
-        
+        // Redacted: log the size and host only, never the response body
+        // (it reflects what the user searched for and selected).
+        ErrorHandler::logMessage(ErrorHandler::ErrorSeverity::Info, "TorrentSearchService",
+                         QString("Received %1 bytes from %2").arg(html.size()).arg(reply->url().host()));
+
         // Parse results based on the site
         QList<TorrentSearchResult> results = parse1337xResults(html);
         
@@ -550,9 +549,10 @@ void TorrentSearchService::fetchMagnetLink(const QString &torrentPagePath, std::
 
     // Build the full URL: base + torrent page path (e.g. /torrent/12345/name)
     QString fullUrl = baseUrl + torrentPagePath;
-    
+
+    // Redacted: the detail-page path names the torrent — log host only.
     ErrorHandler::logMessage(ErrorHandler::ErrorSeverity::Info, "TorrentSearchService",
-                     QString("Fetching magnet link from: %1").arg(fullUrl));
+                     QString("Fetching magnet link from: %1").arg(QUrl(fullUrl).host()));
 
     QUrl url(fullUrl);
     QNetworkReply *reply = nullptr;
@@ -580,8 +580,9 @@ void TorrentSearchService::fetchMagnetLink(const QString &torrentPagePath, std::
             QRegularExpressionMatch match = magnetRe.match(html);
             if (match.hasMatch()) {
                 magnetLink = match.captured(0);
+                // Redacted: never log the magnet link / infohash to disk.
                 ErrorHandler::logMessage(ErrorHandler::ErrorSeverity::Info, "TorrentSearchService",
-                                 QString("Found magnet link: %1").arg(magnetLink.left(80) + "..."));
+                                 "Found magnet link on detail page");
             } else {
                 ErrorHandler::logMessage(ErrorHandler::ErrorSeverity::Warning, "TorrentSearchService",
                                  "No magnet link found on torrent detail page");
