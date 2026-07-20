@@ -1,0 +1,30 @@
+cff-version: 1.2.0
+message: "If you use XFB in your research or your broadcasts, please cite it as below."
+title: "XFB: open-source radio automation software"
+type: software
+authors:
+  - family-names: Bogaerts
+    given-names: Frédéric
+    affiliation: "Netpack - Online Solutions"
+version: 3.14159265
+date-released: 2026-07-19
+license: GPL-3.0
+repository-code: "https://github.com/netpack/XFB"
+url: "https://netpack.pt"
+keywords:
+  - radio automation
+  - broadcasting
+  - audio
+  - accessibility
+  - digital audio effects
+  - Qt
+  - open source
+abstract: >-
+  XFB is a cross-platform, open-source radio automation suite for
+  broadcasters. It provides scheduled playlists, jingle and advertising
+  rotation, a live audio FX engine (10-band equalizer, compressor,
+  tempo-preserving reference-pitch retuning), DJ decks with scratchable jog
+  wheels, an Icecast/Shoutcast streaming client, playlist waveform views with
+  crossfade preparation and volume automation, gapless playback, and
+  comprehensive accessibility support including screen-reader integration and
+  full keyboard navigation.

@@ -7,6 +7,7 @@
     <a href="https://github.com/netpack/XFB/releases"><img src="https://img.shields.io/github/v/release/netpack/XFB?display_name=tag&sort=semver" alt="Latest Release"></a>
     <a href="https://aur.archlinux.org/packages/xfb"><img src="https://img.shields.io/aur/version/xfb" alt="AUR version"></a>
     <a href="https://github.com/netpack/XFB/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3"></a>
+    <a href="https://github.com/netpack/XFB/actions/workflows/ci.yml"><img src="https://github.com/netpack/XFB/actions/workflows/ci.yml/badge.svg" alt="Build"></a>
   </p>
 </div>
 
