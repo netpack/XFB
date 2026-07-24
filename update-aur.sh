@@ -4,7 +4,7 @@
 
 set -e
 
-VERSION="3.14159265"
+VERSION="3.141592653"
 PKGREL="1"
 
 echo "=========================================="
@@ -66,11 +66,11 @@ echo "Committing changes..."
 git add PKGBUILD .SRCINFO xfb.install
 git commit -m "Update to version $VERSION-$PKGREL
 
-- Updated to XFB 3.14159265
-- Gapless main-playlist transitions with engine crossfades and auto-cue
-- Auto-mix: one-click crossfade preparation for the playlist
-- Dockable UI layout, themes with accent color, track artwork, level meter
-- Torrent privacy hardening: kill-switch, consent dialog, DHT/PEX off, VPN warning
+- Updated to XFB 3.141592653
+- Accessibility services now initialize; announcements reach the screen reader
+- Keyboard control of playback and of adding tracks to the playlist
+- Tutorial for blind users and reachable Accessibility Preferences
+- Reliable track duration detection with backfill for existing libraries
 "
 
 echo ""

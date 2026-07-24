@@ -48,7 +48,9 @@ Recommends: orca (>= 40.0),
             speech-dispatcher,
             brltty,
             espeak-ng,
-            ffmpeg
+            ffmpeg,
+            libimage-exiftool-perl,
+            mediainfo
 Suggests: festival,
           flite
 Description: XFB Radio Automation Software

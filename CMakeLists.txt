@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(XFB VERSION 3.14159265 LANGUAGES CXX)
+project(XFB VERSION 3.141592653 LANGUAGES CXX)
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 17)
@@ -119,13 +119,14 @@ else()
     set(CPACK_DEBIAN_PACKAGE_DEPENDS 
         "libqt6core6, libqt6gui6, libqt6widgets6, libqt6multimedia6, libqt6sql6, libqt6network6, libqt6webenginecore6, libqt6webengine6-data, libqt6quick6, libqt6qml6, libatspi2.0-0, at-spi2-core, libspeechd2, libasound2, libpulse0, libsqlite3-0, libcurl4")
     
-    # Recommended packages for full accessibility, plus ffmpeg for the
-    # audio FX engine (EQ / compressor / 432 Hz) and format conversions
+    # Recommended packages for full accessibility, ffmpeg for the audio FX
+    # engine (EQ / compressor / 432 Hz) and format conversions, and the
+    # track-duration / metadata probes used by the library.
     set(CPACK_DEBIAN_PACKAGE_RECOMMENDS
-        "orca, speech-dispatcher, espeak-ng, brltty, liblouis20, pulseaudio, ffmpeg")
-    
+        "orca, speech-dispatcher, espeak-ng, brltty, liblouis20, pulseaudio, ffmpeg, libimage-exiftool-perl, mediainfo")
+
     # Suggested packages for enhanced experience
-    set(CPACK_DEBIAN_PACKAGE_SUGGESTS 
+    set(CPACK_DEBIAN_PACKAGE_SUGGESTS
         "festival, pipewire, jackd2, qjackctl")
     
     # Package conflicts
