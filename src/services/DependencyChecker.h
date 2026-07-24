@@ -40,6 +40,11 @@ public:
     // Check if a single executable is available
     static bool isAvailable(const QString &executable);
 
+    // Absolute path to an executable, checking well-known install locations
+    // before PATH (Finder/GUI-launched apps have a minimal PATH on macOS).
+    // Empty if not found. Always start QProcess with this, never a bare name.
+    static QString resolveExecutable(const QString &executable);
+
     // Look up the catalog entry for an executable. If the executable is not in
     // the known catalog, a generic entry is returned that uses the executable
     // name as the package name for every package manager.

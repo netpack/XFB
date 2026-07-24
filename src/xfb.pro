@@ -37,6 +37,7 @@ SOURCES += \
     config.cpp \
     externaldownloader.cpp \
     commonFunctions.cpp \
+    mediaduration.cpp \
     services/IService.cpp \
     services/ServiceContainer.cpp \
     services/BaseService.cpp \
@@ -65,6 +66,7 @@ SOURCES += \
     dialogs/EnhancedAddMusicSingleDialog.cpp \
     dialogs/EnhancedAddDirectoryDialog.cpp \
     dialogs/AccessibilityPreferencesDialog.cpp \
+    dialogs/AccessibilityTutorialDialog.cpp \
     repositories/MusicRepository.cpp \
     repositories/GenreRepository.cpp \
     repositories/PlaylistRepository.cpp \
@@ -99,6 +101,7 @@ HEADERS += \
     config.h \
     externaldownloader.h \
     commonFunctions.h \
+    mediaduration.h \
     services/IService.h \
     services/ServiceContainer.h \
     services/BaseService.h \
@@ -128,6 +131,7 @@ HEADERS += \
     dialogs/EnhancedAddMusicSingleDialog.h \
     dialogs/EnhancedAddDirectoryDialog.h \
     dialogs/AccessibilityPreferencesDialog.h \
+    dialogs/AccessibilityTutorialDialog.h \
     repositories/MusicRepository.h \
     repositories/GenreRepository.h \
     repositories/PlaylistRepository.h \

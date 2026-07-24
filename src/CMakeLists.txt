@@ -14,6 +14,8 @@ set(SOURCES
     config.cpp
     externaldownloader.cpp
     commonFunctions.cpp
+    # Shared track-duration probe (exiftool with ffmpeg fallback)
+    mediaduration.cpp
     # Audio FX engine (EQ / compressor / 432 Hz)
     audio/FxDsp.cpp
     audio/FxEngine.cpp
@@ -77,6 +79,7 @@ set(SOURCES
     dialogs/EnhancedAddMusicSingleDialog.cpp
     dialogs/EnhancedAddDirectoryDialog.cpp
     dialogs/AccessibilityPreferencesDialog.cpp
+    dialogs/AccessibilityTutorialDialog.cpp
     # Repository layer
     repositories/MusicRepository.cpp
     repositories/GenreRepository.cpp
@@ -106,6 +109,7 @@ set(HEADERS
     config.h
     externaldownloader.h
     commonFunctions.h
+    mediaduration.h
     # Audio FX engine headers
     audio/FxParams.h
     audio/FxDsp.h
@@ -156,6 +160,7 @@ set(HEADERS
     dialogs/EnhancedAddMusicSingleDialog.h
     dialogs/EnhancedAddDirectoryDialog.h
     dialogs/AccessibilityPreferencesDialog.h
+    dialogs/AccessibilityTutorialDialog.h
     # Repository layer
     repositories/MusicRepository.h
     repositories/GenreRepository.h
@@ -271,6 +276,15 @@ if(APPLE)
         COMMAND ${CMAKE_COMMAND} -E rm -f "$<TARGET_BUNDLE_DIR:XFB>/Contents/Resources/qt.conf"
         COMMENT "Removing stale qt.conf from app bundle (if any)"
     )
+
+    # Bundle the server-sync helper script templates (TakeOver / program
+    # upload) so serverScriptPath() finds them in Resources/scripts.
+    file(GLOB XFB_SERVER_SCRIPTS "${CMAKE_SOURCE_DIR}/scripts/serverFtpCmds*")
+    add_custom_command(TARGET XFB POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_BUNDLE_DIR:XFB>/Contents/Resources/scripts"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${XFB_SERVER_SCRIPTS} "$<TARGET_BUNDLE_DIR:XFB>/Contents/Resources/scripts"
+        COMMENT "Copying server script templates into app bundle"
+    )
 elseif(WIN32)
     # Windows-specific properties
     set_target_properties(XFB PROPERTIES
@@ -308,6 +322,14 @@ install(TARGETS XFB
 if(UNIX AND NOT APPLE)
     install(FILES "${CMAKE_SOURCE_DIR}/XFB.desktop"
         DESTINATION share/applications
+    )
+
+    # Server-sync helper script templates (TakeOver / program upload). The app
+    # resolves these via QStandardPaths::GenericDataLocation ("xfb/scripts/...")
+    # and runs them through bash, so no exec bit is required.
+    file(GLOB XFB_SERVER_SCRIPTS "${CMAKE_SOURCE_DIR}/scripts/serverFtpCmds*")
+    install(FILES ${XFB_SERVER_SCRIPTS}
+        DESTINATION share/xfb/scripts
     )
 
     # Pixmaps fallback (used by older menus). The file name must match the

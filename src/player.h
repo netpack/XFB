@@ -34,6 +34,7 @@ class QTableView;
 class QLabel;
 class QFrame;
 class QNetworkReply;
+class QSqlQueryModel;
 class QNetworkAccessManager;
 class QProgressDialog;
 class QQuickWidget;
@@ -510,6 +511,39 @@ private slots:
     void getMediaInfoForFile(const QString &filePath);
     void runServerCheckScript(const QString &scriptName, const QString &fileToCheck, const QString &successMessage, const QString &failureMessage);
     void runServerUploadScript(const QString &scriptName, const QString &fileToUpload, const QString &successMessage, const QString &failureMessage, std::function<void (bool)> callback);
+    // Kept alive between openings so the tutorial reopens on the topic the
+    // operator was last reading.
+    QPointer<class AccessibilityTutorialDialog> m_tutorialDialog;
+
+    // --- Adding library tracks to the playlist from the keyboard ---
+    // The library views' only route into the playlist used to be the
+    // right-click context menu, which is unreachable on a Mac keyboard (no
+    // Menu key). These provide Enter/Return activation plus menu entries.
+    QTableView *focusedLibraryView() const;
+    void addSelectionToPlaylist(QTableView *view, bool toTop);
+
+    // --- Accessibility (screen reader / keyboard support) ---
+    // Names every icon-only control so a screen reader can identify it.
+    void setupAccessibleControls();
+    // Builds the Playback menu and its application-wide shortcuts, so the
+    // transport can be driven entirely from the keyboard.
+    void setupPlaybackShortcuts();
+    // Speaks a message through the AccessibilityManager (no-op when no
+    // assistive technology is attached).
+    void announceAccessible(const QString &message);
+    // Mirrors playback/recording state into text a screen reader can read,
+    // so state is never conveyed by colour alone.
+    void refreshTransportAccessibleState();
+    void applySqlHeaderLabels(QSqlQueryModel *model, const QList<QPair<QString, QString>> &labels);
+    void applyMusicHeaderLabels(QSqlQueryModel *model);
+    void startTimeBackfill();
+    void processNextTimeBackfill();
+    QStringList m_timeBackfillPending;
+    int m_timeBackfillUpdated = 0;
+    QString serverScriptPath(const QString &scriptName) const;
+    bool serverScriptIsTemplate(const QString &scriptPath) const;
+    void startServerScript(QProcess *process, const QString &scriptPath);
+    QString serverScriptShellCommand(const QString &scriptPath) const;
     void getDurationForFile(const QString &filePath, std::function<void (const QString &, const QString &)> callback);
 };
 

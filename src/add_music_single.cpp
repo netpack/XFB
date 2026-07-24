@@ -16,6 +16,7 @@
 
     */
 #include "add_music_single.h"
+#include "mediaduration.h"
 #include "ui_add_music_single.h"
 #include "addgenre.h"
 #include <QFileDialog>
@@ -213,39 +214,8 @@ void add_music_single::on_pushButton_clicked()
 
     qDebug()<<"g1 is "<< g1 << " g2 is "<< g2<<" contry is "<<country;
 
-    QProcess cmd;
-    QString time;
-    // Use QProcess argument list to avoid shell injection via filenames
-    cmd.start("exiftool", QStringList() << file);
-    cmd.waitForFinished();
-    QString cmdOut = cmd.readAll();
-    // Filter for Duration line
-    QStringList lines = cmdOut.split("\n");
-    QString durationLine;
-    for (const QString &line : lines) {
-        if (line.contains("Duration", Qt::CaseInsensitive)) {
-            durationLine = line;
-            break;
-        }
-    }
-    qDebug()<<"Output of exiftool from youtubedownloader: "<<durationLine;
-    cmd.close();
-
-    QStringList arraycmd = durationLine.split(" ");
-    if(arraycmd.count() > 1){
-        // Duration line format: "Duration : 0:03:45"
-        time = arraycmd.last().trimmed();
-        qDebug()<<"Total track time is: "<<time;
-
-    } else {
-        qDebug()<<"-------------->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>     !!!!!!!!    An exception happend !? ... outputing details of this track: ";
-        for(int i=0;i<arraycmd.count();i++){
-            qDebug()<< "The array position "<<i<<" has: "<<arraycmd[i];
-        }
-
-
-
-}
+    QString time = MediaDuration::forFile(file);
+    qDebug()<<"Total track time is: "<<time;
     QSqlDatabase db = QSqlDatabase::database("xfb_connection");
     QSqlQuery sql(db);
 

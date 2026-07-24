@@ -7,6 +7,7 @@
 #include "addgenre.h"
 #include "player.h"
 #include "services/DependencyChecker.h"
+#include "mediaduration.h"
 #include <QtConcurrent>
 
 //#include "permission_utils.h"
@@ -465,22 +466,9 @@ DownloadResult processDownloadTask(
             } else {
                 // The file exists on disk but the library lost track of it:
                 // re-register it instead of downloading a duplicate.
-                QString dur = "-";
-                QString exifPath = QStandardPaths::findExecutable("exiftool");
-#ifdef Q_OS_WIN
-                if (exifPath.isEmpty()) exifPath = QStandardPaths::findExecutable("exiftool.exe");
-#endif
-                if (!exifPath.isEmpty()) {
-                    QProcess p;
-                    p.start(exifPath, {"-T", "-Duration", existingPath});
-                    if (p.waitForFinished(15000)) {
-                        const QString out = QString::fromUtf8(p.readAllStandardOutput()).trimmed();
-                        if (!out.isEmpty())
-                            dur = out;
-                    } else {
-                        p.kill();
-                    }
-                }
+                QString dur = MediaDuration::forFile(existingPath);
+                if (dur.isEmpty())
+                    dur = "-";
                 QSqlQuery ins(db);
                 ins.prepare("INSERT INTO musics (id, artist, song, genre1, genre2, country, published_date, path, time, played_times, last_played) "
                             "VALUES (NULL, ?, ?, ?, ?, ?, ?, ?, ?, 0, '-')");
@@ -947,49 +935,13 @@ DownloadResult processDownloadTask(
         return result;
     }
 
-    // 6. Get Duration using exiftool (if not already in DB)
-    QString trackDuration = "-"; // Default value
-
-    QString exiftoolPath = QStandardPaths::findExecutable("exiftool");
-#ifdef Q_OS_WIN
-    if (exiftoolPath.isEmpty()) exiftoolPath = QStandardPaths::findExecutable("exiftool.exe");
-#endif
-
-    if (exiftoolPath.isEmpty()) {
-        appendOutput("Warning: 'exiftool' not found. Cannot get track duration.");
+    // 6. Get Duration (exiftool with ffmpeg fallback, if not already in DB)
+    QString trackDuration = MediaDuration::forFile(finalFilepath);
+    if (trackDuration.isEmpty()) {
+        trackDuration = "-";
+        appendOutput("Warning: could not determine the track duration.");
     } else {
-        appendOutput("Found exiftool at: " + exiftoolPath);
-        QStringList exifArgs;
-        exifArgs << "-T" << "-Duration" << finalFilepath; // -T for tab-separated, -Duration for just duration
-
-        appendOutput("Executing: " + exiftoolPath + " " + exifArgs.join(" "));
-
-        QProcess exiftoolProcess;
-        exiftoolProcess.setProcessChannelMode(QProcess::MergedChannels);
-        exiftoolProcess.setProgram(exiftoolPath);
-        exiftoolProcess.setArguments(exifArgs);
-
-        QEventLoop loopExif;
-        QString exifOutput;
-        QObject::connect(&exiftoolProcess, &QProcess::finished, &loopExif, &QEventLoop::quit);
-        QObject::connect(&exiftoolProcess, &QProcess::readyRead, [&]() {
-            exifOutput += QString::fromUtf8(exiftoolProcess.readAllStandardOutput());
-        });
-
-        exiftoolProcess.start();
-        loopExif.exec(); // Wait for finished
-
-        exifOutput += QString::fromUtf8(exiftoolProcess.readAllStandardOutput()); // Get remaining
-
-        if (exiftoolProcess.exitStatus() == QProcess::NormalExit && exiftoolProcess.exitCode() == 0 && !exifOutput.trimmed().isEmpty()) {
-            // Expected output is just the duration string, e.g., "0:03:45.67" or "3.5 s"
-            trackDuration = exifOutput.trimmed();
-                // Optional: Normalize duration format here if needed (e.g., always to HH:MM:SS)
-            appendOutput("Track duration found: " + trackDuration);
-        } else {
-            appendOutput("Warning: exiftool failed or returned no duration. Exit code: " + QString::number(exiftoolProcess.exitCode()));
-            appendOutput("exiftool output: " + exifOutput);
-        }
+        appendOutput("Track duration found: " + trackDuration);
     }
 
 

@@ -1,4 +1,5 @@
 #include "add_full_dir.h"
+#include "mediaduration.h"
 #include "ui_add_full_dir.h"
 #include "addgenre.h"
 #include <QDirIterator>
@@ -128,36 +129,8 @@ void add_full_dir::on_f_bt_add_clicked()
      if(dbhasmusic==0){
          //add to db
 
-         QProcess cmd;
-         QString time;
-         // Argument list instead of a shell string (file names must never be
-         // shell-interpreted); the old "| grep Duration" is done in C++ below.
-         cmd.start("exiftool", QStringList() << filewpath);
-         cmd.waitForFinished();
-         QString cmdOut;
-         const QStringList exifLines = QString::fromLocal8Bit(cmd.readAll()).split('\n');
-         for (const QString &exifLine : exifLines) {
-             if (exifLine.contains("Duration")) {
-                 cmdOut = exifLine + "\n";
-                 break;
-             }
-         }
-         qDebug()<<"Output of exiftool: "<<cmdOut;
-         cmd.close();
-
-         QStringList arraycmd = cmdOut.split(" ");
-         if(arraycmd.count()>25){
-             QStringList splitarray = arraycmd[25].split("\n");
-             qDebug()<<"Total track time is: "<<splitarray[0];
-             time = splitarray[0];
-
-         } else {
-             qDebug()<<"-------------->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>     !!!!!!!!    An exception happend !? ... outputing details of this track: ";
-             for(int i=0;i<arraycmd.count();i++){
-                 qDebug()<< "The array position "<<i<<" has: "<<arraycmd[i];
-                }
-
-            }
+         QString time = MediaDuration::forFile(filewpath);
+         qDebug()<<"Total track time is: "<<time;
          int played = 0;
          QString last = "";
          QSqlQuery sql(db);

@@ -24,13 +24,20 @@ DependencyChecker::DependencyChecker(QObject *parent)
         {"aria2",            "aria2c",           "aria2",            "aria2",            "aria2",            "aria2.aria2",            false},
         {"Tor",              "tor",              "tor",              "tor",              "tor",              "TorProject.TorBrowser",  false},
         {"transmission-cli", "transmission-cli", "transmission-cli", "transmission-cli", "transmission-cli", "",                       false},
+#ifdef Q_OS_LINUX
+        // SoundConverter is a Linux GTK app; on macOS/Windows the converter
+        // button launches native apps (XLD, Switch, ...) instead, so it must
+        // not show up as a "missing" dependency there.
         {"SoundConverter",   "soundconverter",   "",                 "soundconverter",   "soundconverter",   "",                       false},
+#endif
         {"Audacity",         "audacity",         "audacity",         "audacity",         "audacity",         "Audacity.Audacity",      false},
         {"yt-dlp",           "yt-dlp",           "yt-dlp",           "yt-dlp",           "yt-dlp",           "yt-dlp.yt-dlp",          false},
         {"FFmpeg",           "ffmpeg",           "ffmpeg",           "ffmpeg",           "ffmpeg",           "Gyan.FFmpeg",            false},
         // ExifTool: used to read media duration/metadata. The apt and pacman
         // package names differ from the executable name.
         {"ExifTool",         "exiftool",         "exiftool",         "libimage-exiftool-perl", "perl-image-exiftool", "OliverBetz.ExifTool", false},
+        // MediaInfo: used by the music table's "Get media info" action.
+        {"MediaInfo",        "mediainfo",        "mediainfo",        "mediainfo",        "mediainfo",        "MediaArea.MediaInfo",    false},
         // Node.js: JavaScript runtime used by yt-dlp for YouTube extraction.
         // deno is yt-dlp's default but is not available in apt; node is and is
         // fully supported via "--js-runtimes node".
@@ -38,10 +45,13 @@ DependencyChecker::DependencyChecker(QObject *parent)
     };
 }
 
-bool DependencyChecker::isAvailable(const QString &executable)
+QString DependencyChecker::resolveExecutable(const QString &executable)
 {
+    // Absolute-path resolution for CLI tools. This matters most on macOS:
+    // Finder-launched apps get a minimal PATH without /opt/homebrew/bin, so a
+    // bare QProcess::start("exiftool", ...) fails even when the tool is
+    // installed. Callers should always start processes with the returned path.
 #ifdef Q_OS_WIN
-    // On Windows, check common install locations and PATH
     QString exeWithExt = executable.endsWith(".exe") ? executable : executable + ".exe";
     QStringList paths = {
         QCoreApplication::applicationDirPath() + "/" + exeWithExt,
@@ -50,7 +60,7 @@ bool DependencyChecker::isAvailable(const QString &executable)
         "C:/Program Files (x86)/" + executable + "/" + exeWithExt,
     };
     for (const QString &p : paths) {
-        if (QFileInfo::exists(p)) return true;
+        if (QFileInfo::exists(p)) return p;
     }
 #else
     // Unix: check well-known paths first
@@ -60,8 +70,17 @@ bool DependencyChecker::isAvailable(const QString &executable)
         "/usr/bin/" + executable,
     };
     for (const QString &p : paths) {
-        if (QFileInfo::exists(p)) return true;
+        if (QFileInfo::exists(p)) return p;
     }
+#endif
+    // Fallback to PATH
+    return QStandardPaths::findExecutable(executable);
+}
+
+bool DependencyChecker::isAvailable(const QString &executable)
+{
+    if (!resolveExecutable(executable).isEmpty())
+        return true;
 #ifdef Q_OS_MACOS
     // GUI tools installed as Homebrew casks (e.g. Audacity) ship as an app
     // bundle, not a binary on PATH. Use the same lookup that
@@ -72,9 +91,7 @@ bool DependencyChecker::isAvailable(const QString &executable)
         return true;
     }
 #endif
-#endif
-    // Fallback to PATH
-    return !QStandardPaths::findExecutable(executable).isEmpty();
+    return false;
 }
 
 QList<DependencyInfo> DependencyChecker::checkDependencies()
@@ -104,8 +121,10 @@ QString DependencyChecker::brewPath()
 QString DependencyChecker::detectPackageManager()
 {
 #ifdef Q_OS_WIN
+    // Only winget is supported: the catalog stores winget package IDs, which
+    // don't match Chocolatey names, so pretending to support choco would just
+    // run a doomed winget command on systems that only have choco.
     if (!QStandardPaths::findExecutable("winget").isEmpty()) return "winget";
-    if (!QStandardPaths::findExecutable("choco").isEmpty()) return "choco";
 #endif
 #ifdef Q_OS_MACOS
     if (!brewPath().isEmpty()) {
@@ -182,7 +201,7 @@ bool DependencyChecker::installMissing(const QList<DependencyInfo> &missing)
         } else if (pm == "pacman") {
             pkg = dep.pacmanPackage;
             ok = installWithPacman(pkg);
-        } else if (pm == "winget" || pm == "choco") {
+        } else if (pm == "winget") {
             pkg = dep.wingetPackage;
             if (!pkg.isEmpty()) {
                 ok = installWithWinget(pkg);
@@ -261,7 +280,7 @@ void DependencyChecker::installAllInteractive(QWidget *parent)
         if (pm == "brew")        pkg = dep.brewPackage;
         else if (pm == "apt")    pkg = dep.aptPackage;
         else if (pm == "pacman") pkg = dep.pacmanPackage;
-        else if (pm == "winget" || pm == "choco") pkg = dep.wingetPackage;
+        else if (pm == "winget") pkg = dep.wingetPackage;
         if (pkg.isEmpty()) {
             unavailable << dep.name;
         } else {
@@ -276,10 +295,14 @@ void DependencyChecker::installAllInteractive(QWidget *parent)
     }
 
     if (installable.isEmpty()) {
-        QMessageBox::warning(parent, QObject::tr("Cannot Install Dependencies"),
-            QObject::tr("None of the missing tools (%1) can be installed automatically "
-                        "with %2. Please install them manually.")
-                .arg(unavailable.join(", "), friendlyManagerName(pm)));
+        // Nothing left that the package manager can act on — that's a
+        // "you're all set" situation, not an error. Mention the tools that
+        // would need a manual install only as a footnote.
+        QMessageBox::information(parent, QObject::tr("Dependencies"),
+            QObject::tr("All tools that can be installed automatically with %1 "
+                        "are already installed.\n\nNot available via %1 (install "
+                        "manually if you need them): %2")
+                .arg(friendlyManagerName(pm), unavailable.join(", ")));
         return;
     }
 
@@ -381,7 +404,7 @@ QStringList DependencyChecker::installCommand(const QString &pm, const QString &
         // -Sy refreshes the package databases before installing.
         return {"pkexec", "pacman", "-Sy", "--noconfirm", package};
     }
-    if (pm == "winget" || pm == "choco") {
+    if (pm == "winget") {
         return {"winget", "install", "--accept-package-agreements",
                 "--accept-source-agreements", "-e", "--id", package};
     }
@@ -396,7 +419,7 @@ bool DependencyChecker::runInstallWithProgress(const DependencyInfo &dep, QWidge
     if (pm == "brew")        pkg = dep.brewPackage;
     else if (pm == "apt")    pkg = dep.aptPackage;
     else if (pm == "pacman") pkg = dep.pacmanPackage;
-    else if (pm == "winget" || pm == "choco") pkg = dep.wingetPackage;
+    else if (pm == "winget") pkg = dep.wingetPackage;
 
     const QStringList cmd = installCommand(pm, pkg);
     if (cmd.isEmpty()) {

@@ -315,8 +315,22 @@ void AccessibilityManager::loadSettings()
     
     m_settings->beginGroup(SETTINGS_GROUP);
     
-    // Load accessibility enabled state
-    m_accessibilityEnabled = m_settings->value(SETTINGS_ENABLED, false).toBool();
+    // Load accessibility enabled state. Default ON: announcements are
+    // delivered only through QAccessible when an assistive technology is
+    // actually attached, so this is inaudible and free for sighted users,
+    // while a screen reader user gets a working app without first having to
+    // find a setting they cannot hear.
+    //
+    // Existing installations already have Enabled=false on disk, written by
+    // earlier versions that saved the old default before the accessibility
+    // stack was ever started. Flip those over once so upgrading users are not
+    // left with a permanently silent app; an explicit choice made after this
+    // migration is respected from then on.
+    if (!m_settings->value(SETTINGS_ENABLED_MIGRATED, false).toBool()) {
+        m_settings->setValue(SETTINGS_ENABLED, true);
+        m_settings->setValue(SETTINGS_ENABLED_MIGRATED, true);
+    }
+    m_accessibilityEnabled = m_settings->value(SETTINGS_ENABLED, true).toBool();
     
     // Load verbosity level
     int verbosityInt = m_settings->value(SETTINGS_VERBOSITY, 
@@ -510,10 +524,19 @@ bool AccessibilityManager::initializePlayerAccessibility(player* playerWindow)
     //     return false;
     // }
     
+    // This runs only after the manager itself has been initialized; if it
+    // hasn't, every collaborator below is still null and "success" would be a
+    // lie that hides a dormant accessibility stack.
+    if (state() != ServiceState::Running) {
+        logError("initializePlayerAccessibility called before the manager was initialized - "
+                 "accessibility features are NOT active");
+        return false;
+    }
+
     // Initialize player audio feedback integration
     if (m_audioFeedbackService) {
         m_playerAudioFeedbackIntegration = new PlayerAudioFeedbackIntegration(playerWindow, this);
-        
+
         if (!m_playerAudioFeedbackIntegration->initialize()) {
             logWarning("Failed to initialize PlayerAudioFeedbackIntegration - audio feedback may be limited");
             delete m_playerAudioFeedbackIntegration;
@@ -521,8 +544,10 @@ bool AccessibilityManager::initializePlayerAccessibility(player* playerWindow)
         } else {
             logDebug("Player audio feedback integration initialized successfully");
         }
+    } else {
+        logWarning("AudioFeedbackService unavailable - player audio feedback is disabled");
     }
-    
+
     logDebug("Player accessibility initialized successfully");
     return true;
 }
@@ -639,24 +664,29 @@ void AccessibilityManager::queueAnnouncement(const QString& message, Priority pr
 
 void AccessibilityManager::processAnnouncement(const QString& message, Priority priority)
 {
-    Q_UNUSED(priority)
-    
-    // For now, we'll use Qt's accessibility framework to announce messages
-    // In a full implementation, this would integrate with specific screen reader APIs
-    
-    // Create a temporary accessible object for announcements
-    // This is a simplified approach - a full implementation might use live regions
-    if (QAccessible::isActive()) {
-        // Log the announcement for debugging
-        logDebug(QString("Accessibility announcement: %1").arg(message));
-        
-        // In Qt6, we can use QAccessibleEvent to notify screen readers
-        // This is a basic implementation that can be enhanced later
-        if (QWidget* focusWidget = QApplication::focusWidget()) {
-            QAccessibleEvent event(focusWidget, QAccessible::Alert);
-            QAccessible::updateAccessibility(&event);
-        }
+    if (!QAccessible::isActive()) {
+        return; // no assistive technology attached
     }
+
+    logDebug(QString("Accessibility announcement: %1").arg(message));
+
+    // Deliver the actual text. The previous implementation raised a bare
+    // Alert event carrying no message, so screen readers had nothing to
+    // read out. QAccessibleAnnouncementEvent (Qt 6.8+) passes the string
+    // through to the platform bridge (VoiceOver / NSAccessibility, AT-SPI).
+    QObject *target = QApplication::focusWidget();
+    if (!target) {
+        target = QApplication::activeWindow();
+    }
+    if (!target) {
+        return;
+    }
+
+    QAccessibleAnnouncementEvent event(target, message);
+    event.setPoliteness((priority == Priority::High || priority == Priority::Critical)
+                            ? QAccessible::AnnouncementPoliteness::Assertive
+                            : QAccessible::AnnouncementPoliteness::Polite);
+    QAccessible::updateAccessibility(&event);
 }
 
 bool AccessibilityManager::isATSPIAvailable() const

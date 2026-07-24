@@ -498,17 +498,26 @@ void WidgetAccessibilityEnhancer::installAccessibleInterface(QWidget* widget)
     if (!widget) {
         return;
     }
-    
-    // Enhanced accessibility for table views
+
+    // This is the dispatcher for setupGridAccessibility() /
+    // setupPlaylistAccessibility(), and both of those call back into it — so
+    // without a guard the pair recurses until the stack is exhausted (the
+    // crash was a SIGSEGV from "excessive recursion"). The already-enhanced
+    // sets break the cycle and also stop redundant work when the event filter
+    // re-reports a widget it has already seen.
     if (QTableView* tableView = qobject_cast<QTableView*>(widget)) {
-        // Store reference and enhance directly
+        if (m_enhancedTableViews.contains(tableView)) {
+            return;
+        }
         m_enhancedTableViews.insert(tableView);
         setupGridAccessibility(tableView);
         qDebug() << "Enhanced TableView accessibility";
     }
     // Enhanced accessibility for list widgets (playlists)
     else if (QListWidget* listWidget = qobject_cast<QListWidget*>(widget)) {
-        // Store reference and enhance directly
+        if (m_enhancedListWidgets.contains(listWidget)) {
+            return;
+        }
         m_enhancedListWidgets.insert(listWidget);
         setupPlaylistAccessibility(listWidget);
         qDebug() << "Enhanced ListWidget accessibility";

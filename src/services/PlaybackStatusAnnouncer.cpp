@@ -756,8 +756,30 @@ bool PlaybackStatusAnnouncer::installGlobalShortcut(const QKeySequence& shortcut
     uninstallGlobalShortcut();
     
     try {
-        // Create application-level shortcut
-        m_globalTimeShortcut = new QShortcut(shortcut, QApplication::activeWindow());
+        // The service initializes while the main window is still being built,
+        // so QApplication::activeWindow() is null at this point — parenting to
+        // it produced "QShortcut: No window parent defined" and a shortcut that
+        // never fired. Bind to the first top-level window instead, and make it
+        // application-wide so it works whatever currently has focus.
+        QWidget* host = QApplication::activeWindow();
+        if (!host) {
+            const auto topLevels = QApplication::topLevelWidgets();
+            for (QWidget* w : topLevels) {
+                if (w->isWindow() && !w->windowTitle().isEmpty()) {
+                    host = w;
+                    break;
+                }
+            }
+            if (!host && !topLevels.isEmpty())
+                host = topLevels.first();
+        }
+        if (!host) {
+            qWarning() << "PlaybackStatusAnnouncer: no window available to host the shortcut yet";
+            return false;
+        }
+
+        m_globalTimeShortcut = new QShortcut(shortcut, host);
+        m_globalTimeShortcut->setContext(Qt::ApplicationShortcut);
         connect(m_globalTimeShortcut, &QShortcut::activated,
                 this, &PlaybackStatusAnnouncer::onTimeAnnouncementShortcutActivated);
         

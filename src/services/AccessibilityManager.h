@@ -365,6 +365,8 @@ private:
     static constexpr int MAX_ANNOUNCEMENT_QUEUE_SIZE = 50;
     static constexpr const char* SETTINGS_GROUP = "Accessibility";
     static constexpr const char* SETTINGS_ENABLED = "Enabled";
+    // Marks that the one-time "default accessibility to on" migration ran.
+    static constexpr const char* SETTINGS_ENABLED_MIGRATED = "EnabledDefaultMigrated";
     static constexpr const char* SETTINGS_VERBOSITY = "VerbosityLevel";
 };
 

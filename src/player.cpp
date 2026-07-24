@@ -107,6 +107,10 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 
 #include "services/ServiceContainer.h"
 #include "services/AccessibilityManager.h"
+#include "services/AccessibilitySettingsService.h"
+#include "services/BrailleDisplayService.h"
+#include "dialogs/AccessibilityPreferencesDialog.h"
+#include "dialogs/AccessibilityTutorialDialog.h"
 #include "services/AudioFeedbackService.h"
 #include "services/LiveRegionManager.h"
 #include "services/PlaybackStatusAnnouncer.h"
@@ -115,6 +119,7 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include "services/TorrentSearchService.h"
 #include "services/TorrentDownloadService.h"
 #include "services/DependencyChecker.h"
+#include "mediaduration.h"
 
 // Static variable definition for recursion protection
 int player::s_recursionDepth = 0;
@@ -908,6 +913,14 @@ player::player(QWidget *parent) :
 
         // Connect media player signals for playlist management
         connect(Xplayer, &FxPlayer::playbackStateChanged, [this](QMediaPlayer::PlaybackState state) {
+            // Leaving PausedState by any route other than the pause button
+            // (Play Next/Previous, stop, auto-advance) must clear the paused
+            // flag, or the button stays yellow and the next click "resumes".
+            if (state != QMediaPlayer::PausedState && playPause) {
+                playPause = false;
+                ui->bt_pause_play->setStyleSheet("");
+                refreshTransportAccessibleState();
+            }
             if (state == QMediaPlayer::StoppedState && PlayMode == "Playing_Segue" && !m_manualAdvancing) {
                 // When playback stops, play the next media if in segue mode.
                 // A 0 ms shot still defers through the event loop (no
@@ -1034,6 +1047,7 @@ player::player(QWidget *parent) :
                     qDebug() << "Music table model created successfully";
                 }
 
+                applyMusicHeaderLabels(model);
                 ui->musicView->setModel(model);
                 ui->musicView->setSortingEnabled(true);
                 ui->musicView->hideColumn(0);
@@ -1169,6 +1183,10 @@ checkDbOpen();
      // Genre combo boxes will be populated by update_music_table()
 
     update_music_table();
+
+    // Repair library rows with a missing duration once the window is up
+    // (deferred so startup and the first paint aren't delayed by probes).
+    QTimer::singleShot(5000, this, &player::startTimeBackfill);
 
    /*Bottom info — single line, it lives in the status bar now*/
    QDir dir; QString cpath = dir.absolutePath();
@@ -1479,6 +1497,10 @@ checkDbOpen();
        try {
            registerAccessibilityServices();
            initializeAccessibility();
+           // Name the icon-only controls and give the transport keyboard
+           // shortcuts + menu entries (the app previously had neither).
+           setupAccessibleControls();
+           setupPlaybackShortcuts();
        } catch (const std::exception& e) {
            qWarning() << "Exception during accessibility initialization:" << e.what();
        }
@@ -1694,8 +1716,40 @@ void player::registerAccessibilityServices()
         
         // Register SystemStatusAnnouncer as a singleton service using template method
         serviceContainer->registerSingleton<SystemStatusAnnouncer>();
-        
+
+        // Backs the Accessibility Preferences dialog (Options menu).
+        serviceContainer->registerSingleton<AccessibilitySettingsService>();
+
+        // Braille display support (via BrlTTY) is advertised in the package
+        // description; register it so the service actually runs.
+        serviceContainer->registerSingleton<BrailleDisplayService>();
+
         qDebug() << "Accessibility services registered successfully";
+
+        // Registering only constructs a service on first resolve — it does NOT
+        // run doInitialize(). Without this block the whole accessibility stack
+        // (widget enhancer, AT-SPI bridge, audio feedback, live regions) stayed
+        // dormant while still reporting success. Initialize explicitly, with
+        // AccessibilityManager last because it consumes all the others.
+        struct { const char *name; IService *svc; } a11yServices[] = {
+            {"AudioFeedbackService",    serviceContainer->resolve<AudioFeedbackService>()},
+            {"LiveRegionManager",       serviceContainer->resolve<LiveRegionManager>()},
+            {"PlaybackStatusAnnouncer", serviceContainer->resolve<PlaybackStatusAnnouncer>()},
+            {"SystemStatusAnnouncer",   serviceContainer->resolve<SystemStatusAnnouncer>()},
+            {"AccessibilitySettingsService", serviceContainer->resolve<AccessibilitySettingsService>()},
+            {"BrailleDisplayService",   serviceContainer->resolve<BrailleDisplayService>()},
+            {"AccessibilityManager",    serviceContainer->resolve<AccessibilityManager>()},
+        };
+        for (const auto &entry : a11yServices) {
+            if (!entry.svc) {
+                qWarning() << "Accessibility service could not be resolved:" << entry.name;
+                continue;
+            }
+            if (entry.svc->state() != IService::ServiceState::Uninitialized)
+                continue; // already running
+            if (!entry.svc->initialize())
+                qWarning() << "Accessibility service failed to initialize:" << entry.name;
+        }
     } catch (const std::exception& e) {
         qCritical() << "Exception registering accessibility services:" << e.what();
     } catch (...) {
@@ -1947,13 +2001,18 @@ void player::launchExternalApplication(const QString& appName, const QString& fi
     }
 }
 
-// Generic helper to get MediaInfo (ASYNC) - Requires modification
-// TODO: Implement proper parsing of MediaInfo output (JSON is best)
+// Generic helper to get MediaInfo (ASYNC)
 void player::getMediaInfoForFile(const QString& filePath) {
-    QString mediaInfoPath = QStandardPaths::findExecutable("mediainfo");
+    QString mediaInfoPath = DependencyChecker::resolveExecutable("mediainfo");
     if (mediaInfoPath.isEmpty()) {
-         QMessageBox::warning(this, tr("Dependency Missing"), tr("'mediainfo' command not found. Please install it to retrieve metadata."));
-         return;
+         DependencyChecker depChecker;
+         if (!depChecker.ensureDependency("mediainfo",
+                 tr("Reading a track's metadata uses the MediaInfo tool."), this)) {
+             return;
+         }
+         mediaInfoPath = DependencyChecker::resolveExecutable("mediainfo");
+         if (mediaInfoPath.isEmpty())
+             return;
     }
 
     QProcess *mediaInfoProcess = new QProcess(this);
@@ -2929,18 +2988,101 @@ void::player::pubViewContextMenu(const QPoint& pos){
     }
 
 }
+// Resolve one of the serverFtpCmds* helper scripts to an absolute path.
+// Search order (first existing file wins):
+//   1. "ServerScriptsPath" in xfb.conf (config-only override)
+//   2. user/system data dirs under xfb/scripts — e.g. ~/.local/share/xfb/scripts
+//      then /usr/share/xfb/scripts on Linux, ~/Library/Application Support/
+//      xfb/scripts on macOS — so a station's edited copies override the
+//      packaged templates without touching root-owned files
+//   3. the macOS bundle's Resources/scripts
+//   4. a "scripts" dir next to the binary or in any parent (dev checkouts)
+QString player::serverScriptPath(const QString& scriptName) const {
+    QStringList candidates;
+
+    QString writableConfigPath = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
+    if (!writableConfigPath.isEmpty()) {
+        QSettings settings(writableConfigPath + "/xfb.conf", QSettings::IniFormat);
+        const QString configured = settings.value("ServerScriptsPath").toString();
+        if (!configured.isEmpty())
+            candidates << QDir(configured).filePath(scriptName);
+    }
+
+    const QString located = QStandardPaths::locate(QStandardPaths::GenericDataLocation,
+                                                   "xfb/scripts/" + scriptName);
+    if (!located.isEmpty())
+        candidates << located;
+
+    const QString appDir = QCoreApplication::applicationDirPath();
+#ifdef Q_OS_MAC
+    candidates << QDir(appDir + "/../Resources/scripts").filePath(scriptName);
+#endif
+    QDir walk(appDir);
+    for (int i = 0; i < 6; ++i) {
+        candidates << walk.filePath("scripts/" + scriptName);
+        if (!walk.cdUp())
+            break;
+    }
+
+    for (const QString& candidate : candidates) {
+        if (QFileInfo::exists(candidate))
+            return QFileInfo(candidate).absoluteFilePath();
+    }
+    qWarning() << "Server script" << scriptName << "not found. Searched:" << candidates;
+    return QString();
+}
+
+// The shipped serverFtpCmds* scripts are templates: the station's FTP host
+// and port must replace the literal [IP] and [PORT] placeholders before the
+// script can talk to a server.
+bool player::serverScriptIsTemplate(const QString& scriptPath) const {
+    QFile f(scriptPath);
+    if (!f.open(QFile::ReadOnly | QFile::Text))
+        return false;
+    const QString head = QString::fromUtf8(f.read(4096));
+    return head.contains(QLatin1String("[IP]")) || head.contains(QLatin1String("[PORT]"));
+}
+
+// Launch a server script through bash so the exec bit isn't required (the
+// packaged copies are plain data files). The working directory matters: the
+// scripts do "cd ../ftp/", so run from FTPPath (a folder the options dialog
+// requires to be named "ftp" — ../ftp from inside it resolves back to it),
+// falling back to the script's own directory so ../ftp is its sibling.
+void player::startServerScript(QProcess* process, const QString& scriptPath) {
+    QString workDir = FTPPath;
+    if (workDir.isEmpty() || !QDir(workDir).exists())
+        workDir = QFileInfo(scriptPath).absolutePath();
+    process->setWorkingDirectory(workDir);
+    process->start("/bin/bash", QStringList() << scriptPath);
+}
+
+// Same launch rules as startServerScript, but as a shell fragment for the
+// legacy call sites that pipe script output through grep via "sh -c".
+QString player::serverScriptShellCommand(const QString& scriptPath) const {
+    QString quoted = scriptPath;
+    quoted.replace(QLatin1String("'"), QLatin1String("'\\''"));
+    QString workDir = FTPPath;
+    if (workDir.isEmpty() || !QDir(workDir).exists())
+        workDir = QFileInfo(scriptPath).absolutePath();
+    QString quotedDir = workDir;
+    quotedDir.replace(QLatin1String("'"), QLatin1String("'\\''"));
+    return QStringLiteral("cd '%1' && bash '%2'").arg(quotedDir, quoted);
+}
+
 // Helper function to run a server script asynchronously
 void player::runServerCheckScript(const QString& scriptName, const QString& fileToCheck, const QString& successMessage, const QString& failureMessage) {
-    // TODO: Replace this with a robust way to find the script
-    QString scriptBaseName = scriptName; // e.g., "serverFtpCmdsCHKProgram.sh"
-    QString scriptDir = QCoreApplication::applicationDirPath() + "/usr/share/xfb/scripts"; // Example path
-    QString scriptPath = QDir(scriptDir).filePath(scriptBaseName);
+    QString scriptPath = serverScriptPath(scriptName);
 
-    qInfo() << "Attempting to execute check script:" << scriptPath << "for file:" << fileToCheck;
+    qInfo() << "Attempting to execute check script:" << scriptName << "->" << scriptPath << "for file:" << fileToCheck;
 
-    if (!QFileInfo::exists(scriptPath)) {
-        qWarning() << "Check script not found at:" << scriptPath;
-        QMessageBox::critical(this, "Script Error", QString("The required check script was not found:\n%1").arg(scriptPath));
+    if (scriptPath.isEmpty()) {
+        QMessageBox::critical(this, tr("Script Error"),
+                              tr("The required check script '%1' was not found.\nInstall it under the application data directory (e.g. share/xfb/scripts) or set ServerScriptsPath in xfb.conf.").arg(scriptName));
+        return;
+    }
+    if (serverScriptIsTemplate(scriptPath)) {
+        QMessageBox::critical(this, tr("Script Not Configured"),
+                              tr("The script '%1' still contains the [IP]/[PORT] placeholders.\nEdit it with your server's address and port:\n%2").arg(scriptName, scriptPath));
         return;
     }
 
@@ -2992,25 +3134,25 @@ void player::runServerCheckScript(const QString& scriptName, const QString& file
          checkProcess->deleteLater();
      });
 
-    // Start the script - How to handle the grep part robustly?
-    // Option 1 (Best): Modify script to take filename as arg and return exit code 0 if found.
-    // checkProcess->start(scriptPath, QStringList() << fileToCheck); // If script modified
-    // Option 2 (Current): Run script and check output in C++.
-    checkProcess->start(scriptPath); // Run script, check full output in finished signal
+    // Run the script and check its full output in the finished handler.
+    startServerScript(checkProcess, scriptPath);
 }
 // Helper function to run upload/put script asynchronously
 void player::runServerUploadScript(const QString& scriptName, const QString& fileToUpload, const QString& successMessage, const QString& failureMessage, std::function<void(bool)> callback) {
-    // TODO: Replace this with a robust way to find the script
-    QString scriptBaseName = scriptName; // e.g., "serverFtpCmdsPutProgram.sh"
-    QString scriptDir = QCoreApplication::applicationDirPath() + "/usr/share/xfb/scripts"; // Example path
-    QString scriptPath = QDir(scriptDir).filePath(scriptBaseName);
+    QString scriptPath = serverScriptPath(scriptName);
 
-    qInfo() << "Attempting to execute upload script:" << scriptPath << "for file:" << fileToUpload;
-     qDebug() << "Dependencies: Script must exist, be executable, ~/.netrc configured.";
+    qInfo() << "Attempting to execute upload script:" << scriptName << "->" << scriptPath << "for file:" << fileToUpload;
+     qDebug() << "Dependencies: Script must exist, ~/.netrc configured.";
 
-    if (!QFileInfo::exists(scriptPath)) {
-        qWarning() << "Upload script not found at:" << scriptPath;
-        QMessageBox::critical(this, "Script Error", QString("The required upload script was not found:\n%1").arg(scriptPath));
+    if (scriptPath.isEmpty()) {
+        QMessageBox::critical(this, tr("Script Error"),
+                              tr("The required upload script '%1' was not found.\nInstall it under the application data directory (e.g. share/xfb/scripts) or set ServerScriptsPath in xfb.conf.").arg(scriptName));
+        callback(false); // Indicate failure
+        return;
+    }
+    if (serverScriptIsTemplate(scriptPath)) {
+        QMessageBox::critical(this, tr("Script Not Configured"),
+                              tr("The script '%1' still contains the [IP]/[PORT] placeholders.\nEdit it with your server's address and port:\n%2").arg(scriptName, scriptPath));
         callback(false); // Indicate failure
         return;
     }
@@ -3067,7 +3209,7 @@ void player::runServerUploadScript(const QString& scriptName, const QString& fil
      });
 
     // Start the script
-    uploadProcess->start(scriptPath);
+    startServerScript(uploadProcess, scriptPath);
 }
 
 
@@ -3571,6 +3713,9 @@ void player::playNextSong(){
                 QFileInfo fileName(itemDaPlaylist);
                 QString baseName = fileName.fileName();
                 ui->txtNowPlaying->setText(baseName);
+                // Speak the new track: without this a blind operator has no
+                // way to tell what went to air.
+                announceAccessible(tr("Now playing: %1").arg(baseName));
 
                 QDateTime now = QDateTime::currentDateTime();
                 QString text = now.toString("yyyy-MM-dd || hh:mm:ss ||");
@@ -4342,6 +4487,428 @@ void player::startAutoMix(const QVector<int> &rows)
 }
 
 
+// ---------------------------------------------------------------------------
+// Adding library tracks to the playlist without a mouse
+// ---------------------------------------------------------------------------
+
+// Which library view the operator is working in. Focus usually sits on a
+// view's viewport rather than the view itself, so walk up the parent chain.
+QTableView *player::focusedLibraryView() const
+{
+    QWidget *w = QApplication::focusWidget();
+    while (w) {
+        if (w == ui->musicView || w == ui->jinglesView || w == ui->programsView)
+            return qobject_cast<QTableView *>(w);
+        w = w->parentWidget();
+    }
+    return nullptr;
+}
+
+// Append (or prepend) the selected rows of a library view to the playlist.
+// This is the same operation the context menu performs; it lives here so the
+// Enter key and the menu entries can reach it too.
+void player::addSelectionToPlaylist(QTableView *view, bool toTop)
+{
+    if (!view) {
+        // Nothing focused: fall back to the music library, which is what the
+        // operator almost always means.
+        view = ui->musicView;
+    }
+    if (!view || !view->model() || !view->selectionModel()) {
+        announceAccessible(tr("No track selected"));
+        return;
+    }
+
+    // Path column differs per table: musics(id,artist,song,g1,g2,country,
+    // published,path,...), jingles(name,path), programs(id,name,path).
+    int pathColumn = -1;
+    if (view == ui->musicView)          pathColumn = 7;
+    else if (view == ui->jinglesView)   pathColumn = 1;
+    else if (view == ui->programsView)  pathColumn = 2;
+    if (pathColumn < 0)
+        return;
+
+    // selectedRows(0) would return nothing for the music view, whose column 0
+    // is hidden, so ask for a column that is actually visible.
+    const int probeColumn = (view == ui->musicView) ? 1 : 0;
+    QModelIndexList rows = view->selectionModel()->selectedRows(probeColumn);
+    if (rows.isEmpty() && view->currentIndex().isValid()) {
+        // Keyboard users often just arrow to a row without extending a
+        // selection; treat the current row as the target.
+        rows << view->model()->index(view->currentIndex().row(), probeColumn);
+    }
+    if (rows.isEmpty()) {
+        announceAccessible(tr("No track selected"));
+        return;
+    }
+
+    QStringList paths;
+    for (const QModelIndex &idx : rows) {
+        const QModelIndex pathIdx = view->model()->index(idx.row(), pathColumn);
+        if (pathIdx.isValid()) {
+            const QString p = view->model()->data(pathIdx).toString();
+            if (!p.isEmpty())
+                paths << p;
+        }
+    }
+    if (paths.isEmpty()) {
+        announceAccessible(tr("No file path for the selected track"));
+        return;
+    }
+
+    if (toTop) {
+        for (int i = paths.size() - 1; i >= 0; --i)
+            ui->playlist->insertItem(0, paths.at(i));
+    } else {
+        for (const QString &p : paths)
+            ui->playlist->addItem(p);
+    }
+    calculate_playlist_total_time();
+
+    // Confirm out loud — otherwise a blind operator has no way to tell the
+    // track actually landed in the running order.
+    const QString what = paths.size() == 1
+                             ? QFileInfo(paths.first()).fileName()
+                             : tr("%n tracks", "", paths.size());
+    announceAccessible(toTop ? tr("Added %1 to the start of the playlist").arg(what)
+                             : tr("Added %1 to the playlist").arg(what));
+}
+
+// ---------------------------------------------------------------------------
+// Accessibility support
+// ---------------------------------------------------------------------------
+
+// Give every icon-only control a name. Qt derives a widget's accessible name
+// from its text, so buttons that carry only an icon reach a screen reader as
+// an anonymous "button". Tooltips are set to the same string so the
+// information is available to sighted mouse users too.
+void player::setupAccessibleControls()
+{
+    struct { QWidget *w; const char *name; const char *description; } controls[] = {
+        {ui->btPlay,        QT_TR_NOOP("Play"),                 QT_TR_NOOP("Start playing the playlist")},
+        {ui->btStop,        QT_TR_NOOP("Stop"),                 QT_TR_NOOP("Stop playback")},
+        {ui->btPlayNext,    QT_TR_NOOP("Play next"),            QT_TR_NOOP("Skip to the next track in the playlist")},
+        {ui->bt_pause_play, QT_TR_NOOP("Pause"),                QT_TR_NOOP("Pause or resume the track that is playing")},
+        {ui->bt_pause_rec,  QT_TR_NOOP("Pause recording"),      QT_TR_NOOP("Pause or resume the recording")},
+        {ui->lp_1_bt_play,  QT_TR_NOOP("Deck 1: play"),         QT_TR_NOOP("Play the file loaded in deck 1")},
+        {ui->pushButton,    QT_TR_NOOP("Deck 1: stop"),         QT_TR_NOOP("Stop deck 1")},
+        {ui->lp_1_bt_pause, QT_TR_NOOP("Deck 1: pause"),        QT_TR_NOOP("Pause or resume deck 1")},
+        {ui->lp_1_bt_play_2,QT_TR_NOOP("Deck 2: play"),         QT_TR_NOOP("Play the file loaded in deck 2")},
+        {ui->pushButton_2,  QT_TR_NOOP("Deck 2: stop"),         QT_TR_NOOP("Stop deck 2")},
+        {ui->lp_2_bt_pause, QT_TR_NOOP("Deck 2: pause"),        QT_TR_NOOP("Pause or resume deck 2")},
+        {ui->bt_rol_streaming_play, QT_TR_NOOP("Play the stream"), QT_TR_NOOP("Start playing the radio stream")},
+        {ui->bt_rol_streaming_stop, QT_TR_NOOP("Stop the stream"), QT_TR_NOOP("Stop playing the radio stream")},
+        {ui->bt_icecast,    QT_TR_NOOP("Icecast server"),       QT_TR_NOOP("Start or stop the Icecast streaming server")},
+        {ui->bt_butt,       QT_TR_NOOP("BUTT broadcaster"),     QT_TR_NOOP("Start or stop the BUTT broadcasting tool")},
+        {ui->bt_ddns,       QT_TR_NOOP("Update dynamic DNS"),   QT_TR_NOOP("Refresh the external address of this station")},
+        {ui->bt_portTest,   QT_TR_NOOP("Test the streaming port"), QT_TR_NOOP("Check whether the streaming port is reachable")},
+        {ui->bt_add_some_random_songs_from_genre, QT_TR_NOOP("Add random songs"),
+                                                  QT_TR_NOOP("Add random songs of the selected genre to the playlist")},
+        {ui->led_rec,       QT_TR_NOOP("Recording indicator"),  QT_TR_NOOP("Shows whether recording is active")},
+    };
+
+    for (const auto &c : controls) {
+        if (!c.w)
+            continue;
+        c.w->setAccessibleName(tr(c.name));
+        c.w->setAccessibleDescription(tr(c.description));
+        if (c.w->toolTip().isEmpty())
+            c.w->setToolTip(tr(c.description));
+    }
+
+    // The data views and the playlist are the main reading surfaces; name them
+    // so a screen reader announces what a table is when focus lands on it.
+    struct { QWidget *w; const char *name; } views[] = {
+        {ui->musicView,    QT_TR_NOOP("Music library")},
+        {ui->jinglesView,  QT_TR_NOOP("Jingles")},
+        {ui->pubView,      QT_TR_NOOP("Adverts")},
+        {ui->programsView, QT_TR_NOOP("Programs")},
+        {ui->playlist,     QT_TR_NOOP("Playlist")},
+        {ui->txt_search,   QT_TR_NOOP("Search the music library")},
+    };
+    for (const auto &v : views) {
+        if (v.w)
+            v.w->setAccessibleName(tr(v.name));
+    }
+
+    // Enter/Return (and double-click) on a library row puts it in the
+    // playlist. Previously the only route was the right-click context menu,
+    // which a Mac keyboard cannot even produce.
+    for (QTableView *view : {ui->musicView, ui->jinglesView, ui->programsView}) {
+        if (!view)
+            continue;
+        connect(view, &QAbstractItemView::activated, this, [this, view](const QModelIndex &) {
+            addSelectionToPlaylist(view, false);
+        });
+        const QString hint = tr("Press Enter to add the selected track to the playlist.");
+        view->setAccessibleDescription(
+            view->accessibleDescription().isEmpty()
+                ? hint
+                : view->accessibleDescription() + QLatin1Char(' ') + hint);
+    }
+
+    refreshTransportAccessibleState();
+}
+
+// Build a Playback menu. Before this the transport existed only as on-screen
+// buttons — there was not a single shortcut in the application and no menu
+// entry for play/pause/stop/next, so the app could not be operated without a
+// mouse. Shortcuts are application-wide so they work whatever has focus, and
+// use Ctrl+Shift+<key> to stay clear of text entry and platform defaults.
+void player::setupPlaybackShortcuts()
+{
+    if (!ui->menuBar)
+        return;
+
+    QMenu *playbackMenu = new QMenu(tr("&Playback"), this);
+
+    struct { const char *text; QKeySequence key; void (player::*slot)(); } entries[] = {
+        {QT_TR_NOOP("&Play / Segue"), QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_P), &player::on_btPlay_clicked},
+        {QT_TR_NOOP("Pause / &Resume"), QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Space), &player::on_bt_pause_play_clicked},
+        {QT_TR_NOOP("&Stop"), QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_S), &player::on_btStop_clicked},
+        {QT_TR_NOOP("&Next track"), QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_N), &player::on_btPlayNext_clicked},
+        {QT_TR_NOOP("Pre&vious track"), QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_B), &player::playPreviousMedia},
+    };
+
+    for (const auto &e : entries) {
+        QAction *action = playbackMenu->addAction(tr(e.text));
+        action->setShortcut(e.key);
+        // Works no matter which panel currently holds focus.
+        action->setShortcutContext(Qt::ApplicationShortcut);
+        connect(action, &QAction::triggered, this, e.slot);
+        addAction(action); // keep the shortcut alive even when the menu is closed
+    }
+
+    playbackMenu->addSeparator();
+
+    // Getting a track into the running order is the most common task in the
+    // app and had no keyboard route at all. Menu entries make it discoverable
+    // as well as reachable.
+    QAction *addEnd = playbackMenu->addAction(tr("Add selection to &end of playlist"));
+    addEnd->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Return));
+    addEnd->setShortcutContext(Qt::ApplicationShortcut);
+    connect(addEnd, &QAction::triggered, this, [this]() {
+        addSelectionToPlaylist(focusedLibraryView(), false);
+    });
+    addAction(addEnd);
+
+    QAction *addTop = playbackMenu->addAction(tr("Add selection to &start of playlist"));
+    addTop->setShortcut(QKeySequence(Qt::CTRL | Qt::ALT | Qt::Key_Return));
+    addTop->setShortcutContext(Qt::ApplicationShortcut);
+    connect(addTop, &QAction::triggered, this, [this]() {
+        addSelectionToPlaylist(focusedLibraryView(), true);
+    });
+    addAction(addTop);
+
+    playbackMenu->addSeparator();
+
+    // "What is playing?" — the single most useful thing for a blind operator.
+    QAction *whatsPlaying = playbackMenu->addAction(tr("Announce &what is playing"));
+    whatsPlaying->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_W));
+    whatsPlaying->setShortcutContext(Qt::ApplicationShortcut);
+    connect(whatsPlaying, &QAction::triggered, this, [this]() {
+        const QString title = ui->txtNowPlaying->text().trimmed();
+        announceAccessible(title.isEmpty() ? tr("Nothing is playing")
+                                           : tr("Playing: %1").arg(title));
+    });
+    addAction(whatsPlaying);
+
+    // Insert before Options so File/Playlists keep their familiar positions.
+    ui->menuBar->insertMenu(ui->menuXFB->menuAction(), playbackMenu);
+    qInfo() << "Playback menu installed with" << playbackMenu->actions().count()
+            << "keyboard-accessible actions";
+
+    // Tutorial for operators who work by ear. Lives in Help, where someone
+    // looking for guidance will go first, and has its own shortcut so it can
+    // be reached without hunting through the menus.
+    if (ui->menuHelp) {
+        QAction *tutorial = new QAction(tr("&Tutorial for Blind Users"), this);
+        tutorial->setMenuRole(QAction::NoRole);
+        tutorial->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_H));
+        tutorial->setShortcutContext(Qt::ApplicationShortcut);
+        tutorial->setStatusTip(tr("Learn how to run XFB with a screen reader and the keyboard"));
+        connect(tutorial, &QAction::triggered, this, [this]() {
+            // Non-modal and owned by the window, so the operator can try each
+            // step in the main window while the tutorial stays open. Reuse a
+            // single instance rather than stacking copies.
+            if (!m_tutorialDialog) {
+                m_tutorialDialog = new AccessibilityTutorialDialog(this);
+                connect(m_tutorialDialog, &AccessibilityTutorialDialog::announcementRequested,
+                        this, &player::announceAccessible);
+            }
+            m_tutorialDialog->show();
+            m_tutorialDialog->raise();
+            m_tutorialDialog->activateWindow();
+            announceAccessible(tr("Tutorial for blind users opened"));
+        });
+        ui->menuHelp->addAction(tutorial);
+        addAction(tutorial);
+    }
+
+    // The Accessibility Preferences dialog was fully implemented but had no
+    // way in — no menu entry and no code path opened it — so the settings it
+    // manages (verbosity, announcement timing) were unreachable.
+    if (ui->menuXFB) {
+        QAction *a11yPrefs = new QAction(tr("&Accessibility Preferences..."), this);
+        // Without this, Qt's macOS text heuristic sees "Preferences" and moves
+        // the item into the application menu, away from the Options menu where
+        // the rest of XFB's settings live.
+        a11yPrefs->setMenuRole(QAction::NoRole);
+        a11yPrefs->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_A));
+        a11yPrefs->setShortcutContext(Qt::ApplicationShortcut);
+        connect(a11yPrefs, &QAction::triggered, this, [this]() {
+            auto *container = ServiceContainer::instance();
+            auto *settings = container ? container->resolve<AccessibilitySettingsService>() : nullptr;
+            if (!settings) {
+                QMessageBox::warning(this, tr("Accessibility"),
+                    tr("The accessibility settings service is not available."));
+                return;
+            }
+            auto *braille = container->resolve<BrailleDisplayService>();
+            AccessibilityPreferencesDialog dialog(settings, braille, this);
+            dialog.exec();
+        });
+        ui->menuXFB->addSeparator();
+        ui->menuXFB->addAction(a11yPrefs);
+        addAction(a11yPrefs);
+    }
+}
+
+void player::announceAccessible(const QString &message)
+{
+    if (message.isEmpty())
+        return;
+    // Always surface it visually too — the status bar is useful for everyone.
+    ui->statusBar->showMessage(message, 5000);
+
+    auto *container = ServiceContainer::instance();
+    if (!container)
+        return;
+    if (auto *manager = container->resolve<AccessibilityManager>())
+        manager->announceMessage(message, AccessibilityManager::Priority::Normal);
+}
+
+// Playback and recording state used to be signalled only by a background
+// colour (yellow pause button, red/green/yellow LED), which is invisible to a
+// screen reader and ambiguous for colourblind users. Mirror it into the
+// accessible name so the state is always readable as text.
+void player::refreshTransportAccessibleState()
+{
+    if (ui->bt_pause_play) {
+        ui->bt_pause_play->setAccessibleName(playPause ? tr("Resume (paused)")
+                                                       : tr("Pause"));
+        ui->bt_pause_play->setToolTip(playPause ? tr("Paused — click to resume")
+                                                : tr("Pause the track that is playing"));
+    }
+    if (ui->bt_pause_rec) {
+        ui->bt_pause_rec->setAccessibleName(recPause ? tr("Resume recording (paused)")
+                                                     : tr("Pause recording"));
+    }
+    if (ui->lp_1_bt_pause)
+        ui->lp_1_bt_pause->setAccessibleName(lp_1_paused ? tr("Deck 1: resume (paused)")
+                                                         : tr("Deck 1: pause"));
+    if (ui->lp_2_bt_pause)
+        ui->lp_2_bt_pause->setAccessibleName(lp_2_paused ? tr("Deck 2: resume (paused)")
+                                                         : tr("Deck 2: pause"));
+}
+
+// Replace the raw database column names shown in a table view's header
+// ("published_date", "played_times", ...) with polished labels. Works for
+// every model the views use: QSqlTableModel derives from QSqlQueryModel,
+// and record().indexOf resolves the column regardless of query shape.
+void player::applySqlHeaderLabels(QSqlQueryModel *model, const QList<QPair<QString, QString>> &labels) {
+    if (!model)
+        return;
+    for (const auto &label : labels) {
+        const int col = model->record().indexOf(label.first);
+        if (col >= 0)
+            model->setHeaderData(col, Qt::Horizontal, label.second);
+    }
+}
+
+// The musics table is shown through several models (full table, search
+// results, genre filters) — they all get the same labels.
+void player::applyMusicHeaderLabels(QSqlQueryModel *model) {
+    applySqlHeaderLabels(model, {
+        {"artist",         tr("Artist")},
+        {"song",           tr("Song")},
+        {"genre1",         tr("Genre 1")},
+        {"genre2",         tr("Genre 2")},
+        {"country",        tr("Country")},
+        {"published_date", tr("Published")},
+        {"path",           tr("File")},
+        {"time",           tr("Time")},
+        {"played_times",   tr("Plays")},
+        {"last_played",    tr("Last Played")},
+    });
+}
+
+// One-time repair pass for library rows whose duration was never stored —
+// the old add flows shelled out to a bare "exiftool", which fails silently
+// when the tool is missing or (on macOS) not on the GUI app's minimal PATH,
+// leaving the music list's time column empty. Runs shortly after startup and
+// works through the rows one per timer tick so the UI stays responsive.
+void player::startTimeBackfill() {
+    if (!m_timeBackfillPending.isEmpty())
+        return; // already running
+
+    if (!MediaDuration::probeAvailable()) {
+        qWarning() << "Time backfill skipped: neither exiftool nor ffmpeg is available.";
+        return;
+    }
+
+    QSqlDatabase db = QSqlDatabase::database("xfb_connection");
+    if (!db.isOpen())
+        return;
+
+    // Every valid stored time contains a colon; anything else (NULL, empty,
+    // "-", the old parser's stray "s"/"(approx)" artifacts) needs a re-probe.
+    QSqlQuery qry(db);
+    if (!qry.exec("SELECT path FROM musics WHERE time IS NULL OR instr(time, ':') = 0")) {
+        qWarning() << "Time backfill query failed:" << qry.lastError().text();
+        return;
+    }
+    while (qry.next())
+        m_timeBackfillPending << qry.value(0).toString();
+
+    if (m_timeBackfillPending.isEmpty())
+        return;
+
+    qInfo() << "Backfilling missing track times for" << m_timeBackfillPending.size() << "library entries.";
+    m_timeBackfillUpdated = 0;
+    processNextTimeBackfill();
+}
+
+void player::processNextTimeBackfill() {
+    if (m_timeBackfillPending.isEmpty()) {
+        if (m_timeBackfillUpdated > 0) {
+            qInfo() << "Time backfill finished:" << m_timeBackfillUpdated << "entries updated.";
+            ui->statusBar->showMessage(tr("Updated the duration of %1 library tracks.").arg(m_timeBackfillUpdated), 8000);
+            update_music_table();
+        }
+        return;
+    }
+
+    const QString path = m_timeBackfillPending.takeFirst();
+    if (QFile::exists(path)) {
+        const QString time = MediaDuration::forFile(path);
+        if (!time.isEmpty()) {
+            QSqlDatabase db = QSqlDatabase::database("xfb_connection");
+            QSqlQuery upd(db);
+            upd.prepare("UPDATE musics SET time = :time WHERE path = :path");
+            upd.bindValue(":time", time);
+            upd.bindValue(":path", path);
+            if (upd.exec())
+                m_timeBackfillUpdated++;
+            else
+                qWarning() << "Time backfill update failed for" << path << ":" << upd.lastError().text();
+        }
+    }
+
+    // Short breather between files so the probes never make the UI feel busy
+    QTimer::singleShot(50, this, &player::processNextTimeBackfill);
+}
+
 void player::update_music_table() {
 
     QSqlDatabase db = QSqlDatabase::database("xfb_connection");
@@ -4360,6 +4927,7 @@ void player::update_music_table() {
         qWarning() << "Failed to select 'musics' table:" << model->lastError().text();
         delete model; // Clean up failed model
     } else {
+        applyMusicHeaderLabels(model);
         ui->musicView->setModel(model);
         // Configure view AFTER setting model (if needed)
          qDebug() << "'musics' table model set.";
@@ -4378,6 +4946,10 @@ void player::update_music_table() {
         qWarning() << "Failed to select 'jingles' table:" << jinglesmodel->lastError().text();
         delete jinglesmodel;
     } else {
+        applySqlHeaderLabels(jinglesmodel, {
+            {"name", tr("Name")},
+            {"path", tr("File")},
+        });
         ui->jinglesView->setModel(jinglesmodel);
          qDebug() << "'jingles' table model set.";
          // Configure view if needed
@@ -4392,6 +4964,10 @@ void player::update_music_table() {
         qWarning() << "Failed to select 'pub' table:" << pubmodel->lastError().text();
         delete pubmodel;
     } else {
+        applySqlHeaderLabels(pubmodel, {
+            {"name", tr("Name")},
+            {"path", tr("File")},
+        });
         ui->pubView->setModel(pubmodel);
          qDebug() << "'pub' table model set.";
         // Configure view if needed
@@ -4405,6 +4981,10 @@ void player::update_music_table() {
         qWarning() << "Failed to select 'programs' table:" << programsmodel->lastError().text();
         delete programsmodel;
     } else {
+        applySqlHeaderLabels(programsmodel, {
+            {"name", tr("Name")},
+            {"path", tr("File")},
+        });
         ui->programsView->setModel(programsmodel);
          qDebug() << "'programs' table model set.";
         // Configure view if needed
@@ -4418,6 +4998,13 @@ void player::update_music_table() {
         qWarning() << "Failed to select 'torrents' table:" << torrentsmodel->lastError().text();
         delete torrentsmodel;
     } else {
+        applySqlHeaderLabels(torrentsmodel, {
+            {"name",       tr("Name")},
+            {"path",       tr("File")},
+            {"size",       tr("Size")},
+            {"date_added", tr("Added")},
+            {"status",     tr("Status")},
+        });
         ui->torrentsView->setModel(torrentsmodel);
          qDebug() << "'torrents' table model set.";
         // Configure view if needed
@@ -5709,37 +6296,13 @@ void player::server_check_and_schedule_new_programs(){
 
 
 
-                        QProcess cmd;
-                        QString time;
-                        // Use QProcess argument list to avoid shell injection via filenames
-                        cmd.start("exiftool", QStringList() << file);
-                        cmd.waitForFinished();
-                        QString cmdOut = cmd.readAll();
-                        // Filter for Duration line
-                        QString durationLine;
-                        for (const QString &line : cmdOut.split("\n")) {
-                            if (line.contains("Duration", Qt::CaseInsensitive)) {
-                                durationLine = line;
-                                break;
-                            }
-                        }
-                        qDebug()<<"Output of exiftool: "<<durationLine;
-                        cmd.close();
+                        QString time = MediaDuration::forFile(file);
+                        qDebug()<<"Total track time is: "<<time;
 
-                        QStringList arraycmd = durationLine.split(" ");
-                        if(arraycmd.count()>1){
-                            time = arraycmd.last().trimmed();
-                            qDebug()<<"Total track time is: "<<time;
-
-                        } else {
-                            qDebug()<<"-------------->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>     !!!!!!!!    An exception happend !? ... outputing details of this track: ";
-                            for(int i=0;i<arraycmd.count();i++){
-                                qDebug()<< "The array position "<<i<<" has: "<<arraycmd[i];
-                               }
-
-                           }
-
-                        QSqlQuery sql_add;
+                        // Must use the named connection: the app never opens
+                        // Qt's default one, so a bare QSqlQuery silently fails
+                        // and the downloaded program never reaches the library.
+                        QSqlQuery sql_add(db);
                         int played = 0;
                         QString last = "-";
                         sql_add.prepare("INSERT INTO musics VALUES(NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
@@ -5864,38 +6427,12 @@ void player::server_check_and_schedule_new_programs(){
 
 
 
-                QProcess cmd;
-                QString time;
-                // Use QProcess argument list to avoid shell injection via filenames
-                cmd.start("exiftool", QStringList() << file);
-                cmd.waitForFinished();
-                QString cmdOut = cmd.readAll();
-                // Filter for Duration line
-                QString durationLine;
-                for (const QString &line : cmdOut.split("\n")) {
-                    if (line.contains("Duration", Qt::CaseInsensitive)) {
-                        durationLine = line;
-                        break;
-                    }
-                }
-                qDebug()<<"Output of exiftool: "<<durationLine;
-                cmd.close();
-
-                QStringList arraycmd = durationLine.split(" ");
-                if(arraycmd.count()>1){
-                    time = arraycmd.last().trimmed();
-                    qDebug()<<"Total track time is: "<<time;
-
-                } else {
-                    qDebug()<<"-------------->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>     !!!!!!!!    An exception happend !? ... outputing details of this track: ";
-                    for(int i=0;i<arraycmd.count();i++){
-                        qDebug()<< "The array position "<<i<<" has: "<<arraycmd[i];
-                       }
-
-                   }
+                QString time = MediaDuration::forFile(file);
+                qDebug()<<"Total track time is: "<<time;
 
 
-                QSqlQuery sql_add;
+                // Named connection, not Qt's unopened default one (see above).
+                QSqlQuery sql_add(db);
                 int played = 0;
                 QString last = "-";
                 sql_add.prepare("INSERT INTO musics VALUES(NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
@@ -6114,9 +6651,12 @@ void player::rmConfirmTakeOver(){
 
 void player::returnTakeOver(){
 
-    QFile::remove("/usr/share/xfb/ftp/takeover.xml");
+    // The takeover XMLs live in the configured FTP folder (FTPPath): that is
+    // where the upload script picks up *.xml from, and it is user-writable —
+    // the old hardcoded /usr/share/xfb/ftp/ is neither on installed systems.
+    QFile::remove(QDir(FTPPath).filePath("takeover.xml"));
 
-    QString takeOverFile = "/usr/share/xfb/ftp/returntakeover.xml";
+    QString takeOverFile = QDir(FTPPath).filePath("returntakeover.xml");
     QFile file(takeOverFile);
 
     if(returntakeOver == false){
@@ -6150,20 +6690,18 @@ void player::returnTakeOver(){
         qDebug()<<"Sending returntakeOver to server. This requires ~/.netrc to be configured with the ftp options and FTP Path in the options to point to a folder called 'ftp' that MUST be located in the parent directory of XFB (due to the code of config/serverFtpCmdsPutTakeOver.sh).";
 
 
-        QProcess sh,sh2;
-        QByteArray output, output2;
-        QString outPath, FTPCmdPath, xmls;
+        QProcess sh2;
+        QByteArray output2;
+        QString FTPCmdPath, xmls;
 
-
-        sh.start("sh", QStringList() << "-c" << "pwd");
-        sh.waitForFinished();
-        output = sh.readAll();
-        outPath = output;
-        QStringList path_arry = outPath.split("\n");
-        FTPCmdPath = path_arry[0]+"/usr/share/xfb/scripts/serverFtpCmdsPutTakeOver.sh | grep 'Transfer complete'";
+        QString putTakeOverScript = serverScriptPath("serverFtpCmdsPutTakeOver.sh");
+        if (putTakeOverScript.isEmpty()) {
+            qWarning() << "returnTakeOver: serverFtpCmdsPutTakeOver.sh not found — cannot notify the server.";
+            return;
+        }
+        FTPCmdPath = serverScriptShellCommand(putTakeOverScript) + " | grep 'Transfer complete'";
         qDebug() << "running: " << FTPCmdPath;
-        qDebug() << "If you get errors: cd config && chmod +x serverFtpCmdsPutTakeOver.sh && chmod 600 ~/.netrc (the ftp is configured in .netrc correct?)";
-        sh.close();
+        qDebug() << "If you get errors: chmod 600 ~/.netrc (the ftp is configured in .netrc correct?)";
 
 
 
@@ -6186,7 +6724,7 @@ void player::returnTakeOver(){
 
             piscaLive = false;
 
-            QFile::remove("/usr/share/xfb/ftp/takeover.xml");
+            QFile::remove(QDir(FTPPath).filePath("takeover.xml"));
 
         }
 
@@ -6504,6 +7042,7 @@ void player::on_bt_search_clicked()
     searchQuery.bindValue(":t2", "%" + term + "%");
     searchQuery.exec();
     model->setQuery(std::move(searchQuery));
+    applyMusicHeaderLabels(model);
     ui->musicView->setModel(model);
 
     ui->musicView->setSortingEnabled(true);
@@ -6524,6 +7063,7 @@ void player::on_bt_reset_clicked()
     QSqlQuery all(QSqlDatabase::database("xfb_connection"));
     all.exec("select * from musics");
     modelo->setQuery(std::move(all));
+    applyMusicHeaderLabels(modelo);
     ui->musicView->setModel(modelo);
     ui->musicView->setSortingEnabled(true);
     ui->musicView->hideColumn(0);
@@ -6614,6 +7154,7 @@ void player::on_bt_apply_filter_clicked()
         if(g2_checked) filterQuery.bindValue(":g2", selectedGenre2);
         filterQuery.exec();
         model->setQuery(std::move(filterQuery));
+        applyMusicHeaderLabels(model);
         ui->musicView->setModel(model);
     }
 
@@ -6840,9 +7381,17 @@ void player::RecCHK(){
     if(myFile.size()==0){
         //red
         ui->led_rec->setStyleSheet("background-color:#FF0010;border-radius:8px;");
+        // The LED colour is meaningless to a screen reader, so state the
+        // problem in text as well — a silent failed recording is the worst
+        // outcome here.
+        ui->led_rec->setAccessibleName(tr("Recording problem: nothing is being recorded"));
+        ui->led_rec->setToolTip(tr("Recording problem: nothing is being recorded"));
+        announceAccessible(tr("Warning: the recording is empty — check the input device"));
     } else {
         //green
          ui->led_rec->setStyleSheet("background-color:#B3FF57;border-radius:8px;");
+         ui->led_rec->setAccessibleName(tr("Recording"));
+         ui->led_rec->setToolTip(tr("Recording is running"));
     }
 
 
@@ -6853,6 +7402,8 @@ void player::RecT5(){
 
     //amarilo
     ui->led_rec->setStyleSheet("background-color:#FFFB00;border-radius:8px;");
+    ui->led_rec->setAccessibleName(tr("Recording starting"));
+    ui->led_rec->setToolTip(tr("Recording is starting"));
     ui->led_rec->show();
 
     if (!saveFile.isEmpty())
@@ -7245,19 +7796,19 @@ void player::on_bt_ProgramStopandProcess_clicked()
 
                                 qDebug()<<"Sending program to server. This requires ~/.netrc to be configured with the ftp options and FTP Path in the options to point to a folder called 'ftp' that MUST be located in the parent directory of XFB (due to the code of config/serverFtpCmdsPutProgram).";
 
-                                QProcess sh,sh2;
-                                QByteArray output, output2;
-                                QString outPath, FTPCmdPath, xmls;
+                                QProcess sh2;
+                                QByteArray output2;
+                                QString FTPCmdPath, xmls;
 
-                                sh.start("sh", QStringList() << "-c" << "pwd");
-                                sh.waitForFinished();
-                                output = sh.readAll();
-                                outPath = output;
-                                QStringList path_arry = outPath.split("\n");
-                                FTPCmdPath = path_arry[0]+"/usr/share/xfb/scripts/serverFtpCmdsPutProgram.sh | grep 'Transfer complete'";
+                                QString putProgramScript = serverScriptPath("serverFtpCmdsPutProgram.sh");
+                                if (putProgramScript.isEmpty()) {
+                                    QMessageBox::critical(this, tr("Script Error"),
+                                                          tr("The required upload script '%1' was not found.\nInstall it under the application data directory (e.g. share/xfb/scripts) or set ServerScriptsPath in xfb.conf.").arg("serverFtpCmdsPutProgram.sh"));
+                                    return;
+                                }
+                                FTPCmdPath = serverScriptShellCommand(putProgramScript) + " | grep 'Transfer complete'";
                                 qDebug() << "running: " << FTPCmdPath;
-                                qDebug() << "If you get errors: cd scripts && chmod +x serverFtpCmdsPutProgram.sh && chmod 600 ~/.netrc (the ftp is configured in .netrc correct?)";
-                                sh.close();
+                                qDebug() << "If you get errors: chmod 600 ~/.netrc (the ftp is configured in .netrc correct?)";
 
                                 sh2.start("sh", QStringList() << "-c" << FTPCmdPath);
                                 sh2.waitForFinished(-1);
@@ -7469,19 +8020,19 @@ void player::on_actionMake_a_program_from_this_playlist_triggered()
           }
 
               qDebug()<<"Sending program to server. This requires ~/.netrc to be configured with the ftp options and FTP Path in the options to point to a folder called 'ftp' that MUST be located in the parent directory of XFB (due to the code of config/serverFtpCmdsPutProgram).";
-              QProcess sh,sh2;
+              QProcess sh2;
 
-              QByteArray output, output2;
-              QString outPath, FTPCmdPath, xmls;
-              sh.start("sh", QStringList() << "-c" << "pwd");
-              sh.waitForFinished();
-              output = sh.readAll();
-              outPath = output;
-              QStringList path_arry = outPath.split("\n");
-              FTPCmdPath = path_arry[0]+"/usr/share/xfb/scripts/serverFtpCmdsPutProgram.sh | grep 'Transfer complete'";
+              QByteArray output2;
+              QString FTPCmdPath, xmls;
+              QString putProgramScript = serverScriptPath("serverFtpCmdsPutProgram.sh");
+              if (putProgramScript.isEmpty()) {
+                  QMessageBox::critical(this, tr("Script Error"),
+                                        tr("The required upload script '%1' was not found.\nInstall it under the application data directory (e.g. share/xfb/scripts) or set ServerScriptsPath in xfb.conf.").arg("serverFtpCmdsPutProgram.sh"));
+                  return;
+              }
+              FTPCmdPath = serverScriptShellCommand(putProgramScript) + " | grep 'Transfer complete'";
               qDebug() << "running: " << FTPCmdPath;
-              qDebug() << "If you get errors: cd config && chmod +x serverFtpCmdsPutProgram.sh && chmod 600 ~/.netrc (the ftp is configured in .netrc correct?)";
-              sh.close();
+              qDebug() << "If you get errors: chmod 600 ~/.netrc (the ftp is configured in .netrc correct?)";
               sh2.start("sh", QStringList() << "-c" << FTPCmdPath);
               sh2.waitForFinished(-1);
               output2 = sh2.readAll();
@@ -7489,18 +8040,20 @@ void player::on_actionMake_a_program_from_this_playlist_triggered()
               qDebug()<<output2;
               sh2.close();
               qDebug()<<"Checking if the file's intergrity was perserved...";
-              QProcess shCHK,shCHK2;
-              QByteArray outputCHK, outputCHK2;
-              QString outPathCHK, FTPCmdPathCHK, xmlsCHK;
-              shCHK.start("sh", QStringList() << "-c" << "pwd");
-              shCHK.waitForFinished();
-              outputCHK = shCHK.readAll();
-              outPathCHK = outputCHK;
-              QStringList path_arryCHK = outPathCHK.split("\n");
-              FTPCmdPathCHK = path_arryCHK[0]+"/usr/share/xfb/scripts/serverFtpCmdsCHKProgram | grep "+NomeDestePrograma;
+              QProcess shCHK2;
+              QByteArray outputCHK2;
+              QString FTPCmdPathCHK, xmlsCHK;
+              // The check script ships both with and without the .sh suffix;
+              // prefer the .sh copy and fall back to the legacy bare name.
+              QString chkProgramScript = serverScriptPath("serverFtpCmdsCHKProgram.sh");
+              if (chkProgramScript.isEmpty())
+                  chkProgramScript = serverScriptPath("serverFtpCmdsCHKProgram");
+              if (chkProgramScript.isEmpty()) {
+                  qWarning() << "serverFtpCmdsCHKProgram(.sh) not found — skipping upload integrity check.";
+              } else {
+              FTPCmdPathCHK = serverScriptShellCommand(chkProgramScript) + " | grep "+NomeDestePrograma;
               qDebug() << "running: " << FTPCmdPathCHK;
-              qDebug() << "If you get errors: cd config && chmod +x serverFtpCmdsCHKProgram && chmod 600 ~/.netrc (the ftp is configured in .netrc correct?)";
-              shCHK.close();
+              qDebug() << "If you get errors: chmod 600 ~/.netrc (the ftp is configured in .netrc correct?)";
               shCHK2.start("sh", QStringList() << "-c" << FTPCmdPathCHK);
               shCHK2.waitForFinished();
               outputCHK2 = shCHK2.readAll();
@@ -7538,6 +8091,7 @@ void player::on_actionMake_a_program_from_this_playlist_triggered()
                       qDebug()<<"It was not possible to get the size of the local file: "<<mmfile;
                   }
               }
+              } // end integrity check (script found)
               qDebug()<<"Program uploaded to server!";
               QString fileToRemove = FTPPath+"/"+NomeDestePrograma+".ogg";
               if (QFile::remove(fileToRemove)) {
@@ -7722,64 +8276,13 @@ void player::on_actionCheck_the_Database_records_triggered()
             continue; // Move to the next record
         }
 
-        // --- File seems OK, get duration using Exiftool (C++ Parsing Method) ---
-        qDebug() << "File seems OK. Checking metadata with exiftool...";
+        // --- File seems OK, probe the duration (exiftool, ffmpeg fallback) ---
+        qDebug() << "File seems OK. Probing duration...";
 
-        QProcess process;
-        QString command = "exiftool"; // Just the command
-        QStringList arguments;
-        arguments << "-Duration"; // Ask only for the Duration tag for efficiency
-        arguments << path;        // QProcess handles quoting arguments
-
-        qDebug() << "Running command:" << command << arguments;
-
-        process.start(command, arguments);
-
-        // Wait for the process to finish (e.g., 10 seconds timeout)
-        if (!process.waitForFinished(10000)) {
-            qWarning() << "Exiftool process timed out for:" << path << process.errorString();
-            process.kill();
-            process.waitForFinished(1000); // Wait a bit after killing
-            errorsCount++;
-            continue; // Skip this file
-        }
-
-        // Check for exiftool execution errors
-        if (process.exitStatus() != QProcess::NormalExit || process.exitCode() != 0) {
-            qWarning() << "Exiftool process failed for:" << path
-                       << "Exit code:" << process.exitCode()
-                       << "Exit status:" << process.exitStatus();
-            QString errorOutput = QString::fromLocal8Bit(process.readAllStandardError()); // Or fromUtf8
-            qWarning() << "Exiftool Standard Error:\n" << errorOutput;
-            errorsCount++;
-             // Optionally show a non-blocking notification or log this error prominently
-            continue; // Skip this file
-        }
-
-        // Read ALL standard output from exiftool
-        QString exiftoolOutput = QString::fromLocal8Bit(process.readAllStandardOutput()); // Or fromUtf8
-        qDebug() << "Exiftool raw output:\n" << exiftoolOutput;
-
-        QString durationValue;
-        // Find the line containing "Duration" and extract the value
-        QStringList lines = exiftoolOutput.split(QRegularExpression("[\r\n]+"), Qt::SkipEmptyParts);
-        for (const QString &line : lines) {
-            if (line.simplified().startsWith("Duration", Qt::CaseInsensitive)) {
-                int colonPos = line.indexOf(':');
-                if (colonPos != -1) {
-                    durationValue = line.mid(colonPos + 1).trimmed();
-                    qInfo() << "Found Duration:" << durationValue << "for" << path;
-                    break; // Found it
-                }
-            }
-        }
+        QString durationValue = MediaDuration::forFile(path);
 
         if (durationValue.isEmpty()) {
-            qWarning() << "Could not find or parse 'Duration' tag from exiftool output for:" << path;
-             QString errorOutput = QString::fromLocal8Bit(process.readAllStandardError()); // Check stderr again
-             if (!errorOutput.trimmed().isEmpty()) {
-                 qWarning() << "Exiftool stderr for non-duration file:" << errorOutput;
-             }
+            qWarning() << "Could not determine duration for:" << path;
             errorsCount++;
             // Maybe update time to NULL or a special value? For now, just skip update.
         } else {
@@ -10746,6 +11249,7 @@ void player::on_txt_search_returnPressed()
     searchQuery.bindValue(":t2", "%" + term + "%");
     searchQuery.exec();
     model->setQuery(std::move(searchQuery));
+    applyMusicHeaderLabels(model);
     ui->musicView->setModel(model);
 
     ui->musicView->setSortingEnabled(true);
@@ -11545,28 +12049,27 @@ void player::on_bt_takeOver_clicked()
     qInfo() << "Takeover XML created successfully.";
 
     // --- 4. Execute Upload Script Asynchronously ---
-    // Determine script path (needs configuration - example assumes it's relative to app dir)
-    // TODO: Replace this with a robust way to find the script (e.g., settings, known install path)
     QString scriptName = "serverFtpCmdsPutTakeOver.sh";
-    QString scriptDir = QCoreApplication::applicationDirPath() + "/usr/share/xfb/scripts"; // Example path relative to app binary
-    QString scriptPath = QDir(scriptDir).filePath(scriptName);
+    QString scriptPath = serverScriptPath(scriptName);
 
-    qInfo() << "Attempting to execute upload script:" << scriptPath;
-     qDebug() << "Dependencies: Script must exist, be executable, and ~/.netrc configured correctly.";
+    qInfo() << "Attempting to execute upload script:" << scriptName << "->" << scriptPath;
+     qDebug() << "Dependencies: Script must exist and ~/.netrc must be configured correctly.";
 
 
-    if (!QFileInfo::exists(scriptPath)) {
-         qWarning() << "Upload script not found at:" << scriptPath;
-         QMessageBox::critical(this, "Script Error", QString("The required upload script was not found:\n%1").arg(scriptPath));
-         // Clean up local XML file? Maybe not, user might want to upload manually.
+    if (scriptPath.isEmpty() || serverScriptIsTemplate(scriptPath)) {
+         if (scriptPath.isEmpty()) {
+             QMessageBox::critical(this, tr("Script Error"),
+                                   tr("The required upload script '%1' was not found.\nInstall it under the application data directory (e.g. share/xfb/scripts) or set ServerScriptsPath in xfb.conf.").arg(scriptName));
+         } else {
+             QMessageBox::critical(this, tr("Script Not Configured"),
+                                   tr("The script '%1' still contains the [IP]/[PORT] placeholders.\nEdit it with your server's address and port:\n%2").arg(scriptName, scriptPath));
+         }
+         // Leave the local XML file so the user can upload it manually.
          ui->bt_takeOver->setEnabled(true);
          ui->bt_takeOver->setText(tr("Broadcast LIVE"));
          ui->bt_takeOver->setStyleSheet("");
          return;
     }
-     // Optional: Check if script is executable on Linux/macOS
-     // QFileInfo scriptInfo(scriptPath);
-     // if (!scriptInfo.isExecutable()) { ... error ... }
 
 
     ui->bt_takeOver->setText(tr("Uploading..."));
@@ -11651,7 +12154,7 @@ void player::on_bt_takeOver_clicked()
      });
 
     // Start the script
-    uploadProcess->start(scriptPath); // No arguments needed based on original code
+    startServerScript(uploadProcess, scriptPath); // No arguments needed based on original code
 }
 void player::livePiscaStart(){
 
@@ -11675,22 +12178,22 @@ void player::checkTakeOver() {
     qDebug() << "Checking Takeover status asynchronously...";
 
     // --- Determine Script Path ---
-    // TODO: Replace this with a robust way to find the script
     QString scriptName = "serverFtpCmdsCHKTakeOver.sh";
-    QString scriptDir = QCoreApplication::applicationDirPath() + "/usr/share/xfb/scripts"; // Example path
-    QString scriptPath = QDir(scriptDir).filePath(scriptName);
+    QString scriptPath = serverScriptPath(scriptName);
 
-    qInfo() << "Attempting to execute check script:" << scriptPath;
+    qInfo() << "Attempting to execute check script:" << scriptName << "->" << scriptPath;
 
-    if (!QFileInfo::exists(scriptPath)) {
-        qWarning() << "Check script not found at:" << scriptPath;
+    if (scriptPath.isEmpty()) {
         // Stop checking? Or keep retrying? Let's stop and warn.
-        QMessageBox::critical(this, "Script Error", QString("The required check script was not found:\n%1\n\nTakeover verification stopped.").arg(scriptPath));
-        // Reset UI to non-live state? Depends on desired behavior on error.
-        // resetToNonLiveState(); // Call a hypothetical function to reset UI
+        QMessageBox::critical(this, tr("Script Error"),
+                              tr("The required check script '%1' was not found.\nInstall it under the application data directory (e.g. share/xfb/scripts) or set ServerScriptsPath in xfb.conf.\n\nTakeover verification stopped.").arg(scriptName));
         return;
     }
-    // Optional: Check script executability on Linux/macOS
+    if (serverScriptIsTemplate(scriptPath)) {
+        QMessageBox::critical(this, tr("Script Not Configured"),
+                              tr("The script '%1' still contains the [IP]/[PORT] placeholders.\nEdit it with your server's address and port:\n%2\n\nTakeover verification stopped.").arg(scriptName, scriptPath));
+        return;
+    }
 
     // --- Execute Script Asynchronously ---
     QProcess *checkProcess = new QProcess(this); // Create on heap for async
@@ -11785,7 +12288,7 @@ void player::checkTakeOver() {
 
     // --- Start the Check ---
     // Execute the script directly, do not pipe to grep here
-    checkProcess->start(scriptPath);
+    startServerScript(checkProcess, scriptPath);
 }
 void player::MainsetVol100(){
     XplayerOutput->setVolume(1.0); // Qt6 uses 0.0-1.0 range for volume
@@ -12082,12 +12585,16 @@ void player::on_bt_pause_rec_clicked()
 
         audioRecorder->pause();
         recTimer->stop();
+        refreshTransportAccessibleState();
+        announceAccessible(tr("Recording paused"));
 
     } else {
         recPause=false;
         ui->bt_pause_rec->setStyleSheet("");
         audioRecorder->record();
         recTimer->start();
+        refreshTransportAccessibleState();
+        announceAccessible(tr("Recording resumed"));
     }
 
 }
@@ -12100,12 +12607,15 @@ void player::on_bt_pause_play_clicked()
         ui->bt_pause_play->setStyleSheet("background-color:yellow");
 
         Xplayer->pause();
-
+        refreshTransportAccessibleState();
+        announceAccessible(tr("Paused"));
 
     } else {
         playPause=false;
         ui->bt_pause_play->setStyleSheet("");
         Xplayer->play();
+        refreshTransportAccessibleState();
+        announceAccessible(tr("Resumed"));
 
     }
 }

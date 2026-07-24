@@ -202,7 +202,13 @@ private:
     static ServiceContainer* s_instance;
     static QMutex s_instanceMutex;
 
-    mutable QMutex m_mutex;
+    // Recursive by necessity: initializeServices() holds this lock while it
+    // calls each service's initialize(), and services resolve their
+    // collaborators from inside doInitialize() (AccessibilityManager and
+    // AudioFeedbackService resolve each other). With a plain QMutex that
+    // re-entry deadlocks the whole app at startup, which is why service
+    // initialization used to be skipped entirely.
+    mutable QRecursiveMutex m_mutex;
     QHash<QString, ServiceRegistration> m_services;
     QList<QString> m_initializationOrder;
 };
