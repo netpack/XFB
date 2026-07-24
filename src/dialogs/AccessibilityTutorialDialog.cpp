@@ -15,9 +15,11 @@ namespace {
 // Render a shortcut the way the current platform writes it, so the tutorial
 // says "Cmd+Shift+P" on macOS and "Ctrl+Shift+P" elsewhere without keeping a
 // second, hand-written copy of the key table in prose.
-QString key(int modifiersAndKey)
+// Takes QKeyCombination rather than int: the implicit conversion to int has
+// been deprecated since Qt 6.0 and relying on it breaks on stricter builds.
+QString key(QKeyCombination combination)
 {
-    return QKeySequence(modifiersAndKey).toString(QKeySequence::NativeText).toHtmlEscaped();
+    return QKeySequence(combination).toString(QKeySequence::NativeText).toHtmlEscaped();
 }
 
 } // namespace

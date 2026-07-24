@@ -682,11 +682,20 @@ void AccessibilityManager::processAnnouncement(const QString& message, Priority 
         return;
     }
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 8, 0)
     QAccessibleAnnouncementEvent event(target, message);
     event.setPoliteness((priority == Priority::High || priority == Priority::Critical)
                             ? QAccessible::AnnouncementPoliteness::Assertive
                             : QAccessible::AnnouncementPoliteness::Polite);
     QAccessible::updateAccessibility(&event);
+#else
+    // Qt before 6.8 (Debian bookworm ships 6.4) has no announcement event.
+    // An Alert at least tells the reader that something changed; the text
+    // itself only reaches the user on the newer Qt versions.
+    Q_UNUSED(priority)
+    QAccessibleEvent event(target, QAccessible::Alert);
+    QAccessible::updateAccessibility(&event);
+#endif
 }
 
 bool AccessibilityManager::isATSPIAvailable() const
