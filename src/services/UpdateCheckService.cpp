@@ -8,20 +8,46 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
+#include <QSysInfo>
 #include <QVersionNumber>
 
 namespace
 {
 const char kLatestReleaseUrl[] = "https://api.github.com/repos/netpack/XFB/releases/latest";
 
-QString platformAssetSuffix()
+// True when a release asset is the right download for this platform AND this
+// CPU architecture.
+//
+// Matching on the file extension alone was actively harmful: GitHub returns
+// assets sorted case-insensitively by name, so "XFB-<ver>-arm64-Setup.exe"
+// precedes "XFB-<ver>-Setup.exe" and every x64 Windows machine was handed the
+// ARM64 installer. Because both installers use the same $PROGRAMFILES64
+// directory, running it replaced a working x64 install with ARM64 binaries and
+// Windows then refused to start the app ("This app can't run on your PC").
+// The Linux .deb assets have the same hazard: amd64 is listed before arm64.
+bool assetMatchesPlatform(const QString &name)
 {
+    const QString lower = name.toLower();
+
+    // QSysInfo reports the architecture of the running build, which is what
+    // matters here — an x86 build under emulation must keep getting x86.
+    const QString arch = QSysInfo::buildCpuArchitecture();
+    const bool wantArm64 = arch.contains(QLatin1String("arm"))
+                           || arch.contains(QLatin1String("aarch"));
+    const bool assetIsArm64 = lower.contains(QLatin1String("arm64"))
+                              || lower.contains(QLatin1String("aarch64"));
+
 #if defined(Q_OS_MAC)
-    return QStringLiteral(".dmg");
+    // A single universal/arm64 dmg is published, so the extension is enough.
+    return lower.endsWith(QLatin1String(".dmg"));
 #elif defined(Q_OS_WIN)
-    return QStringLiteral(".exe");
+    if (!lower.endsWith(QLatin1String(".exe")))
+        return false;
+    return wantArm64 == assetIsArm64;
 #else
-    return QStringLiteral(".deb");
+    if (!lower.endsWith(QLatin1String(".deb")))
+        return false;
+    return wantArm64 == assetIsArm64;
 #endif
 }
 } // namespace
@@ -108,17 +134,24 @@ void UpdateCheckService::checkNow(bool manual)
             return;
         }
 
-        // Pick the artifact for this platform, if the release ships one
+        // Pick the artifact for this platform and architecture, if the release
+        // ships one. Leaving downloadUrl empty is safe: the update dialog then
+        // sends the user to the release page instead of installing anything.
         QUrl downloadUrl;
-        const QString suffix = platformAssetSuffix();
         const QJsonArray assets = release.value(QStringLiteral("assets")).toArray();
         for (const QJsonValue &assetVal : assets) {
             const QJsonObject asset = assetVal.toObject();
             const QString name = asset.value(QStringLiteral("name")).toString();
-            if (name.endsWith(suffix, Qt::CaseInsensitive)) {
+            if (assetMatchesPlatform(name)) {
                 downloadUrl = QUrl(asset.value(QStringLiteral("browser_download_url")).toString());
+                qInfo() << "Update check: selected asset" << name
+                        << "for" << QSysInfo::buildCpuArchitecture();
                 break;
             }
+        }
+        if (downloadUrl.isEmpty()) {
+            qWarning() << "Update check: no asset matches this platform/architecture ("
+                       << QSysInfo::buildCpuArchitecture() << ") - will open the release page";
         }
 
         qInfo() << "Update check: new version available:" << tag
