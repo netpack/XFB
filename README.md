@@ -8,6 +8,7 @@
     <a href="https://aur.archlinux.org/packages/xfb"><img src="https://img.shields.io/aur/version/xfb" alt="AUR version"></a>
     <a href="https://github.com/netpack/XFB/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3"></a>
     <a href="https://github.com/netpack/XFB/actions/workflows/ci.yml"><img src="https://github.com/netpack/XFB/actions/workflows/ci.yml/badge.svg" alt="Build"></a>
+    <a href="https://github.com/sponsors/netpack"><img src="https://img.shields.io/github/sponsors/netpack?logo=githubsponsors&logoColor=white&label=Sponsor" alt="Sponsor"></a>
   </p>
 </div>
 
@@ -232,7 +233,17 @@ For full functionality, consider installing:
 
 ---
 
-## Support
+## Support Development
+
+XFB is free and open source, and always will be. If it is useful to you or your
+station, you can support its continued development through
+[GitHub Sponsors](https://github.com/sponsors/netpack). Sponsorships fund the
+time spent on new features, cross-platform packaging, and keeping the project
+maintained.
+
+---
+
+## Help & Contact
 
 - [Open an issue](https://github.com/netpack/XFB/issues) on GitHub
 - Email: info@netpack.pt
