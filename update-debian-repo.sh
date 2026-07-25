@@ -1,70 +1,95 @@
 #!/bin/bash
-# Script to update Debian repository on GitHub Pages
-# Usage: ./update-debian-repo.sh
+# Build the APT repository tree for GitHub Pages.
+#
+# The index generation needs Debian tooling that does not exist on macOS
+# (dpkg-scanpackages from dpkg-dev, plus GNU coreutils md5sum/sha1sum/
+# sha256sum), so that part runs inside a Debian container — the same approach
+# build-deb-docker.sh already uses for the packages themselves. The result is
+# byte-for-byte what a Debian host would produce.
+#
+# Usage:
+#   ./update-debian-repo.sh [version]
+#
+# Publishing to gh-pages is deliberately NOT automatic; see the notes printed
+# at the end.
 
 set -e
 
-VERSION="3.141592653"
-ARCH="amd64"
-DEB_FILE="xfb_${VERSION}-1_${ARCH}.deb"
+VERSION="${1:-3.141592653}"
+REPO_DIR="debian-repo"
+HELPER_IMAGE="xfb-apt-repo:bookworm"
 
 echo "=========================================="
-echo "Updating Debian Repository"
+echo "Building APT repository for XFB $VERSION"
 echo "=========================================="
 echo ""
 
-# Check if .deb file exists
-if [ ! -f "$DEB_FILE" ]; then
-    echo "❌ Error: $DEB_FILE not found"
-    echo "Run ./build-deb-no-tests.sh first"
+if ! docker info > /dev/null 2>&1; then
+    echo "❌ Docker is not running. Start Docker Desktop and try again."
     exit 1
 fi
 
-echo "✓ Found $DEB_FILE"
+# --- Locate the packages -------------------------------------------------
+# build-deb-docker.sh writes to output/; older scripts left them in the root.
+find_deb() {
+    local arch="$1" name="xfb_${VERSION}-1_$1.deb"
+    for candidate in "output/$name" "$name"; do
+        [ -f "$candidate" ] && { echo "$candidate"; return 0; }
+    done
+    return 1
+}
+
+AMD64_DEB="$(find_deb amd64 || true)"
+ARM64_DEB="$(find_deb arm64 || true)"
+
+if [ -z "$AMD64_DEB" ] && [ -z "$ARM64_DEB" ]; then
+    echo "❌ No packages found for $VERSION."
+    echo "   Expected output/xfb_${VERSION}-1_{amd64,arm64}.deb"
+    echo "   Run: ./build-deb-docker.sh amd64 && ./build-deb-docker.sh arm64"
+    exit 1
+fi
+
+ARCHITECTURES=""
+[ -n "$AMD64_DEB" ] && { echo "✓ amd64: $AMD64_DEB"; ARCHITECTURES="amd64"; }
+[ -n "$ARM64_DEB" ] && { echo "✓ arm64: $ARM64_DEB"; ARCHITECTURES="${ARCHITECTURES:+$ARCHITECTURES }arm64"; }
 echo ""
 
-# Create repository structure
-echo "Creating repository structure..."
-mkdir -p debian-repo/pool/main
-mkdir -p debian-repo/dists/stable/main/binary-amd64
-mkdir -p debian-repo/dists/stable/main/binary-arm64
+# --- Assemble the pool (portable: just mkdir/cp) -------------------------
+echo "Assembling repository tree..."
+rm -rf "$REPO_DIR"
+mkdir -p "$REPO_DIR/pool/main"
+for arch in $ARCHITECTURES; do
+    mkdir -p "$REPO_DIR/dists/stable/main/binary-$arch"
+done
+[ -n "$AMD64_DEB" ] && cp "$AMD64_DEB" "$REPO_DIR/pool/main/"
+[ -n "$ARM64_DEB" ] && cp "$ARM64_DEB" "$REPO_DIR/pool/main/"
 
-# Copy .deb file
-echo "Copying package to repository..."
-cp "$DEB_FILE" debian-repo/pool/main/
-
-# Check if arm64 package exists
-ARM64_DEB="xfb_${VERSION}-1_arm64.deb"
-if [ -f "$ARM64_DEB" ]; then
-    echo "✓ Found ARM64 package"
-    cp "$ARM64_DEB" debian-repo/pool/main/
+# --- Helper image (cached after the first run) ---------------------------
+if ! docker image inspect "$HELPER_IMAGE" > /dev/null 2>&1; then
+    echo "Building helper image (first run only)..."
+    docker build -q -t "$HELPER_IMAGE" - > /dev/null <<'DOCKERFILE'
+FROM debian:bookworm
+RUN apt-get update && apt-get install -y --no-install-recommends dpkg-dev \
+    && rm -rf /var/lib/apt/lists/*
+DOCKERFILE
 fi
 
-cd debian-repo
+# --- Generate indexes and Release inside Debian --------------------------
+echo "Generating Packages and Release (in Debian container)..."
+docker run --rm \
+    -v "$(pwd)/$REPO_DIR:/repo" \
+    -e "ARCHITECTURES=$ARCHITECTURES" \
+    -w /repo \
+    "$HELPER_IMAGE" bash -euc '
+        for arch in $ARCHITECTURES; do
+            dpkg-scanpackages --arch "$arch" pool/main /dev/null \
+                > "dists/stable/main/binary-$arch/Packages"
+            gzip -9c "dists/stable/main/binary-$arch/Packages" \
+                > "dists/stable/main/binary-$arch/Packages.gz"
+        done
 
-# Generate Packages files
-echo "Generating Packages files..."
-
-# AMD64
-dpkg-scanpackages --arch amd64 pool/main /dev/null | gzip -9c > dists/stable/main/binary-amd64/Packages.gz
-dpkg-scanpackages --arch amd64 pool/main /dev/null > dists/stable/main/binary-amd64/Packages
-
-# ARM64 (if exists)
-if [ -f "pool/main/$ARM64_DEB" ]; then
-    dpkg-scanpackages --arch arm64 pool/main /dev/null | gzip -9c > dists/stable/main/binary-arm64/Packages.gz
-    dpkg-scanpackages --arch arm64 pool/main /dev/null > dists/stable/main/binary-arm64/Packages
-fi
-
-# Generate Release file
-echo "Generating Release file..."
-cd dists/stable
-
-ARCHITECTURES="amd64"
-if [ -f "../../pool/main/$ARM64_DEB" ]; then
-    ARCHITECTURES="amd64 arm64"
-fi
-
-cat > Release << EOF
+        cd dists/stable
+        cat > Release <<EOF
 Origin: XFB
 Label: XFB Radio Automation
 Suite: stable
@@ -72,150 +97,86 @@ Codename: stable
 Version: 2.0
 Architectures: $ARCHITECTURES
 Components: main
-Description: XFB Radio Automation Software - Professional radio broadcasting solution with comprehensive accessibility support
-Date: $(date -R)
+Description: XFB Radio Automation Software - radio broadcasting with comprehensive accessibility support
+Date: $(date -R -u)
 EOF
+        # Checksums are relative to the Release file, and apt rejects a
+        # Release listing files it cannot match, so emit size + path exactly.
+        emit() {
+            echo "$1:"
+            find . -type f -name "Packages*" | sed "s|^\./||" | sort | while read -r f; do
+                printf " %s %16d %s\n" "$($2 "$f" | cut -d" " -f1)" "$(stat -c%s "$f")" "$f"
+            done
+        }
+        emit MD5Sum md5sum   >> Release
+        emit SHA1   sha1sum  >> Release
+        emit SHA256 sha256sum >> Release
+    '
 
-# Add file checksums
-echo "MD5Sum:" >> Release
-find . -type f -name "Packages*" -exec md5sum {} \; | sed 's/\.\///' >> Release
+# Files created inside the container are root-owned; hand them back.
+docker run --rm -v "$(pwd)/$REPO_DIR:/repo" "$HELPER_IMAGE" \
+    chown -R "$(id -u):$(id -g)" /repo
 
-echo "SHA1:" >> Release
-find . -type f -name "Packages*" -exec sha1sum {} \; | sed 's/\.\///' >> Release
-
-echo "SHA256:" >> Release
-find . -type f -name "Packages*" -exec sha256sum {} \; | sed 's/\.\///' >> Release
-
-cd ../..
-
-# Create README for repository
-cat > README.md << 'EOF'
+# --- Landing page --------------------------------------------------------
+cat > "$REPO_DIR/README.md" <<EOF
 # XFB Debian Repository
 
-This repository provides Debian packages for XFB Radio Automation Software.
+APT repository for XFB Radio Automation Software, version $VERSION.
 
-## Installation
+## Install
 
-### Quick Install
+The repository is not GPG-signed, so apt needs to be told to trust it:
 
-```bash
-# Add repository (without GPG verification)
+\`\`\`bash
 echo "deb [trusted=yes] https://netpack.github.io/XFB stable main" | sudo tee /etc/apt/sources.list.d/xfb.list
-
-# Update package list
-sudo apt update
-
-# Install XFB
-sudo apt install xfb
-```
-
-### Secure Install (with GPG verification)
-
-```bash
-# Add GPG key
-wget -qO - https://netpack.github.io/XFB/xfb-archive-keyring.gpg | sudo apt-key add -
-
-# Add repository
-echo "deb https://netpack.github.io/XFB stable main" | sudo tee /etc/apt/sources.list.d/xfb.list
-
-# Update and install
 sudo apt update
 sudo apt install xfb
-```
+\`\`\`
 
-## Supported Distributions
+## Update
 
-- Debian 11 (Bullseye) and newer
-- Ubuntu 20.04 LTS and newer
-- Linux Mint 20 and newer
-- Any Debian-based distribution with Qt6 support
+\`\`\`bash
+sudo apt update && sudo apt upgrade xfb
+\`\`\`
 
-## Supported Architectures
+## Remove
 
-- amd64 (x86_64)
-- arm64 (aarch64) - if available
-
-## Package Information
-
-- **Package Name**: xfb
-- **Current Version**: 2.0.0
-- **License**: GPL-3.0
-- **Maintainer**: Netpack <info@netpack.pt>
-
-## Manual Installation
-
-If you prefer to download the .deb file directly:
-
-```bash
-# Download
-wget https://github.com/netpack/XFB/releases/download/v2.0.0/xfb_2.0.0-1_amd64.deb
-
-# Install
-sudo apt install ./xfb_2.0.0-1_amd64.deb
-```
-
-## Updating
-
-```bash
-sudo apt update
-sudo apt upgrade xfb
-```
-
-## Uninstalling
-
-```bash
+\`\`\`bash
 sudo apt remove xfb
-```
+sudo rm /etc/apt/sources.list.d/xfb.list
+\`\`\`
 
-## Support
+## Contents
 
-- **Website**: https://netpack.pt
-- **GitHub**: https://github.com/netpack/XFB
-- **Issues**: https://github.com/netpack/XFB/issues
-- **Email**: info@netpack.pt
+- Architectures: $ARCHITECTURES
+- Suite: stable, component: main
 
-## About XFB
+Packages can also be downloaded directly from the
+[GitHub releases page](https://github.com/netpack/XFB/releases).
 
-XFB is a professional radio automation software designed for radio stations and broadcasting professionals. Features include:
-
-- Professional audio playback and recording
-- Comprehensive accessibility support (ORCA screen reader integration)
-- Complete keyboard navigation
-- Playlist management
-- Live streaming integration
-- Multi-format audio support
-- Database-driven music library
-
-For more information, visit https://netpack.pt
+- Website: https://netpack.pt
+- Issues: https://github.com/netpack/XFB/issues
 EOF
-
-cd ..
+touch "$REPO_DIR/.nojekyll"
 
 echo ""
-echo "✓ Repository structure created"
-echo ""
-echo "Repository contents:"
-tree debian-repo/ 2>/dev/null || find debian-repo/ -type f
+echo "✓ Repository built in $REPO_DIR/"
+find "$REPO_DIR" -type f | sort | sed 's/^/    /'
 
 echo ""
 echo "=========================================="
-echo "Next Steps:"
+echo "Publishing (manual)"
 echo "=========================================="
 echo ""
-echo "1. Review the repository structure in debian-repo/"
+echo "GitHub Pages must be enabled for the repo first:"
+echo "  Settings → Pages → Source: gh-pages branch, / (root)"
 echo ""
-echo "2. To publish on GitHub Pages:"
-echo "   git checkout gh-pages || git checkout --orphan gh-pages"
-echo "   git rm -rf . 2>/dev/null || true"
-echo "   cp -r debian-repo/* ."
-echo "   git add ."
-echo "   git commit -m 'Update Debian repository to version $VERSION'"
-echo "   git push origin gh-pages"
-echo ""
-echo "3. Enable GitHub Pages in repository settings"
-echo "   Settings → Pages → Source: gh-pages branch"
-echo ""
-echo "4. Users can then install with:"
-echo "   echo 'deb [trusted=yes] https://YOUR_USERNAME.github.io/XFB stable main' | sudo tee /etc/apt/sources.list.d/xfb.list"
-echo "   sudo apt update && sudo apt install xfb"
+echo "Then publish with:"
+echo "  git worktree add /tmp/xfb-ghpages gh-pages"
+echo "  rm -rf /tmp/xfb-ghpages/{dists,pool,README.md}"
+echo "  cp -r $REPO_DIR/. /tmp/xfb-ghpages/"
+echo "  git -C /tmp/xfb-ghpages add -A"
+echo "  git -C /tmp/xfb-ghpages commit -m 'apt: XFB $VERSION'"
+echo "  git -C /tmp/xfb-ghpages push origin gh-pages"
+echo "  git worktree remove /tmp/xfb-ghpages"
 echo ""

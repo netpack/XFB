@@ -141,3 +141,6 @@ Dockerfile.aur-update
 *.pem
 .env
 *.log
+
+# Generated APT repository tree (update-debian-repo.sh)
+debian-repo/
