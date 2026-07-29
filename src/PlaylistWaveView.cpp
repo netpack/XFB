@@ -401,8 +401,10 @@ void PlaylistWaveView::applyRowSizeHints(int first, int last) const
 
 void PlaylistWaveView::requestVisibleWaveforms()
 {
-    for (int row = 0; row < m_list->count(); ++row)
-        m_store->fetch(m_list->item(row)->text());
+    for (int row = 0; row < m_list->count(); ++row) {
+        if (QListWidgetItem *item = m_list->item(row))
+            m_store->fetch(item->text());
+    }
     if (m_nowPlaying) {
         const QString playing = m_nowPlaying();
         if (!playing.isEmpty())

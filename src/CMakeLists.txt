@@ -21,6 +21,9 @@ set(SOURCES
     audio/FxEngine.cpp
     audio/FxPlayer.cpp
     audio/WaveformStore.cpp
+    # Track tempo: detection from the waveform + the library's BPM column
+    audio/BpmDetector.cpp
+    audio/BpmLibrary.cpp
     dialogs/AudioFxDialog.cpp
     # Playlist sound-wave view (crossfade preparation)
     PlaylistWaveView.cpp

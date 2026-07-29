@@ -51,6 +51,8 @@ class UpdateCheckService;
 class AudioFxWidget;
 class WaveformStore;
 class PlaylistWaveView;
+class BpmLibrary;
+class QStyledItemDelegate;
 class NowPlayingWaveStrip;
 class LevelMeter;
 class ArtworkStore;
@@ -450,6 +452,20 @@ private slots:
     QToolButton *m_autoMixButton = nullptr;
     QPointer<QProgressDialog> m_autoMixProgress;
     void startAutoMix(const QVector<int> &rows);
+
+    // Track tempo: measured off the same waveform decode, kept in the
+    // musics table. Auto mode uses it to follow a track with one of a
+    // similar tempo, so the crossfade between them does not fight itself.
+    BpmLibrary *m_bpmLibrary = nullptr;
+    QPointer<QProgressDialog> m_bpmProgress;
+    // Blanks the BPM cells of tracks with no measurable tempo (stored as 0)
+    QStyledItemDelegate *m_bpmCellDelegate = nullptr;
+    void analyzeLibraryBpm();
+    void offerBpmAnalysis();
+    QString autoModeReferenceTrack() const;
+    // Options: pick the next auto mode track near the previous one's tempo
+    bool m_bpmMatch = false;
+    int m_bpmTolerance = 8; // BPM, either side
 
     // Overlap segue: when the next playlist item defines an overlap, the
     // dying tail of the current track is handed to this dedicated player

@@ -92,21 +92,6 @@
              <property name="styleSheet">
               <string notr="true">selection-color: rgb(87, 118, 255);</string>
              </property>
-             <item>
-              <property name="text">
-               <string>English</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>Français</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>Portugûes</string>
-              </property>
-             </item>
             </widget>
            </item>
           </layout>
@@ -264,6 +249,59 @@
               <string>Auto Auto-mix: mix tracks as they are added to the playlist</string>
              </property>
             </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="checkBox_bpmMatch">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;In Auto Mode, pick the next track from those whose tempo is close to the one it follows, so the crossfade between them does not fight two different beats. Half and double time count as a match. Tracks need their BPM measured first (Database → Measure the BPM of all music tracks in the database); when nothing suitable is found, Auto Mode picks at random as before.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>Auto Mode: follow each track with one at a similar BPM</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="layout_bpmTolerance">
+             <item>
+              <widget class="QLabel" name="label_bpmTolerance">
+               <property name="text">
+                <string>BPM tolerance:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QSpinBox" name="spin_bpmTolerance">
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;How far the next track's tempo may sit from the previous one's and still be picked. Small values keep transitions tight but need a large analysed library; larger values always find something.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="suffix">
+                <string> BPM</string>
+               </property>
+               <property name="minimum">
+                <number>1</number>
+               </property>
+               <property name="maximum">
+                <number>60</number>
+               </property>
+               <property name="value">
+                <number>8</number>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer name="hspacer_bpmTolerance">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+            </layout>
            </item>
            <item>
             <widget class="QCheckBox" name="checkBox_levelMeter">

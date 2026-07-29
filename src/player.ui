@@ -3405,7 +3405,7 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
          <number>2</number>
         </property>
         <property name="text">
-         <string>XFB v3.14159 by Netpack - Online Solutions! :: www.netpack.pt</string>
+         <string>by Netpack - Online Solutions! :: www.netpack.pt</string>
         </property>
         <property name="alignment">
          <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>

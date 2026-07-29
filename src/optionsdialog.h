@@ -73,6 +73,8 @@ private:
 
     Ui::optionsDialog *ui;
     QColor m_accentColor; // invalid when using the theme default
+    QString m_initialLanguage;   // language code the dialog was opened with
+    bool m_languageChanged = false; // set on save; a restart is needed to apply
     QString txt_selected_db;
     QString disableSeekBar;
     QString Normalize_Soft;

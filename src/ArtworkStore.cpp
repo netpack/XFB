@@ -15,6 +15,8 @@
 #include <QProcess>
 #include <QStandardPaths>
 
+#include <memory>
+
 namespace
 {
 constexpr int kMaxParallelJobs = 2;
@@ -78,8 +80,24 @@ void ArtworkStore::startNext()
 
         ++m_running;
         auto *proc = new QProcess(this);
+
+        // One-shot teardown: a crashed ffmpeg reports its end twice — first
+        // errorOccurred(Crashed), with the state already NotRunning so the
+        // guard below lets it through, then finished(CrashExit). Handling both
+        // would decrement m_running twice and finish the same job twice.
+        const auto done = std::make_shared<bool>(false);
+        const auto teardown = [this, proc, path, done](const QImage &image) {
+            if (*done)
+                return;
+            *done = true;
+            proc->deleteLater();
+            --m_running;
+            finishJob(path, image);
+            startNext();
+        };
+
         connect(proc, &QProcess::finished, this,
-                [this, proc, path, outPath](int exitCode, QProcess::ExitStatus status) {
+                [path, outPath, teardown](int exitCode, QProcess::ExitStatus status) {
             QImage image;
             if (status == QProcess::NormalExit && exitCode == 0)
                 image = QImage(outPath);
@@ -87,19 +105,13 @@ void ArtworkStore::startNext()
                 QFile::remove(outPath); // no partial/failed output in the cache
                 image = folderArtworkFor(path);
             }
-            proc->deleteLater();
-            --m_running;
-            finishJob(path, image);
-            startNext();
+            teardown(image);
         });
         connect(proc, &QProcess::errorOccurred, this,
-                [this, proc, path](QProcess::ProcessError) {
+                [proc, path, teardown](QProcess::ProcessError) {
             if (proc->state() != QProcess::NotRunning)
-                return; // finished() will handle it
-            proc->deleteLater();
-            --m_running;
-            finishJob(path, folderArtworkFor(path));
-            startNext();
+                return; // still alive: finished() will do the teardown
+            teardown(folderArtworkFor(path));
         });
 
         proc->start(ffmpeg,

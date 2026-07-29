@@ -4,7 +4,7 @@
 
 set -e
 
-VERSION="3.141592653"
+VERSION="3.1415926535"
 PKGREL="1"
 
 echo "=========================================="
@@ -66,7 +66,7 @@ echo "Committing changes..."
 git add PKGBUILD .SRCINFO xfb.install
 git commit -m "Update to version $VERSION-$PKGREL
 
-- Updated to XFB 3.141592653
+- Updated to XFB 3.1415926535
 - Accessibility services now initialize; announcements reach the screen reader
 - Keyboard control of playback and of adding tracks to the playlist
 - Tutorial for blind users and reachable Accessibility Preferences

@@ -67,11 +67,16 @@ optionsDialog::optionsDialog(QWidget *parent) :
     qDebug() << "Reading settings from:" << settings.fileName();
 
     // -- General Tab --
-    // Language
-    QString idioma = settings.value("Language", "en").toString(); // Default "en"
-    if(idioma == "pt") { ui->cbox_lang->setCurrentText("Português"); }
-    else if(idioma == "fr") { ui->cbox_lang->setCurrentText("Français"); }
-    else { ui->cbox_lang->setCurrentText("English"); } // Default to English text
+    // Language. The item text is the language's own endonym (never translated,
+    // so a speaker can always find their language) and the code is carried in
+    // the item data, so matching never depends on the displayed string.
+    ui->cbox_lang->clear();
+    ui->cbox_lang->addItem(QStringLiteral("English"), QStringLiteral("en"));
+    ui->cbox_lang->addItem(QStringLiteral("Français"), QStringLiteral("fr"));
+    ui->cbox_lang->addItem(QStringLiteral("Português"), QStringLiteral("pt"));
+    m_initialLanguage = settings.value("Language", "en").toString(); // Default "en"
+    const int langIndex = ui->cbox_lang->findData(m_initialLanguage);
+    ui->cbox_lang->setCurrentIndex(langIndex >= 0 ? langIndex : 0); // Default to English
 
     // General Checkboxes
     ui->checkBox_disableSeekBar->setChecked(settings.value("Disable_Seek_Bar", false).toBool());
@@ -93,6 +98,15 @@ optionsDialog::optionsDialog(QWidget *parent) :
     ui->checkBox_enableTorrents->setChecked(settings.value("EnableTorrents", false).toBool());
     ui->checkBox_showFxTab->setChecked(settings.value("ShowFxTab", true).toBool());
     ui->checkBox_autoAutoMix->setChecked(settings.value("AutoAutoMix", false).toBool());
+    ui->checkBox_bpmMatch->setChecked(settings.value("AutoModeMatchBpm", false).toBool());
+    ui->spin_bpmTolerance->setValue(
+        qBound(1, settings.value("AutoModeBpmTolerance", 8).toInt(), 60));
+    ui->spin_bpmTolerance->setEnabled(ui->checkBox_bpmMatch->isChecked());
+    ui->label_bpmTolerance->setEnabled(ui->checkBox_bpmMatch->isChecked());
+    connect(ui->checkBox_bpmMatch, &QCheckBox::toggled, this, [this](bool on) {
+        ui->spin_bpmTolerance->setEnabled(on);
+        ui->label_bpmTolerance->setEnabled(on);
+    });
     ui->checkBox_levelMeter->setChecked(settings.value("ShowLevelMeter", false).toBool());
     ui->combo_levelMeterPos->setCurrentIndex(
         settings.value("LevelMeterPlacement", "volume").toString() == "side" ? 1 : 0);
@@ -263,6 +277,8 @@ void optionsDialog::saveSettings2Db()
     settings.setValue("EnableTorrents", ui->checkBox_enableTorrents->isChecked());
     settings.setValue("ShowFxTab", ui->checkBox_showFxTab->isChecked());
     settings.setValue("AutoAutoMix", ui->checkBox_autoAutoMix->isChecked());
+    settings.setValue("AutoModeMatchBpm", ui->checkBox_bpmMatch->isChecked());
+    settings.setValue("AutoModeBpmTolerance", ui->spin_bpmTolerance->value());
     settings.setValue("ShowLevelMeter", ui->checkBox_levelMeter->isChecked());
     settings.setValue("LevelMeterPlacement",
                       ui->combo_levelMeterPos->currentIndex() == 1 ? "side" : "volume");
@@ -280,11 +296,10 @@ void optionsDialog::saveSettings2Db()
         }
     }
 
-    // Language
-    QString langText = ui->cbox_lang->currentText();
-    if (langText == "Português") settings.setValue("Language", "pt");
-    else if (langText == "Français") settings.setValue("Language", "fr");
-    else settings.setValue("Language", "en"); // Default
+    // Language — read the code from the item data, never from the shown text.
+    const QString language = ui->cbox_lang->currentData().toString();
+    settings.setValue("Language", language.isEmpty() ? QStringLiteral("en") : language);
+    m_languageChanged = (language != m_initialLanguage);
 
     // Recording (Save description and enum values)
     settings.setValue("RecDevice", ui->cboxRecDev->currentText());
@@ -400,6 +415,15 @@ void optionsDialog::saveSettings2Db()
     } else {
         qInfo() << "Settings saved successfully.";
         // Optional: QMessageBox::information(this, tr("Settings Saved"), tr("Settings saved successfully."));
+    }
+
+    // The translator is installed once at startup, so a new language only takes
+    // effect on the next run. Say so instead of leaving the UI looking unchanged.
+    if (m_languageChanged) {
+        m_initialLanguage = ui->cbox_lang->currentData().toString();
+        m_languageChanged = false;
+        QMessageBox::information(this, tr("Language changed"),
+                                 tr("The new language will be used the next time XFB starts."));
     }
 }
 

@@ -15,6 +15,8 @@
 #include <QStyleFactory>
 #include <QPalette>
 #include <QThread>
+#include <QMutex>
+#include <QDateTime>
 #include <QMessageBox>
 #include <QLibraryInfo>
 #include <QEvent>
@@ -31,7 +33,7 @@
 #include <windows.h>
 #endif
 
-static const char* XFB_VERSION = "3.141592653";
+static const char* XFB_VERSION = "3.1415926535";
 
 /**
  * Splash screen with readable text: paints a soft dark band behind the
@@ -96,6 +98,76 @@ static const char* XFB_CODENAME = "Pour Mr. De La Plume (Alain Bogaerts) pour l'
 
 // Global pointer for signal handler cleanup
 static player* g_mainWindow = nullptr;
+
+// --------------------------------------------------------------- file log
+//
+// XFB is a GUI application, so on Windows nothing is attached to stdout and
+// every qDebug()/qWarning() the app produces is lost — which is why crash
+// reports from users arrive with nothing to go on. Mirror the messages into
+// a file next to xfb.conf, flushed on every line so that whatever was said
+// just before a crash survives it.
+static QFile g_logFile;
+static QMutex g_logMutex;
+static QtMessageHandler g_previousMessageHandler = nullptr;
+
+static void xfbMessageHandler(QtMsgType type, const QMessageLogContext &context,
+                              const QString &msg)
+{
+    // Keep the console/IDE output the developer builds rely on
+    if (g_previousMessageHandler) {
+        g_previousMessageHandler(type, context, msg);
+    } else {
+        fputs(qPrintable(msg), stderr);
+        fputc('\n', stderr);
+    }
+
+    const char *level = "INFO";
+    switch (type) {
+    case QtDebugMsg:    level = "DEBUG"; break;
+    case QtInfoMsg:     level = "INFO";  break;
+    case QtWarningMsg:  level = "WARN";  break;
+    case QtCriticalMsg: level = "CRIT";  break;
+    case QtFatalMsg:    level = "FATAL"; break;
+    }
+
+    QMutexLocker locker(&g_logMutex);
+    if (!g_logFile.isOpen()) {
+        return;
+    }
+    g_logFile.write(QDateTime::currentDateTime().toString(Qt::ISODate).toUtf8());
+    g_logFile.write(" [");
+    g_logFile.write(level);
+    g_logFile.write("] ");
+    g_logFile.write(msg.toUtf8());
+    g_logFile.write("\n");
+    g_logFile.flush();
+}
+
+// Opens the log and installs the handler. Called once the application and
+// organization names are set, so the path resolves to the folder that already
+// holds xfb.conf — one place to ask a user for when something goes wrong.
+static void setupFileLogging()
+{
+    const QString dir = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
+    if (dir.isEmpty() || !QDir().mkpath(dir)) {
+        return;
+    }
+
+    const QString path = dir + QStringLiteral("/xfb.log");
+    // Keep the previous run's worth of history instead of growing forever
+    if (QFileInfo(path).size() > 5 * 1024 * 1024) {
+        QFile::remove(path + QStringLiteral(".1"));
+        QFile::rename(path, path + QStringLiteral(".1"));
+    }
+
+    g_logFile.setFileName(path);
+    if (!g_logFile.open(QIODevice::WriteOnly | QIODevice::Append)) {
+        return;
+    }
+
+    g_previousMessageHandler = qInstallMessageHandler(xfbMessageHandler);
+    qInfo().noquote() << "--- XFB" << XFB_VERSION << "starting, logging to" << path;
+}
 
 // Unix signal handler — kill Tor process on SIGTERM/SIGINT so it doesn't linger
 static void signalHandler(int sig)
@@ -368,6 +440,9 @@ int main(int argc, char *argv[])
     QCoreApplication::setApplicationName("XFB");
     QCoreApplication::setApplicationVersion(XFB_VERSION);
     QCoreApplication::setOrganizationName("Netpack - Online Solutions");
+
+    // From here on every qDebug/qWarning also lands in xfb.log
+    setupFileLogging();
 
 #ifdef Q_OS_WIN
     // Make command-line tools bundled next to XFB.exe (e.g. ffmpeg.exe /

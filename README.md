@@ -46,7 +46,7 @@ the in-app update notification.
 
 **Option B — Manual:**
 
-1. Download `XFB-3.141592653-macOS.dmg` from [GitHub Releases](https://github.com/netpack/XFB/releases)
+1. Download `XFB-3.1415926535-macOS.dmg` from [GitHub Releases](https://github.com/netpack/XFB/releases)
 2. Open the DMG file
 3. Drag `XFB.app` into your **Applications** folder
 4. Launch XFB from Applications (first launch: right-click → Open to bypass Gatekeeper)
@@ -57,10 +57,10 @@ the in-app update notification.
 
 ```sh
 # Download and install the .deb package
-sudo apt install ./xfb_3.141592653-1_amd64.deb
+sudo apt install ./xfb_3.1415926535-1_amd64.deb
 
 # Or if dependencies are missing:
-sudo dpkg -i xfb_3.141592653-1_amd64.deb
+sudo dpkg -i xfb_3.1415926535-1_amd64.deb
 sudo apt install -f
 ```
 
@@ -84,8 +84,8 @@ makepkg -si
 ### Windows
 
 1. Download the installer from [GitHub Releases](https://github.com/netpack/XFB/releases):
-   - Intel/AMD 64-bit: `XFB-3.141592653-Setup.exe`
-   - ARM64 (Windows on ARM, e.g. Snapdragon): `XFB-3.141592653-arm64-Setup.exe`
+   - Intel/AMD 64-bit: `XFB-3.1415926535-Setup.exe`
+   - ARM64 (Windows on ARM, e.g. Snapdragon): `XFB-3.1415926535-arm64-Setup.exe`
 2. Run the installer and follow the prompts
 3. Launch XFB from the Start Menu or Desktop shortcut
 

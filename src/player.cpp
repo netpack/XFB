@@ -15,6 +15,8 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include "optionsdialog.h"
 #include "externaldownloader.h"
 #include "aboutus.h"
+#include "audio/BpmDetector.h"
+#include "audio/BpmLibrary.h"
 #include "audio/FxEngine.h"
 #include "audio/WaveformStore.h"
 #include "ArtworkStore.h"
@@ -98,6 +100,9 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include <QDockWidget>
 #include <QMenu>
 #include <QSignalBlocker>
+#include <QStyledItemDelegate>
+#include <QToolTip>
+#include <QHelpEvent>
 
 #ifdef XFB_HAS_WEBENGINE
 #include <QtWebEngineQuick>
@@ -133,6 +138,86 @@ static constexpr int kLayoutStateVersion = 2;
 // timestamped line, not a path), so its artwork icon can be found again.
 static constexpr int kArtworkPathRole = Qt::UserRole + 103;
 
+// Renders the library's BPM column. Two rows carry no number and they mean
+// different things: NULL is "nobody has looked at this yet", 0 is "looked
+// at, and this track holds no steady tempo" — a real answer about the
+// music, not a failure. Showing the raw 0 reads as a broken value and an
+// empty cell explains nothing, so each state says what it is, in muted
+// italics so it reads as an annotation rather than as data.
+class BpmCellDelegate : public QStyledItemDelegate {
+    // Defined in a .cpp and not run through moc, so the inherited tr() would
+    // look the strings up under QStyledItemDelegate while lupdate files them
+    // under BpmCellDelegate — and nothing would ever translate. This declares
+    // a tr() bound to the right context without needing Q_OBJECT.
+    Q_DECLARE_TR_FUNCTIONS(BpmCellDelegate)
+public:
+    using QStyledItemDelegate::QStyledItemDelegate;
+
+    // Which of the three states a cell is in.
+    enum State { Measured, NoSteadyTempo, NotAnalysed };
+
+    static State stateOf(const QVariant &value) {
+        if (value.isNull())
+            return NotAnalysed;
+        bool ok = false;
+        const double bpm = value.toDouble(&ok);
+        if (!ok)
+            return NotAnalysed;
+        return bpm > 0.0 ? Measured : NoSteadyTempo;
+    }
+
+    QString displayText(const QVariant &value, const QLocale &locale) const override {
+        switch (stateOf(value)) {
+        case NoSteadyTempo:
+            return tr("no steady beat");
+        case NotAnalysed:
+            return tr("not measured");
+        case Measured:
+            break;
+        }
+        return locale.toString(value.toDouble(), 'f', 1);
+    }
+
+protected:
+    void initStyleOption(QStyleOptionViewItem *option,
+                         const QModelIndex &index) const override {
+        QStyledItemDelegate::initStyleOption(option, index);
+        if (stateOf(index.data(Qt::EditRole)) == Measured)
+            return;
+
+        option->font.setItalic(true);
+        // Only the unselected colour: leaving HighlightedText alone keeps
+        // the label readable on a selected row, whatever the theme.
+        option->palette.setColor(QPalette::Text,
+                                 option->palette.color(QPalette::Disabled, QPalette::Text));
+    }
+
+    // The label alone does not say why, and the column is too narrow to
+    // spell it out — so hovering a cell that has no number explains it.
+    bool helpEvent(QHelpEvent *event, QAbstractItemView *view,
+                   const QStyleOptionViewItem &option,
+                   const QModelIndex &index) override {
+        if (event && event->type() == QEvent::ToolTip) {
+            const State state = stateOf(index.data(Qt::EditRole));
+            if (state != Measured) {
+                QToolTip::showText(
+                    event->globalPos(),
+                    state == NoSteadyTempo
+                        ? tr("This track was analysed and holds no steady beat — usual "
+                             "for freely-played solo, live and jazz recordings. Auto Mode "
+                             "can still play it, it just will not tempo-match it.\n\n"
+                             "Double-click to type a tempo in yourself.")
+                        : tr("This track has not been analysed yet. Run Database → "
+                             "Measure the BPM of all music tracks in the database.\n\n"
+                             "Double-click to type a tempo in yourself."),
+                    view);
+                return true;
+            }
+        }
+        return QStyledItemDelegate::helpEvent(event, view, option, index);
+    }
+};
+
 class ClickableTextBrowser : public QTextBrowser {
 public:
     explicit ClickableTextBrowser(QWidget* parent = nullptr) : QTextBrowser(parent) {}
@@ -153,6 +238,9 @@ protected:
 };
 
 class CustomMessageBox : public QDialog {
+    // Same as BpmCellDelegate: no moc here, so bind tr() to this class's own
+    // context or the translations lupdate collected can never be found.
+    Q_DECLARE_TR_FUNCTIONS(CustomMessageBox)
 public:
     CustomMessageBox(const QString& title, const QString& message, const QPixmap& pixmap, QWidget* parent = nullptr)
         : QDialog(parent) {
@@ -457,6 +545,9 @@ player::player(QWidget *parent) :
         // toggle lives in a thin bar above the playlist; its state persists
         // in xfb.conf (PlaylistWaveView) and is restored by updateConfig().
         m_waveStore = new WaveformStore(this);
+        // Tempo comes out of the same decode the waveforms do, so the BPM
+        // library shares the store rather than reading the files again.
+        m_bpmLibrary = new BpmLibrary(m_waveStore, this);
         m_waveView = new PlaylistWaveView(ui->playlist, m_waveStore, this);
         m_waveView->setNowPlayingProvider([this]() {
             return (Xplayer && Xplayer->source().isLocalFile())
@@ -505,6 +596,16 @@ player::player(QWidget *parent) :
             PlaylistWaveView::setAutoMixThresholdPercent(autoMixThr);
             if (!waveSettings.contains("AutoMixThresholdPercent"))
                 waveSettings.setValue("AutoMixThresholdPercent", autoMixThr);
+
+            // How much of a track has to agree on a tempo before BPM
+            // reports one. Config-only, same as the threshold above:
+            // lowering it fills in more of the library at the cost of
+            // tempos the music does not actually hold to.
+            const int bpmAgreement =
+                qBound(10, waveSettings.value("BpmMinAgreementPercent", 35).toInt(), 100);
+            BpmDetector::setMinAgreementPercent(bpmAgreement);
+            if (!waveSettings.contains("BpmMinAgreementPercent"))
+                waveSettings.setValue("BpmMinAgreementPercent", bpmAgreement);
         }
         connect(m_maxOverlapSpin, qOverload<int>(&QSpinBox::valueChanged),
                 this, [this](int secs) {
@@ -1188,9 +1289,13 @@ checkDbOpen();
     // (deferred so startup and the first paint aren't delayed by probes).
     QTimer::singleShot(5000, this, &player::startTimeBackfill);
 
-   /*Bottom info — single line, it lives in the status bar now*/
+   /*Bottom info — single line, it lives in the status bar now. The version is
+     prepended at runtime from QCoreApplication (set once in main.cpp) rather
+     than baked into the .ui: hardcoding it there meant the footer silently kept
+     showing an old release, and it also made the string one more place to bump.*/
    QDir dir; QString cpath = dir.absolutePath();
-   QString binfo = ui->txt_bottom_info->text().replace('\n', QStringLiteral("  •  "))
+   QString binfo = QStringLiteral("XFB v%1 ").arg(QCoreApplication::applicationVersion())
+                   + ui->txt_bottom_info->text().replace('\n', QStringLiteral("  •  "))
                    + "  •  " + cpath + "  •  " + Role;
    ui->txt_bottom_info->setText(binfo);
 
@@ -1602,6 +1707,18 @@ checkDbOpen();
                                          tr("Convert all musics in the database to 432 Hz tuning"), this);
        ui->menuDatabase->addAction(conv432All);
        connect(conv432All, &QAction::triggered, this, &player::convertAllMusicsTo432);
+   }
+
+   // Tempo analysis of the library, which is what auto mode's BPM matching
+   // draws on. Only ever touches tracks that have never been measured.
+   {
+       QAction *analyzeBpm = new QAction(tr("Measure the BPM of all music tracks in the database"), this);
+       analyzeBpm->setToolTip(tr("Measure the tempo of every track that does not have one yet, "
+                                 "so Auto Mode can follow a track with one at a similar tempo. "
+                                 "Each track is decoded once; the result is stored in the "
+                                 "database."));
+       ui->menuDatabase->addAction(analyzeBpm);
+       connect(analyzeBpm, &QAction::triggered, this, &player::analyzeLibraryBpm);
    }
 
    // DJ decks: scratchable platters + performance FX
@@ -2196,6 +2313,11 @@ void player::updateConfig() {
     // Auto Auto-mix: overlaps computed automatically for new playlist items
     m_autoAutoMix = settings.value("AutoAutoMix", false).toBool();
 
+    // Auto mode tempo matching: how far the next track's BPM may sit from
+    // the previous one's before it stops being a smooth crossfade.
+    m_bpmMatch = settings.value("AutoModeMatchBpm", false).toBool();
+    m_bpmTolerance = qBound(1, settings.value("AutoModeBpmTolerance", 8).toInt(), 60);
+
     // Stereo LED output meter: visibility and docking position. Horizontal
     // lives in the volume-slider strip; vertical docks between the main
     // tabs and the side panel. NEVER touch ui->gridLayout_2 here — the
@@ -2556,7 +2678,19 @@ bool player::checkDbOpen() {
     } else {
         qDebug() << "Torrents table created or already exists";
     }
-    
+
+    // Tempo column, added to libraries created before BPM existed. NULL
+    // means "never analysed", 0 means "analysed, no steady tempo" — see
+    // BpmLibrary. SQLite has no ADD COLUMN IF NOT EXISTS, so the presence
+    // of the column is what decides whether to add it.
+    if (!adb.record("musics").contains("bpm")) {
+        QSqlQuery addBpmColumn(adb);
+        if (!addBpmColumn.exec("ALTER TABLE musics ADD COLUMN bpm REAL"))
+            qWarning() << "Failed to add the bpm column:" << addBpmColumn.lastError().text();
+        else
+            qInfo() << "Added the bpm column to the musics table";
+    }
+
     return true;
 }
 
@@ -2567,13 +2701,20 @@ void player::on_actionOpen_triggered()
 
     QFileDialog dialog(this);
     dialog.setFileMode(QFileDialog::ExistingFiles);
-    dialog.setNameFilter(tr("Audio Files (*.ogg *.mp3 *.flac *.wav)"));
+    // Same set the library importer accepts (add_full_dir), so anything that
+    // can be added to the database can also be dropped straight into the
+    // running order — Opus in particular is what the downloader produces.
+    dialog.setNameFilters({
+        tr("Audio Files (*.mp3 *.ogg *.oga *.opus *.flac *.wav *.m4a *.aac *.wma)"),
+        tr("All Files (*)")
+    });
     dialog.setViewMode(QFileDialog::Detail);
     QStringList fileNames;
     if(dialog.exec())
     {
         fileNames = dialog.selectedFiles();
         ui->playlist->addItems(fileNames);
+        calculate_playlist_total_time();
 
         // If we're currently playing, we don't need to do anything else
         // The files will be played when the current track finishes
@@ -4486,6 +4627,73 @@ void player::startAutoMix(const QVector<int> &rows)
             m_waveView, &PlaylistWaveView::cancelAutoMix);
 }
 
+// Measure the tempo of every library track that has never been analysed.
+// Each one costs a full decode, so this is an explicit operation rather
+// than something that happens behind the operator's back — but it only
+// ever runs once per file, and auto mode's tempo matching is only as good
+// as the share of the library it has covered.
+void player::analyzeLibraryBpm()
+{
+    if (!m_bpmLibrary)
+        return;
+    if (m_bpmLibrary->busy()) {
+        ui->statusBar->showMessage(tr("BPM analysis is already running"), 5000);
+        return;
+    }
+
+    QStringList pending = m_bpmLibrary->tracksMissingBpm();
+    if (pending.isEmpty()) {
+        // Nothing is missing, but a measurement is only as good as the
+        // detector that made it — offer the re-run rather than turning the
+        // operator away, which is the only way results from an older
+        // version of XFB ever get refreshed.
+        const QMessageBox::StandardButton answer = QMessageBox::question(
+            this, tr("Analyze BPM"),
+            tr("Every track in the database has already been measured.\n\n"
+               "Measure them all again? This is worth doing after an update, "
+               "and it is the way to refresh tracks whose tempo looks wrong. "
+               "Any tempo you typed in by hand will be overwritten."),
+            QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+        if (answer != QMessageBox::Yes)
+            return;
+
+        pending = m_bpmLibrary->allTracks();
+        if (pending.isEmpty())
+            return;
+    }
+
+    m_bpmProgress = new QProgressDialog(tr("Measuring the tempo of %n track(s)...",
+                                           nullptr, pending.size()),
+                                        tr("Cancel"), 0, pending.size(), this);
+    m_bpmProgress->setWindowModality(Qt::WindowModal);
+    m_bpmProgress->setMinimumDuration(0);
+    connect(m_bpmProgress, &QProgressDialog::canceled,
+            m_bpmLibrary, &BpmLibrary::cancel);
+
+    // Both connections are scoped to the dialog: a second run gets its own.
+    connect(m_bpmLibrary, &BpmLibrary::progress, m_bpmProgress,
+            [this](int done, int total) {
+        if (m_bpmProgress) {
+            m_bpmProgress->setMaximum(total);
+            m_bpmProgress->setValue(done);
+        }
+    });
+    connect(m_bpmLibrary, &BpmLibrary::finished, m_bpmProgress,
+            [this](int analyzed, int skipped, bool canceled) {
+        if (m_bpmProgress)
+            m_bpmProgress->deleteLater();
+        ui->statusBar->showMessage(
+            canceled
+                ? tr("BPM analysis canceled — %1 track(s) measured").arg(analyzed)
+                : tr("BPM analysis: %1 track(s) measured, %2 without a steady tempo")
+                      .arg(analyzed).arg(skipped),
+            8000);
+        update_music_table(); // show the new numbers in the BPM column
+    });
+
+    m_bpmLibrary->analyze(pending);
+}
+
 
 // ---------------------------------------------------------------------------
 // Adding library tracks to the playlist without a mouse
@@ -4840,7 +5048,42 @@ void player::applyMusicHeaderLabels(QSqlQueryModel *model) {
         {"time",           tr("Time")},
         {"played_times",   tr("Plays")},
         {"last_played",    tr("Last Played")},
+        {"bpm",            tr("BPM")},
     });
+
+    // Cells with no number say which of the two reasons applies rather than
+    // sitting empty (see BpmCellDelegate). They stay editable either way, so
+    // a tempo the detector will not commit to can be typed in by hand.
+    const int bpmColumn = model->record().indexOf(QStringLiteral("bpm"));
+    if (bpmColumn >= 0) {
+        // Created on first use: this runs from the constructor's table setup
+        // as well as from every later refresh.
+        if (!m_bpmCellDelegate)
+            m_bpmCellDelegate = new BpmCellDelegate(this);
+        model->setHeaderData(bpmColumn, Qt::Horizontal,
+                             tr("Measured tempo. \"no steady beat\" means the track was "
+                                "analysed and holds no fixed tempo, which is usual for "
+                                "freely-played solo, live and jazz recordings; those tracks "
+                                "still play, they are just not tempo-matched. \"not "
+                                "measured\" means it has not been analysed yet (Database "
+                                "menu). Double-click a cell to set a tempo by hand."),
+                             Qt::ToolTipRole);
+        if (ui->musicView) {
+            // The delegate is a property of the view and survives a model
+            // swap; the column width does not. Every caller here installs
+            // the labels *before* setModel(), and the header resets its
+            // section sizes when a model arrives — so widening the column
+            // has to wait until that has happened.
+            ui->musicView->setItemDelegateForColumn(bpmColumn, m_bpmCellDelegate);
+            QPointer<QTableView> view = ui->musicView;
+            QTimer::singleShot(0, this, [view, bpmColumn]() {
+                if (view && view->model() && bpmColumn < view->model()->columnCount()
+                    && view->columnWidth(bpmColumn) < 130) {
+                    view->setColumnWidth(bpmColumn, 130); // fits "no steady beat"
+                }
+            });
+        }
+    }
 }
 
 // One-time repair pass for library rows whose duration was never stored —
@@ -5511,8 +5754,23 @@ void player::on_bt_autoMode_clicked()
     }
 }
 
+// The track the next auto mode pick will follow: the tail of the running
+// order, or — when nothing is queued — whatever is on air. Its tempo is
+// what the crossfade into the new track has to work across.
+QString player::autoModeReferenceTrack() const
+{
+    const int rows = ui->playlist->count();
+    if (rows > 0)
+        return ui->playlist->item(rows - 1)->text();
+    if (Xplayer && Xplayer->source().isLocalFile())
+        return Xplayer->source().toLocalFile();
+    return lastPlayedSong;
+}
+
 void player::autoModeGetMoreSongs()
 {
+    if (autoMode != 1)
+        return;
 
     //check if there's a programed genre for this hour in the hourgenre table
 
@@ -5554,93 +5812,85 @@ checkDbOpen();
     }
 
 
-    if(currentGenre.isEmpty()){
-
-           if(autoMode==1){
-               //randomly select music from db
-               int numMusics = 1;
-               QSqlQuery query(db);
-               query.prepare("select path from musics order by random() limit :numMusics");
-               query.bindValue(":numMusics", numMusics);
-               if(query.exec())
-               {
-                   qDebug() << "SQL query executed: " << query.lastQuery();
-
-                   while(query.next()){
-                       QString path = query.value(0).toString();
-
-                       if(path!=lastPlayedSong){
-                           ui->playlist->addItem(path);
-                           qDebug() << "autoMode random music chooser adding: " << path;
-
-                       } else {
-
-                           QSqlQuery numOfItemsInDB(db);
-                           numOfItemsInDB.prepare("select count(path) from music where 1");
-                           numOfItemsInDB.exec();
-                           if(numOfItemsInDB.value(0).toInt()>1){
-                               qDebug()<<"autoMode picked the same song that was played before... Small DB or a Big Coincidence? Quering again for a 'random' new song..";
-                               autoModeGetMoreSongs();
-                           }
-
-                       }
-
-                   }
-
-               } else {
-                   qDebug() << "SQL ERROR: " << query.lastError();
-                   qDebug() << "SQL was: " << query.lastQuery();
-
-
-               }
-           }
-
-    } else {
-
-        if(autoMode==1){
-            //randomly select music from db based on genre for this hour
-
-            QSqlQuery query(db);
-            query.prepare("select path from musics where genre1 like :genre order by random() limit 1");
-            query.bindValue(":genre", currentGenre);
-            if(query.exec())
-            {
-                qDebug() << "SQL query executed: " << query.lastQuery();
-
-                while(query.next()){
-                    QString path = query.value(0).toString();
-
-                    if(path!=lastPlayedSong){
-                        ui->playlist->addItem(path);
-                        qDebug() << "autoMode genre based random music chooser adding: " << path;
-
-                    } else {
-
-                        QSqlQuery numOfItemsInDB(db);
-                        numOfItemsInDB.prepare("select count(path) from music where 1");
-                        numOfItemsInDB.exec();
-                        if(numOfItemsInDB.value(0).toInt()>1){
-                            qDebug()<<"autoMode picked the same song that was played before... Small DB or a Big Coincidence? Quering again for a 'random' new song..";
-                            autoModeGetMoreSongs();
-                        }
-
-                    }
-
-                }
-
-            } else {
-                qDebug() << "SQL ERROR: " << query.lastError();
-                qDebug() << "SQL was: " << query.lastQuery();
-
-
-            }
-            currentGenre = "";
-        }
-
+    // Tempo of the track the new one will follow. When it has never been
+    // measured, the pick falls back to plain random and the measurement is
+    // started in the background, so the following pick can use it.
+    const QString referenceTrack = autoModeReferenceTrack();
+    double referenceBpm = 0.0;
+    if (m_bpmMatch && m_bpmLibrary) {
+        referenceBpm = m_bpmLibrary->bpmFor(referenceTrack);
+        if (referenceBpm <= 0.0)
+            m_bpmLibrary->analyzeQuietly(referenceTrack);
     }
 
+    // Two passes: the tempo-matched pool first, then the whole library. A
+    // library where little has been analysed yet — or an hour whose genre
+    // holds nothing near the current tempo — must still keep the playlist
+    // fed, so a miss on the first pass is not a failure.
+    for (int pass = 0; pass < 2; ++pass) {
+        const bool matchBpm = (pass == 0 && referenceBpm > 0.0);
+        if (pass == 0 && !matchBpm)
+            continue;
 
+        QString sql = QStringLiteral("select path from musics"
+                                     " where path <> :last and path <> :reference");
+        if (!currentGenre.isEmpty())
+            sql += QStringLiteral(" and genre1 like :genre");
+        if (matchBpm) {
+            // Half and double time count as a match: a 140 BPM track drops
+            // over a 70 BPM one beat for beat, which is exactly the kind of
+            // transition this is meant to find.
+            sql += QStringLiteral(" and bpm > 0"
+                                  " and min(abs(bpm - :ref), abs(bpm - :refDouble),"
+                                  " abs(bpm - :refHalf)) <= :tolerance");
+        }
+        sql += QStringLiteral(" order by random() limit 1");
 
+        QSqlQuery query(db);
+        query.prepare(sql);
+        query.bindValue(QStringLiteral(":last"), lastPlayedSong);
+        query.bindValue(QStringLiteral(":reference"), referenceTrack);
+        if (!currentGenre.isEmpty())
+            query.bindValue(QStringLiteral(":genre"), currentGenre);
+        if (matchBpm) {
+            query.bindValue(QStringLiteral(":ref"), referenceBpm);
+            query.bindValue(QStringLiteral(":refDouble"), referenceBpm * 2.0);
+            query.bindValue(QStringLiteral(":refHalf"), referenceBpm / 2.0);
+            query.bindValue(QStringLiteral(":tolerance"), m_bpmTolerance);
+        }
+
+        if (!query.exec()) {
+            qDebug() << "SQL ERROR: " << query.lastError();
+            qDebug() << "SQL was: " << query.lastQuery();
+            return;
+        }
+
+        if (!query.next()) {
+            if (matchBpm) {
+                qDebug() << "autoMode found nothing within" << m_bpmTolerance
+                         << "BPM of" << referenceBpm << "— falling back to any track";
+                continue;
+            }
+            qDebug() << "autoMode found no track to add (empty or fully excluded library)";
+            return;
+        }
+
+        const QString path = query.value(0).toString();
+        ui->playlist->addItem(path);
+        if (matchBpm) {
+            qDebug() << "autoMode tempo-matched chooser adding:" << path
+                     << "at" << m_bpmLibrary->bpmFor(path) << "BPM, following"
+                     << referenceBpm << "BPM";
+        } else {
+            qDebug() << "autoMode random music chooser adding:" << path;
+        }
+
+        // Keep the chain going: the track just queued is the reference for
+        // the next pick, so measure it now if nobody ever has.
+        if (m_bpmMatch && m_bpmLibrary)
+            m_bpmLibrary->analyzeQuietly(path);
+        return;
+    }
 }
 
 void player::on_actionAdd_a_single_song_triggered()
@@ -6982,7 +7232,44 @@ void player::on_actionOptions_triggered()
     // Re-apply the saved settings immediately (tab visibility, seek bar,
     // volume lock, torrents tab, FX tab...) instead of requiring a restart
     connect(opt, &QDialog::finished, this, &player::updateConfig);
+    // Tempo matching does nothing until the library has been measured, and
+    // an empty BPM column gives the operator no clue why. Offer the sweep
+    // right where the option is switched on (updateConfig, connected above,
+    // has already refreshed m_bpmMatch by the time this runs).
+    connect(opt, &QDialog::finished, this, &player::offerBpmAnalysis);
     opt->show();
+}
+
+// Ask about measuring the library's tempo, but only when it would change
+// anything: the option is on, and tracks are still unmeasured. Declining is
+// remembered, so this never becomes a dialog the operator learns to dismiss.
+void player::offerBpmAnalysis()
+{
+    if (!m_bpmMatch || !m_bpmLibrary || m_bpmLibrary->busy())
+        return;
+
+    const int missing = m_bpmLibrary->tracksMissingBpm().size();
+    if (missing == 0)
+        return;
+
+    QSettings settings(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
+                           + "/xfb.conf", QSettings::IniFormat);
+    if (settings.value("AutoModeBpmAnalysisDeclined", false).toBool())
+        return;
+
+    const QMessageBox::StandardButton answer = QMessageBox::question(
+        this, tr("Measure the BPM of the library?"),
+        tr("Auto Mode can only follow a track with one at a similar tempo once "
+           "the tempo of each track has been measured. %n track(s) have not been "
+           "measured yet, and stay out of the matching until they are.\n\n"
+           "Measure them now? Each track is decoded once, in the background; you "
+           "can also start this later from the Database menu.", nullptr, missing),
+        QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
+
+    if (answer == QMessageBox::Yes)
+        analyzeLibraryBpm();
+    else
+        settings.setValue("AutoModeBpmAnalysisDeclined", true);
 }
 
 void player::on_actionAbout_triggered()

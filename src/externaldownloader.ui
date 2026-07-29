@@ -112,7 +112,7 @@
     <rect>
      <x>120</x>
      <y>10</y>
-     <width>191</width>
+     <width>541</width>
      <height>41</height>
     </rect>
    </property>
@@ -262,13 +262,13 @@ background-color: rgb(83, 28, 28);</string>
   <widget class="QLabel" name="label_5">
    <property name="geometry">
     <rect>
-     <x>40</x>
+     <x>10</x>
      <y>170</y>
-     <width>71</width>
+     <width>105</width>
      <height>17</height>
     </rect>
    </property>
-   <property name="text">
+   <property name="alignment"><set>Qt::AlignRight|Qt::AlignVCenter</set></property><property name="text">
     <string>Genre 1:</string>
    </property>
   </widget>
@@ -330,7 +330,7 @@ background-color: rgb(83, 28, 28);</string>
     </rect>
    </property>
    <property name="placeholderText">
-    <string/>
+    <string />
    </property>
   </widget>
   <widget class="QCheckBox" name="checkBox_cplp">
@@ -355,52 +355,52 @@ background-color: rgb(83, 28, 28);</string>
   <widget class="QLabel" name="label_4">
    <property name="geometry">
     <rect>
-     <x>40</x>
+     <x>10</x>
      <y>140</y>
-     <width>62</width>
+     <width>105</width>
      <height>17</height>
     </rect>
    </property>
-   <property name="text">
+   <property name="alignment"><set>Qt::AlignRight|Qt::AlignVCenter</set></property><property name="text">
     <string>Song:</string>
    </property>
   </widget>
   <widget class="QLabel" name="label_3">
    <property name="geometry">
     <rect>
-     <x>40</x>
+     <x>10</x>
      <y>110</y>
-     <width>71</width>
+     <width>105</width>
      <height>17</height>
     </rect>
    </property>
-   <property name="text">
+   <property name="alignment"><set>Qt::AlignRight|Qt::AlignVCenter</set></property><property name="text">
     <string>Artist(s):</string>
    </property>
   </widget>
   <widget class="QLabel" name="label_6">
    <property name="geometry">
     <rect>
-     <x>40</x>
+     <x>10</x>
      <y>200</y>
-     <width>71</width>
+     <width>105</width>
      <height>17</height>
     </rect>
    </property>
-   <property name="text">
+   <property name="alignment"><set>Qt::AlignRight|Qt::AlignVCenter</set></property><property name="text">
     <string>Genre 2:</string>
    </property>
   </widget>
   <widget class="QLabel" name="label_7">
    <property name="geometry">
     <rect>
-     <x>40</x>
+     <x>10</x>
      <y>230</y>
-     <width>111</width>
+     <width>135</width>
      <height>17</height>
     </rect>
    </property>
-   <property name="text">
+   <property name="alignment"><set>Qt::AlignRight|Qt::AlignVCenter</set></property><property name="text">
     <string>Published date:</string>
    </property>
   </widget>
@@ -423,13 +423,13 @@ background-color: rgb(83, 28, 28);</string>
   <widget class="QLabel" name="label_2">
    <property name="geometry">
     <rect>
-     <x>40</x>
+     <x>10</x>
      <y>80</y>
-     <width>81</width>
+     <width>105</width>
      <height>17</height>
     </rect>
    </property>
-   <property name="text">
+   <property name="alignment"><set>Qt::AlignRight|Qt::AlignVCenter</set></property><property name="text">
     <string>Video Link:</string>
    </property>
   </widget>
@@ -448,7 +448,7 @@ background-color: rgb(83, 28, 28);</string>
     </font>
    </property>
    <property name="placeholderText">
-    <string/>
+    <string />
    </property>
   </widget>
   <widget class="QPushButton" name="pushButton">
@@ -474,7 +474,7 @@ background-color: rgb(83, 28, 28);</string>
     </rect>
    </property>
    <property name="text">
-    <string/>
+    <string />
    </property>
    <property name="pixmap">
     <pixmap resource="resources.qrc">:/icons/icon48x48.png</pixmap>
@@ -513,7 +513,7 @@ background-color: rgb(83, 28, 28);</string>
     <item>
      <widget class="QPushButton" name="bt_youtube_getPlaylist">
       <property name="toolTip">
-       <string>Download every entry of a YouTube playlist (link containing &quot;list=&quot;) or SoundCloud set (soundcloud.com/artist/sets/...)</string>
+       <string>Download every entry of a YouTube playlist (link containing "list=") or SoundCloud set (soundcloud.com/artist/sets/...)</string>
       </property>
       <property name="text">
        <string>Get Playlist!</string>
@@ -552,7 +552,7 @@ background-color: rgb(83, 28, 28);</string>
   </widget>
  </widget>
  <resources>
-  <include location="resources.qrc"/>
+  <include location="resources.qrc" />
  </resources>
- <connections/>
+ <connections />
 </ui>

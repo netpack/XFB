@@ -1,5 +1,6 @@
 #include "WaveformStore.h"
 
+#include "BpmDetector.h"
 #include "FxEngine.h"
 
 #include <QCryptographicHash>
@@ -12,6 +13,8 @@
 #include <QProcess>
 #include <QStandardPaths>
 
+#include <memory>
+
 namespace
 {
 constexpr int kSampleRate = 4000; // decode rate; plenty for a visual envelope
@@ -19,14 +22,29 @@ constexpr int kSamplesPerPeak = kSampleRate * WaveformStore::MsPerPeak / 1000;
 constexpr int kBytesPerPeak = kSamplesPerPeak * 2; // s16le
 constexpr int kMaxParallelJobs = 2;
 constexpr quint32 kCacheMagic = 0x58465756; // "XFWV"
-constexpr quint16 kCacheVersion = 1;
+constexpr quint16 kCacheVersion = 3;
+
+// Resolution of the envelope the tempo is measured from. Finer than the
+// visual one — at 20 ms a beat period is only known to about ±5 BPM, which
+// is the width of a whole "similar tempo" bucket — and a whole number of
+// sub-slices per visual peak, so both envelopes come out of one pass.
+constexpr int kMsPerOnset = 5;
+constexpr int kSamplesPerOnset = kSampleRate * kMsPerOnset / 1000;
+static_assert(kSamplesPerPeak % kSamplesPerOnset == 0,
+              "the visual peak must be a whole number of onset slices");
 
 // Per-decode state: PCM is reduced to peaks incrementally so the raw
 // samples never accumulate in memory.
+//
+// Shared (rather than owned by one handler) because several of the process
+// signals can still reach their handlers after the decode is over — see the
+// one-shot teardown in startNext().
 struct DecodeJob
 {
     QByteArray carry;
     QVector<quint8> peaks;
+    QVector<quint8> onsets; // fine envelope, only lives until the BPM is out
+    bool done = false;      // teardown already ran for this job
 };
 
 void consumePcm(DecodeJob &job, const QByteArray &chunk)
@@ -36,10 +54,15 @@ void consumePcm(DecodeJob &job, const QByteArray &chunk)
     int offset = 0;
     while (job.carry.size() - offset >= kBytesPerPeak) {
         int peak = 0;
-        for (int i = 0; i < kSamplesPerPeak; ++i) {
-            const int idx = offset + i * 2;
-            const qint16 sample = qint16(quint8(data[idx]) | (quint8(data[idx + 1]) << 8));
-            peak = qMax(peak, qAbs(int(sample)));
+        for (int slice = 0; slice < kSamplesPerPeak / kSamplesPerOnset; ++slice) {
+            int slicePeak = 0;
+            for (int i = 0; i < kSamplesPerOnset; ++i) {
+                const int idx = offset + (slice * kSamplesPerOnset + i) * 2;
+                const qint16 sample = qint16(quint8(data[idx]) | (quint8(data[idx + 1]) << 8));
+                slicePeak = qMax(slicePeak, qAbs(int(sample)));
+            }
+            job.onsets.append(quint8(qMin(slicePeak >> 7, 255)));
+            peak = qMax(peak, slicePeak);
         }
         job.peaks.append(quint8(qMin(peak >> 7, 255)));
         offset += kBytesPerPeak;
@@ -78,6 +101,12 @@ const WaveformData *WaveformStore::fetch(const QString &filePath)
     return nullptr;
 }
 
+void WaveformStore::forget(const QString &filePath)
+{
+    if (!m_pending.contains(filePath))
+        m_cache.remove(filePath);
+}
+
 void WaveformStore::startNext()
 {
     while (m_running < kMaxParallelJobs && !m_queue.isEmpty()) {
@@ -95,47 +124,61 @@ void WaveformStore::startNext()
 
         ++m_running;
         auto *proc = new QProcess(this);
-        auto *job = new DecodeJob;
+        const auto job = std::make_shared<DecodeJob>();
 
-        connect(proc, &QProcess::readyReadStandardOutput, this, [proc, job]() {
-            consumePcm(*job, proc->readAllStandardOutput());
-        });
-        connect(proc, &QProcess::finished, this,
-                [this, proc, job, path](int exitCode, QProcess::ExitStatus status) {
-            consumePcm(*job, proc->readAllStandardOutput());
+        // Teardown is one-shot: a process can report its end twice. An ffmpeg
+        // that crashes emits errorOccurred(Crashed) — by which point the state
+        // is already NotRunning, so the guard below does not catch it — and
+        // then finished(CrashExit). Running the teardown for both would free
+        // the job twice. The job is shared with the readyRead handler for the
+        // same reason: on Windows the pipe reader delivers readyRead through a
+        // queued call, which can still arrive after finished().
+        const auto teardown = [this, proc, job, path](bool ok) {
+            if (job->done)
+                return;
+            job->done = true;
 
             WaveformData result;
-            if (status == QProcess::NormalExit && exitCode == 0 && !job->peaks.isEmpty()) {
+            if (ok && !job->peaks.isEmpty()) {
                 result.peaks = job->peaks;
                 result.durationMs = qint64(job->peaks.size()) * MsPerPeak;
+                result.bpm = BpmDetector::estimateFromEnvelope(job->onsets, kMsPerOnset);
                 saveToDisk(path, result);
             } else {
-                qWarning() << "WaveformStore: ffmpeg decode failed for" << path
-                           << proc->readAllStandardError();
                 result.failed = true;
             }
             m_cache.insert(path, result);
             m_pending.remove(path);
 
-            delete job;
             proc->deleteLater();
             --m_running;
             emit waveformReady(path);
             startNext();
+        };
+
+        connect(proc, &QProcess::readyReadStandardOutput, this, [proc, job]() {
+            if (!job->done)
+                consumePcm(*job, proc->readAllStandardOutput());
+        });
+        connect(proc, &QProcess::finished, this,
+                [proc, job, path, teardown](int exitCode, QProcess::ExitStatus status) {
+            if (job->done)
+                return;
+            consumePcm(*job, proc->readAllStandardOutput());
+
+            const bool ok = (status == QProcess::NormalExit && exitCode == 0);
+            if (!ok)
+                qWarning() << "WaveformStore: ffmpeg decode failed for" << path
+                           << proc->readAllStandardError();
+            teardown(ok);
         });
         connect(proc, &QProcess::errorOccurred, this,
-                [this, proc, job, path](QProcess::ProcessError) {
+                [proc, path, teardown](QProcess::ProcessError) {
             if (proc->state() != QProcess::NotRunning)
-                return; // finished() will handle it
-            WaveformData failed;
-            failed.failed = true;
-            m_cache.insert(path, failed);
-            m_pending.remove(path);
-            delete job;
-            proc->deleteLater();
-            --m_running;
-            emit waveformReady(path);
-            startNext();
+                return; // still alive: finished() will do the teardown
+            qWarning() << "WaveformStore: ffmpeg failed for" << path
+                       << proc->errorString();
+            teardown(false);
         });
 
         proc->start(ffmpeg,
@@ -179,13 +222,15 @@ bool WaveformStore::loadFromDisk(const QString &filePath, WaveformData &out) con
 
     qint64 durationMs = 0;
     QByteArray peaks;
-    in >> durationMs >> peaks;
+    double bpm = 0.0;
+    in >> durationMs >> peaks >> bpm;
     if (in.status() != QDataStream::Ok || peaks.isEmpty() || durationMs <= 0)
         return false;
 
     out.durationMs = durationMs;
     out.peaks.resize(peaks.size());
     memcpy(out.peaks.data(), peaks.constData(), size_t(peaks.size()));
+    out.bpm = bpm;
     out.failed = false;
     return true;
 }
@@ -202,5 +247,6 @@ void WaveformStore::saveToDisk(const QString &filePath, const WaveformData &data
     QDataStream outStream(&file);
     outStream << kCacheMagic << kCacheVersion << data.durationMs
               << QByteArray(reinterpret_cast<const char *>(data.peaks.constData()),
-                            data.peaks.size());
+                            data.peaks.size())
+              << data.bpm;
 }

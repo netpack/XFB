@@ -20,6 +20,8 @@ SOURCES += \
     audio/FxEngine.cpp \
     audio/FxPlayer.cpp \
     audio/WaveformStore.cpp \
+    audio/BpmDetector.cpp \
+    audio/BpmLibrary.cpp \
     PlaylistWaveView.cpp \
     LevelMeter.cpp \
     ArtworkStore.cpp \
@@ -84,6 +86,8 @@ HEADERS += \
     audio/FxEngine.h \
     audio/FxPlayer.h \
     audio/WaveformStore.h \
+    audio/BpmDetector.h \
+    audio/BpmLibrary.h \
     PlaylistWaveView.h \
     LevelMeter.h \
     ArtworkStore.h \
