@@ -49,7 +49,6 @@ void AccessibilityTutorialDialog::buildTopics()
     const QString kPrev    = key(Qt::CTRL | Qt::SHIFT | Qt::Key_B);
     const QString kWhat    = key(Qt::CTRL | Qt::SHIFT | Qt::Key_W);
     const QString kPrefs   = key(Qt::CTRL | Qt::SHIFT | Qt::Key_A);
-    const QString kTime    = key(Qt::CTRL | Qt::Key_T);
     const QString kAddEnd  = key(Qt::CTRL | Qt::SHIFT | Qt::Key_Return);
     const QString kAddTop  = key(Qt::CTRL | Qt::ALT | Qt::Key_Return);
 
@@ -87,15 +86,14 @@ void AccessibilityTutorialDialog::buildTopics()
            "<li><b>%4</b> — Skip to the next track.</li>"
            "<li><b>%5</b> — Go back to the previous track.</li>"
            "<li><b>%6</b> — Say which track is playing right now.</li>"
-           "<li><b>%7</b> — Say the playback time.</li>"
-           "<li><b>%8</b> — Open Accessibility Preferences.</li>"
+           "<li><b>%7</b> — Open Accessibility Preferences.</li>"
            "</ul>"
            "<h3>Building the running order</h3>"
            "<ul>"
            "<li><b>Enter</b> — Add the track you are on to the end of the playlist. This is "
            "the one you will use most.</li>"
-           "<li><b>%9</b> — Add the selection to the end of the playlist from anywhere.</li>"
-           "<li><b>%10</b> — Add the selection to the start, so it plays next.</li>"
+           "<li><b>%8</b> — Add the selection to the end of the playlist from anywhere.</li>"
+           "<li><b>%9</b> — Add the selection to the start, so it plays next.</li>"
            "</ul>"
            "<p>If you only remember three, make them <b>Enter</b> to build the running order, "
            "<b>%1</b> to go on air and <b>%6</b> to hear what is playing.</p>"
@@ -103,7 +101,7 @@ void AccessibilityTutorialDialog::buildTopics()
            "<p>Use your screen reader's menu bar command to open the menus, then the arrow "
            "keys to move through them. The menus are: File, Playlists, Database, Playback, "
            "Options, Client, Server and Help.</p>")
-            .arg(kPlay, kPause, kStop, kNext, kPrev, kWhat, kTime, kPrefs)
+            .arg(kPlay, kPause, kStop, kNext, kPrev, kWhat, kPrefs)
             .arg(kAddEnd, kAddTop)
     });
 
@@ -218,7 +216,6 @@ void AccessibilityTutorialDialog::buildTopics()
            "<p>You can ask at any time:</p>"
            "<ul>"
            "<li><b>%1</b> — what is playing now.</li>"
-           "<li><b>%2</b> — the playback time.</li>"
            "</ul>"
            "<h3>Controls that used to show state only by colour</h3>"
            "<p>Some buttons change colour to show their state. That state is now also part of "
@@ -227,9 +224,9 @@ void AccessibilityTutorialDialog::buildTopics()
            "recording indicator reads \"Recording\", \"Recording starting\", or \"Recording "
            "problem, nothing is being recorded\".</p>"
            "<h3>Adjusting how much XFB says</h3>"
-           "<p>Press <b>%3</b>, or open the <b>Options</b> menu and choose <b>Accessibility "
+           "<p>Press <b>%2</b>, or open the <b>Options</b> menu and choose <b>Accessibility "
            "Preferences</b>, to change how detailed the announcements are.</p>")
-            .arg(kWhat, kTime, kPrefs)
+            .arg(kWhat, kPrefs)
     });
 
     m_topics.append({

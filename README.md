@@ -19,13 +19,18 @@ XFB is an open-source radio automation software developed by [Frédéric Bogaert
 - **Database Management** — Catalog and organize music, jingles, advertisements, and programs
 - **Automated Scheduling** — Create schedules for music playback, ad slots, and program airing
 - **Drag & Drop Playlist** — Drag tracks from the music library directly into the playlist
+- **Wave View & Auto-mix** — See each track's waveform in the playlist and drag it to start before the previous one ends; Auto-mix computes every crossfade so each track begins where the last goes quiet
+- **BPM & Tempo-Matched Auto Mode** — Measure the tempo of your library, then have Auto Mode follow each track with one at a similar BPM (half and double time count as a match), with a configurable tolerance
+- **Gapless Playback** — The next track is preloaded and handed over without a gap
 - **Multi-Player** — Main player plus two auxiliary LP players for DJ mixing
 - **Audio FX** — Per-player 10-band equalizer (with presets) and broadcast-style compressor, applied live (XFB → Audio FX, requires ffmpeg)
 - **432 Hz Playback** — Retune everything from A=440 to A=432 in real time without touching your files, or batch-convert one track, a selection, or the whole library (Database menu / music table right-click)
 - **Live Recording** — Record programs directly within the application
 - **Streaming Client** — Listen to any Icecast/Shoutcast stream or .m3u/.pls playlist from within XFB (with automatic reconnect), e.g. to monitor your station's output
 - **Torrent Search** — Search music via Tor-routed onion sites (searching is anonymised; the BitTorrent download itself is not — your IP is visible to peers)
-- **Accessibility** — ORCA screen reader support, keyboard navigation, audio feedback
+- **Accessibility** — Screen reader support (ORCA, VoiceOver, NVDA), full keyboard operation, spoken status announcements, audio feedback, braille display output via BrlTTY, and a built-in tutorial for blind operators (Help menu)
+- **Themes** — Light, Dark, Midnight and Studio, or follow the system setting, with a configurable accent colour
+- **Languages** — English, Portuguese and French (Options → Language)
 - **Cross-Platform** — Runs on macOS, Linux (Debian/Arch), and Windows
 
 ---
@@ -142,27 +147,46 @@ User data in `%APPDATA%\Netpack - Online Solutions\XFB` is preserved.
 
 ### Adding Music to the Playlist
 
-1. Add music to the database via **File → Add a single song** or **File → Add all songs in a folder**
+1. Add music to the database via **Database → Add a single song** or **Database → Add all songs in a folder**
 2. Browse your music library in the **Musics** tab at the bottom
 3. **Drag and drop** a track from the music table onto the **Playlist** tab
-4. Alternatively, right-click a track and select "Add to Playlist"
+4. Or select a track and press **Enter** to add it to the end of the playlist
+5. Or right-click a track and choose **Add to the bottom of playlist** / **Add to the top of the playlist**
 
 ### Playback
 
 - Click **Play** to start playback from the playlist
 - Use the **Auto Mode** button to enable automatic advancement through the playlist
 - The progress slider shows current position; the volume slider controls output level
+- **Wave view** shows each track's waveform so you can drag a track to start before
+  the previous one ends; **Auto-mix** sets those crossfade overlaps for you
 
 ### Keyboard Shortcuts
 
+XFB can be operated without a mouse. These work anywhere in the application,
+whatever currently has focus, and are also listed in the **Playback** menu.
+
+On macOS press **Cmd** wherever the table says Ctrl (the menus show ⇧⌘P, ⇧⌘S, …).
+
 | Action | Shortcut |
 |--------|----------|
-| Play/Pause | Space |
-| Stop | Ctrl+S |
-| Next Track | Ctrl+Right |
-| Full Screen | F11 |
-| Add Music | Ctrl+M |
-| Save Playlist | Ctrl+Shift+S |
+| Play / Segue | Ctrl+Shift+P |
+| Pause / Resume | Ctrl+Shift+Space |
+| Stop | Ctrl+Shift+S |
+| Next track | Ctrl+Shift+N |
+| Previous track | Ctrl+Shift+B |
+| Add selection to end of playlist | Ctrl+Shift+Enter |
+| Add selection to start of playlist | Ctrl+Alt+Enter |
+| Announce what is playing | Ctrl+Shift+W |
+| Accessibility Preferences | Ctrl+Shift+A |
+| Tutorial for blind users | Ctrl+Shift+H |
+
+Inside the music, jingles, adverts and programs tables, **Enter** adds the track
+you are on to the end of the playlist — the quickest way to build a running
+order. **Tab** and **Shift+Tab** move between the panels.
+
+If you only remember three: **Enter** to build the running order,
+**Ctrl+Shift+P** to go on air, **Ctrl+Shift+W** to hear what is playing.
 
 ---
 
@@ -172,7 +196,14 @@ User data in `%APPDATA%\Netpack - Online Solutions\XFB` is preserved.
 
 - C++17 compiler (GCC 9+, Clang 10+, MSVC 2019+)
 - CMake 3.16+
-- Qt6 (Core, Gui, Widgets, Multimedia, Sql, Network, WebEngineCore, WebEngineQuick, QuickWidgets)
+- Qt6, required: Core, Gui, Widgets, Concurrent, Multimedia, Sql, Network, Test
+- Qt6, optional: WebEngineCore, WebEngineQuick, QuickWidgets — linked only when
+  your Qt provides them. Qt ships no WebEngine for Windows on ARM64, which is
+  why these are optional; the build configures fine without them.
+
+Building against Qt **6.4** is what the Debian package targets (bookworm), so
+keep new code within that floor — a macOS build on a newer Qt does not prove the
+Debian package still compiles. Run `./build-deb-docker.sh` before a release.
 
 ### macOS
 
