@@ -9,7 +9,6 @@
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QSysInfo>
-#include <QVersionNumber>
 
 namespace
 {
@@ -63,6 +62,27 @@ QString UpdateCheckService::currentVersion()
     return QCoreApplication::applicationVersion();
 }
 
+// Compares one dot-separated segment of a version as an arbitrary-precision
+// decimal integer: shorter (once leading zeros are gone) is smaller, and equal
+// lengths compare digit by digit. Returns <0, 0 or >0 like strcmp.
+//
+// This exists because XFB's versions are digits of pi and the fractional
+// segment outgrows a 32-bit int: "3.14159265358" has 14159265358 there, past
+// INT_MAX. QVersionNumber, which parses segments as int, silently gave up at
+// that point and returned plain "3" — so it read every 11-decimal release as
+// OLDER than the 3.141592653 before it, and the updater told everybody they
+// were already up to date. Comparing the digits as text has no such ceiling.
+static int compareSegment(QStringView a, QStringView b)
+{
+    while (a.size() > 1 && a.startsWith(QLatin1Char('0')))
+        a = a.mid(1);
+    while (b.size() > 1 && b.startsWith(QLatin1Char('0')))
+        b = b.mid(1);
+    if (a.size() != b.size())
+        return a.size() < b.size() ? -1 : 1;
+    return a.compare(b);
+}
+
 bool UpdateCheckService::isNewerVersion(const QString &a, const QString &b)
 {
     auto normalize = [](QString v) {
@@ -72,11 +92,44 @@ bool UpdateCheckService::isNewerVersion(const QString &a, const QString &b)
         return v;
     };
 
-    const QVersionNumber va = QVersionNumber::fromString(normalize(a));
-    const QVersionNumber vb = QVersionNumber::fromString(normalize(b));
-    if (va.isNull() || vb.isNull())
-        return false; // unparseable tags never trigger a notification
-    return QVersionNumber::compare(va, vb) > 0;
+    const QString na = normalize(a);
+    const QString nb = normalize(b);
+
+    // Digits and dots only, and never an empty or dot-terminated string:
+    // anything else is a tag shape we do not understand, and an unparseable
+    // tag must never trigger a notification.
+    auto wellFormed = [](const QString &v) {
+        if (v.isEmpty() || v.startsWith(QLatin1Char('.')) || v.endsWith(QLatin1Char('.')))
+            return false;
+        bool lastWasDot = false;
+        for (const QChar c : v) {
+            if (c == QLatin1Char('.')) {
+                if (lastWasDot)
+                    return false; // ".." is not a segment separator
+                lastWasDot = true;
+            } else if (!c.isDigit()) {
+                return false;
+            } else {
+                lastWasDot = false;
+            }
+        }
+        return true;
+    };
+    if (!wellFormed(na) || !wellFormed(nb))
+        return false;
+
+    const QList<QStringView> sa = QStringView(na).split(QLatin1Char('.'));
+    const QList<QStringView> sb = QStringView(nb).split(QLatin1Char('.'));
+
+    for (qsizetype i = 0; i < qMax(sa.size(), sb.size()); ++i) {
+        // A missing trailing segment counts as 0, so 3.14 == 3.14.0.
+        const QStringView xa = i < sa.size() ? sa.at(i) : QStringView(u"0");
+        const QStringView xb = i < sb.size() ? sb.at(i) : QStringView(u"0");
+        const int c = compareSegment(xa, xb);
+        if (c != 0)
+            return c > 0;
+    }
+    return false; // identical
 }
 
 void UpdateCheckService::checkNow(bool manual)

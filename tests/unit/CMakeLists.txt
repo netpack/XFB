@@ -387,8 +387,28 @@ target_include_directories(test_accessibility_manager PRIVATE
 
 add_test(NAME AccessibilityManagerTest COMMAND test_accessibility_manager)
 
+# Update check: version comparison (guards the pi-digit overflow regression)
+add_executable(test_update_check_service
+    services/TestUpdateCheckService.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/UpdateCheckService.cpp
+)
+
+target_link_libraries(test_update_check_service
+    Qt6::Core
+    Qt6::Network
+    Qt6::Test
+    TestUtils
+)
+
+target_include_directories(test_update_check_service PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/tests
+)
+
+add_test(NAME UpdateCheckServiceTest COMMAND test_update_check_service)
+
 # Add custom target for unit tests
 add_custom_target(unit_tests
-    DEPENDS test_config test_database test_service_container test_base_service test_database_service_unit test_music_repository test_genre_repository test_playlist_repository test_database_migrator test_audio_service test_error_handler test_logger test_input_validator test_database_optimizer test_music_cache test_main_controller test_accessibility_manager
+    DEPENDS test_config test_database test_service_container test_base_service test_database_service_unit test_music_repository test_genre_repository test_playlist_repository test_database_migrator test_audio_service test_error_handler test_logger test_input_validator test_database_optimizer test_music_cache test_main_controller test_accessibility_manager test_update_check_service
     COMMENT "Building unit tests"
 )
