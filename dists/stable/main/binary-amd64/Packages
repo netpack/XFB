@@ -1,15 +1,15 @@
 Package: xfb
-Version: 3.14159265358-1
+Version: 3.1416-1
 Architecture: amd64
 Maintainer: Frederic Bogaerts <info@netpack.pt>
 Depends: libqt6core6 (>= 6.4), libqt6gui6 (>= 6.4), libqt6widgets6 (>= 6.4), libqt6multimedia6 (>= 6.4), libqt6sql6-sqlite (>= 6.4), libqt6network6 (>= 6.4), libqt6concurrent6 (>= 6.4), libqt6webenginecore6 (>= 6.4), libqt6webenginequick6 (>= 6.4), libqt6opengl6 (>= 6.4), libqt6qml6 (>= 6.4), libqt6quick6 (>= 6.4), libqt6quickwidgets6 (>= 6.4), libqt6positioning6 (>= 6.4), libqt6webchannel6 (>= 6.4), curl, python3
 Recommends: tor, gstreamer1.0-plugins-good, gstreamer1.0-plugins-base, ffmpeg, libimage-exiftool-perl, mediainfo
 Suggests: orca, brltty, espeak-ng, nodejs, soundconverter, audacity, aria2, transmission-cli
-Filename: pool/main/xfb_3.14159265358-1_amd64.deb
-Size: 4918344
-MD5sum: c59b000f5c4706e9c4cf5370db83324d
-SHA1: cabe35dd009c85270034fb3310d11be962ad5d20
-SHA256: 70ec9f82074a02055e43ba3b7252d42cf1e9849ffb8581d7d59dc1ce068852f1
+Filename: pool/main/xfb_3.1416-1_amd64.deb
+Size: 4918388
+MD5sum: 3820c3121637cd443f7b84acb5aff413
+SHA1: 41a713f264413d7b57238fa5b74c886597867f10
+SHA256: 577d76124dc7a37b3cfb47ce2337aaaf80d1e098b9f505d9ec40f1606c2bfc47
 Section: sound
 Priority: optional
 Description: XFB Radio Automation Software
