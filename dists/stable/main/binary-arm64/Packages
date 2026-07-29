@@ -1,0 +1,20 @@
+Package: xfb
+Version: 3.14159265358-1
+Architecture: arm64
+Maintainer: Frederic Bogaerts <info@netpack.pt>
+Depends: libqt6core6 (>= 6.4), libqt6gui6 (>= 6.4), libqt6widgets6 (>= 6.4), libqt6multimedia6 (>= 6.4), libqt6sql6-sqlite (>= 6.4), libqt6network6 (>= 6.4), libqt6concurrent6 (>= 6.4), libqt6webenginecore6 (>= 6.4), libqt6webenginequick6 (>= 6.4), libqt6opengl6 (>= 6.4), libqt6qml6 (>= 6.4), libqt6quick6 (>= 6.4), libqt6quickwidgets6 (>= 6.4), libqt6positioning6 (>= 6.4), libqt6webchannel6 (>= 6.4), curl, python3
+Recommends: tor, gstreamer1.0-plugins-good, gstreamer1.0-plugins-base, ffmpeg, libimage-exiftool-perl, mediainfo
+Suggests: orca, brltty, espeak-ng, nodejs, soundconverter, audacity, aria2, transmission-cli
+Filename: pool/main/xfb_3.14159265358-1_arm64.deb
+Size: 4766400
+MD5sum: c05b1cfac7179032ae160fe9a8b04169
+SHA1: 49212efa3ebbebb2c5bb65315b2412c17ec64c8a
+SHA256: a9392579b8c7456e1b36d6ed880771f38efa6f429b50de2f41b15cb1fe2f6625
+Section: sound
+Priority: optional
+Description: XFB Radio Automation Software
+ XFB is a radio automation software designed for radio stations
+ and broadcasting professionals. Features include playlist management,
+ jingle scheduling, live broadcasting support, torrent search via Tor,
+ and comprehensive accessibility support for visually impaired users.
+
