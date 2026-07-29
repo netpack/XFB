@@ -67,10 +67,10 @@ git add PKGBUILD .SRCINFO xfb.install
 git commit -m "Update to version $VERSION-$PKGREL
 
 - Updated to XFB 3.14159265358
-- Accessibility services now initialize; announcements reach the screen reader
-- Keyboard control of playback and of adding tracks to the playlist
-- Tutorial for blind users and reachable Accessibility Preferences
-- Reliable track duration detection with backfill for existing libraries
+- New Pads tab: a touch-friendly cart wall of labelled, coloured pads
+- Portuguese and French translations are complete (1369/1369)
+- Every entry in every top menu now has an icon
+- Tor is no longer bundled; it is installed on first use, with consent
 "
 
 echo ""
