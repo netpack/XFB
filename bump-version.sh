@@ -138,11 +138,17 @@ packaging/homebrew/xfb.rb | 1 | version "@V@"
 README.md                 | 5 | @V@
 '
 
-# "3.1415926535" -> "3.10.0.0". Windows compares versions as four 16-bit
-# integers, so the digits of pi cannot go in directly; the number of decimals
-# grows by one per release, which keeps the ordering right.
+# "3.14159265358" -> "3.1415.9265.3580", "3.1416" -> "3.1416.0.0". Windows
+# compares versions as four 16-bit integers, so the digits cannot go in
+# directly. Reading them the way the decimal reads — the first twelve digits
+# after the point in three four-digit groups — keeps Windows' ordering the same
+# as the version's own. A digit COUNT would not: 3.1416 is newer than
+# 3.14159265358 but has seven fewer decimals. Must match CMakeLists.txt.
 numeric_version() {
-    printf '%s' "$1" | awk -F. '{ printf "%s.%d.0.0", $1, length($2) }'
+    printf '%s' "$1" | awk -F. '{
+        frac = substr($2 "000000000000", 1, 12)
+        printf "%s.%d.%d.%d", $1, substr(frac,1,4)+0, substr(frac,5,4)+0, substr(frac,9,4)+0
+    }'
 }
 CURRENT_NUM="$(numeric_version "$CURRENT")"
 NEW_NUM="$(numeric_version "$NEW")"

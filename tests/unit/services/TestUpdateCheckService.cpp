@@ -15,6 +15,11 @@
  *
  * The release sequence below is the project's actual history, so a future digit
  * that breaks the comparison again fails here first.
+ *
+ * An XFB version is a number — pi, to as many places as the release deserves —
+ * so the digits after the point are compared as a decimal fraction, not as an
+ * integer. That is what makes 3.1416 (pi rounded at four places) newer than
+ * 3.14159265358 (pi truncated at eleven) despite being shorter.
  */
 class TestUpdateCheckService : public QObject
 {
@@ -29,10 +34,12 @@ private slots:
     void unparseableTagsNeverOfferAnUpdate_data();
     void unparseableTagsNeverOfferAnUpdate();
     void missingSegmentsCountAsZero();
-    void leadingZerosDoNotInflateASegment();
+    void theFractionIsADecimalNotAnInteger();
+    void roundedPiBeatsLongerTruncatedPi();
 };
 
-// Every version XFB has shipped, oldest first.
+// Every version XFB has shipped, oldest first. Note the last step: the digits
+// stop growing and pi is rounded instead, which is shorter but larger.
 static const QStringList kReleases = {
     QStringLiteral("3.14159"),
     QStringLiteral("3.141592"),
@@ -41,6 +48,7 @@ static const QStringList kReleases = {
     QStringLiteral("3.141592653"),
     QStringLiteral("3.1415926535"),
     QStringLiteral("3.14159265358"),
+    QStringLiteral("3.1416"),
 };
 
 void TestUpdateCheckService::releaseSequenceIsStrictlyIncreasing()
@@ -87,11 +95,16 @@ void TestUpdateCheckService::identicalVersionIsNotNewer()
 
 void TestUpdateCheckService::survivesFarMoreDigits()
 {
-    // Well past what even a 64-bit integer segment could hold, so the next
-    // dozen releases are covered too.
+    // Well past what even a 64-bit integer segment could hold, so however many
+    // digits a future release carries, the comparison still works.
     const QString many = QStringLiteral("3.1415926535897932384626433832795");
-    QVERIFY(UpdateCheckService::isNewerVersion(many, kReleases.last()));
-    QVERIFY(!UpdateCheckService::isNewerVersion(kReleases.last(), many));
+    QVERIFY(UpdateCheckService::isNewerVersion(many, QStringLiteral("3.14159265358")));
+    QVERIFY(!UpdateCheckService::isNewerVersion(QStringLiteral("3.14159265358"), many));
+
+    // And it is still correctly BELOW 3.1416: pi truncated is always less than
+    // pi rounded up at the fourth place, no matter how far the truncation runs.
+    QVERIFY(!UpdateCheckService::isNewerVersion(many, QStringLiteral("3.1416")));
+    QVERIFY(UpdateCheckService::isNewerVersion(QStringLiteral("3.1416"), many));
 }
 
 void TestUpdateCheckService::unparseableTagsNeverOfferAnUpdate_data()
@@ -124,12 +137,46 @@ void TestUpdateCheckService::missingSegmentsCountAsZero()
     QVERIFY(!UpdateCheckService::isNewerVersion(QStringLiteral("3.14"), QStringLiteral("3.14.1")));
 }
 
-void TestUpdateCheckService::leadingZerosDoNotInflateASegment()
+void TestUpdateCheckService::theFractionIsADecimalNotAnInteger()
 {
-    // "0014" is 14, not a four-digit number that would outrank "14".
+    // Trailing zeros are not significant: .14 == .140
+    QVERIFY(!UpdateCheckService::isNewerVersion(QStringLiteral("3.140"), QStringLiteral("3.14")));
+    QVERIFY(!UpdateCheckService::isNewerVersion(QStringLiteral("3.14"), QStringLiteral("3.140")));
+
+    // Leading zeros ARE significant: .0014 < .14 (as an integer they would tie)
+    QVERIFY(UpdateCheckService::isNewerVersion(QStringLiteral("3.14"), QStringLiteral("3.0014")));
     QVERIFY(!UpdateCheckService::isNewerVersion(QStringLiteral("3.0014"), QStringLiteral("3.14")));
-    QVERIFY(!UpdateCheckService::isNewerVersion(QStringLiteral("3.14"), QStringLiteral("3.0014")));
-    QVERIFY(UpdateCheckService::isNewerVersion(QStringLiteral("3.0015"), QStringLiteral("3.14")));
+
+    // A shorter fraction can still be larger: .2 > .14
+    QVERIFY(UpdateCheckService::isNewerVersion(QStringLiteral("3.2"), QStringLiteral("3.14")));
+    QVERIFY(!UpdateCheckService::isNewerVersion(QStringLiteral("3.14"), QStringLiteral("3.2")));
+
+    // The whole part still wins outright, and still compares as an integer.
+    QVERIFY(UpdateCheckService::isNewerVersion(QStringLiteral("4.0"), kReleases.last()));
+    QVERIFY(UpdateCheckService::isNewerVersion(QStringLiteral("10.1"), QStringLiteral("9.9")));
+}
+
+void TestUpdateCheckService::roundedPiBeatsLongerTruncatedPi()
+{
+    // 3.1416 is pi rounded at four places: .14160000000 > .14159265358, so it
+    // must be offered to everyone on any earlier release even though the
+    // version string is shorter than the one it replaces.
+    const QString rounded = QStringLiteral("3.1416");
+    for (const QString &v : kReleases) {
+        if (v == rounded)
+            continue; // it is the current release, not an earlier one
+        QVERIFY2(UpdateCheckService::isNewerVersion(rounded, v),
+                 qPrintable(QStringLiteral("3.1416 should be newer than %1").arg(v)));
+        QVERIFY2(!UpdateCheckService::isNewerVersion(v, rounded),
+                 qPrintable(QStringLiteral("%1 must not be newer than 3.1416").arg(v)));
+    }
+    QVERIFY(UpdateCheckService::isNewerVersion(QStringLiteral("v3.1416"),
+                                               QStringLiteral("3.14159265358")));
+
+    // And the scheme keeps working from there.
+    QVERIFY(UpdateCheckService::isNewerVersion(QStringLiteral("3.14161"), rounded));
+    QVERIFY(UpdateCheckService::isNewerVersion(QStringLiteral("3.1417"), rounded));
+    QVERIFY(!UpdateCheckService::isNewerVersion(rounded, QStringLiteral("3.1417")));
 }
 
 QTEST_MAIN(TestUpdateCheckService)

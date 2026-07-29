@@ -1,15 +1,19 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(XFB VERSION 3.14159265358 LANGUAGES CXX)
+project(XFB VERSION 3.1416 LANGUAGES CXX)
 
-# Windows version resources take four 16-bit integers, which XFB's pi-digit
-# version scheme does not fit (1415926535 alone overflows a 16-bit field). Map
-# it to <major>,<how many decimals>,0,0 — every release appends one more digit
-# of pi, so this still increases monotonically and stays well inside the range.
-# The full "3.1415926535" is what the resource shows as the version *string*;
-# these numbers only exist for Windows' own version comparisons.
-#   3.14159      -> 3,5,0,0
-#   3.1415926535 -> 3,10,0,0
+# Windows version resources take four 16-bit integers, which an XFB version
+# does not fit: 1415926535 alone overflows a 16-bit field. An XFB version is a
+# number — pi, to as many places as the release deserves — so map it the way a
+# decimal reads: <major>, then the first twelve digits after the point as three
+# four-digit groups, zero-padded on the right. Each group stays under 10000, and
+# the ordering matches the version's own, which a digit COUNT does not: 3.1416
+# is newer than 3.14159265358 but has fewer decimals.
+#   3.14159       -> 3,1415,9000,0
+#   3.14159265358 -> 3,1415,9265,3580
+#   3.1416        -> 3,1416,0,0
+# The resource still shows the full "${PROJECT_VERSION}" as the version string;
+# these numbers exist only for Windows' own version comparisons.
 string(REPLACE "." ";" XFB_VERSION_PARTS "${PROJECT_VERSION}")
 list(LENGTH XFB_VERSION_PARTS XFB_VERSION_PART_COUNT)
 list(GET XFB_VERSION_PARTS 0 XFB_VERSION_MAJOR)
@@ -18,8 +22,18 @@ if(XFB_VERSION_PART_COUNT GREATER 1)
 else()
     set(XFB_VERSION_FRACTION "")
 endif()
-string(LENGTH "${XFB_VERSION_FRACTION}" XFB_VERSION_DECIMALS)
-set(XFB_VERSION_RC "${XFB_VERSION_MAJOR},${XFB_VERSION_DECIMALS},0,0")
+set(XFB_VERSION_RC "${XFB_VERSION_MAJOR}")
+set(XFB_VERSION_PADDED "${XFB_VERSION_FRACTION}000000000000")
+foreach(_group_start 0 4 8)
+    string(SUBSTRING "${XFB_VERSION_PADDED}" ${_group_start} 4 _group)
+    # Strip leading zeros: a resource compiler would read "0288" as octal, and
+    # "0900" would not even be valid octal.
+    string(REGEX REPLACE "^0+" "" _group "${_group}")
+    if(_group STREQUAL "")
+        set(_group "0")
+    endif()
+    set(XFB_VERSION_RC "${XFB_VERSION_RC},${_group}")
+endforeach()
 message(STATUS "XFB ${PROJECT_VERSION} -> Windows resource version ${XFB_VERSION_RC}")
 
 # Set C++ standard

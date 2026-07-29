@@ -4,7 +4,7 @@
 
 set -e
 
-VERSION="3.14159265358"
+VERSION="3.1416"
 PKGREL="1"
 
 echo "=========================================="
@@ -66,11 +66,12 @@ echo "Committing changes..."
 git add PKGBUILD .SRCINFO xfb.install
 git commit -m "Update to version $VERSION-$PKGREL
 
-- Updated to XFB 3.14159265358
+- Updated to XFB 3.1416
 - New Pads tab: a touch-friendly cart wall of labelled, coloured pads
 - Portuguese and French translations are complete (1369/1369)
 - Every entry in every top menu now has an icon
 - Tor is no longer bundled; it is installed on first use, with consent
+- Fixed: the update check wrongly reported that you had the latest version
 "
 
 echo ""

@@ -62,17 +62,21 @@ QString UpdateCheckService::currentVersion()
     return QCoreApplication::applicationVersion();
 }
 
-// Compares one dot-separated segment of a version as an arbitrary-precision
-// decimal integer: shorter (once leading zeros are gone) is smaller, and equal
-// lengths compare digit by digit. Returns <0, 0 or >0 like strcmp.
+// An XFB version *is* a number: it is pi, to as many places as the release
+// deserves. So "3.1416" is newer than "3.14159265358" — pi rounded at four
+// places is larger than pi truncated at eleven — even though it is shorter and
+// smaller read as an integer. The two comparisons below encode that.
 //
-// This exists because XFB's versions are digits of pi and the fractional
-// segment outgrows a 32-bit int: "3.14159265358" has 14159265358 there, past
-// INT_MAX. QVersionNumber, which parses segments as int, silently gave up at
-// that point and returned plain "3" — so it read every 11-decimal release as
-// OLDER than the 3.141592653 before it, and the updater told everybody they
-// were already up to date. Comparing the digits as text has no such ceiling.
-static int compareSegment(QStringView a, QStringView b)
+// Why this is hand-rolled at all: QVersionNumber parses segments as int, and at
+// "3.14159265358" the fractional segment (14159265358) passed INT_MAX. It gave
+// up at the overflow and returned plain "3", ranking every 11-decimal release
+// BELOW the 3.141592653 before it — so the updater told everybody they already
+// had the latest version, silently. Comparing digits as text has no ceiling.
+
+// Whole numbers: shorter is smaller once leading zeros are gone, equal lengths
+// compare digit by digit. Used for the part before the point, and for any third
+// or later segment (a hypothetical 3.1416.2 > 3.1416.1).
+static int compareWholeNumber(QStringView a, QStringView b)
 {
     while (a.size() > 1 && a.startsWith(QLatin1Char('0')))
         a = a.mid(1);
@@ -81,6 +85,23 @@ static int compareSegment(QStringView a, QStringView b)
     if (a.size() != b.size())
         return a.size() < b.size() ? -1 : 1;
     return a.compare(b);
+}
+
+// Digits after the point, compared as a decimal fraction: pad the shorter one
+// with trailing zeros and read left to right. "1416" beats "14159265358"
+// because .14160000000 > .14159265358. Leading zeros are significant here
+// (.0014 < .14) and trailing ones are not (.14 == .140), which is exactly how
+// a decimal behaves and the opposite of the whole-number rule above.
+static int compareFraction(QStringView a, QStringView b)
+{
+    const qsizetype width = qMax(a.size(), b.size());
+    for (qsizetype i = 0; i < width; ++i) {
+        const QChar da = i < a.size() ? a.at(i) : QLatin1Char('0');
+        const QChar db = i < b.size() ? b.at(i) : QLatin1Char('0');
+        if (da != db)
+            return da < db ? -1 : 1;
+    }
+    return 0;
 }
 
 bool UpdateCheckService::isNewerVersion(const QString &a, const QString &b)
@@ -122,10 +143,12 @@ bool UpdateCheckService::isNewerVersion(const QString &a, const QString &b)
     const QList<QStringView> sb = QStringView(nb).split(QLatin1Char('.'));
 
     for (qsizetype i = 0; i < qMax(sa.size(), sb.size()); ++i) {
-        // A missing trailing segment counts as 0, so 3.14 == 3.14.0.
+        // A missing segment counts as 0, so 3 < 3.14 and 3.14 == 3.14.0.
         const QStringView xa = i < sa.size() ? sa.at(i) : QStringView(u"0");
         const QStringView xb = i < sb.size() ? sb.at(i) : QStringView(u"0");
-        const int c = compareSegment(xa, xb);
+        // Segment 1 is the part after the decimal point; everything else is a
+        // whole number.
+        const int c = (i == 1) ? compareFraction(xa, xb) : compareWholeNumber(xa, xb);
         if (c != 0)
             return c > 0;
     }
