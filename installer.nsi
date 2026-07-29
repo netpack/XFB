@@ -5,7 +5,14 @@
 !define COMPANYNAME "Netpack - Online Solutions"
 !define DESCRIPTION "XFB Radio Automation Software"
 !ifndef VERSION
-  !define VERSION "3.1415926535"
+  !define VERSION "3.14159265358"
+!endif
+; Windows' version resource wants four 16-bit integers, which the pi-digit
+; version does not fit. Same mapping the executable uses (see CMakeLists.txt):
+; <major>.<how many decimals>.0.0, which still increases on every release.
+; bump-version.sh keeps this in step with VERSION above.
+!ifndef VERSIONNUM
+  !define VERSIONNUM "3.11.0.0"
 !endif
 ; Target architecture: "x64" (default) or "arm64". Passed by build-windows.bat
 ; via /DARCH=...; affects the output filename and the displayed name.
@@ -33,6 +40,18 @@ Name "${APPNAME} ${VERSION} (${ARCH})"
 InstallDir "$PROGRAMFILES64\${APPNAME}"
 InstallDirRegKey HKLM "Software\${COMPANYNAME}\${APPNAME}" "InstallDir"
 RequestExecutionLevel admin
+
+; Version resource for the installer itself. An installer with no publisher,
+; product name or description is exactly what SmartScreen and Smart App
+; Control describe as "unknown"; filling these in costs nothing and is the
+; part of that verdict we can fix without a certificate.
+VIProductVersion "${VERSIONNUM}"
+VIAddVersionKey "ProductName"     "${APPNAME}"
+VIAddVersionKey "CompanyName"     "${COMPANYNAME}"
+VIAddVersionKey "FileDescription" "${DESCRIPTION} (installer)"
+VIAddVersionKey "FileVersion"     "${VERSION}"
+VIAddVersionKey "ProductVersion"  "${VERSION}"
+VIAddVersionKey "LegalCopyright"  "Copyright (C) ${COMPANYNAME}. Licensed under GPL-3.0."
 
 ; Modern UI
 !include "MUI2.nsh"

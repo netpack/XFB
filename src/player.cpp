@@ -20,6 +20,7 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include "audio/FxEngine.h"
 #include "audio/WaveformStore.h"
 #include "ArtworkStore.h"
+#include "PadBoard.h"
 #include "PlaylistWaveView.h"
 #include "LevelMeter.h"
 #include "ThemeManager.h"
@@ -422,13 +423,23 @@ player::player(QWidget *parent) :
         // View menu: per-panel visibility, plus locking and resetting the
         // whole arrangement.
         QMenu *viewMenu = new QMenu(tr("View"), this);
-        const QList<QDockWidget *> allDocks = {m_dockPlayer, m_dockClock,
-                                               m_dockSide, m_dockLibrary};
-        for (QDockWidget *dock : allDocks)
-            viewMenu->addAction(dock->toggleViewAction());
+        // Every menu entry carries an icon, so a panel can be picked out of
+        // the list by its picture rather than by reading all four names.
+        const struct { QDockWidget *dock; const char *icon; } dockEntries[] = {
+            {m_dockPlayer,  ":/icons/flat/Vertical Settings Mixer-32.png"},
+            {m_dockClock,   ":/icons/player-time.png"},
+            {m_dockSide,    ":/icons/ic_menu_search.png"},
+            {m_dockLibrary, ":/icons/flat/Database-48.png"},
+        };
+        for (const auto &entry : dockEntries) {
+            QAction *toggle = entry.dock->toggleViewAction();
+            toggle->setIcon(QIcon(QLatin1String(entry.icon)));
+            viewMenu->addAction(toggle);
+        }
         // The artwork panel lives inside the side panel; this toggle only
         // shows/hides it there (persisted separately from the dock state).
-        QAction *artworkAction = viewMenu->addAction(tr("Artwork"));
+        QAction *artworkAction = viewMenu->addAction(QIcon(":/icons/insert-image.png"),
+                                                     tr("Artwork"));
         artworkAction->setCheckable(true);
         {
             QSettings settings(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
@@ -445,7 +456,8 @@ player::player(QWidget *parent) :
             settings.setValue("ShowArtworkPanel", on);
         });
         viewMenu->addSeparator();
-        m_lockLayoutAction = viewMenu->addAction(tr("Lock the layout"));
+        m_lockLayoutAction = viewMenu->addAction(QIcon(":/icons/lock.png"),
+                                                 tr("Lock the layout"));
         m_lockLayoutAction->setCheckable(true);
         m_lockLayoutAction->setToolTip(tr("Hide the panel title bars and prevent the panels "
                                           "from being moved or closed"));
@@ -455,7 +467,8 @@ player::player(QWidget *parent) :
                                    + "/xfb.conf", QSettings::IniFormat);
             settings.setValue("LayoutLocked", locked);
         });
-        QAction *resetLayoutAction = viewMenu->addAction(tr("Reset the layout"));
+        QAction *resetLayoutAction = viewMenu->addAction(QIcon(":/icons/document-revert.png"),
+                                                         tr("Reset the layout"));
         connect(resetLayoutAction, &QAction::triggered,
                 this, &player::resetDockLayout);
         if (ui->menuHelp && ui->menuHelp->menuAction())
@@ -1712,7 +1725,8 @@ checkDbOpen();
    // Tempo analysis of the library, which is what auto mode's BPM matching
    // draws on. Only ever touches tracks that have never been measured.
    {
-       QAction *analyzeBpm = new QAction(tr("Measure the BPM of all music tracks in the database"), this);
+       QAction *analyzeBpm = new QAction(QIcon(":/icons/chronometer.png"),
+                                         tr("Measure the BPM of all music tracks in the database"), this);
        analyzeBpm->setToolTip(tr("Measure the tempo of every track that does not have one yet, "
                                  "so Auto Mode can follow a track with one at a similar tempo. "
                                  "Each track is decoded once; the result is stored in the "
@@ -1780,7 +1794,23 @@ checkDbOpen();
        });
    }
 
-   // Audio FX tab, right after the DJ tab (hide it via Options → ShowFxTab)
+   // Pads tab, right after the DJ tab (hide it via Options → ShowPadsTab).
+   // A grid of labelled, coloured pads that fire a jingle, a stab or a bed
+   // on a single press — built to be driven from a touch screen.
+   {
+       m_padBoard = new PadBoardWidget(this);
+
+       QSettings settings(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
+                              + "/xfb.conf", QSettings::IniFormat);
+       if (settings.value("ShowPadsTab", true).toBool()) {
+           const int djIndex = ui->tabWidget_2->indexOf(ui->tab_dj);
+           ui->tabWidget_2->insertTab(djIndex + 1, m_padBoard,
+                                      QIcon(":/icons/flat/Natural User Interface 2-48.png"),
+                                      tr("Pads"));
+       }
+   }
+
+   // Audio FX tab, right after the DJ/Pads group (hide it via Options → ShowFxTab)
    {
        m_fxTabWidget = new AudioFxWidget(Xplayer, lp1_Xplayer, lp2_Xplayer, this);
        auto *fxScroll = new QScrollArea(this);
@@ -1792,8 +1822,7 @@ checkDbOpen();
        QSettings settings(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
                               + "/xfb.conf", QSettings::IniFormat);
        if (settings.value("ShowFxTab", true).toBool()) {
-           const int djIndex = ui->tabWidget_2->indexOf(ui->tab_dj);
-           ui->tabWidget_2->insertTab(djIndex + 1, m_fxTabPage,
+           ui->tabWidget_2->insertTab(djGroupInsertIndex(), m_fxTabPage,
                                       QIcon(":/icons/flat/eq-fx-64.png"), tr("Audio FX"));
        }
 
@@ -2245,6 +2274,22 @@ void player::getMediaInfoForFile(const QString& filePath) {
 }
 
 
+// The DJ tab heads a small group of performance tabs (DJ, Pads, Audio FX).
+// Any of them can be hidden from the Options dialog, so the insertion point
+// of a tab has to be worked out from the ones actually present rather than
+// from a fixed index.
+int player::djGroupInsertIndex() const
+{
+    if (!ui || !ui->tabWidget_2)
+        return 0;
+    if (m_padBoard) {
+        const int padsIndex = ui->tabWidget_2->indexOf(m_padBoard);
+        if (padsIndex != -1)
+            return padsIndex + 1;
+    }
+    return ui->tabWidget_2->indexOf(ui->tab_dj) + 1;
+}
+
 void player::updateConfig() {
     qDebug() << "Updating player configuration using QSettings...";
 
@@ -2408,13 +2453,34 @@ void player::updateConfig() {
         qDebug() << "EnableTorrents setting:" << enableTorrents;
     }
 
-    // Show or hide the Audio FX tab (next to the DJ tab)
+    // Show or hide the Pads tab (next to the DJ tab). Hiding it does not
+    // discard anything: the pads stay in xfb.conf and come back with the tab.
+    bool showPadsTab = settings.value("ShowPadsTab", true).toBool();
+    if (ui && ui->tabWidget_2 && m_padBoard) {
+        int padsTabIndex = ui->tabWidget_2->indexOf(m_padBoard);
+        if (showPadsTab && padsTabIndex == -1) {
+            const int djIndex = ui->tabWidget_2->indexOf(ui->tab_dj);
+            ui->tabWidget_2->insertTab(djIndex + 1, m_padBoard,
+                                       QIcon(":/icons/flat/Natural User Interface 2-48.png"),
+                                       tr("Pads"));
+        } else if (!showPadsTab && padsTabIndex != -1) {
+            // Nothing may keep playing out of a tab the operator just hid.
+            m_padBoard->stopAll();
+            ui->tabWidget_2->removeTab(padsTabIndex);
+            // removeTab() leaves the page parentless — hand it back to the
+            // window so it is owned (and destroyed) with it.
+            m_padBoard->setParent(this);
+            m_padBoard->hide();
+        }
+        qDebug() << "ShowPadsTab setting:" << showPadsTab;
+    }
+
+    // Show or hide the Audio FX tab (next to the DJ and Pads tabs)
     bool showFxTab = settings.value("ShowFxTab", true).toBool();
     if (ui && ui->tabWidget_2 && m_fxTabPage) {
         int fxTabIndex = ui->tabWidget_2->indexOf(m_fxTabPage);
         if (showFxTab && fxTabIndex == -1) {
-            const int djIndex = ui->tabWidget_2->indexOf(ui->tab_dj);
-            ui->tabWidget_2->insertTab(djIndex + 1, m_fxTabPage,
+            ui->tabWidget_2->insertTab(djGroupInsertIndex(), m_fxTabPage,
                                        QIcon(":/icons/flat/eq-fx-64.png"), tr("Audio FX"));
         } else if (!showFxTab && fxTabIndex != -1) {
             ui->tabWidget_2->removeTab(fxTabIndex);
@@ -4870,16 +4936,23 @@ void player::setupPlaybackShortcuts()
 
     QMenu *playbackMenu = new QMenu(tr("&Playback"), this);
 
-    struct { const char *text; QKeySequence key; void (player::*slot)(); } entries[] = {
-        {QT_TR_NOOP("&Play / Segue"), QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_P), &player::on_btPlay_clicked},
-        {QT_TR_NOOP("Pause / &Resume"), QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Space), &player::on_bt_pause_play_clicked},
-        {QT_TR_NOOP("&Stop"), QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_S), &player::on_btStop_clicked},
-        {QT_TR_NOOP("&Next track"), QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_N), &player::on_btPlayNext_clicked},
-        {QT_TR_NOOP("Pre&vious track"), QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_B), &player::playPreviousMedia},
+    // The icons are the ones on the transport buttons, so the menu entry and
+    // the button an operator already knows read as the same command.
+    struct { const char *text; const char *icon; QKeySequence key; void (player::*slot)(); } entries[] = {
+        {QT_TR_NOOP("&Play / Segue"), ":/icons/flat/Play-64.png",
+         QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_P), &player::on_btPlay_clicked},
+        {QT_TR_NOOP("Pause / &Resume"), ":/icons/flat/Pause-32.png",
+         QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Space), &player::on_bt_pause_play_clicked},
+        {QT_TR_NOOP("&Stop"), ":/icons/flat/Stop Sign-32.png",
+         QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_S), &player::on_btStop_clicked},
+        {QT_TR_NOOP("&Next track"), ":/icons/flat/Fast Forward-32.png",
+         QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_N), &player::on_btPlayNext_clicked},
+        {QT_TR_NOOP("Pre&vious track"), ":/icons/flat/Previous-32.png",
+         QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_B), &player::playPreviousMedia},
     };
 
     for (const auto &e : entries) {
-        QAction *action = playbackMenu->addAction(tr(e.text));
+        QAction *action = playbackMenu->addAction(QIcon(QLatin1String(e.icon)), tr(e.text));
         action->setShortcut(e.key);
         // Works no matter which panel currently holds focus.
         action->setShortcutContext(Qt::ApplicationShortcut);
@@ -4892,7 +4965,8 @@ void player::setupPlaybackShortcuts()
     // Getting a track into the running order is the most common task in the
     // app and had no keyboard route at all. Menu entries make it discoverable
     // as well as reachable.
-    QAction *addEnd = playbackMenu->addAction(tr("Add selection to &end of playlist"));
+    QAction *addEnd = playbackMenu->addAction(QIcon(":/icons/align-vertical-bottom.png"),
+                                              tr("Add selection to &end of playlist"));
     addEnd->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Return));
     addEnd->setShortcutContext(Qt::ApplicationShortcut);
     connect(addEnd, &QAction::triggered, this, [this]() {
@@ -4900,7 +4974,8 @@ void player::setupPlaybackShortcuts()
     });
     addAction(addEnd);
 
-    QAction *addTop = playbackMenu->addAction(tr("Add selection to &start of playlist"));
+    QAction *addTop = playbackMenu->addAction(QIcon(":/icons/align-vertical-top.png"),
+                                              tr("Add selection to &start of playlist"));
     addTop->setShortcut(QKeySequence(Qt::CTRL | Qt::ALT | Qt::Key_Return));
     addTop->setShortcutContext(Qt::ApplicationShortcut);
     connect(addTop, &QAction::triggered, this, [this]() {
@@ -4911,7 +4986,8 @@ void player::setupPlaybackShortcuts()
     playbackMenu->addSeparator();
 
     // "What is playing?" — the single most useful thing for a blind operator.
-    QAction *whatsPlaying = playbackMenu->addAction(tr("Announce &what is playing"));
+    QAction *whatsPlaying = playbackMenu->addAction(QIcon(":/icons/ic_launcher_voicedial.png"),
+                                                    tr("Announce &what is playing"));
     whatsPlaying->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_W));
     whatsPlaying->setShortcutContext(Qt::ApplicationShortcut);
     connect(whatsPlaying, &QAction::triggered, this, [this]() {
@@ -4930,7 +5006,8 @@ void player::setupPlaybackShortcuts()
     // looking for guidance will go first, and has its own shortcut so it can
     // be reached without hunting through the menus.
     if (ui->menuHelp) {
-        QAction *tutorial = new QAction(tr("&Tutorial for Blind Users"), this);
+        QAction *tutorial = new QAction(QIcon(":/icons/help-hint.png"),
+                                        tr("&Tutorial for Blind Users"), this);
         tutorial->setMenuRole(QAction::NoRole);
         tutorial->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_H));
         tutorial->setShortcutContext(Qt::ApplicationShortcut);
@@ -4957,7 +5034,8 @@ void player::setupPlaybackShortcuts()
     // way in — no menu entry and no code path opened it — so the settings it
     // manages (verbosity, announcement timing) were unreachable.
     if (ui->menuXFB) {
-        QAction *a11yPrefs = new QAction(tr("&Accessibility Preferences..."), this);
+        QAction *a11yPrefs = new QAction(QIcon(":/icons/text-speak.png"),
+                                         tr("&Accessibility Preferences..."), this);
         // Without this, Qt's macOS text heuristic sees "Preferences" and moves
         // the item into the application menu, away from the Options menu where
         // the rest of XFB's settings live.
@@ -13089,10 +13167,12 @@ void player::on_torConnectButton_clicked()
         return;
     }
 
-    // Ensure Tor is available before attempting to connect. Prefer the Tor
-    // that ships with XFB (bundled at <app>/tor/tor.exe on Windows) or one
-    // found on the system; only if none is present do we try to install it via
-    // a package manager (works on Linux/macOS).
+    // Ensure Tor is available before attempting to connect. XFB no longer
+    // ships a copy of Tor: the Torrents feature is off by default, so bundling
+    // an unsigned tor.exe with pluggable transports made every install look
+    // worse to Windows' reputation checks for a tool most operators never use.
+    // TorNetworkService still finds a bundled, system or Tor Browser copy if
+    // one is there; otherwise we offer to install it, once, with consent.
     {
         bool torAvailable = m_torNetworkService->isTorAvailable();
         if (!torAvailable) {
@@ -13107,8 +13187,10 @@ void player::on_torConnectButton_clicked()
             updateTorConnectionUI(false);
             QMessageBox::warning(this, tr("Tor Not Available"),
                 tr("XFB could not find the Tor program needed to connect.\n\n"
-                   "On Linux/macOS, install the \"tor\" package with your package "
-                   "manager. On Windows, reinstall XFB so the bundled Tor is present."));
+                   "Install it with your package manager — \"tor\" on Linux and "
+                   "macOS, or the Tor Browser on Windows — and try again. XFB "
+                   "picks up a system install, a Tor Browser install, or a copy "
+                   "placed in its own \"tor\" folder."));
             return;
         }
     }

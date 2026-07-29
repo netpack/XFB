@@ -97,6 +97,7 @@ optionsDialog::optionsDialog(QWidget *parent) :
             this, [this](int) { updateAccentButton(); });
     ui->checkBox_enableTorrents->setChecked(settings.value("EnableTorrents", false).toBool());
     ui->checkBox_showFxTab->setChecked(settings.value("ShowFxTab", true).toBool());
+    ui->checkBox_showPadsTab->setChecked(settings.value("ShowPadsTab", true).toBool());
     ui->checkBox_autoAutoMix->setChecked(settings.value("AutoAutoMix", false).toBool());
     ui->checkBox_bpmMatch->setChecked(settings.value("AutoModeMatchBpm", false).toBool());
     ui->spin_bpmTolerance->setValue(
@@ -276,6 +277,7 @@ void optionsDialog::saveSettings2Db()
     // the theme itself is applied after the sync() below.
     settings.setValue("EnableTorrents", ui->checkBox_enableTorrents->isChecked());
     settings.setValue("ShowFxTab", ui->checkBox_showFxTab->isChecked());
+    settings.setValue("ShowPadsTab", ui->checkBox_showPadsTab->isChecked());
     settings.setValue("AutoAutoMix", ui->checkBox_autoAutoMix->isChecked());
     settings.setValue("AutoModeMatchBpm", ui->checkBox_bpmMatch->isChecked());
     settings.setValue("AutoModeBpmTolerance", ui->spin_bpmTolerance->value());

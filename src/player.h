@@ -57,6 +57,7 @@ class NowPlayingWaveStrip;
 class LevelMeter;
 class ArtworkStore;
 class NowPlayingArtPanel;
+class PadBoardWidget;
 
 #include "services/TorrentTypes.h"
 #include "audio/FxPlayer.h"
@@ -429,9 +430,15 @@ private slots:
     UpdateCheckService *m_updateService = nullptr;
     bool m_updateCheckManual = false;
 
-    // Audio FX tab (inserted after the DJ tab; visibility via ShowFxTab)
+    // Audio FX tab (inserted after the Pads tab; visibility via ShowFxTab)
     AudioFxWidget *m_fxTabWidget = nullptr;
     QWidget *m_fxTabPage = nullptr;
+
+    // Pads tab: the touch-friendly grid of instant-play pads (cart wall),
+    // inserted right after the DJ tab; visibility via ShowPadsTab
+    PadBoardWidget *m_padBoard = nullptr;
+    /** Where a tab of the DJ group goes: after the pads, else after the DJ tab. */
+    int djGroupInsertIndex() const;
 
     // Playlist sound-wave view (crossfade preparation). The store extracts
     // waveforms with ffmpeg; the view paints them into ui->playlist and

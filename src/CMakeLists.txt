@@ -27,6 +27,8 @@ set(SOURCES
     dialogs/AudioFxDialog.cpp
     # Playlist sound-wave view (crossfade preparation)
     PlaylistWaveView.cpp
+    # Pads tab: touch-friendly grid of instant-play pads (cart wall)
+    PadBoard.cpp
     # Stereo LED output level meter (Options toggle)
     LevelMeter.cpp
     # Track artwork (cover icons + the Artwork dock panel)
@@ -119,6 +121,8 @@ set(HEADERS
     audio/FxEngine.h
     audio/FxPlayer.h
     dialogs/AudioFxDialog.h
+    # Pads tab
+    PadBoard.h
     # Service layer headers
     services/IService.h
     services/ServiceContainer.h
@@ -293,6 +297,16 @@ elseif(WIN32)
     set_target_properties(XFB PROPERTIES
         WIN32_EXECUTABLE TRUE
     )
+    # Version resource: gives the executable a publisher, product name,
+    # description and version in Windows' file properties and in the
+    # SmartScreen prompt. Without it every one of those fields is blank, which
+    # is one of the signals that made Windows treat XFB as an unknown app.
+    # Deliberately a separate .rc from xfb.rc: that one carries the icon and
+    # resolves "xfb.ico" relative to its own directory, so it must stay put.
+    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/xfb_version.rc.in"
+                   "${CMAKE_CURRENT_BINARY_DIR}/xfb_version.rc" @ONLY)
+    target_sources(XFB PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/xfb_version.rc")
+
     # Add Windows application icon via .rc file if it exists
     if(EXISTS "${CMAKE_SOURCE_DIR}/xfb.rc")
         target_sources(XFB PRIVATE "${CMAKE_SOURCE_DIR}/xfb.rc")

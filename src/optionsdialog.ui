@@ -231,6 +231,19 @@
             </widget>
            </item>
            <item>
+            <widget class="QCheckBox" name="checkBox_showPadsTab">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Show the Pads tab next to the DJ tab: a grid of labelled, coloured pads that play a jingle, a stab or a bed the moment they are pressed — made for a touch screen. Hiding the tab keeps the pads; they come back with it.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>Pads tab</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
             <widget class="QCheckBox" name="checkBox_retune432">
              <property name="toolTip">
               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Play all music retuned from A=440 Hz to A=432 Hz in real time — files are not modified and the tempo is preserved (track length and BPM stay the same). Applies to the main player and both LP decks. To permanently convert files instead, use Database → Convert to 432 Hz.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>

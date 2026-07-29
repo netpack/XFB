@@ -23,6 +23,7 @@ XFB is an open-source radio automation software developed by [Frédéric Bogaert
 - **BPM & Tempo-Matched Auto Mode** — Measure the tempo of your library, then have Auto Mode follow each track with one at a similar BPM (half and double time count as a match), with a configurable tolerance
 - **Gapless Playback** — The next track is preloaded and handed over without a gap
 - **Multi-Player** — Main player plus two auxiliary LP players for DJ mixing
+- **Pads (cart wall)** — A grid of labelled, coloured pads that fire a jingle, a stab or a bed the moment you press them, built for a touch screen. Load a pad by dragging a track onto it, picking one from the database or choosing any file on disk; each pad has its own volume, can loop, and can either stop or restart when pressed again. Eight banks, and pads playing on one bank keep going while you work on another.
 - **Audio FX** — Per-player 10-band equalizer (with presets) and broadcast-style compressor, applied live (XFB → Audio FX, requires ffmpeg)
 - **432 Hz Playback** — Retune everything from A=440 to A=432 in real time without touching your files, or batch-convert one track, a selection, or the whole library (Database menu / music table right-click)
 - **Live Recording** — Record programs directly within the application
@@ -51,7 +52,7 @@ the in-app update notification.
 
 **Option B — Manual:**
 
-1. Download `XFB-3.1415926535-macOS.dmg` from [GitHub Releases](https://github.com/netpack/XFB/releases)
+1. Download `XFB-3.14159265358-macOS.dmg` from [GitHub Releases](https://github.com/netpack/XFB/releases)
 2. Open the DMG file
 3. Drag `XFB.app` into your **Applications** folder
 4. Launch XFB from Applications (first launch: right-click → Open to bypass Gatekeeper)
@@ -62,10 +63,10 @@ the in-app update notification.
 
 ```sh
 # Download and install the .deb package
-sudo apt install ./xfb_3.1415926535-1_amd64.deb
+sudo apt install ./xfb_3.14159265358-1_amd64.deb
 
 # Or if dependencies are missing:
-sudo dpkg -i xfb_3.1415926535-1_amd64.deb
+sudo dpkg -i xfb_3.14159265358-1_amd64.deb
 sudo apt install -f
 ```
 
@@ -89,8 +90,8 @@ makepkg -si
 ### Windows
 
 1. Download the installer from [GitHub Releases](https://github.com/netpack/XFB/releases):
-   - Intel/AMD 64-bit: `XFB-3.1415926535-Setup.exe`
-   - ARM64 (Windows on ARM, e.g. Snapdragon): `XFB-3.1415926535-arm64-Setup.exe`
+   - Intel/AMD 64-bit: `XFB-3.14159265358-Setup.exe`
+   - ARM64 (Windows on ARM, e.g. Snapdragon): `XFB-3.14159265358-arm64-Setup.exe`
 2. Run the installer and follow the prompts
 3. Launch XFB from the Start Menu or Desktop shortcut
 
@@ -160,6 +161,27 @@ User data in `%APPDATA%\Netpack - Online Solutions\XFB` is preserved.
 - The progress slider shows current position; the volume slider controls output level
 - **Wave view** shows each track's waveform so you can drag a track to start before
   the previous one ends; **Auto-mix** sets those crossfade overlaps for you
+
+### Pads
+
+The **Pads** tab, next to DJ, is a cart wall: a grid of buttons that play a sound
+the instant you press one, without going near the playlist. It is meant to be
+driven with a finger on a touch screen.
+
+- **Fill a pad** by dragging a track onto it from the music, jingles, adverts or
+  programs tables — or turn on **Edit pads** (or right-click a pad) and choose
+  **Library...** to search the database, or **File...** to take any file on disk
+- **Give it a label and a colour** in the same dialog, so the grid reads at a glance
+- **Press a pad to play it**, press it again to stop — or set it to restart from the
+  top instead, which is what a stab or a stinger wants
+- **Loop until stopped** keeps a bed running under a live link
+- Pads are polyphonic: each one plays on its own, so a stinger over a bed is fine.
+  **Stop all** cuts everything
+- **Banks** hold separate sets of pads (sweepers on one, beds on another). A pad
+  playing on one bank keeps playing while you work on another
+- Grid size, volume, banks and every pad are saved as you go
+- From the keyboard: **Tab** into the grid, **arrow keys** to move around it,
+  **Enter** to play or stop, **Esc** to stop, **F2** to edit a pad
 
 ### Keyboard Shortcuts
 
@@ -251,16 +273,30 @@ build-windows.bat --arch arm64
 
 ## Optional Dependencies
 
-For full functionality, consider installing:
+You do not have to install any of these yourself. The first time you use a
+feature that needs one, XFB tells you what it needs and why, asks permission,
+and installs it for you through your platform's package manager (Homebrew,
+apt, pacman or winget). Nothing is installed at startup, and nothing is
+installed without you agreeing to it — so a station that never touches, say,
+the Torrents tab never gets a Tor client.
 
-| Tool | Purpose |
-|------|---------|
+| Tool | Needed for |
+|------|------------|
+| `ffmpeg` | The FX engine, waveforms, BPM detection, 432 Hz playback, format conversion (bundled on Windows and macOS) |
 | `tor` | Anonymous torrent search via onion sites |
-| `aria2c` | Torrent downloading |
-| `orca` | Screen reader support (Linux) |
+| `aria2c` (or `transmission-cli`) | Torrent downloading |
+| `yt-dlp` (with `node`) | Downloading media from online sources |
 | `exiftool` | Automatic track duration detection |
-| `yt-dlp` | Download media from online sources |
-| `ffmpeg` | Audio format conversion |
+| `mediainfo` | The music table's "Get media info" action |
+| `audacity` | The "Open this in Audacity" action |
+
+Options → **Install all dependencies** fetches the lot in one go if you would
+rather have everything ready in advance.
+
+`orca` is different: it is the Linux screen reader *you* run, not something XFB
+launches. XFB speaks through whichever screen reader is already running — ORCA
+on Linux, VoiceOver on macOS, NVDA on Windows — so install it the usual way for
+your desktop.
 
 ---
 

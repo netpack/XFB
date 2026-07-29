@@ -113,9 +113,11 @@ echo ""
 
 # --- The substitution table --------------------------------------------------
 # One line per spot:   <file> | <expected count> | <literal snippet with @V@>
-# @V@ is replaced by the old version to find, and by the new one to write. Each
-# snippet carries enough surrounding syntax that it can only match the real
-# version. To add a spot, add a line — do not edit files by hand.
+# @V@ is replaced by the old version to find, and by the new one to write.
+# @N@ is the same version in the four-integer form a Windows version resource
+# needs — <major>.<how many decimals>.0.0, matching what CMakeLists.txt derives
+# for XFB.exe. Each snippet carries enough surrounding syntax that it can only
+# match the real version. To add a spot, add a line — do not edit files by hand.
 TABLE='
 CMakeLists.txt            | 1 | project(XFB VERSION @V@ LANGUAGES CXX)
 src/main.cpp              | 1 | XFB_VERSION = "@V@"
@@ -123,6 +125,7 @@ build-macos.sh            | 1 | VERSION="@V@"
 build-windows.bat         | 1 | set VERSION=@V@
 release.sh                | 1 | VERSION="@V@"
 installer.nsi             | 1 | !define VERSION "@V@"
+installer.nsi             | 1 | !define VERSIONNUM "@N@"
 PKGBUILD                  | 1 | pkgver=@V@
 PKGBUILD                  | 1 | New in v@V@:
 update-aur.sh             | 1 | VERSION="@V@"
@@ -135,13 +138,27 @@ packaging/homebrew/xfb.rb | 1 | version "@V@"
 README.md                 | 5 | @V@
 '
 
+# "3.1415926535" -> "3.10.0.0". Windows compares versions as four 16-bit
+# integers, so the digits of pi cannot go in directly; the number of decimals
+# grows by one per release, which keeps the ordering right.
+numeric_version() {
+    printf '%s' "$1" | awk -F. '{ printf "%s.%d.0.0", $1, length($2) }'
+}
+CURRENT_NUM="$(numeric_version "$CURRENT")"
+NEW_NUM="$(numeric_version "$NEW")"
+
 export BUMP_CURRENT="$CURRENT" BUMP_NEW="$NEW" BUMP_DRY="$DRY_RUN" BUMP_TABLE="$TABLE"
+export BUMP_CURRENT_NUM="$CURRENT_NUM" BUMP_NEW_NUM="$NEW_NUM"
 
 python3 - <<'PYEOF'
 import os, sys
 
 cur, new = os.environ['BUMP_CURRENT'], os.environ['BUMP_NEW']
+curnum, newnum = os.environ['BUMP_CURRENT_NUM'], os.environ['BUMP_NEW_NUM']
 dry = os.environ['BUMP_DRY'] == '1'
+
+def fill(snippet, version, numeric):
+    return snippet.replace('@V@', version).replace('@N@', numeric)
 
 G, R, Y, N = '\033[0;32m', '\033[0;31m', '\033[1;33m', '\033[0m'
 
@@ -167,7 +184,7 @@ for path in order:
 
     total = 0
     for want, snippet in plan[path]:
-        old = snippet.replace('@V@', cur)
+        old = fill(snippet, cur, curnum)
         found = text.count(old)
         if found == 0:
             print(f"{R}✗{N} {path} — not found: {old!r}")
@@ -175,7 +192,7 @@ for path in order:
             continue
         if found != want:
             print(f"{Y}⚠{N} {path} — {old!r}: found {found}, expected {want}")
-        text = text.replace(old, snippet.replace('@V@', new))
+        text = text.replace(old, fill(snippet, new, newnum))
         total += found
 
     if text == original:

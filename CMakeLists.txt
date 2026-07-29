@@ -1,6 +1,26 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(XFB VERSION 3.1415926535 LANGUAGES CXX)
+project(XFB VERSION 3.14159265358 LANGUAGES CXX)
+
+# Windows version resources take four 16-bit integers, which XFB's pi-digit
+# version scheme does not fit (1415926535 alone overflows a 16-bit field). Map
+# it to <major>,<how many decimals>,0,0 — every release appends one more digit
+# of pi, so this still increases monotonically and stays well inside the range.
+# The full "3.1415926535" is what the resource shows as the version *string*;
+# these numbers only exist for Windows' own version comparisons.
+#   3.14159      -> 3,5,0,0
+#   3.1415926535 -> 3,10,0,0
+string(REPLACE "." ";" XFB_VERSION_PARTS "${PROJECT_VERSION}")
+list(LENGTH XFB_VERSION_PARTS XFB_VERSION_PART_COUNT)
+list(GET XFB_VERSION_PARTS 0 XFB_VERSION_MAJOR)
+if(XFB_VERSION_PART_COUNT GREATER 1)
+    list(GET XFB_VERSION_PARTS 1 XFB_VERSION_FRACTION)
+else()
+    set(XFB_VERSION_FRACTION "")
+endif()
+string(LENGTH "${XFB_VERSION_FRACTION}" XFB_VERSION_DECIMALS)
+set(XFB_VERSION_RC "${XFB_VERSION_MAJOR},${XFB_VERSION_DECIMALS},0,0")
+message(STATUS "XFB ${PROJECT_VERSION} -> Windows resource version ${XFB_VERSION_RC}")
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 17)

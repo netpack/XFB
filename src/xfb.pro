@@ -23,6 +23,7 @@ SOURCES += \
     audio/BpmDetector.cpp \
     audio/BpmLibrary.cpp \
     PlaylistWaveView.cpp \
+    PadBoard.cpp \
     LevelMeter.cpp \
     ArtworkStore.cpp \
     ThemeManager.cpp \
@@ -89,6 +90,7 @@ HEADERS += \
     audio/BpmDetector.h \
     audio/BpmLibrary.h \
     PlaylistWaveView.h \
+    PadBoard.h \
     LevelMeter.h \
     ArtworkStore.h \
     ThemeManager.h \

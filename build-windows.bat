@@ -27,7 +27,7 @@ echo ========================================
 echo.
 
 set PROJECT_NAME=XFB
-set VERSION=3.1415926535
+set VERSION=3.14159265358
 set BUILD_DIR=build
 set INSTALL_DIR=install
 
@@ -329,15 +329,29 @@ if not "%XFB_NO_FFMPEG_BUNDLE%"=="1" (
     )
 )
 
-REM --- Bundle Tor (tor.exe) so the Tor feature works out of the box ---
-REM Set XFB_NO_TOR_BUNDLE=1 to skip. TorNetworkService looks for
-REM <app>\tor\tor.exe first, which is exactly where this places it.
-if not "%XFB_NO_TOR_BUNDLE%"=="1" (
+REM --- Tor is NOT bundled (opt in with XFB_BUNDLE_TOR=1) ---
+REM Tor is only used by the Torrents feature, which is off by default, yet the
+REM bundle shipped an unsigned tor.exe plus pluggable transports (lyrebird /
+REM obfs4, conjure) to every user. That is exactly the payload Defender and
+REM Smart App Control flag, and it was part of why the unsigned installer was
+REM blocked. XFB installs Tor on first use instead, with the user's consent
+REM (DependencyChecker::ensureDependency -> winget TorProject.TorBrowser);
+REM TorNetworkService also finds a system or Tor Browser install by itself.
+if "%XFB_BUNDLE_TOR%"=="1" (
+    echo [INFO] XFB_BUNDLE_TOR=1 - bundling Tor into the package.
     if exist "%DIST_DIR%\tor\tor.exe" (
         echo [INFO] Tor already present in dist; skipping download.
     ) else (
         call :bundle_tor
     )
+) else (
+    REM A dist folder left over from a build made before this change would
+    REM still be swept into the installer by the NSIS "File /r" — drop it.
+    if exist "%DIST_DIR%\tor" (
+        echo [INFO] Removing Tor left over from an earlier build in %DIST_DIR%\tor.
+        rmdir /s /q "%DIST_DIR%\tor"
+    )
+    echo [INFO] Tor is not bundled; XFB installs it on first use of the Torrents feature.
 )
 
 REM --- Copy additional files ---
@@ -517,9 +531,11 @@ if exist "%DIST_DIR%\ffmpeg.exe" (
 goto :eof
 
 REM --- Download the Tor Expert Bundle and place tor.exe (+ its DLLs) in
-REM     dist\tor\. Best-effort: on failure the Tor feature is simply
-REM     unavailable in this build. Uses the x86_64 build (runs under emulation
-REM     on Windows ARM64, as there is no official Windows-ARM64 Tor build).
+REM     dist\tor\. Only runs when XFB_BUNDLE_TOR=1; the default is to let XFB
+REM     install Tor on first use instead (see above). Best-effort: on failure
+REM     the Tor feature falls back to on-demand installation. Uses the x86_64
+REM     build (runs under emulation on Windows ARM64, as there is no official
+REM     Windows-ARM64 Tor build).
 :bundle_tor
 where powershell >nul 2>&1 || (echo [WARNING] PowerShell not found; skipping Tor bundle. & goto :eof)
 where tar >nul 2>&1 || (echo [WARNING] tar.exe not found; skipping Tor bundle. & goto :eof)
