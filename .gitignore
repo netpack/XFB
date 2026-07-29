@@ -12,6 +12,18 @@ XFB
 XFB.app/
 XFB.exe
 
+# ...but src/XFB.app/Contents/Info.plist is a hand-maintained SOURCE template,
+# not a built bundle: src/CMakeLists.txt points MACOSX_BUNDLE_INFO_PLIST at it.
+# The "XFB.app/" rule above was hiding it, so configuring a fresh clone on
+# macOS failed with 'Info.plist template could not be found'. Git needs the
+# parent directories un-ignored before the file can be, then everything else
+# under Contents/ is re-ignored so the built Frameworks/, Resources/, MacOS/
+# and PkgInfo stay out.
+!src/XFB.app/
+!src/XFB.app/Contents/
+src/XFB.app/Contents/*
+!src/XFB.app/Contents/Info.plist
+
 # Build directories
 build/
 build-*/

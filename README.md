@@ -269,6 +269,23 @@ set QT_HOST_DIR=C:\Qt\6.8.3\msvc2022_64
 build-windows.bat --arch arm64
 ```
 
+### Tests
+
+The packaging scripts above all configure with `BUILD_TESTING=OFF`, so they
+produce release artifacts without building the test targets. Run the suite
+separately:
+
+```sh
+./run-tests.sh          # build and run
+./run-tests.sh --list   # show which tests are skipped as known broken
+./run-tests.sh --all    # include those too (expect failures)
+```
+
+CI runs `./run-tests.sh` on every push, so a test added under `tests/` is
+exercised automatically. A number of older tests assert behaviour the code does
+not have, and the integration, performance and UI groups do not currently
+compile; both sets are listed in the script and skipped until they are fixed.
+
 ---
 
 ## Optional Dependencies

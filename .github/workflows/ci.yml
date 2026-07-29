@@ -1,6 +1,9 @@
-# Build check for XFB.
-# Mirrors Dockerfile.debian-build — the exact recipe that produces the release
-# .deb packages — so a green run here means the release path compiles.
+# Build and test checks for XFB.
+#
+# The build job mirrors Dockerfile.debian-build — the exact recipe that produces
+# the release .deb packages — so a green run there means the release path
+# compiles. It deliberately keeps BUILD_TESTING=OFF, matching the packaging
+# scripts; the separate test job below is what actually runs the suite.
 name: Build
 
 on:
@@ -51,3 +54,47 @@ jobs:
 
       - name: Build
         run: cmake --build build --target XFB --parallel
+
+  tests:
+    name: Tests (Qt 6, CTest)
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Same set as the build job: the test targets pull in the same sources.
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            pkg-config \
+            qt6-base-dev \
+            qt6-multimedia-dev \
+            qt6-webengine-dev \
+            qt6-webengine-dev-tools \
+            qt6-declarative-dev \
+            qt6-positioning-dev \
+            qt6-webchannel-dev \
+            qt6-quick3d-dev \
+            libqt6opengl6-dev \
+            libqt6sql6-sqlite \
+            libqt6concurrent6 \
+            qml6-module-qtquick \
+            qml6-module-qtwebengine \
+            libgl1-mesa-dev \
+            libatspi2.0-dev \
+            libspeechd-dev \
+            libasound2-dev \
+            libpulse-dev \
+            libsqlite3-dev \
+            libcurl4-openssl-dev
+
+      # run-tests.sh configures its own tree with BUILD_TESTING=ON, builds the
+      # unit tests and runs everything except the tests it lists as known
+      # broken. A test added later is picked up with no change here — which is
+      # the point: the updater's version comparison broke silently because
+      # nothing ran its tests.
+      - name: Run the test suite
+        run: ./run-tests.sh
