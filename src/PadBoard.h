@@ -69,6 +69,13 @@ public:
     /** Board-wide volume, 0..100, multiplied with the pad's own volume. */
     void setMasterVolume(int percent);
 
+    /**
+     * Whether this pad is the grid's single Tab stop (the roving tabindex).
+     * A pad that is not the stop keeps click focus, so the arrows and the
+     * mouse still reach it while Tab walks straight past the grid.
+     */
+    void setTabStop(bool on);
+
     /** Load the media now so the first hit does not wait for the decoder. */
     void preload();
 
@@ -82,11 +89,14 @@ signals:
     void configureRequested(int row, int col);
     void configChanged(int row, int col);
     void message(const QString &text);
+    /** This pad took the focus: the board moves the Tab stop onto it. */
+    void focused(int row, int col);
 
 protected:
     void paintEvent(QPaintEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
+    void focusInEvent(QFocusEvent *event) override;
     void contextMenuEvent(QContextMenuEvent *event) override;
     void dragEnterEvent(QDragEnterEvent *event) override;
     void dragLeaveEvent(QDragLeaveEvent *event) override;
@@ -224,6 +234,10 @@ private:
     void setBank(int bank);
     void renameBank();
     void preloadBank(int bank);
+    /** Remembers the cell Tab lands on and moves the stop onto it. */
+    void setRovingCell(int row, int col);
+    /** Gives the roving cell the only pad in the tab chain, on every bank. */
+    void applyRovingTabStop();
     /** The pad that emitted the signal currently being handled. */
     PadButton *padAt(int bank, int row, int col) const;
 
@@ -250,6 +264,9 @@ private:
     int  m_cols = 6;
     int  m_master = 100;
     bool m_loading = false;
+    /// The one pad Tab reaches; shared by the banks so it survives a switch.
+    int  m_rovingRow = 0;
+    int  m_rovingCol = 0;
 };
 
 #endif // PADBOARD_H

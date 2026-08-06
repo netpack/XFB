@@ -4,6 +4,7 @@
 #   ./bump-version.sh 3.1415926535           bump to this version
 #   ./bump-version.sh --dry-run 3.1415926535 show what would change
 #   ./bump-version.sh --show                 print the current version
+#   ./bump-version.sh --touch-date           set CITATION.cff date-released to today
 #
 # Why this exists: the version lives in 16 places across CMake, three build
 # scripts, the NSIS installer, PKGBUILD, the Dockerfile, the publish scripts,
@@ -47,11 +48,16 @@ DRY_RUN=0
 NEW=""
 for arg in "$@"; do
     case "$arg" in
-        --dry-run|-n) DRY_RUN=1 ;;
-        --show|-s)    echo "$CURRENT"; exit 0 ;;
-        -h|--help)    sed -n '2,27p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
-        -*)           err "Unknown option: $arg"; exit 1 ;;
-        *)            NEW="$arg" ;;
+        --dry-run|-n)  DRY_RUN=1 ;;
+        --show|-s)     echo "$CURRENT"; exit 0 ;;
+        --touch-date)  TODAY="$(date +%F)"
+                       sed -i.bak "s/^date-released: .*/date-released: $TODAY/" CITATION.cff
+                       rm -f CITATION.cff.bak
+                       ok "CITATION.cff date-released set to $TODAY"
+                       exit 0 ;;
+        -h|--help)     sed -n '2,27p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -*)            err "Unknown option: $arg"; exit 1 ;;
+        *)             NEW="$arg" ;;
     esac
 done
 
@@ -136,7 +142,14 @@ Dockerfile.debian-build   | 1 | Version: @V@-1
 Dockerfile.debian-build   | 3 | xfb_@V@-1_
 packaging/homebrew/xfb.rb | 1 | version "@V@"
 README.md                 | 5 | @V@
+CITATION.cff              | 1 | version: @V@
 '
+
+# CITATION.cff also carries a release date, which no @V@ substitution can
+# produce. It is set to today alongside the bump; if the release slips, re-run
+# ./bump-version.sh --touch-date before tagging.
+# .zenodo.json deliberately has no version field — Zenodo takes it from the
+# GitHub release tag, so there is nothing to bump there.
 
 # "3.14159265358" -> "3.1415.9265.3580", "3.1416" -> "3.1416.0.0". Windows
 # compares versions as four 16-bit integers, so the digits cannot go in
@@ -157,7 +170,7 @@ export BUMP_CURRENT="$CURRENT" BUMP_NEW="$NEW" BUMP_DRY="$DRY_RUN" BUMP_TABLE="$
 export BUMP_CURRENT_NUM="$CURRENT_NUM" BUMP_NEW_NUM="$NEW_NUM"
 
 python3 - <<'PYEOF'
-import os, sys
+import os, sys, re, datetime
 
 cur, new = os.environ['BUMP_CURRENT'], os.environ['BUMP_NEW']
 curnum, newnum = os.environ['BUMP_CURRENT_NUM'], os.environ['BUMP_NEW_NUM']
@@ -207,6 +220,23 @@ for path in order:
         with open(path, 'w', encoding='utf-8') as fh:
             fh.write(text)
     print(f"{G}✓{N} {path} — {total} occurrence(s)")
+
+# --- CITATION.cff date-released ----------------------------------------------
+# Not a version substitution, so it cannot live in the table. Set to the bump
+# date; ./bump-version.sh --touch-date resets it if the release slips.
+today = datetime.date.today().isoformat()
+if os.path.isfile('CITATION.cff'):
+    with open('CITATION.cff', encoding='utf-8') as fh:
+        text = original = fh.read()
+    text, n = re.subn(r'(?m)^date-released: .*$', f'date-released: {today}', text)
+    if n == 0:
+        print(f"{R}✗{N} CITATION.cff — no date-released line")
+        failed = True
+    elif text != original:
+        if not dry:
+            with open('CITATION.cff', 'w', encoding='utf-8') as fh:
+                fh.write(text)
+        print(f"{G}✓{N} CITATION.cff — date-released → {today}")
 
 sys.exit(1 if failed else 0)
 PYEOF

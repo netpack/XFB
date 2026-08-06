@@ -5,9 +5,10 @@ type: software
 authors:
   - family-names: Bogaerts
     given-names: Frédéric
-    affiliation: "Netpack - Online Solutions"
-version: 3.14159265
-date-released: 2026-07-19
+    orcid: "https://orcid.org/0000-0002-9816-3216"
+    affiliation: "University of Coimbra, CISUC — Department of Informatics Engineering; Netpack - Online Solutions"
+version: 3.1417
+date-released: 2026-08-03
 license: GPL-3.0
 repository-code: "https://github.com/netpack/XFB"
 url: "https://netpack.pt"

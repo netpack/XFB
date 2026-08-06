@@ -21,6 +21,8 @@
 #include <QLibraryInfo>
 #include <QEvent>
 #include <QFont>
+#include <QTextEdit>
+#include <QPlainTextEdit>
 #include "services/TorrentTypes.h"
 
 #include <csignal>
@@ -33,7 +35,7 @@
 #include <windows.h>
 #endif
 
-static const char* XFB_VERSION = "3.1416";
+static const char* XFB_VERSION = "3.1417";
 
 /**
  * Splash screen with readable text: paints a soft dark band behind the
@@ -386,6 +388,34 @@ static bool setupTranslator(QApplication& app, QTranslator& translator, const QS
     return false;
 }
 
+// Frees the Tab key from multi-line text fields. By default a QTextEdit or
+// QPlainTextEdit swallows Tab to insert a tab character, so a keyboard-only
+// user who lands in the notes field of a dialog (Add music, Add jingle, Add
+// advert, Add program, Options, ...) can never Tab back out to the OK button.
+// Applied application-wide so it covers every dialog, including ones added
+// later, and it is deliberately NOT conditional on accessibility being
+// enabled: escaping a text field is correct behaviour for everyone. The cost
+// is that a literal tab can no longer be typed into these fields, which no
+// notes or description field in XFB has any use for.
+class TabFocusEscapeFilter : public QObject
+{
+public:
+    explicit TabFocusEscapeFilter(QObject *parent = nullptr) : QObject(parent) {}
+
+protected:
+    bool eventFilter(QObject *obj, QEvent *event) override
+    {
+        if (event->type() == QEvent::Polish) {
+            if (auto *te = qobject_cast<QTextEdit *>(obj)) {
+                te->setTabChangesFocus(true);
+            } else if (auto *pte = qobject_cast<QPlainTextEdit *>(obj)) {
+                pte->setTabChangesFocus(true);
+            }
+        }
+        return QObject::eventFilter(obj, event);
+    }
+};
+
 // Scales the font of every widget that has an explicitly-set point size (e.g.
 // the sizes hardcoded in the .ui files) by a constant factor, so the user's
 // font-size preference affects ALL text while preserving the relative size
@@ -536,6 +566,9 @@ int main(int argc, char *argv[])
             }
         }
     }
+
+    // Let Tab leave multi-line text fields everywhere in the application.
+    app.installEventFilter(new TabFocusEscapeFilter(&app));
 
     // 8. Translation
     QTranslator translator;

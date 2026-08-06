@@ -1,6 +1,6 @@
 # Maintainer: Frédéric Bogaerts <fred@netpack.pt>
 pkgname=xfb
-pkgver=3.1416
+pkgver=3.1417
 pkgrel=1
 pkgdesc="Open-source Radio Automation with comprehensive accessibility support"
 arch=('x86_64' 'aarch64')
@@ -151,7 +151,7 @@ package() {
     echo "The shared folders are under: /usr/share/xfb"
     echo "You may want to install yt-dlp for downloading media"
     echo ""
-    echo "New in v3.1416:"
+    echo "New in v3.1417:"
     echo "  - Pads: a new tab next to DJ with a grid of labelled, coloured pads"
     echo "    that fire a jingle, a stab or a bed the moment you press them."
     echo "    Eight banks, per-pad volume and looping, made for a touch screen"

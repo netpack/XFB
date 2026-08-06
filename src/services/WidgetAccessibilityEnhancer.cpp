@@ -201,7 +201,9 @@ void WidgetAccessibilityEnhancer::enhancePlaylist(QListWidget* playlist)
     }
     
     if (playlist->accessibleDescription().isEmpty()) {
-        setAccessibleDescription(playlist, "Use arrow keys to navigate, drag and drop to reorder");
+        setAccessibleDescription(playlist,
+                                 "Use arrow keys to navigate, Ctrl+Shift+Up and "
+                                 "Ctrl+Shift+Down to reorder");
     }
     
     qDebug() << "Enhanced Playlist accessibility";
@@ -433,9 +435,11 @@ void WidgetAccessibilityEnhancer::setupGridAccessibility(QTableView* table)
         return;
     }
     
-    // Enable keyboard navigation
-    table->setTabKeyNavigation(true);
-    
+    // Keep Tab out of cell-to-cell navigation so it can still leave the table.
+    // With tab key navigation on, focus is trapped inside the grid and a
+    // keyboard-only user has no way back out to the rest of the window.
+    table->setTabKeyNavigation(false);
+
     // Ensure selection behavior is appropriate for accessibility
     table->setSelectionBehavior(QAbstractItemView::SelectRows);
     
@@ -466,9 +470,10 @@ void WidgetAccessibilityEnhancer::setupPlaylistAccessibility(QListWidget* list)
         return;
     }
     
-    // Enable keyboard navigation
-    list->setTabKeyNavigation(true);
-    
+    // As with the tables: Tab must be able to leave the playlist, so it is not
+    // consumed for item-to-item movement. The arrow keys do that.
+    list->setTabKeyNavigation(false);
+
     // Enable drag and drop for keyboard users (will be enhanced with keyboard alternatives)
     list->setDragDropMode(QAbstractItemView::InternalMove);
     

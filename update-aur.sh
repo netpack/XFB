@@ -4,7 +4,7 @@
 
 set -e
 
-VERSION="3.1416"
+VERSION="3.1417"
 PKGREL="1"
 
 echo "=========================================="
@@ -66,7 +66,7 @@ echo "Committing changes..."
 git add PKGBUILD .SRCINFO xfb.install
 git commit -m "Update to version $VERSION-$PKGREL
 
-- Updated to XFB 3.1416
+- Updated to XFB 3.1417
 - New Pads tab: a touch-friendly cart wall of labelled, coloured pads
 - Portuguese and French translations are complete (1369/1369)
 - Every entry in every top menu now has an icon

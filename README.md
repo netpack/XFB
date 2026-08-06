@@ -12,7 +12,10 @@
   </p>
 </div>
 
-XFB is an open-source radio automation software developed by [Frédéric Bogaerts](https://www.researchgate.net/profile/Frederic-Bogaerts) at [Netpack Online Solutions](https://www.netpack.pt).
+XFB is an open-source radio automation software developed by [Frédéric Bogaerts](https://www.researchgate.net/profile/Frederic-Bogaerts) — PhD researcher at the [University of Coimbra](https://www.uc.pt), CISUC / Department of Informatics Engineering, and founder of [Netpack Online Solutions](https://www.netpack.pt).
+
+Its accessibility work is carried out in the context of that research. If you use XFB
+in academic work, please cite it via [`CITATION.cff`](CITATION.cff).
 
 ## Features
 
@@ -52,7 +55,7 @@ the in-app update notification.
 
 **Option B — Manual:**
 
-1. Download `XFB-3.1416-macOS.dmg` from [GitHub Releases](https://github.com/netpack/XFB/releases)
+1. Download `XFB-3.1417-macOS.dmg` from [GitHub Releases](https://github.com/netpack/XFB/releases)
 2. Open the DMG file
 3. Drag `XFB.app` into your **Applications** folder
 4. Launch XFB from Applications (first launch: right-click → Open to bypass Gatekeeper)
@@ -63,10 +66,10 @@ the in-app update notification.
 
 ```sh
 # Download and install the .deb package
-sudo apt install ./xfb_3.1416-1_amd64.deb
+sudo apt install ./xfb_3.1417-1_amd64.deb
 
 # Or if dependencies are missing:
-sudo dpkg -i xfb_3.1416-1_amd64.deb
+sudo dpkg -i xfb_3.1417-1_amd64.deb
 sudo apt install -f
 ```
 
@@ -88,6 +91,10 @@ makepkg -si
 ```
 
 ### Windows
+
+> **3.1417 ships no Windows installer.** The latest Windows build is **3.1416**;
+> Windows users stay on it until the next release. Everything else in this
+> release — including the accessibility fixes — is on macOS and Linux today.
 
 1. Download the installer from [GitHub Releases](https://github.com/netpack/XFB/releases):
    - Intel/AMD 64-bit: `XFB-3.1416-Setup.exe`
@@ -199,13 +206,22 @@ On macOS press **Cmd** wherever the table says Ctrl (the menus show ⇧⌘P, ⇧
 | Previous track | Ctrl+Shift+B |
 | Add selection to end of playlist | Ctrl+Shift+Enter |
 | Add selection to start of playlist | Ctrl+Alt+Enter |
+| Move playlist track up | Ctrl+Shift+↑ |
+| Move playlist track down | Ctrl+Shift+↓ |
 | Announce what is playing | Ctrl+Shift+W |
 | Accessibility Preferences | Ctrl+Shift+A |
 | Tutorial for blind users | Ctrl+Shift+H |
 
 Inside the music, jingles, adverts and programs tables, **Enter** adds the track
 you are on to the end of the playlist — the quickest way to build a running
-order. **Tab** and **Shift+Tab** move between the panels.
+order. **Tab** and **Shift+Tab** move between the panels, and the **arrow keys**
+move within a table or the playlist. Tab always leaves the panel you are in —
+including multi-line text boxes in dialogs, where it moves to the next field
+rather than inserting a tab character.
+
+Reordering the running order needs no mouse: **Ctrl+Shift+↑** and
+**Ctrl+Shift+↓** move the selected playlist track, and the new position is
+announced.
 
 If you only remember three: **Enter** to build the running order,
 **Ctrl+Shift+P** to go on air, **Ctrl+Shift+W** to hear what is playing.

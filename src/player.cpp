@@ -1249,9 +1249,13 @@ checkDbOpen();
      ui->musicView->setDragDropMode(QAbstractItemView::DragOnly);
      ui->musicView->setSelectionBehavior(QAbstractItemView::SelectRows);
      
-     // Accessibility improvements for keyboard navigation
+     // Accessibility improvements for keyboard navigation.
+     // Tab key navigation stays OFF: with it on, Tab walks cell to cell inside
+     // the table and focus can never leave it, which traps anyone working
+     // without a mouse. Off, Tab and Shift+Tab move between panels (what a
+     // screen-reader user expects) and the arrow keys move within the table.
      ui->musicView->setFocusPolicy(Qt::StrongFocus);
-     ui->musicView->setTabKeyNavigation(true);
+     ui->musicView->setTabKeyNavigation(false);
      ui->musicView->setAttribute(Qt::WA_KeyboardFocusChange, true);
 
      ui->musicView->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -1264,7 +1268,7 @@ checkDbOpen();
 
      // Accessibility improvements for jinglesView
      ui->jinglesView->setFocusPolicy(Qt::StrongFocus);
-     ui->jinglesView->setTabKeyNavigation(true);
+     ui->jinglesView->setTabKeyNavigation(false);  // see musicView above
      ui->jinglesView->setAttribute(Qt::WA_KeyboardFocusChange, true);
      ui->jinglesView->setContextMenuPolicy(Qt::CustomContextMenu);
      connect(ui->jinglesView, &QWidget::customContextMenuRequested,
@@ -1272,7 +1276,7 @@ checkDbOpen();
 
      // Accessibility improvements for pubView
      ui->pubView->setFocusPolicy(Qt::StrongFocus);
-     ui->pubView->setTabKeyNavigation(true);
+     ui->pubView->setTabKeyNavigation(false);  // see musicView above
      ui->pubView->setAttribute(Qt::WA_KeyboardFocusChange, true);
      ui->pubView->setContextMenuPolicy(Qt::CustomContextMenu);
      connect(ui->pubView, &QWidget::customContextMenuRequested,
@@ -1280,7 +1284,7 @@ checkDbOpen();
 
      // Accessibility improvements for programsView
      ui->programsView->setFocusPolicy(Qt::StrongFocus);
-     ui->programsView->setTabKeyNavigation(true);
+     ui->programsView->setTabKeyNavigation(false);  // see musicView above
      ui->programsView->setAttribute(Qt::WA_KeyboardFocusChange, true);
      ui->programsView->setContextMenuPolicy(Qt::CustomContextMenu);
      connect(ui->programsView, &QWidget::customContextMenuRequested,
@@ -1288,7 +1292,7 @@ checkDbOpen();
 
      // Accessibility improvements for torrentsView
      ui->torrentsView->setFocusPolicy(Qt::StrongFocus);
-     ui->torrentsView->setTabKeyNavigation(true);
+     ui->torrentsView->setTabKeyNavigation(false);  // see musicView above
      ui->torrentsView->setAttribute(Qt::WA_KeyboardFocusChange, true);
      ui->torrentsView->setContextMenuPolicy(Qt::CustomContextMenu);
      connect(ui->torrentsView, &QWidget::customContextMenuRequested,
@@ -4982,6 +4986,52 @@ void player::setupPlaybackShortcuts()
         addSelectionToPlaylist(focusedLibraryView(), true);
     });
     addAction(addTop);
+
+    playbackMenu->addSeparator();
+
+    // Reordering the running order without a mouse. Until now the only way to
+    // move a track was to drag it, which is no way at all for a keyboard-only
+    // operator — the right-click menu offered only "move to top"/"move to
+    // bottom". takeItem/insertItem move the same item object, so the crossfade
+    // overlap and volume envelope stored on it survive the move (same idiom as
+    // the context menu above). The new position is announced, because a screen
+    // reader gives no feedback on a row that moves under the cursor.
+    const auto movePlaylistItem = [this](int delta) {
+        const int row = ui->playlist->currentRow();
+        if (row < 0) {
+            announceAccessible(tr("No playlist track is selected"));
+            return;
+        }
+        const int target = row + delta;
+        if (target < 0 || target >= ui->playlist->count()) {
+            announceAccessible(delta < 0 ? tr("Already at the top of the playlist")
+                                         : tr("Already at the bottom of the playlist"));
+            return;
+        }
+        QListWidgetItem *moved = ui->playlist->takeItem(row);
+        if (!moved)
+            return;
+        ui->playlist->insertItem(target, moved);
+        ui->playlist->setCurrentItem(moved);
+        announceAccessible(tr("%1 moved to position %2 of %3")
+                               .arg(moved->text())
+                               .arg(target + 1)
+                               .arg(ui->playlist->count()));
+    };
+
+    QAction *moveUp = playbackMenu->addAction(QIcon(":/icons/align-vertical-top.png"),
+                                              tr("Move playlist track &up"));
+    moveUp->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Up));
+    moveUp->setShortcutContext(Qt::ApplicationShortcut);
+    connect(moveUp, &QAction::triggered, this, [movePlaylistItem]() { movePlaylistItem(-1); });
+    addAction(moveUp);
+
+    QAction *moveDown = playbackMenu->addAction(QIcon(":/icons/align-vertical-bottom.png"),
+                                                tr("Move playlist track &down"));
+    moveDown->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Down));
+    moveDown->setShortcutContext(Qt::ApplicationShortcut);
+    connect(moveDown, &QAction::triggered, this, [movePlaylistItem]() { movePlaylistItem(1); });
+    addAction(moveDown);
 
     playbackMenu->addSeparator();
 

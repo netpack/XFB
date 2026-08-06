@@ -407,8 +407,37 @@ target_include_directories(test_update_check_service PRIVATE
 
 add_test(NAME UpdateCheckServiceTest COMMAND test_update_check_service)
 
+# Pads: the grid keeps a single roving Tab stop (a widget test, so offscreen)
+add_executable(test_pad_board_focus
+    test_pad_board_focus.cpp
+    ${CMAKE_SOURCE_DIR}/src/PadBoard.cpp
+    ${CMAKE_SOURCE_DIR}/src/PadBoard.h
+)
+
+target_link_libraries(test_pad_board_focus
+    Qt6::Core
+    Qt6::Gui
+    Qt6::Widgets
+    Qt6::Multimedia
+    Qt6::Sql
+    Qt6::Test
+    TestUtils
+)
+
+target_include_directories(test_pad_board_focus PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/tests
+)
+
+add_test(NAME PadBoardFocusTest COMMAND test_pad_board_focus)
+
+# No display in CI, and the test drives the focus chain rather than pixels.
+set_tests_properties(PadBoardFocusTest PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+)
+
 # Add custom target for unit tests
 add_custom_target(unit_tests
-    DEPENDS test_config test_database test_service_container test_base_service test_database_service_unit test_music_repository test_genre_repository test_playlist_repository test_database_migrator test_audio_service test_error_handler test_logger test_input_validator test_database_optimizer test_music_cache test_main_controller test_accessibility_manager test_update_check_service
+    DEPENDS test_config test_database test_service_container test_base_service test_database_service_unit test_music_repository test_genre_repository test_playlist_repository test_database_migrator test_audio_service test_error_handler test_logger test_input_validator test_database_optimizer test_music_cache test_main_controller test_accessibility_manager test_update_check_service test_pad_board_focus
     COMMENT "Building unit tests"
 )

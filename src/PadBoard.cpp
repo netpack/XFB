@@ -11,6 +11,7 @@
 #include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QFocusEvent>
 #include <QFontMetrics>
 #include <QFormLayout>
 #include <QFrame>
@@ -96,7 +97,9 @@ PadButton::PadButton(int row, int col, QWidget *parent)
     , m_col(col)
 {
     setAcceptDrops(true);
-    setFocusPolicy(Qt::StrongFocus);
+    // The board hands exactly one pad the tab stop; until it does, a pad on
+    // its own still answers the mouse and a programmatic setFocus().
+    setFocusPolicy(Qt::ClickFocus);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     setAttribute(Qt::WA_OpaquePaintEvent, false);
     setCursor(Qt::PointingHandCursor);
@@ -148,6 +151,13 @@ void PadButton::setMasterVolume(int percent)
 {
     m_master = qBound(0, percent, 100);
     applyVolume();
+}
+
+void PadButton::setTabStop(bool on)
+{
+    // StrongFocus puts the pad in the tab chain, ClickFocus keeps it out of
+    // it. Either way setFocus() still works, which is all the arrows need.
+    setFocusPolicy(on ? Qt::StrongFocus : Qt::ClickFocus);
 }
 
 void PadButton::ensurePlayer()
@@ -286,7 +296,8 @@ void PadButton::keyPressEvent(QKeyEvent *event)
         event->accept();
         return;
     // Tabbing through two dozen pads to reach the one below is no way to
-    // work; the arrows walk the grid the way it looks.
+    // work; the arrows walk the grid the way it looks, and Tab is left
+    // alone so it enters and leaves the whole grid in one press.
     case Qt::Key_Left:
         if (focusNeighbour(m_row, m_col - 1)) { event->accept(); return; }
         break;
@@ -303,6 +314,12 @@ void PadButton::keyPressEvent(QKeyEvent *event)
         break;
     }
     QWidget::keyPressEvent(event);
+}
+
+void PadButton::focusInEvent(QFocusEvent *event)
+{
+    QWidget::focusInEvent(event);
+    emit focused(m_row, m_col);
 }
 
 bool PadButton::focusNeighbour(int row, int col)
@@ -1070,6 +1087,10 @@ void PadBoardWidget::rebuildGrid()
     m_pads.resize(kBankCount);
     m_bankPreloaded.fill(false, kBankCount);
 
+    // A grid that just shrank can leave the tab stop outside it.
+    m_rovingRow = qBound(0, m_rovingRow, m_rows - 1);
+    m_rovingCol = qBound(0, m_rovingCol, m_cols - 1);
+
     for (int bank = 0; bank < kBankCount; ++bank) {
         auto *page = new QWidget(m_stack);
         auto *grid = new QGridLayout(page);
@@ -1084,6 +1105,9 @@ void PadBoardWidget::rebuildGrid()
                 pad->setEditMode(m_editToggle->isChecked());
                 pad->setMasterVolume(m_master);
                 pad->setConfig(m_bankPads[bank].value(cellKey(row, col)));
+                // Every bank gets its stop on the same cell, so switching
+                // bank leaves Tab where the operator left it.
+                pad->setTabStop(row == m_rovingRow && col == m_rovingCol);
 
                 connect(pad, &PadButton::configureRequested, this,
                         [this, bank](int r, int c) { editPad(bank, r, c); });
@@ -1100,6 +1124,7 @@ void PadBoardWidget::rebuildGrid()
                     saveSettings();
                 });
                 connect(pad, &PadButton::message, this, &PadBoardWidget::setStatus);
+                connect(pad, &PadButton::focused, this, &PadBoardWidget::setRovingCell);
 
                 grid->addWidget(pad, row, col);
                 m_pads[bank].append(pad);
@@ -1122,6 +1147,26 @@ PadButton *PadBoardWidget::padAt(int bank, int row, int col) const
     if (index < 0 || index >= m_pads[bank].size())
         return nullptr;
     return m_pads[bank].at(index);
+}
+
+void PadBoardWidget::setRovingCell(int row, int col)
+{
+    if (row == m_rovingRow && col == m_rovingCol)
+        return;
+    m_rovingRow = row;
+    m_rovingCol = col;
+    applyRovingTabStop();
+}
+
+void PadBoardWidget::applyRovingTabStop()
+{
+    // Only one pad of the grid answers Tab: a keyboard user reaches the pads
+    // in one press and leaves them in the next, instead of walking all
+    // two dozen of them. The arrows are what move around inside the grid.
+    for (const QVector<PadButton *> &bank : std::as_const(m_pads)) {
+        for (PadButton *pad : bank)
+            pad->setTabStop(pad->row() == m_rovingRow && pad->col() == m_rovingCol);
+    }
 }
 
 void PadBoardWidget::setBank(int bank)
