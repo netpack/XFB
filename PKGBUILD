@@ -1,5 +1,12 @@
 # Maintainer: Frédéric Bogaerts <fred@netpack.pt>
 pkgname=xfb
+# pacman compares the dot-separated segments as integers, not as decimals, so
+# 3.14159 outranks 3.1416 (14159 > 1416) and every rounded release looks like a
+# downgrade. The epoch overrides that comparison. It must never be removed or
+# lowered: dropping it would make the next release look older than this one to
+# every machine that installed it. Raise it only if the version ever has to go
+# backwards again.
+epoch=1
 pkgver=3.1417
 pkgrel=1
 pkgdesc="Open-source Radio Automation with comprehensive accessibility support"

@@ -128,6 +128,11 @@ else()
     set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Netpack <info@netpack.pt>")
     set(CPACK_DEBIAN_PACKAGE_SECTION "sound")
     set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
+    # dpkg compares the digit runs numerically, so 3.14159 outranks 3.1416 and
+    # apt treats every rounded release as a downgrade. The epoch overrides that.
+    # Must match the hand-written control file in Dockerfile.debian-build, and
+    # must never be removed or lowered.
+    set(CPACK_DEBIAN_PACKAGE_EPOCH 1)
     # Auto-detect architecture or use provided value
     if(NOT CPACK_DEBIAN_PACKAGE_ARCHITECTURE)
         execute_process(COMMAND dpkg --print-architecture

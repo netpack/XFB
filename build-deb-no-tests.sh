@@ -14,7 +14,14 @@ NC='\033[0m' # No Color
 # Configuration
 PROJECT_NAME="XFB Radio Automation Software"
 PACKAGE_NAME="xfb"
-VERSION="3.14159"
+# CMakeLists.txt is the single source of truth for the version (same as
+# bump-version.sh and build-deb-docker.sh read). This used to be a hardcoded
+# literal, which silently went stale and built packages carrying an old version.
+VERSION=$(sed -n 's/^project(XFB VERSION \([0-9.]*\).*/\1/p' CMakeLists.txt)
+if [ -z "$VERSION" ]; then
+    echo "❌ Could not read the version from CMakeLists.txt"
+    exit 1
+fi
 BUILD_DIR="build-package"
 INSTALL_DIR="install"
 

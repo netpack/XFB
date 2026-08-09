@@ -123,8 +123,10 @@ for i in "${!ARCHES[@]}"; do
                   && tar xf control.tar.xz 2>/dev/null \
                   && sed -n 's/^Version: //p' control; rm -rf "$TMP")
     fi
-    if [ -n "$DEB_VER" ] && [ "$DEB_VER" != "${VERSION}-1" ]; then
-        echo "      ❌ package says Version: ${DEB_VER}, expected ${VERSION}-1"
+    # The 1: epoch comes from Dockerfile.debian-build and is part of the real
+    # package version, so it has to be part of what we check against.
+    if [ -n "$DEB_VER" ] && [ "$DEB_VER" != "1:${VERSION}-1" ]; then
+        echo "      ❌ package says Version: ${DEB_VER}, expected 1:${VERSION}-1"
         STALE=1
     fi
 done

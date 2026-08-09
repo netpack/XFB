@@ -138,7 +138,7 @@ update-aur.sh             | 1 | VERSION="@V@"
 update-aur.sh             | 1 | Updated to XFB @V@
 update-homebrew-tap.sh    | 1 | VERSION="${1:-@V@}"
 update-debian-repo.sh     | 1 | VERSION="${1:-@V@}"
-Dockerfile.debian-build   | 1 | Version: @V@-1
+Dockerfile.debian-build   | 1 | Version: 1:@V@-1
 Dockerfile.debian-build   | 3 | xfb_@V@-1_
 packaging/homebrew/xfb.rb | 1 | version "@V@"
 README.md                 | 5 | @V@

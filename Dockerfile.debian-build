@@ -65,9 +65,14 @@ RUN mkdir -p /src/pkg-root/DEBIAN && \
 # Documentation
 RUN cp /src/README.md /src/pkg-root/usr/share/doc/xfb/ 2>/dev/null || true
 
-# Write the control file
+# Write the control file.
+# The 1: epoch is required for the same reason as in PKGBUILD: dpkg compares
+# the digit runs numerically, so 3.14159-1 outranks 3.1416-1 and apt refuses
+# the upgrade. It must never be removed or lowered. The epoch deliberately does
+# not appear in the .deb filename — that is the Debian convention, and
+# dpkg-scanpackages reads the real version out of the control file anyway.
 RUN echo "Package: xfb\n\
-Version: 3.1417-1\n\
+Version: 1:3.1417-1\n\
 Section: sound\n\
 Priority: optional\n\
 Architecture: ${TARGETARCH}\n\
