@@ -67,11 +67,13 @@ git add PKGBUILD .SRCINFO xfb.install
 git commit -m "Update to version $VERSION-$PKGREL
 
 - Updated to XFB 3.1417
-- New Pads tab: a touch-friendly cart wall of labelled, coloured pads
-- Portuguese and French translations are complete (1369/1369)
-- Every entry in every top menu now has an icon
-- Tor is no longer bundled; it is installed on first use, with consent
-- Fixed: the update check wrongly reported that you had the latest version
+- Adds epoch=1. pacman compares the dot-separated segments as integers, so
+  3.14159 outranked 3.1416 and every rounded release looked like a downgrade
+  ('local is newer than AUR'). The epoch restores the ordering
+- Tab no longer traps keyboard-only operators in the library tables, the
+  playlist or a multi-line notes field
+- The Pads grid keeps one roving Tab stop instead of 24+ tab stops
+- The playlist reorders with Ctrl+Shift+Up/Down, announced for screen readers
 "
 
 echo ""
