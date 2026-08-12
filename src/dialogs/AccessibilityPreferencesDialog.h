@@ -266,6 +266,7 @@ private:
     QCheckBox* m_interruptCriticalCheckBox;
     QCheckBox* m_announceTooltipsCheckBox;
     QCheckBox* m_announceStateChangesCheckBox;
+    QCheckBox* m_announceRemainingCheckBox;
     QCheckBox* m_highContrastCheckBox;
     QPushButton* m_testAnnouncementButton;
     

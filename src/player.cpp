@@ -119,7 +119,6 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include "dialogs/AccessibilityTutorialDialog.h"
 #include "services/AudioFeedbackService.h"
 #include "services/LiveRegionManager.h"
-#include "services/PlaybackStatusAnnouncer.h"
 #include "services/SystemStatusAnnouncer.h"
 #include "services/TorNetworkService.h"
 #include "services/TorrentSearchService.h"
@@ -1861,9 +1860,6 @@ void player::registerAccessibilityServices()
         // Register LiveRegionManager as a singleton service using template method
         serviceContainer->registerSingleton<LiveRegionManager>();
         
-        // Register PlaybackStatusAnnouncer as a singleton service using template method
-        serviceContainer->registerSingleton<PlaybackStatusAnnouncer>();
-        
         // Register SystemStatusAnnouncer as a singleton service using template method
         serviceContainer->registerSingleton<SystemStatusAnnouncer>();
 
@@ -1884,7 +1880,6 @@ void player::registerAccessibilityServices()
         struct { const char *name; IService *svc; } a11yServices[] = {
             {"AudioFeedbackService",    serviceContainer->resolve<AudioFeedbackService>()},
             {"LiveRegionManager",       serviceContainer->resolve<LiveRegionManager>()},
-            {"PlaybackStatusAnnouncer", serviceContainer->resolve<PlaybackStatusAnnouncer>()},
             {"SystemStatusAnnouncer",   serviceContainer->resolve<SystemStatusAnnouncer>()},
             {"AccessibilitySettingsService", serviceContainer->resolve<AccessibilitySettingsService>()},
             {"BrailleDisplayService",   serviceContainer->resolve<BrailleDisplayService>()},
@@ -5042,10 +5037,35 @@ void player::setupPlaybackShortcuts()
     whatsPlaying->setShortcutContext(Qt::ApplicationShortcut);
     connect(whatsPlaying, &QAction::triggered, this, [this]() {
         const QString title = ui->txtNowPlaying->text().trimmed();
-        announceAccessible(title.isEmpty() ? tr("Nothing is playing")
-                                           : tr("Playing: %1").arg(title));
+        if (title.isEmpty()) {
+            announceAccessible(tr("Nothing is playing"));
+            return;
+        }
+        QString message = tr("Playing: %1").arg(title);
+        // One utterance rather than two: the announcement queue delivers a
+        // message per timer tick, and a screen reader given two in quick
+        // succession routinely drops or truncates the first.
+        if (announcesRemainingWithNowPlaying() && Xplayer
+                && Xplayer->playbackState() != QMediaPlayer::StoppedState
+                && trackTotalDuration > 0) {
+            message = tr("%1. %2").arg(message, remainingTimeAnnouncement());
+        }
+        announceAccessible(message);
     });
     addAction(whatsPlaying);
+
+    // The time left is what decides when to talk over the outro, so it also
+    // gets a key of its own — the operator should not have to sit through the
+    // track title to hear it, and it stays reachable when the combined
+    // announcement above is switched off.
+    QAction *timeRemaining = playbackMenu->addAction(QIcon(":/icons/player-time.png"),
+                                                     tr("Announce time &remaining"));
+    timeRemaining->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_R));
+    timeRemaining->setShortcutContext(Qt::ApplicationShortcut);
+    connect(timeRemaining, &QAction::triggered, this, [this]() {
+        announceAccessible(remainingTimeAnnouncement());
+    });
+    addAction(timeRemaining);
 
     // Insert before Options so File/Playlists keep their familiar positions.
     ui->menuBar->insertMenu(ui->menuXFB->menuAction(), playbackMenu);
@@ -5108,6 +5128,55 @@ void player::setupPlaybackShortcuts()
         ui->menuXFB->addAction(a11yPrefs);
         addAction(a11yPrefs);
     }
+}
+
+// "00:02:35" is read out by a screen reader as a run of digits, which is slow
+// to take in and easy to mishear while something is going to air. Words are
+// unambiguous, and dropping the zero components keeps the message short.
+QString player::spokenDuration(qint64 milliseconds) const
+{
+    const qint64 totalSeconds = (milliseconds + 500) / 1000; // nearest second
+    const int hours   = int(totalSeconds / 3600);
+    const int minutes = int((totalSeconds % 3600) / 60);
+    const int seconds = int(totalSeconds % 60);
+
+    QStringList parts;
+    if (hours > 0)
+        parts << tr("%n hour(s)", "spoken duration", hours);
+    if (minutes > 0)
+        parts << tr("%n minute(s)", "spoken duration", minutes);
+    // Keep seconds when they are the only thing left to say, so a track with
+    // 40 seconds to run does not announce an empty duration.
+    if (seconds > 0 || parts.isEmpty())
+        parts << tr("%n second(s)", "spoken duration", seconds);
+
+    return parts.join(QLatin1Char(' '));
+}
+
+QString player::remainingTimeAnnouncement() const
+{
+    if (!Xplayer || Xplayer->playbackState() == QMediaPlayer::StoppedState)
+        return tr("Nothing is playing");
+
+    // Live streams, and formats whose length is not known until decoding has
+    // run, report no duration — there is no time left to count down.
+    if (trackTotalDuration <= 0)
+        return tr("The length of this track is not known");
+
+    const qint64 remaining = trackTotalDuration - Xplayer->position();
+    if (remaining <= 0)
+        return tr("Less than a second remaining");
+
+    return tr("%1 remaining").arg(spokenDuration(remaining));
+}
+
+bool player::announcesRemainingWithNowPlaying() const
+{
+    auto *container = ServiceContainer::instance();
+    auto *settings = container ? container->resolve<AccessibilitySettingsService>() : nullptr;
+    // Default on when the service is unavailable, matching the stored default:
+    // the time left is the more useful half of the announcement.
+    return settings ? settings->settings().announceRemainingWithNowPlaying : true;
 }
 
 void player::announceAccessible(const QString &message)

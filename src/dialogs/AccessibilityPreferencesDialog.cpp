@@ -150,7 +150,13 @@ void AccessibilityPreferencesDialog::setupGeneralTab()
     m_announceStateChangesCheckBox = new QCheckBox(tr("Announce &state changes"), behaviorGroup);
     m_announceStateChangesCheckBox->setToolTip(tr("Announce when control states change (checked, expanded, etc.)"));
     behaviorLayout->addWidget(m_announceStateChangesCheckBox);
-    
+
+    m_announceRemainingCheckBox = new QCheckBox(tr("Include time &remaining when announcing what is playing"), behaviorGroup);
+    m_announceRemainingCheckBox->setToolTip(tr("Add the time left on the current track to the \"announce what is playing\" "
+                                               "shortcut, so one keypress gives both. The time left can also be heard on "
+                                               "its own at any time."));
+    behaviorLayout->addWidget(m_announceRemainingCheckBox);
+
     layout->addWidget(behaviorGroup);
     
     // Visual Group
@@ -407,6 +413,7 @@ void AccessibilityPreferencesDialog::connectSignals()
     connect(m_interruptCriticalCheckBox, &QCheckBox::toggled, this, &AccessibilityPreferencesDialog::onSettingsChanged);
     connect(m_announceTooltipsCheckBox, &QCheckBox::toggled, this, &AccessibilityPreferencesDialog::onSettingsChanged);
     connect(m_announceStateChangesCheckBox, &QCheckBox::toggled, this, &AccessibilityPreferencesDialog::onSettingsChanged);
+    connect(m_announceRemainingCheckBox, &QCheckBox::toggled, this, &AccessibilityPreferencesDialog::onSettingsChanged);
     connect(m_highContrastCheckBox, &QCheckBox::toggled, this, &AccessibilityPreferencesDialog::onSettingsChanged);
     connect(m_testAnnouncementButton, &QPushButton::clicked, this, &AccessibilityPreferencesDialog::onTestAnnouncementClicked);
     
@@ -455,6 +462,7 @@ void AccessibilityPreferencesDialog::loadSettings()
     m_interruptCriticalCheckBox->setChecked(settings.interruptOnCritical);
     m_announceTooltipsCheckBox->setChecked(settings.announceTooltips);
     m_announceStateChangesCheckBox->setChecked(settings.announceStateChanges);
+    m_announceRemainingCheckBox->setChecked(settings.announceRemainingWithNowPlaying);
     m_highContrastCheckBox->setChecked(settings.highContrastMode);
     
     // Load braille settings
@@ -576,6 +584,7 @@ AccessibilitySettingsService::AccessibilitySettings AccessibilityPreferencesDial
     settings.interruptOnCritical = m_interruptCriticalCheckBox->isChecked();
     settings.announceTooltips = m_announceTooltipsCheckBox->isChecked();
     settings.announceStateChanges = m_announceStateChangesCheckBox->isChecked();
+    settings.announceRemainingWithNowPlaying = m_announceRemainingCheckBox->isChecked();
     settings.highContrastMode = m_highContrastCheckBox->isChecked();
     
     // Braille settings
@@ -625,6 +634,7 @@ void AccessibilityPreferencesDialog::updateUIState()
     m_interruptCriticalCheckBox->setEnabled(accessibilityEnabled);
     m_announceTooltipsCheckBox->setEnabled(accessibilityEnabled);
     m_announceStateChangesCheckBox->setEnabled(accessibilityEnabled);
+    m_announceRemainingCheckBox->setEnabled(accessibilityEnabled);
     m_testAnnouncementButton->setEnabled(accessibilityEnabled);
     
     // Braille controls

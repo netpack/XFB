@@ -8,7 +8,6 @@
 #include "PlayerAudioFeedbackIntegration.h"
 #include "BackgroundOperationFeedback.h"
 #include "LiveRegionManager.h"
-#include "PlaybackStatusAnnouncer.h"
 #include "SystemStatusAnnouncer.h"
 // Temporarily disabled for beta build:
 // #include "AccessibleHelpSystem.h"
@@ -21,6 +20,14 @@
 #include <QStandardPaths>
 #include <QDir>
 #include <QProcess>
+
+// Announcement text can only be handed to a screen reader through Qt from 6.8
+// on. Where that is missing, speech-dispatcher is the fallback (see
+// speakThroughSpeechDispatcher); XFB_HAVE_SPEECHD is defined by CMake when the
+// library was found at configure time.
+#if defined(XFB_HAVE_SPEECHD)
+#include <libspeechd.h>
+#endif
 
 AccessibilityManager::AccessibilityManager(QObject* parent)
     : BaseService(parent)
@@ -35,7 +42,6 @@ AccessibilityManager::AccessibilityManager(QObject* parent)
     , m_playerAudioFeedbackIntegration(nullptr)
     , m_backgroundOperationFeedback(nullptr)
     , m_liveRegionManager(nullptr)
-    , m_playbackStatusAnnouncer(nullptr)
     , m_systemStatusAnnouncer(nullptr)
     , m_accessibleHelpSystem(nullptr)
     , m_contextSensitiveHelpService(nullptr)
@@ -127,12 +133,6 @@ bool AccessibilityManager::doInitialize()
     m_liveRegionManager = ServiceContainer::instance()->resolve<LiveRegionManager>();
     if (!m_liveRegionManager) {
         logWarning("LiveRegionManager not available - live region announcements will be limited");
-    }
-    
-    // Initialize playback status announcer
-    m_playbackStatusAnnouncer = ServiceContainer::instance()->resolve<PlaybackStatusAnnouncer>();
-    if (!m_playbackStatusAnnouncer) {
-        logWarning("PlaybackStatusAnnouncer not available - playback status announcements will be limited");
     }
     
     // Initialize system status announcer
@@ -554,6 +554,13 @@ bool AccessibilityManager::initializePlayerAccessibility(player* playerWindow)
 
 void AccessibilityManager::cleanupAccessibility()
 {
+#if defined(XFB_HAVE_SPEECHD) && QT_VERSION < QT_VERSION_CHECK(6, 8, 0)
+    if (m_speechDispatcher) {
+        spd_close(static_cast<SPDConnection*>(m_speechDispatcher));
+        m_speechDispatcher = nullptr;
+    }
+#endif
+
     // Temporarily disabled for beta build
     // Shutdown context-sensitive help service
     // if (m_contextSensitiveHelpService) {
@@ -689,12 +696,50 @@ void AccessibilityManager::processAnnouncement(const QString& message, Priority 
                             : QAccessible::AnnouncementPoliteness::Polite);
     QAccessible::updateAccessibility(&event);
 #else
-    // Qt before 6.8 (Debian bookworm ships 6.4) has no announcement event.
-    // An Alert at least tells the reader that something changed; the text
-    // itself only reaches the user on the newer Qt versions.
+    // Qt before 6.8 (Debian bookworm ships 6.4) has no announcement event, and
+    // raising a QAccessible::Alert instead achieves nothing: that Qt's AT-SPI
+    // adaptor lists Alert among the events it explicitly ignores, so nothing
+    // is put on the bus and the operator hears silence. Speak through
+    // speech-dispatcher instead — it is the same daemon Orca drives, so the
+    // voice and rate the operator already configured are used.
+    speakThroughSpeechDispatcher(message, priority);
+#endif
+}
+
+bool AccessibilityManager::speakThroughSpeechDispatcher(const QString& message, Priority priority)
+{
+#if defined(XFB_HAVE_SPEECHD) && QT_VERSION < QT_VERSION_CHECK(6, 8, 0)
+    if (!m_speechDispatcher) {
+        // A screen reader user already has the daemon running for Orca, so
+        // this attaches to it rather than starting anything new.
+        m_speechDispatcher = spd_open("xfb", "announcements", nullptr, SPD_MODE_SINGLE);
+        if (!m_speechDispatcher) {
+            logWarning("speech-dispatcher is not reachable - announcements cannot be spoken "
+                       "on a Qt build older than 6.8");
+            return false;
+        }
+        logDebug("Announcements are being spoken through speech-dispatcher");
+    }
+
+    // SPD_MESSAGE queues behind whatever the reader is already saying;
+    // SPD_IMPORTANT cuts in, which is what a critical alert needs.
+    const SPDPriority spdPriority = (priority == Priority::High || priority == Priority::Critical)
+                                        ? SPD_IMPORTANT
+                                        : SPD_MESSAGE;
+    const QByteArray utf8 = message.toUtf8();
+    if (spd_say(static_cast<SPDConnection*>(m_speechDispatcher), spdPriority, utf8.constData()) == -1) {
+        // The daemon went away (restarted, or the session ended). Drop the
+        // handle so the next announcement reconnects instead of failing on.
+        spd_close(static_cast<SPDConnection*>(m_speechDispatcher));
+        m_speechDispatcher = nullptr;
+        logWarning("speech-dispatcher rejected an announcement - the connection was dropped");
+        return false;
+    }
+    return true;
+#else
+    Q_UNUSED(message)
     Q_UNUSED(priority)
-    QAccessibleEvent event(target, QAccessible::Alert);
-    QAccessible::updateAccessibility(&event);
+    return false;
 #endif
 }
 

@@ -48,6 +48,7 @@ void AccessibilityTutorialDialog::buildTopics()
     const QString kNext    = key(Qt::CTRL | Qt::SHIFT | Qt::Key_N);
     const QString kPrev    = key(Qt::CTRL | Qt::SHIFT | Qt::Key_B);
     const QString kWhat    = key(Qt::CTRL | Qt::SHIFT | Qt::Key_W);
+    const QString kLeft    = key(Qt::CTRL | Qt::SHIFT | Qt::Key_R);
     const QString kPrefs   = key(Qt::CTRL | Qt::SHIFT | Qt::Key_A);
     const QString kAddEnd  = key(Qt::CTRL | Qt::SHIFT | Qt::Key_Return);
     const QString kAddTop  = key(Qt::CTRL | Qt::ALT | Qt::Key_Return);
@@ -85,7 +86,12 @@ void AccessibilityTutorialDialog::buildTopics()
            "<li><b>%3</b> — Stop playback.</li>"
            "<li><b>%4</b> — Skip to the next track.</li>"
            "<li><b>%5</b> — Go back to the previous track.</li>"
-           "<li><b>%6</b> — Say which track is playing right now.</li>"
+           "<li><b>%6</b> — Say which track is playing right now, and how much of it is "
+           "left. If you would rather hear the title on its own, turn off "
+           "\"Include time remaining when announcing what is playing\" in Accessibility "
+           "Preferences.</li>"
+           "<li><b>%10</b> — Say only how much of the track is left. Use this one while "
+           "you are deciding when to speak over the outro.</li>"
            "<li><b>%7</b> — Open Accessibility Preferences.</li>"
            "</ul>"
            "<h3>Building the running order</h3>"
@@ -101,8 +107,11 @@ void AccessibilityTutorialDialog::buildTopics()
            "<p>Use your screen reader's menu bar command to open the menus, then the arrow "
            "keys to move through them. The menus are: File, Playlists, Database, Playback, "
            "Options, Client, Server and Help.</p>")
+            // Split across calls because arg() takes at most nine values at a
+            // time; each call fills the lowest-numbered markers still present.
             .arg(kPlay, kPause, kStop, kNext, kPrev, kWhat, kPrefs)
             .arg(kAddEnd, kAddTop)
+            .arg(kLeft)
     });
 
     m_topics.append({

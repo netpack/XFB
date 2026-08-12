@@ -20,7 +20,6 @@ class AudioFeedbackService;
 class PlayerAudioFeedbackIntegration;
 class BackgroundOperationFeedback;
 class LiveRegionManager;
-class PlaybackStatusAnnouncer;
 class SystemStatusAnnouncer;
 class AccessibleHelpSystem;
 class ContextSensitiveHelpService;
@@ -212,12 +211,6 @@ public:
     LiveRegionManager* liveRegionManager() const { return m_liveRegionManager; }
 
     /**
-     * @brief Get the playback status announcer
-     * @return Pointer to the playback status announcer, or nullptr if not initialized
-     */
-    PlaybackStatusAnnouncer* playbackStatusAnnouncer() const { return m_playbackStatusAnnouncer; }
-
-    /**
      * @brief Get the system status announcer
      * @return Pointer to the system status announcer, or nullptr if not initialized
      */
@@ -330,8 +323,24 @@ private:
      */
     bool isATSPIAvailable() const;
 
+    /**
+     * @brief Speak a message through the speech-dispatcher daemon
+     *
+     * Only used on Linux built against Qt older than 6.8, where Qt has no way
+     * to hand announcement text to a screen reader. Opens the connection on
+     * first use; a no-op returning false on every other configuration.
+     *
+     * @param message The message to speak
+     * @param priority Priority level
+     * @return true if the message was handed to the daemon
+     */
+    bool speakThroughSpeechDispatcher(const QString& message, Priority priority);
+
     // Member variables
     bool m_accessibilityEnabled;
+    // Opaque SPDConnection*, kept as void* so libspeechd's header does not
+    // have to be reachable from every translation unit that includes this one.
+    void* m_speechDispatcher = nullptr;
     VerbosityLevel m_verbosityLevel;
     WidgetAccessibilityEnhancer* m_widgetEnhancer;
     KeyboardNavigationController* m_keyboardNavigationController;
@@ -341,7 +350,6 @@ private:
     PlayerAudioFeedbackIntegration* m_playerAudioFeedbackIntegration;
     BackgroundOperationFeedback* m_backgroundOperationFeedback;
     LiveRegionManager* m_liveRegionManager;
-    PlaybackStatusAnnouncer* m_playbackStatusAnnouncer;
     SystemStatusAnnouncer* m_systemStatusAnnouncer;
     AccessibleHelpSystem* m_accessibleHelpSystem;
     ContextSensitiveHelpService* m_contextSensitiveHelpService;

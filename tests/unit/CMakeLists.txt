@@ -331,7 +331,6 @@ add_executable(test_main_controller
     ${CMAKE_SOURCE_DIR}/src/services/AudioFeedbackService.cpp
     ${CMAKE_SOURCE_DIR}/src/services/BackgroundOperationFeedback.cpp
     ${CMAKE_SOURCE_DIR}/src/services/LiveRegionManager.cpp
-    ${CMAKE_SOURCE_DIR}/src/services/PlaybackStatusAnnouncer.cpp
     ${CMAKE_SOURCE_DIR}/src/services/SystemStatusAnnouncer.cpp
     ${CMAKE_SOURCE_DIR}/src/services/PlayerAudioFeedbackIntegration.cpp
     ${CMAKE_SOURCE_DIR}/src/repositories/MusicRepository.cpp
@@ -365,7 +364,6 @@ add_executable(test_accessibility_manager
     ${CMAKE_SOURCE_DIR}/src/services/AudioFeedbackService.cpp
     ${CMAKE_SOURCE_DIR}/src/services/BackgroundOperationFeedback.cpp
     ${CMAKE_SOURCE_DIR}/src/services/LiveRegionManager.cpp
-    ${CMAKE_SOURCE_DIR}/src/services/PlaybackStatusAnnouncer.cpp
     ${CMAKE_SOURCE_DIR}/src/services/SystemStatusAnnouncer.cpp
     ${CMAKE_SOURCE_DIR}/src/services/PlayerAudioFeedbackIntegration.cpp
     ${CMAKE_SOURCE_DIR}/src/services/AudioService.cpp

@@ -554,6 +554,14 @@ private slots:
     // Speaks a message through the AccessibilityManager (no-op when no
     // assistive technology is attached).
     void announceAccessible(const QString &message);
+    // A duration in words ("2 minutes 35 seconds") rather than digits, which
+    // is what a screen reader can convey in one pass.
+    QString spokenDuration(qint64 milliseconds) const;
+    // How much of the on-air track is left, or why that cannot be said.
+    QString remainingTimeAnnouncement() const;
+    // True when the operator asked for the time left to follow the
+    // "what is playing" announcement (Accessibility Preferences).
+    bool announcesRemainingWithNowPlaying() const;
     // Mirrors playback/recording state into text a screen reader can read,
     // so state is never conveyed by colour alone.
     void refreshTransportAccessibleState();

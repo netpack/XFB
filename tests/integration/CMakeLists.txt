@@ -58,7 +58,6 @@ add_executable(test_player_ui_controller_integration
     ${CMAKE_SOURCE_DIR}/src/services/WidgetAccessibilityEnhancer.cpp
     ${CMAKE_SOURCE_DIR}/src/services/AudioFeedbackService.cpp
     ${CMAKE_SOURCE_DIR}/src/services/LiveRegionManager.cpp
-    ${CMAKE_SOURCE_DIR}/src/services/PlaybackStatusAnnouncer.cpp
     ${CMAKE_SOURCE_DIR}/src/services/SystemStatusAnnouncer.cpp
     ${CMAKE_SOURCE_DIR}/src/services/PlayerAudioFeedbackIntegration.cpp
     ${CMAKE_SOURCE_DIR}/src/services/BackgroundOperationFeedback.cpp
@@ -101,7 +100,6 @@ add_executable(test_accessibility_integration
     ${CMAKE_SOURCE_DIR}/src/services/AudioService.cpp
     ${CMAKE_SOURCE_DIR}/src/services/AudioFeedbackService.cpp
     ${CMAKE_SOURCE_DIR}/src/services/LiveRegionManager.cpp
-    ${CMAKE_SOURCE_DIR}/src/services/PlaybackStatusAnnouncer.cpp
     ${CMAKE_SOURCE_DIR}/src/services/SystemStatusAnnouncer.cpp
     ${CMAKE_SOURCE_DIR}/src/services/PlayerAudioFeedbackIntegration.cpp
     ${CMAKE_SOURCE_DIR}/src/services/BackgroundOperationFeedback.cpp
@@ -142,7 +140,6 @@ add_executable(test_orca_compatibility
     ${CMAKE_SOURCE_DIR}/src/services/AudioService.cpp
     ${CMAKE_SOURCE_DIR}/src/services/AudioFeedbackService.cpp
     ${CMAKE_SOURCE_DIR}/src/services/LiveRegionManager.cpp
-    ${CMAKE_SOURCE_DIR}/src/services/PlaybackStatusAnnouncer.cpp
     ${CMAKE_SOURCE_DIR}/src/services/SystemStatusAnnouncer.cpp
     ${CMAKE_SOURCE_DIR}/src/services/PlayerAudioFeedbackIntegration.cpp
     ${CMAKE_SOURCE_DIR}/src/services/BackgroundOperationFeedback.cpp
@@ -177,7 +174,6 @@ add_executable(test_accessibility_user_acceptance
     ${CMAKE_SOURCE_DIR}/src/services/AudioService.cpp
     ${CMAKE_SOURCE_DIR}/src/services/AudioFeedbackService.cpp
     ${CMAKE_SOURCE_DIR}/src/services/LiveRegionManager.cpp
-    ${CMAKE_SOURCE_DIR}/src/services/PlaybackStatusAnnouncer.cpp
     ${CMAKE_SOURCE_DIR}/src/services/SystemStatusAnnouncer.cpp
     ${CMAKE_SOURCE_DIR}/src/services/PlayerAudioFeedbackIntegration.cpp
     ${CMAKE_SOURCE_DIR}/src/services/BackgroundOperationFeedback.cpp

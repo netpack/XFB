@@ -93,8 +93,9 @@ public:
         bool interruptOnCritical;                      ///< Interrupt announcements for critical alerts
         bool announceTooltips;                         ///< Announce tooltip content
         bool announceStateChanges;                     ///< Announce widget state changes
+        bool announceRemainingWithNowPlaying;          ///< Append time remaining to the "what is playing" announcement
         QString brailleDevice;                         ///< Braille display device identifier
-        
+
         AccessibilitySettings()
             : enabled(false)
             , verbosity(VerbosityLevel::Normal)
@@ -105,7 +106,8 @@ public:
             , announcementDelay(500)
             , interruptOnCritical(true)
             , announceTooltips(true)
-            , announceStateChanges(true) {}
+            , announceStateChanges(true)
+            , announceRemainingWithNowPlaying(true) {}
     };
 
     explicit AccessibilitySettingsService(QObject* parent = nullptr);
@@ -520,6 +522,7 @@ private:
     static constexpr const char* SETTINGS_INTERRUPT_CRITICAL = "InterruptOnCritical";
     static constexpr const char* SETTINGS_ANNOUNCE_TOOLTIPS = "AnnounceTooltips";
     static constexpr const char* SETTINGS_ANNOUNCE_STATE_CHANGES = "AnnounceStateChanges";
+    static constexpr const char* SETTINGS_ANNOUNCE_REMAINING = "AnnounceRemainingWithNowPlaying";
     static constexpr const char* SETTINGS_BRAILLE_DEVICE = "BrailleDevice";
     static constexpr const char* SETTINGS_CUSTOM_SHORTCUTS = "CustomShortcuts";
 };

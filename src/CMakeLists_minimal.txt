@@ -38,7 +38,6 @@ set(SOURCES
     # services/AccessibilityValidator.cpp
     # services/KeyboardNavigationController.cpp
     services/LiveRegionManager.cpp
-    services/PlaybackStatusAnnouncer.cpp
     services/SystemStatusAnnouncer.cpp
     services/AudioFeedbackService.cpp
     services/PlayerAudioFeedbackIntegration.cpp
@@ -99,7 +98,6 @@ set(HEADERS
     services/BrailleDisplayService.h
     services/WidgetAccessibilityEnhancer.h
     services/LiveRegionManager.h
-    services/PlaybackStatusAnnouncer.h
     services/SystemStatusAnnouncer.h
     services/AudioFeedbackService.h
     services/PlayerAudioFeedbackIntegration.h

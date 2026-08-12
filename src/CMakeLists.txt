@@ -62,7 +62,6 @@ set(SOURCES
     # services/DatabaseGridKeyboardNavigationEnhancer.cpp
     # services/AccessibleHelpSystem.cpp  # Has compilation errors - disabled for beta
     services/LiveRegionManager.cpp
-    services/PlaybackStatusAnnouncer.cpp
     services/SystemStatusAnnouncer.cpp
     services/AudioFeedbackService.cpp
     services/PlayerAudioFeedbackIntegration.cpp
@@ -140,7 +139,6 @@ set(HEADERS
     services/BrailleDisplayService.h
     services/WidgetAccessibilityEnhancer.h
     services/LiveRegionManager.h
-    services/PlaybackStatusAnnouncer.h
     services/SystemStatusAnnouncer.h
     services/AudioFeedbackService.h
     services/PlayerAudioFeedbackIntegration.h
@@ -247,6 +245,34 @@ endforeach()
 # lack it, e.g. Windows on ARM64.
 if(TARGET Qt6::WebEngineQuick)
     target_compile_definitions(XFB PRIVATE XFB_HAS_WEBENGINE)
+endif()
+
+# Screen reader announcements on older Qt.
+#
+# QAccessibleAnnouncementEvent — the only way to hand announcement text to a
+# screen reader through Qt — arrived in 6.8. Qt 6.4 (what Debian bookworm
+# ships) lists QAccessible::Alert among the events its AT-SPI adaptor ignores,
+# so on those builds a blind operator is told nothing at all. speech-dispatcher
+# is the daemon Orca itself speaks through, so it is the one route left; see
+# AccessibilityManager::speakThroughSpeechDispatcher. Not needed once the build
+# is on 6.8 or newer, and irrelevant on macOS and Windows.
+if(UNIX AND NOT APPLE AND Qt6_VERSION VERSION_LESS "6.8.0")
+    find_package(PkgConfig QUIET)
+    if(PkgConfig_FOUND)
+        pkg_check_modules(SPEECHD QUIET speech-dispatcher)
+    endif()
+    if(SPEECHD_FOUND)
+        target_include_directories(XFB PRIVATE ${SPEECHD_INCLUDE_DIRS})
+        target_link_directories(XFB PRIVATE ${SPEECHD_LIBRARY_DIRS})
+        target_link_libraries(XFB ${SPEECHD_LIBRARIES})
+        target_compile_definitions(XFB PRIVATE XFB_HAVE_SPEECHD)
+        message(STATUS "Qt ${Qt6_VERSION} predates QAccessibleAnnouncementEvent - "
+                       "announcements will be spoken through speech-dispatcher")
+    else()
+        message(WARNING "Qt ${Qt6_VERSION} predates QAccessibleAnnouncementEvent and "
+                        "speech-dispatcher was not found: XFB will be silent for screen "
+                        "reader users. Install libspeechd-dev and reconfigure.")
+    endif()
 endif()
 
 # Platform-specific linking

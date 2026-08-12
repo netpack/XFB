@@ -510,6 +510,10 @@ bool AccessibilitySettingsService::loadSettings()
         m_settings.interruptOnCritical = m_qsettings->value(SETTINGS_INTERRUPT_CRITICAL, true).toBool();
         m_settings.announceTooltips = m_qsettings->value(SETTINGS_ANNOUNCE_TOOLTIPS, true).toBool();
         m_settings.announceStateChanges = m_qsettings->value(SETTINGS_ANNOUNCE_STATE_CHANGES, true).toBool();
+        // Defaults on, including for existing installations that have no such
+        // key on disk: an operator who cannot see the clock needs the time left
+        // more than they need a shorter announcement.
+        m_settings.announceRemainingWithNowPlaying = m_qsettings->value(SETTINGS_ANNOUNCE_REMAINING, true).toBool();
         m_settings.brailleDevice = m_qsettings->value(SETTINGS_BRAILLE_DEVICE, QString()).toString();
         
         // Load custom keyboard shortcuts
@@ -578,6 +582,7 @@ bool AccessibilitySettingsService::saveSettings()
         m_qsettings->setValue(SETTINGS_INTERRUPT_CRITICAL, m_settings.interruptOnCritical);
         m_qsettings->setValue(SETTINGS_ANNOUNCE_TOOLTIPS, m_settings.announceTooltips);
         m_qsettings->setValue(SETTINGS_ANNOUNCE_STATE_CHANGES, m_settings.announceStateChanges);
+        m_qsettings->setValue(SETTINGS_ANNOUNCE_REMAINING, m_settings.announceRemainingWithNowPlaying);
         m_qsettings->setValue(SETTINGS_BRAILLE_DEVICE, m_settings.brailleDevice);
         
         // Save custom keyboard shortcuts
@@ -824,6 +829,7 @@ bool AccessibilitySettingsService::exportSettings(const QString& filePath) const
         settingsObj["interruptOnCritical"] = m_settings.interruptOnCritical;
         settingsObj["announceTooltips"] = m_settings.announceTooltips;
         settingsObj["announceStateChanges"] = m_settings.announceStateChanges;
+        settingsObj["announceRemainingWithNowPlaying"] = m_settings.announceRemainingWithNowPlaying;
         settingsObj["brailleDevice"] = m_settings.brailleDevice;
         
         // Export custom shortcuts
@@ -889,6 +895,10 @@ bool AccessibilitySettingsService::importSettings(const QString& filePath)
         importedSettings.interruptOnCritical = settingsObj["interruptOnCritical"].toBool();
         importedSettings.announceTooltips = settingsObj["announceTooltips"].toBool();
         importedSettings.announceStateChanges = settingsObj["announceStateChanges"].toBool();
+        // Older exports predate this key; QJsonValue::toBool() would silently
+        // turn the absent value into false, so keep the constructor's default.
+        importedSettings.announceRemainingWithNowPlaying =
+            settingsObj["announceRemainingWithNowPlaying"].toBool(importedSettings.announceRemainingWithNowPlaying);
         importedSettings.brailleDevice = settingsObj["brailleDevice"].toString();
         
         // Import custom shortcuts
