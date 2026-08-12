@@ -35,7 +35,7 @@
 #include <windows.h>
 #endif
 
-static const char* XFB_VERSION = "3.1417";
+static const char* XFB_VERSION = "3.1418";
 
 /**
  * Splash screen with readable text: paints a soft dark band behind the
