@@ -3674,6 +3674,23 @@ void player::on_btPlay_clicked(){
     qDebug()<<"Play button clicked";
 
     if(PlayMode=="stopped"){
+        // Auto Mode exists so the station never goes silent, so starting it on
+        // an empty running order has to put a track up rather than refuse. Do
+        // it before the transport flips to Playing_Segue: if the library has
+        // nothing to offer, the button must stay in its stopped state instead
+        // of going green over silence.
+        if(autoMode==1 && ui->playlist->count()==0){
+            qDebug()<<"Play pressed with an empty playlist and autoMode on — picking a track";
+            if(!autoModeGetMoreSongs()){
+                const QString why = tr("Auto Mode has no track to play — the music "
+                                       "library is empty.");
+                qDebug()<<"autoMode could not feed the playlist; staying stopped";
+                ui->statusBar->showMessage(why, 8000);
+                announceAccessible(why);
+                return;
+            }
+        }
+
         if(darkMode){
             ui->btPlay->setStyleSheet("background-color:#5e9604"); //green
         }else{
@@ -5964,10 +5981,10 @@ QString player::autoModeReferenceTrack() const
     return lastPlayedSong;
 }
 
-void player::autoModeGetMoreSongs()
+bool player::autoModeGetMoreSongs()
 {
     if (autoMode != 1)
-        return;
+        return false;
 
     //check if there's a programed genre for this hour in the hourgenre table
 
@@ -6020,18 +6037,23 @@ checkDbOpen();
             m_bpmLibrary->analyzeQuietly(referenceTrack);
     }
 
-    // Two passes: the tempo-matched pool first, then the whole library. A
-    // library where little has been analysed yet — or an hour whose genre
-    // holds nothing near the current tempo — must still keep the playlist
-    // fed, so a miss on the first pass is not a failure.
-    for (int pass = 0; pass < 2; ++pass) {
+    // Three passes, each dropping one constraint: tempo-matched inside this
+    // hour's genre, then anything in the genre, then anything at all. A
+    // library where little has been analysed yet — or an hour whose
+    // programmed genre holds nothing playable (the reference track may be the
+    // only one in it) — must still keep the playlist fed, so a miss on an
+    // earlier pass is not a failure. Only running out of library is.
+    const bool haveGenre = !currentGenre.isEmpty();
+    const int lastPass = haveGenre ? 2 : 1; // no genre: pass 1 is already the wide one
+    for (int pass = 0; pass <= lastPass; ++pass) {
         const bool matchBpm = (pass == 0 && referenceBpm > 0.0);
         if (pass == 0 && !matchBpm)
-            continue;
+            continue; // nothing measured to match against
+        const bool matchGenre = (pass < 2 && haveGenre);
 
         QString sql = QStringLiteral("select path from musics"
                                      " where path <> :last and path <> :reference");
-        if (!currentGenre.isEmpty())
+        if (matchGenre)
             sql += QStringLiteral(" and genre1 like :genre");
         if (matchBpm) {
             // Half and double time count as a match: a 140 BPM track drops
@@ -6047,7 +6069,7 @@ checkDbOpen();
         query.prepare(sql);
         query.bindValue(QStringLiteral(":last"), lastPlayedSong);
         query.bindValue(QStringLiteral(":reference"), referenceTrack);
-        if (!currentGenre.isEmpty())
+        if (matchGenre)
             query.bindValue(QStringLiteral(":genre"), currentGenre);
         if (matchBpm) {
             query.bindValue(QStringLiteral(":ref"), referenceBpm);
@@ -6059,17 +6081,22 @@ checkDbOpen();
         if (!query.exec()) {
             qDebug() << "SQL ERROR: " << query.lastError();
             qDebug() << "SQL was: " << query.lastQuery();
-            return;
+            return false;
         }
 
         if (!query.next()) {
             if (matchBpm) {
                 qDebug() << "autoMode found nothing within" << m_bpmTolerance
-                         << "BPM of" << referenceBpm << "— falling back to any track";
+                         << "BPM of" << referenceBpm << "— widening the search";
+                continue;
+            }
+            if (matchGenre) {
+                qDebug() << "autoMode found nothing in this hour's genre"
+                         << currentGenre << "— falling back to the whole library";
                 continue;
             }
             qDebug() << "autoMode found no track to add (empty or fully excluded library)";
-            return;
+            return false;
         }
 
         const QString path = query.value(0).toString();
@@ -6086,8 +6113,9 @@ checkDbOpen();
         // the next pick, so measure it now if nobody ever has.
         if (m_bpmMatch && m_bpmLibrary)
             m_bpmLibrary->analyzeQuietly(path);
-        return;
+        return true;
     }
+    return false;
 }
 
 void player::on_actionAdd_a_single_song_triggered()
@@ -8569,7 +8597,7 @@ void player::on_actionMake_a_program_from_this_playlist_triggered()
                           qDebug()<<"The file's integrity on the FTP server was verified correctly!";
                       } else {
                           qDebug()<<"Failed to verify the integrity of the file in the FTP server. Size of Local and remote files do NOT match...";
-                          QMessageBox::information(this,tr("Interity verification faild!"),tr("The file does not seam to have been sent to the server correctly since the size of the local file differs from the one on the FTP server. Please try to send the program again."));
+                          QMessageBox::information(this,tr("Integrity verification failed!"),tr("The file does not seem to have been sent to the server correctly since the size of the local file differs from the one on the FTP server. Please try to send the program again."));
                       }
                   } else {
                       qDebug()<<"It was not possible to get the size of the local file: "<<mmfile;
@@ -8584,7 +8612,7 @@ void player::on_actionMake_a_program_from_this_playlist_triggered()
                   qWarning()<<"Failed to delete FTP temp file:" << fileToRemove;
               }
               QMessageBox::StandardButton answer;
-              answer = QMessageBox::question(this,tr("Delete local copy?"),tr("Delete the local copy of the program? (The program was sucessfuly uploaded to the server)"), QMessageBox::Yes|QMessageBox::No);
+              answer = QMessageBox::question(this,tr("Delete local copy?"),tr("Delete the local copy of the program? (The program was successfully uploaded to the server)"), QMessageBox::Yes|QMessageBox::No);
               if(answer==QMessageBox::Yes){
                   if (QFile::remove(destino)) {
                       qDebug()<<"Local file deleted:" << destino;

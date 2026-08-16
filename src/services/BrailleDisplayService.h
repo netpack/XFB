@@ -458,6 +458,9 @@ private:
     bool m_detectionInProgress;
     QTimer* m_detectionTimer;
     QTimer* m_deviceMonitorTimer;
+    // The monitor tick is logged once per run, not on every one of its
+    // 5-second firings — see onDeviceMonitorTimeout().
+    bool m_monitorTickLogged = false;
     QProcess* m_detectionProcess;
     
     // Braille system integration

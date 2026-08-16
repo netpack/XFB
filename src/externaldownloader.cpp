@@ -4,10 +4,14 @@
 #include <QMessageBox>
 #include <QtSql>
 #include <QDir>
+#include <QUrl>
+#include <QUrlQuery>
+#include <QPushButton>
 #include "addgenre.h"
 #include "player.h"
 #include "services/DependencyChecker.h"
 #include "mediaduration.h"
+#include "streamingcatalog.h"
 #include <QtConcurrent>
 
 //#include "permission_utils.h"
@@ -33,6 +37,19 @@ externaldownloader::externaldownloader(QWidget *parent) :
 
 
     ui->frame_loading->hide();
+
+    // The field takes more than YouTube links now, so say so where the user
+    // looks. Kept in code rather than the .ui so it stays translatable and the
+    // generated header can't go stale.
+    ui->txt_videoLink->setPlaceholderText(
+        tr("YouTube, SoundCloud, Spotify or Apple Music link"));
+    ui->bt_youtube_getIt->setToolTip(
+        tr("Download one track: a YouTube or SoundCloud link, or a Spotify / Apple "
+           "Music track (fetched from YouTube, since neither service serves its "
+           "own audio)"));
+    ui->bt_youtube_getPlaylist->setToolTip(
+        tr("Download every track of a YouTube playlist (link containing \"list=\"), "
+           "a SoundCloud set, or a Spotify / Apple Music album or playlist"));
 
     // When a link is pasted (or typed), automatically scrape the video's
     // title/artist after a short debounce and pre-fill the fields.
@@ -536,6 +553,28 @@ DownloadResult processDownloadTask(
         }
     }
 
+    // A Spotify or Apple Music link names a track but never serves its audio.
+    // Turn it into the search that finds the same song on YouTube, which is
+    // where the rest of this function can actually download from.
+    if (StreamingCatalog::serviceOf(ylink) != StreamingCatalog::Service::None) {
+        const StreamingCatalog::Listing listing =
+            StreamingCatalog::resolve(ylink, appendOutput);
+        if (listing.tracks.isEmpty()) {
+            result.success = false;
+            result.message = listing.error.isEmpty()
+                                 ? QString("Error: that link holds no track XFB can read.")
+                                 : listing.error;
+            appendOutput(result.message);
+            db.close();
+            QSqlDatabase::removeDatabase(workerConnectionName);
+            result.consoleOutput = consoleLines.join("\n");
+            return result;
+        }
+        ylink = StreamingCatalog::searchUrlFor(listing.tracks.first());
+        appendOutput("Searching for: " + listing.tracks.first().artist + " - "
+                     + listing.tracks.first().title);
+    }
+
     // Determine the desired output audio format and download options. Honor the
     // user's configuration from xfb.conf (Options → Downloads (yt-dlp)).
     QString audioFormat;
@@ -646,6 +685,15 @@ DownloadResult processDownloadTask(
 
     // Be resilient to transient network refusals from the media servers
     ytdlpArgs << "--retries" << "10" << "--fragment-retries" << "10";
+
+    // One call must produce exactly one track. A link copied out of the YouTube
+    // app usually still carries the playlist (or the auto-generated radio Mix)
+    // it was playing inside — "watch?v=...&list=RD...&start_radio=1" — and
+    // without this yt-dlp happily follows it and downloads the whole thing.
+    // Search queries are exempt: "ytsearchN:" IS a playlist of results, and
+    // --no-playlist would leave yt-dlp nothing to fetch.
+    if (!ylink.startsWith(QLatin1String("ytsearch"), Qt::CaseInsensitive))
+        ytdlpArgs << "--no-playlist";
 
     // Optional, user-configurable behaviours (Options → Downloads (yt-dlp)).
     if (keepVideo) {
@@ -1007,6 +1055,68 @@ static bool isSoundCloudSetUrl(const QString &url)
            url.contains("/sets/", Qt::CaseInsensitive);
 }
 
+// How much of an endless YouTube Mix is worth downloading when the user asks
+// for one anyway. Radios have no last track, so this is the stop.
+static const int kMixEntryLimit = 25;
+
+// A YouTube auto-generated Mix / radio rather than a playlist somebody made.
+// Their ids start with RD (radio), and YouTube keeps extending them as you
+// listen, so they have no fixed end.
+static bool isYouTubeMixId(const QString &listId)
+{
+    return listId.startsWith(QLatin1String("RD"), Qt::CaseInsensitive);
+}
+
+// The playlist id of a YouTube link, or an empty string.
+static QString youTubeListId(const QString &url)
+{
+    return QUrlQuery(QUrl(url)).queryItemValue(QStringLiteral("list"));
+}
+
+// Reduce a pasted YouTube link to the playlist it names.
+//
+// Sharing from the YouTube app copies a link like
+//   watch?v=<video>&list=<id>&start_radio=1&index=3&pp=<tracking>
+// Keeping only "list=" — dropping the video, the radio flag, the position and
+// the tracking parameters — asks yt-dlp for exactly that playlist and nothing
+// else. Mixes are the exception: YouTube refuses to serve an RD id as a
+// playlist page ("This playlist type is unviewable"), so those keep the URL
+// they arrived on and are capped by the caller instead. Links carrying no list
+// id are returned untouched.
+static QString normalizePlaylistUrl(const QString &url)
+{
+    const QString listId = youTubeListId(url);
+    if (listId.isEmpty() || isYouTubeMixId(listId))
+        return url;
+
+    return QStringLiteral("https://www.youtube.com/playlist?list=") + listId;
+}
+
+// The video a "watch?v=..." link is built around, without the playlist that
+// happens to be attached to it.
+static QString youTubeVideoOnlyUrl(const QString &url)
+{
+    const QString videoId = QUrlQuery(QUrl(url)).queryItemValue(QStringLiteral("v"));
+    if (videoId.isEmpty())
+        return QString();
+    return QStringLiteral("https://www.youtube.com/watch?v=") + videoId;
+}
+
+// Reduce a pasted link to the one track it names, for a single download.
+// A YouTube watch link keeps only its video id, which drops the playlist, the
+// radio flag and the tracking parameters that ride along with a shared link.
+// Everything else — youtu.be, SoundCloud, Spotify, Apple Music — is handed over
+// as pasted, since their parameters are part of the address.
+static QString normalizeSingleUrl(const QString &url)
+{
+    const QString trimmed = url.trimmed();
+    if (StreamingCatalog::serviceOf(trimmed) != StreamingCatalog::Service::None)
+        return trimmed;
+
+    const QString videoOnly = youTubeVideoOnlyUrl(trimmed);
+    return videoOnly.isEmpty() ? trimmed : videoOnly;
+}
+
 // Aggregate result for downloading every entry of a playlist.
 struct PlaylistResult {
     int total = 0;       // entries discovered in the playlist
@@ -1015,6 +1125,7 @@ struct PlaylistResult {
     int failed = 0;      // entries that errored out
     bool fatal = false;  // true if the whole operation could not start
     QString message;     // human-readable summary / error
+    QString warning;     // e.g. the source only gave up part of a long playlist
     QString consoleOutput;
 };
 
@@ -1031,7 +1142,8 @@ PlaylistResult processPlaylistDownloadTask(
     QString g2,
     QString country,
     QString pub_date,
-    DatabaseCredentials dbCreds
+    DatabaseCredentials dbCreds,
+    int maxEntries
     ) {
     PlaylistResult agg;
     QStringList consoleLines;
@@ -1074,120 +1186,228 @@ PlaylistResult processPlaylistDownloadTask(
         }
     }
 
-    // Enumerate the playlist entries without downloading any media. We print one
-    // line per entry as "id<US>title<US>uploader<US>webpage_url<US>url", using
-    // the ASCII Unit Separator (0x1F) as a delimiter so it can't collide with
-    // text in titles.
-    //
-    // YouTube playlists are enumerated with "--flat-playlist" (cheap: one index
-    // request, titles included). SoundCloud sets can NOT use the flat index —
-    // its flat entries carry no title/uploader (both "NA") and some are bare
-    // api-v2.soundcloud.com URLs. Without --flat-playlist yt-dlp fetches each
-    // track's metadata (~1s per track, still no media download since --print
-    // implies --simulate), which yields real titles and canonical permalinks.
-    const bool soundcloudSet = isSoundCloudSetUrl(playlistUrl);
-    const QChar US(0x1f);
-    appendOutput(soundcloudSet ? "Fetching SoundCloud set entries (with metadata)..."
-                               : "Fetching playlist entries...");
-    QStringList entryLines;
-    {
-        QProcess listProc;
-        QStringList listArgs;
-        if (!soundcloudSet) listArgs << "--flat-playlist";
-        listArgs << "--ignore-errors"
-                 << "--no-warnings"
-                 << "--print"
-                 << QString("%(id)s%1%(title)s%1%(uploader)s%1%(webpage_url)s%1%(url)s").arg(US)
-                 << playlistUrl;
-        listProc.start(ytdlpPath, listArgs);
-        if (!listProc.waitForStarted(15000)) {
+    // What the playlist is made of: the link to fetch, and the artist/song to
+    // file the result under. Filled either from the streaming service's own
+    // track list (Spotify, Apple Music) or from yt-dlp's playlist index.
+    struct PlaylistEntry {
+        QString url;
+        QString artist;
+        QString song;
+    };
+    QList<PlaylistEntry> entries;
+
+    const StreamingCatalog::Service service = StreamingCatalog::serviceOf(playlistUrl);
+    if (service != StreamingCatalog::Service::None) {
+        // Spotify and Apple Music stream DRM-protected audio no downloader can
+        // extract. What they do publish is the track list, so XFB reads that
+        // and fetches each track the way it fetches everything else: the best
+        // YouTube match for the artist and title.
+        const StreamingCatalog::Listing listing =
+            StreamingCatalog::resolve(playlistUrl, appendOutput);
+        if (!listing.error.isEmpty()) {
             agg.fatal = true;
-            agg.message = "Error: could not start yt-dlp to read the playlist.";
+            agg.message = listing.error;
             appendOutput(agg.message);
             agg.consoleOutput = consoleLines.join("\n");
             return agg;
         }
-        // Reading a playlist index is network-bound; cap it generously. The
-        // per-track metadata pass for SoundCloud sets gets a higher cap.
-        if (!listProc.waitForFinished(soundcloudSet ? 300000 : 180000)) {
-            listProc.kill();
-            listProc.waitForFinished(2000);
-            appendOutput("Timed out while reading the playlist.");
+
+        // A long playlist that came back short must not be downloaded as if it
+        // were whole — carry the reason through to the summary the user sees.
+        if (listing.truncated) {
+            agg.warning = listing.truncationNote;
+            appendOutput("WARNING: " + agg.warning);
         }
-        const QString out = QString::fromUtf8(listProc.readAllStandardOutput());
-        const QString err = QString::fromUtf8(listProc.readAllStandardError()).trimmed();
-        if (!err.isEmpty()) appendOutput(err);
-        entryLines = out.split('\n', Qt::SkipEmptyParts);
+
+        for (const StreamingCatalog::Track &track : listing.tracks) {
+            PlaylistEntry entry;
+            entry.url = StreamingCatalog::searchUrlFor(track);
+            entry.artist = track.artist.isEmpty() ? QStringLiteral("Unknown Artist")
+                                                  : track.artist;
+            entry.song = track.title;
+            entries.append(entry);
+        }
+    } else {
+        // Enumerate the playlist entries without downloading any media. We print
+        // one line per entry as "id<US>title<US>uploader<US>webpage_url<US>url",
+        // using the ASCII Unit Separator (0x1F) as a delimiter so it can't
+        // collide with text in titles.
+        //
+        // YouTube playlists are enumerated with "--flat-playlist" (cheap: one
+        // index request, titles included). SoundCloud sets can NOT use the flat
+        // index — its flat entries carry no title/uploader (both "NA") and some
+        // are bare api-v2.soundcloud.com URLs. Without --flat-playlist yt-dlp
+        // fetches each track's metadata (~1s per track, still no media download
+        // since --print implies --simulate), which yields real titles and
+        // canonical permalinks.
+        const bool soundcloudSet = isSoundCloudSetUrl(playlistUrl);
+        const QChar US(0x1f);
+        appendOutput(soundcloudSet ? "Fetching SoundCloud set entries (with metadata)..."
+                                   : "Fetching playlist entries...");
+        QStringList entryLines;
+        {
+            QProcess listProc;
+            QStringList listArgs;
+            if (!soundcloudSet) listArgs << "--flat-playlist";
+            // Reading only the first N entries of an endless YouTube Mix keeps
+            // the index request from walking a thousand-track radio.
+            if (maxEntries > 0)
+                listArgs << "--playlist-items" << QString("1:%1").arg(maxEntries);
+            listArgs << "--ignore-errors"
+                     << "--no-warnings"
+                     << "--print"
+                     << QString("%(id)s%1%(title)s%1%(uploader)s%1%(webpage_url)s"
+                                "%1%(url)s%1%(playlist_count)s").arg(US)
+                     << playlistUrl;
+            listProc.start(ytdlpPath, listArgs);
+            if (!listProc.waitForStarted(15000)) {
+                agg.fatal = true;
+                agg.message = "Error: could not start yt-dlp to read the playlist.";
+                appendOutput(agg.message);
+                agg.consoleOutput = consoleLines.join("\n");
+                return agg;
+            }
+
+            // Reading a playlist index is network-bound, and a long one simply
+            // takes long — a fixed overall deadline would cut a big playlist
+            // off in the middle and hand back half a list as if it were whole.
+            // yt-dlp streams entries as it finds them, so wait on *silence*
+            // instead: only a source that has stopped producing is stuck.
+            const int idleTimeoutMs = soundcloudSet ? 120000 : 60000;
+            QString out;
+            QString err;
+            bool stalled = false;
+            forever {
+                if (listProc.waitForReadyRead(idleTimeoutMs)) {
+                    out += QString::fromUtf8(listProc.readAllStandardOutput());
+                    err += QString::fromUtf8(listProc.readAllStandardError());
+                    continue;
+                }
+                // Nothing arrived: either it finished, or it went quiet.
+                if (listProc.waitForFinished(1000)
+                        || listProc.state() == QProcess::NotRunning) {
+                    break;
+                }
+                listProc.kill();
+                listProc.waitForFinished(2000);
+                stalled = true;
+                break;
+            }
+            out += QString::fromUtf8(listProc.readAllStandardOutput());
+            err += QString::fromUtf8(listProc.readAllStandardError());
+            if (!err.trimmed().isEmpty()) appendOutput(err.trimmed());
+
+            if (stalled) {
+                // Downloading the part that was listed would be exactly the
+                // half-finished playlist this is meant to prevent.
+                agg.fatal = true;
+                agg.message = QString("Reading the playlist stopped responding after "
+                                      "%1 entries, so the list is incomplete. Nothing "
+                                      "was downloaded — try again.")
+                                  .arg(out.count('\n'));
+                appendOutput(agg.message);
+                agg.consoleOutput = consoleLines.join("\n");
+                return agg;
+            }
+
+            entryLines = out.split('\n', Qt::SkipEmptyParts);
+        }
+
+        int declaredCount = 0; // what the source says the playlist holds
+        for (const QString &line : std::as_const(entryLines)) {
+            const QStringList parts = line.split(US);
+            const QString id = parts.value(0).trimmed();
+            const QString title = parts.value(1).trimmed();
+            const QString uploader = parts.value(2).trimmed();
+            const QString webpageUrl = parts.value(3).trimmed();
+            const QString entryUrl = parts.value(4).trimmed();
+            declaredCount = qMax(declaredCount, parts.value(5).trimmed().toInt());
+
+            if (id.isEmpty() || id == "NA") {
+                appendOutput("Skipping a playlist entry with no video id.");
+                agg.skipped++;
+                continue;
+            }
+
+            PlaylistEntry entry;
+            // Pick the URL to download. webpage_url is the canonical page (set
+            // by the full-metadata pass; "NA" for flat entries). Flat entries
+            // put the entry link in url instead. YouTube ids keep the
+            // historical watch-URL construction as a last resort.
+            if (webpageUrl.startsWith("http")) {
+                entry.url = webpageUrl;
+            } else if (entryUrl.startsWith("http")) {
+                entry.url = entryUrl;
+            } else {
+                entry.url = "https://www.youtube.com/watch?v=" + id;
+            }
+
+            // Guess Artist/Song from the title. "Artist - Song" is the common
+            // form for music; otherwise fall back to the channel name (minus
+            // YouTube's " - Topic" auto-channel suffix) as the artist.
+            const int sep = title.indexOf(" - ");
+            if (sep > 0) {
+                entry.artist = title.left(sep).trimmed();
+                entry.song = title.mid(sep + 3).trimmed();
+            } else {
+                QString channel = uploader;
+                channel.remove(QRegularExpression("\\s*-\\s*Topic$"));
+                entry.artist = channel.trimmed();
+                entry.song = title;
+            }
+            if (entry.artist.isEmpty() || entry.artist == "NA") entry.artist = "Unknown Artist";
+            if (entry.song.isEmpty()   || entry.song == "NA")   entry.song = id;
+
+            entries.append(entry);
+        }
+
+        // yt-dlp reports the playlist's own length on every entry, so a short
+        // index can be caught rather than mistaken for the whole thing. The
+        // deliberate Mix cap is not a surprise, so it doesn't warn.
+        const int listed = entries.size() + agg.skipped;
+        if (maxEntries == 0 && declaredCount > listed) {
+            agg.warning = QString("The playlist says it holds %1 entries but only %2 "
+                                  "could be listed; %3 will be downloaded.")
+                              .arg(declaredCount).arg(listed).arg(entries.size());
+            appendOutput("WARNING: " + agg.warning);
+        }
     }
 
-    if (entryLines.isEmpty()) {
+    if (entries.isEmpty()) {
         agg.fatal = true;
         agg.message = "No playlist entries were found. Make sure the link points to a public "
-                      "YouTube playlist (containing \"list=\") or SoundCloud set "
-                      "(soundcloud.com/<artist>/sets/<set>).";
+                      "YouTube playlist (containing \"list=\"), SoundCloud set "
+                      "(soundcloud.com/<artist>/sets/<set>), or Spotify / Apple Music "
+                      "album or playlist.";
         appendOutput(agg.message);
         agg.consoleOutput = consoleLines.join("\n");
         return agg;
     }
 
-    agg.total = entryLines.size();
-    appendOutput(QString("Found %1 entries in the playlist.").arg(agg.total));
+    // The streaming services hand over the whole list at once, so their cap is
+    // applied here rather than during enumeration.
+    if (maxEntries > 0 && entries.size() > maxEntries) {
+        appendOutput(QString("Limiting the download to the first %1 of %2 entries.")
+                         .arg(maxEntries).arg(entries.size()));
+        entries = entries.mid(0, maxEntries);
+    }
+
+    agg.total = entries.size() + agg.skipped;
+    appendOutput(QString("Found %1 entries to download.").arg(entries.size()));
 
     int index = 0;
-    for (const QString &line : entryLines) {
+    for (const PlaylistEntry &entry : std::as_const(entries)) {
         ++index;
-        const QStringList parts = line.split(US);
-        const QString id = parts.value(0).trimmed();
-        const QString title = parts.value(1).trimmed();
-        const QString uploader = parts.value(2).trimmed();
-        const QString webpageUrl = parts.value(3).trimmed();
-        const QString entryUrl = parts.value(4).trimmed();
-
-        if (id.isEmpty() || id == "NA") {
-            appendOutput(QString("[%1/%2] Skipping entry with no video id.")
-                             .arg(index).arg(agg.total));
-            agg.skipped++;
-            continue;
-        }
-
-        // Pick the URL to download. webpage_url is the canonical page (set by
-        // the full-metadata pass; "NA" for flat entries). Flat entries put the
-        // entry link in url instead. YouTube ids keep the historical watch-URL
-        // construction as a last resort.
-        QString videoUrl;
-        if (webpageUrl.startsWith("http")) {
-            videoUrl = webpageUrl;
-        } else if (entryUrl.startsWith("http")) {
-            videoUrl = entryUrl;
-        } else {
-            videoUrl = "https://www.youtube.com/watch?v=" + id;
-        }
-
-        // Guess Artist/Song from the title. "Artist - Song" is the common form
-        // for music; otherwise fall back to the channel name (minus YouTube's
-        // " - Topic" auto-channel suffix) as the artist.
-        QString artist;
-        QString song;
-        const int sep = title.indexOf(" - ");
-        if (sep > 0) {
-            artist = title.left(sep).trimmed();
-            song = title.mid(sep + 3).trimmed();
-        } else {
-            QString channel = uploader;
-            channel.remove(QRegularExpression("\\s*-\\s*Topic$"));
-            artist = channel.trimmed();
-            song = title;
-        }
-        if (artist.isEmpty() || artist == "NA") artist = "Unknown Artist";
-        if (song.isEmpty()   || song == "NA")   song = id;
+        const QString artist = entry.artist;
+        const QString song = entry.song;
 
         appendOutput(QString("[%1/%2] Downloading: %3 - %4")
-                         .arg(index).arg(agg.total).arg(artist, song));
+                         .arg(index).arg(entries.size()).arg(artist, song));
 
         // Reuse the single-video pipeline. yt-dlp was already updated above, so
         // skip the per-video update check.
         DownloadResult r = processDownloadTask(
-            videoUrl, artist, song, g1, g2, country, pub_date, dbCreds, /*skipUpdateCheck=*/true);
+            entry.url, artist, song, g1, g2, country, pub_date, dbCreds, /*skipUpdateCheck=*/true);
 
         if (!r.consoleOutput.isEmpty()) consoleLines.append(r.consoleOutput);
 
@@ -1199,13 +1419,16 @@ PlaylistResult processPlaylistDownloadTask(
             }
         } else {
             agg.failed++;
-            appendOutput(QString("[%1/%2] Failed: %3").arg(index).arg(agg.total).arg(r.message));
+            appendOutput(QString("[%1/%2] Failed: %3")
+                             .arg(index).arg(entries.size()).arg(r.message));
         }
     }
 
     agg.message = QString("Playlist finished: %1 downloaded, %2 already present/skipped, "
                           "%3 failed (of %4 total).")
                       .arg(agg.succeeded).arg(agg.skipped).arg(agg.failed).arg(agg.total);
+    if (!agg.warning.isEmpty())
+        agg.message += "\n\nNote: the track list was incomplete.\n" + agg.warning;
     appendOutput(agg.message);
     agg.consoleOutput = consoleLines.join("\n");
     return agg;
@@ -1262,9 +1485,7 @@ void externaldownloader::getFile() {
     }
 
     // 1. Gather UI Data (in the UI thread)
-    QString ylink = ui->txt_videoLink->text().trimmed();
-    QStringList ylinkparts = ylink.split('&'); // Basic cleaning of tracking params
-    ylink = ylinkparts[0];
+    QString ylink = normalizeSingleUrl(ui->txt_videoLink->text());
 
     QString yartist = ui->txt_artist->text().trimmed();
     QString ysong = ui->txt_song->text().trimmed();
@@ -1353,22 +1574,35 @@ void externaldownloader::getPlaylist() {
         return;
     }
 
-    QString ylink = ui->txt_videoLink->text().trimmed();
+    const QString pasted = ui->txt_videoLink->text().trimmed();
 
     // A YouTube playlist link must carry a "list=" parameter (unlike single
     // downloads we must NOT strip query parameters after '&', since that is
     // where the list id lives in "watch?v=...&list=..." URLs). SoundCloud sets
-    // are recognized by their .../sets/... path instead.
-    if (ylink.isEmpty() || (!ylink.contains("list=") && !isSoundCloudSetUrl(ylink))) {
+    // are recognized by their .../sets/... path, Spotify and Apple Music
+    // albums/playlists by their own URL shape.
+    if (pasted.isEmpty() || (!pasted.contains("list=") && !isSoundCloudSetUrl(pasted)
+                             && !StreamingCatalog::isCollectionUrl(pasted))) {
         QMessageBox::warning(this, tr("Not a Playlist"),
             tr("Please paste a playlist link in the Video Link field: a YouTube playlist "
-               "(containing \"list=\", e.g. https://www.youtube.com/playlist?list=...) or "
-               "a SoundCloud set (e.g. https://soundcloud.com/artist/sets/name)."));
+               "(containing \"list=\"), a SoundCloud set "
+               "(soundcloud.com/artist/sets/name), or a Spotify or Apple Music album "
+               "or playlist."));
         ui->bt_youtube_getIt->setEnabled(true);
         if (ui->bt_youtube_getPlaylist) ui->bt_youtube_getPlaylist->setEnabled(true);
         ui->frame_loading->hide();
         return;
     }
+
+    // Drop the video, the radio flag and the tracking parameters a shared
+    // YouTube link carries, so only the playlist itself is fetched.
+    const QString ylink = normalizePlaylistUrl(pasted);
+    if (ylink != pasted)
+        ui->txt_teminal_yd1->appendPlainText(tr("Reading the playlist as: %1").arg(ylink));
+
+    // An auto-generated Mix never ends — YouTube keeps extending it — so it is
+    // downloaded only up to a fixed number of tracks.
+    const int maxEntries = isYouTubeMixId(youTubeListId(ylink)) ? kMixEntryLimit : 0;
 
     const QString g1 = ui->cbox_g1->currentText();
     const QString g2 = ui->cbox_g2->currentText();
@@ -1401,6 +1635,11 @@ void externaldownloader::getPlaylist() {
 
         if (result.fatal) {
             QMessageBox::critical(this, tr("Playlist Downloader"), result.message);
+        } else if (!result.warning.isEmpty()) {
+            // A partial list is not a success to be waved through.
+            QMessageBox::warning(this, tr("Playlist Downloader"), result.message);
+            if (result.succeeded > 0)
+                emit musicAdded();
         } else {
             QMessageBox::information(this, tr("Playlist Downloader"), result.message);
             if (result.succeeded > 0) {
@@ -1416,7 +1655,7 @@ void externaldownloader::getPlaylist() {
 
     QFuture<PlaylistResult> future = QtConcurrent::run(
         processPlaylistDownloadTask,
-        ylink, g1, g2, country, pub_date, creds);
+        ylink, g1, g2, country, pub_date, creds, maxEntries);
     watcher->setFuture(future);
 
     ui->txt_teminal_yd1->appendPlainText("Playlist task submitted to background thread...");
@@ -1425,18 +1664,65 @@ void externaldownloader::getPlaylist() {
 void externaldownloader::on_bt_youtube_getPlaylist_clicked()
 {
     const QString ylink = ui->txt_videoLink->text().trimmed();
-    if (ylink.isEmpty() || (!ylink.contains("list=") && !isSoundCloudSetUrl(ylink))) {
+    if (ylink.isEmpty() || (!ylink.contains("list=") && !isSoundCloudSetUrl(ylink)
+                            && !StreamingCatalog::isCollectionUrl(ylink))) {
         QMessageBox::information(this, tr("Playlist Downloader"),
             tr("Please paste a playlist link in the Video Link field: a YouTube playlist "
-               "(containing \"list=\", e.g. https://www.youtube.com/playlist?list=...) or "
-               "a SoundCloud set (e.g. https://soundcloud.com/artist/sets/name)."));
+               "(containing \"list=\"), a SoundCloud set "
+               "(soundcloud.com/artist/sets/name), or a Spotify or Apple Music album "
+               "or playlist."));
         return;
     }
 
+    // A link shared out of a YouTube Mix ("start_radio=1", list id "RD...") is
+    // not a playlist at all: it is an endless radio YouTube builds around one
+    // video, and asking for all of it means a thousand tracks nobody chose.
+    // Offer the track it was started from instead.
+    const QString listId = youTubeListId(ylink);
+    if (isYouTubeMixId(listId)) {
+        const QString videoUrl = youTubeVideoOnlyUrl(ylink);
+        QMessageBox box(this);
+        box.setIcon(QMessageBox::Warning);
+        box.setWindowTitle(tr("That is a YouTube Mix"));
+        box.setText(tr("This link is an auto-generated YouTube Mix (radio), not a "
+                       "playlist somebody put together. It has no end — YouTube keeps "
+                       "adding tracks to it as it plays."));
+        box.setInformativeText(videoUrl.isEmpty()
+            ? tr("XFB will download only its first %1 tracks.").arg(kMixEntryLimit)
+            : tr("You probably want just the track the Mix was started from.\n\n"
+                 "Fill in the Artist and Song fields and use \"Get it!\" for that one "
+                 "track, or download the first %1 tracks of the Mix.").arg(kMixEntryLimit));
+        QPushButton *mixButton =
+            box.addButton(tr("Download %1 from the Mix").arg(kMixEntryLimit),
+                          QMessageBox::AcceptRole);
+        box.addButton(QMessageBox::Cancel);
+        box.setDefaultButton(QMessageBox::Cancel);
+        box.exec();
+        if (box.clickedButton() != mixButton) {
+            // Leave the single track in the field, ready for "Get it!".
+            if (!videoUrl.isEmpty()) {
+                ui->txt_videoLink->setText(videoUrl);
+                ui->txt_teminal_yd1->appendPlainText(
+                    tr("Kept only the track the Mix started from: %1").arg(videoUrl));
+            }
+            return;
+        }
+        getPlaylist();
+        return;
+    }
+
+    const StreamingCatalog::Service service = StreamingCatalog::serviceOf(ylink);
+    const QString what = (service == StreamingCatalog::Service::None)
+        ? tr("This downloads every entry of the playlist as audio and adds them to your "
+             "library. Artist and Song are guessed from each entry's title, and the "
+             "genres selected above are applied to all of them.")
+        : tr("%1 does not hand out its audio, so XFB reads the track list and then "
+             "downloads each song from YouTube. Artist and Song come from %1 itself, "
+             "and the genres selected above are applied to all of them.")
+              .arg(StreamingCatalog::serviceName(service));
+
     const auto reply = QMessageBox::question(this, tr("Download Whole Playlist?"),
-        tr("This downloads every entry of the playlist as audio and adds them to your "
-           "library. Artist and Song are guessed from each entry's title, and the genres "
-           "selected above are applied to all of them.\n\nThis can take a while. Continue?"),
+        what + tr("\n\nThis can take a while. Continue?"),
         QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
     if (reply != QMessageBox::Yes) {
         return;
@@ -1447,32 +1733,29 @@ void externaldownloader::on_bt_youtube_getPlaylist_clicked()
 
 void externaldownloader::on_bt_youtube_getIt_clicked()
 {
-    QString ylink = ui->txt_videoLink->text();
-
-
-
-    QStringList ylistparts = ylink.split("&");
-
-    /*
-    for(int i=0;i<ylistparts.count();i++){
-        qDebug()<<"ylistpart"<<i<<" has the value: "<<ylistparts[i];
-    }*/
-
-    ylink = ylistparts[0];
-
+    const QString ylink = normalizeSingleUrl(ui->txt_videoLink->text());
     qDebug()<<"ylink is now: "<<ylink;
 
-    QString yartist = ui->txt_artist->text();
-    QString ysong = ui->txt_song->text();
+    const QString yartist = ui->txt_artist->text().trimmed();
+    const QString ysong = ui->txt_song->text().trimmed();
 
     if(ylink.isEmpty() || yartist.isEmpty() || ysong.isEmpty()){
-        QMessageBox::information(this,tr("yt-dlp Downloader"),tr("The link, the artist name and the song title are mandatory..."));
-    } else {
-        showLoadingFrame();
+        QMessageBox::information(this,tr("Downloader"),tr("The link, the artist name and the song title are mandatory..."));
+        return;
     }
 
+    // A whole album or playlist pasted into a single download would fetch only
+    // its first track and file it under the artist/song typed above. Point the
+    // user at the button that does what they meant.
+    if (StreamingCatalog::isCollectionUrl(ylink)) {
+        QMessageBox::information(this, tr("Downloader"),
+            tr("That is a %1 album or playlist, not a single track. Use "
+               "\"Get Playlist!\" to download all of it.")
+                .arg(StreamingCatalog::serviceName(StreamingCatalog::serviceOf(ylink))));
+        return;
+    }
 
-
+    showLoadingFrame();
 }
 void externaldownloader::on_pushButton_clicked()
 {
@@ -1531,6 +1814,15 @@ void externaldownloader::fetchVideoDetails()
     // A playlist link has no single title to scrape
     if (url.contains("list=") && !url.contains("watch?v=") && !url.contains("youtu.be/"))
         return;
+    if (StreamingCatalog::isCollectionUrl(url))
+        return;
+
+    // yt-dlp cannot read Spotify or Apple Music, so those links get their
+    // artist/title from the service's own catalogue instead.
+    if (StreamingCatalog::serviceOf(url) != StreamingCatalog::Service::None) {
+        fetchStreamingDetails(url);
+        return;
+    }
 
     const QString ytdlp = findYtDlpExecutable();
     if (ytdlp.isEmpty())
@@ -1603,26 +1895,7 @@ void externaldownloader::fetchVideoDetails()
         if (artist.isEmpty() && song.isEmpty())
             return;
 
-        // Only fill fields the user hasn't typed into (a previous auto-fill
-        // may be overwritten by a newer link's details)
-        bool filled = false;
-        if (!artist.isEmpty()
-            && (ui->txt_artist->text().trimmed().isEmpty()
-                || ui->txt_artist->text() == m_lastAutoArtist)) {
-            ui->txt_artist->setText(artist);
-            m_lastAutoArtist = artist;
-            filled = true;
-        }
-        if (!song.isEmpty()
-            && (ui->txt_song->text().trimmed().isEmpty()
-                || ui->txt_song->text() == m_lastAutoSong)) {
-            ui->txt_song->setText(song);
-            m_lastAutoSong = song;
-            filled = true;
-        }
-        ui->txt_teminal_yd1->appendPlainText(
-            (filled ? tr("Auto-filled: %1 — %2") : tr("Video details: %1 — %2"))
-                .arg(artist, song));
+        applyAutoFill(artist, song);
     });
 
     // Metadata-only query: no download, one tab-separated line
@@ -1635,4 +1908,67 @@ void externaldownloader::fetchVideoDetails()
         if (proc->state() != QProcess::NotRunning)
             proc->kill();
     });
+}
+
+void externaldownloader::fetchStreamingDetails(const QString &url)
+{
+    const StreamingCatalog::Service service = StreamingCatalog::serviceOf(url);
+    ui->txt_teminal_yd1->appendPlainText(
+        tr("Fetching the track details from %1...")
+            .arg(StreamingCatalog::serviceName(service)));
+
+    // Resolution does blocking network I/O, so it runs off the UI thread.
+    auto *watcher = new QFutureWatcher<StreamingCatalog::Listing>(this);
+    m_streamingFetch = watcher; // a newer link supersedes any fetch in flight
+
+    connect(watcher, &QFutureWatcher<StreamingCatalog::Listing>::finished, this,
+            [this, watcher]() {
+        const bool current = (m_streamingFetch == watcher);
+        if (current)
+            m_streamingFetch = nullptr;
+        const StreamingCatalog::Listing listing = watcher->result();
+        watcher->deleteLater();
+        if (!current)
+            return; // the user has pasted something else since
+
+        if (listing.tracks.isEmpty()) {
+            ui->txt_teminal_yd1->appendPlainText(
+                listing.error.isEmpty()
+                    ? tr("Could not fetch the track details — fill Artist/Song manually.")
+                    : listing.error);
+            return;
+        }
+        applyAutoFill(listing.tracks.first().artist, listing.tracks.first().title);
+    });
+
+    watcher->setFuture(QtConcurrent::run([url]() {
+        return StreamingCatalog::resolve(url);
+    }));
+}
+
+void externaldownloader::applyAutoFill(const QString &artist, const QString &song)
+{
+    if (artist.isEmpty() && song.isEmpty())
+        return;
+
+    // Only fill fields the user hasn't typed into (a previous auto-fill
+    // may be overwritten by a newer link's details)
+    bool filled = false;
+    if (!artist.isEmpty()
+        && (ui->txt_artist->text().trimmed().isEmpty()
+            || ui->txt_artist->text() == m_lastAutoArtist)) {
+        ui->txt_artist->setText(artist);
+        m_lastAutoArtist = artist;
+        filled = true;
+    }
+    if (!song.isEmpty()
+        && (ui->txt_song->text().trimmed().isEmpty()
+            || ui->txt_song->text() == m_lastAutoSong)) {
+        ui->txt_song->setText(song);
+        m_lastAutoSong = song;
+        filled = true;
+    }
+    ui->txt_teminal_yd1->appendPlainText(
+        (filled ? tr("Auto-filled: %1 — %2") : tr("Track details: %1 — %2"))
+            .arg(artist, song));
 }

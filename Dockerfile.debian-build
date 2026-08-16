@@ -72,7 +72,7 @@ RUN cp /src/README.md /src/pkg-root/usr/share/doc/xfb/ 2>/dev/null || true
 # not appear in the .deb filename — that is the Debian convention, and
 # dpkg-scanpackages reads the real version out of the control file anyway.
 RUN echo "Package: xfb\n\
-Version: 1:3.1418-1\n\
+Version: 1:3.1419-1\n\
 Section: sound\n\
 Priority: optional\n\
 Architecture: ${TARGETARCH}\n\
@@ -104,7 +104,7 @@ RUN printf '%s\n' \
     chmod 0755 /src/pkg-root/DEBIAN/postinst /src/pkg-root/DEBIAN/postrm
 
 # Build the .deb (filename includes the target architecture)
-RUN dpkg-deb --build /src/pkg-root /src/xfb_3.1418-1_${TARGETARCH}.deb
+RUN dpkg-deb --build /src/pkg-root /src/xfb_3.1419-1_${TARGETARCH}.deb
 
 # Copy to output on run
-CMD ["sh", "-c", "cp /src/xfb_3.1418-1_*.deb /output/ && echo 'Package built:' /src/xfb_3.1418-1_*.deb"]
+CMD ["sh", "-c", "cp /src/xfb_3.1419-1_*.deb /output/ && echo 'Package built:' /src/xfb_3.1419-1_*.deb"]

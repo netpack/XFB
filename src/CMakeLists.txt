@@ -16,6 +16,8 @@ set(SOURCES
     commonFunctions.cpp
     # Shared track-duration probe (exiftool with ffmpeg fallback)
     mediaduration.cpp
+    # Spotify / Apple Music track listings for the downloader
+    streamingcatalog.cpp
     # Audio FX engine (EQ / compressor / 432 Hz)
     audio/FxDsp.cpp
     audio/FxEngine.cpp
@@ -114,6 +116,7 @@ set(HEADERS
     externaldownloader.h
     commonFunctions.h
     mediaduration.h
+    streamingcatalog.h
     # Audio FX engine headers
     audio/FxParams.h
     audio/FxDsp.h

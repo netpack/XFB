@@ -2191,7 +2191,7 @@
 font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
           </property>
           <property name="text">
-           <string>Uploading programs, plase wait...</string>
+           <string>Uploading programs, please wait...</string>
           </property>
           <property name="alignment">
            <set>Qt::AlignmentFlag::AlignCenter</set>
@@ -2509,7 +2509,7 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
             <normaloff>:/icons/view-filter.png</normaloff>:/icons/view-filter.png</iconset>
           </attribute>
           <attribute name="label">
-           <string>fillters</string>
+           <string>filters</string>
           </attribute>
           <widget class="QPushButton" name="bt_apply_filter">
            <property name="geometry">
@@ -2686,7 +2686,7 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
            </item>
            <item>
             <property name="text">
-             <string>Trim Sillence from Start and End below 0.2% (remove noise also)</string>
+             <string>Trim Silence from Start and End below 0.2% (remove noise also)</string>
             </property>
            </item>
           </widget>
@@ -3885,7 +3885,7 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
      <normaloff>:/icons/games-solve.png</normaloff>:/icons/games-solve.png</iconset>
    </property>
    <property name="text">
-    <string>Force monitorization</string>
+    <string>Force monitoring</string>
    </property>
   </action>
   <action name="actionUpdate_Dinamic_Server_s_IP">
@@ -3894,7 +3894,7 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
      <normaloff>:/icons/ic_menu_compass.png</normaloff>:/icons/ic_menu_compass.png</iconset>
    </property>
    <property name="text">
-    <string>Update Dinamic Server's IP</string>
+    <string>Update Dynamic Server's IP</string>
    </property>
   </action>
  </widget>

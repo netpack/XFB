@@ -41,6 +41,7 @@ SOURCES += \
     externaldownloader.cpp \
     commonFunctions.cpp \
     mediaduration.cpp \
+    streamingcatalog.cpp \
     services/IService.cpp \
     services/ServiceContainer.cpp \
     services/BaseService.cpp \
@@ -108,6 +109,7 @@ HEADERS += \
     externaldownloader.h \
     commonFunctions.h \
     mediaduration.h \
+    streamingcatalog.h \
     services/IService.h \
     services/ServiceContainer.h \
     services/BaseService.h \

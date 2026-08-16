@@ -199,6 +199,12 @@ optionsDialog::optionsDialog(QWidget *parent) :
     ui->checkBox_ytdlpEmbedThumbnail->setChecked(settings.value("MusicEmbedThumbnail", false).toBool());
     ui->checkBox_ytdlpEmbedMetadata->setChecked(settings.value("MusicEmbedMetadata", true).toBool());
 
+    // Spotify: optional, and only needed to read playlists longer than the 100
+    // tracks the public pages hand out. Sealed like the other stored password.
+    ui->txt_spotifyClientId->setText(settings.value("SpotifyClientId").toString());
+    ui->txt_spotifyClientSecret->setText(
+        SecretStore::open(settings.value("SpotifyClientSecret").toString()));
+
     qDebug() << "Finished loading settings in options dialog.";
     // Dialog styling comes from the application-wide theme (ThemeManager)
 }
@@ -334,6 +340,9 @@ void optionsDialog::saveSettings2Db()
     settings.setValue("MusicKeepVideo", ui->checkBox_ytdlpKeepVideo->isChecked());
     settings.setValue("MusicEmbedThumbnail", ui->checkBox_ytdlpEmbedThumbnail->isChecked());
     settings.setValue("MusicEmbedMetadata", ui->checkBox_ytdlpEmbedMetadata->isChecked());
+    settings.setValue("SpotifyClientId", ui->txt_spotifyClientId->text().trimmed());
+    settings.setValue("SpotifyClientSecret",
+                      SecretStore::seal(ui->txt_spotifyClientSecret->text().trimmed()));
 
     // Networking
     bool networkingEnabled = ui->cbox_enableNetworking->isChecked();

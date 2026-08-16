@@ -5,8 +5,9 @@
 #include <QtSql>
 #include <QtDebug>
 #include <QFileInfo>
+#include <QFutureWatcher>
 
-
+#include "streamingcatalog.h"
 
 class QProcess;
 class QTimer;
@@ -41,6 +42,15 @@ private slots:
     void fetchVideoDetails();
 
 private:
+    /** Auto-fill path for Spotify / Apple Music links, which yt-dlp can't read. */
+    void fetchStreamingDetails(const QString &url);
+
+    /**
+     * Put scraped details into the Artist/Song fields, leaving anything the
+     * user typed themselves alone.
+     */
+    void applyAutoFill(const QString &artist, const QString &song);
+
     Ui::externaldownloader *ui;
 
     // Make sure the external tools a download needs (yt-dlp and, crucially,
@@ -55,6 +65,7 @@ private:
     // Auto-fill of artist/song from a pasted link
     QTimer *m_metaDebounce = nullptr;
     QProcess *m_metaFetch = nullptr;
+    QFutureWatcher<StreamingCatalog::Listing> *m_streamingFetch = nullptr;
     QString m_lastAutoArtist;
     QString m_lastAutoSong;
 };

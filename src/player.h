@@ -152,7 +152,10 @@ private slots:
     void on_pubView_pressed(const QModelIndex &index);
     void on_programsView_pressed(const QModelIndex &index);
     void on_torrentsView_pressed(const QModelIndex &index);
-    void autoModeGetMoreSongs();
+    // Queue one more track. Returns true when something was actually added,
+    // so a caller that needs a track to start on can tell the difference
+    // between "Auto Mode topped the list up" and "there was nothing to add".
+    bool autoModeGetMoreSongs();
     void on_bt_autoMode_clicked();
     void on_actionAdd_a_single_song_triggered();
     void on_btPlayNext_clicked();

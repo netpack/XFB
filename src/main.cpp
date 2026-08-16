@@ -35,7 +35,7 @@
 #include <windows.h>
 #endif
 
-static const char* XFB_VERSION = "3.1418";
+static const char* XFB_VERSION = "3.1419";
 
 /**
  * Splash screen with readable text: paints a soft dark band behind the
@@ -156,10 +156,42 @@ static void setupFileLogging()
     }
 
     const QString path = dir + QStringLiteral("/xfb.log");
-    // Keep the previous run's worth of history instead of growing forever
-    if (QFileInfo(path).size() > 5 * 1024 * 1024) {
+
+    // Retention. A log is only useful for the report someone is writing now;
+    // months-old chatter is just disk. Two rules, applied at every start:
+    //
+    //  - Roll when the live log passes 5 MB, keeping one previous generation.
+    //  - Delete any generation older than kLogRetentionDays, so a machine that
+    //    never logs enough to trigger a roll doesn't keep last spring's log
+    //    forever either.
+    constexpr int kLogRetentionDays = 14;
+    constexpr qint64 kLogRollBytes = 5 * 1024 * 1024;
+
+    if (QFileInfo(path).size() > kLogRollBytes) {
         QFile::remove(path + QStringLiteral(".1"));
         QFile::rename(path, path + QStringLiteral(".1"));
+    }
+
+    // Sweep old logs, including the ones written by earlier XFB versions
+    // (Logger's dated "xfb_YYYYMMDD_HHMMSS.log" files) which nothing else
+    // cleans up any more.
+    {
+        const QDateTime cutoff =
+            QDateTime::currentDateTime().addDays(-kLogRetentionDays);
+        const QStringList patterns = {QStringLiteral("xfb.log.*"),
+                                      QStringLiteral("xfb_*.log")};
+        const QFileInfoList stale =
+            QDir(dir).entryInfoList(patterns, QDir::Files);
+        for (const QFileInfo &info : stale) {
+            if (info.lastModified() < cutoff)
+                QFile::remove(info.absoluteFilePath());
+        }
+        // The live log is rolled by size, but if it is simply ancient (the app
+        // has not run in a long time) it starts fresh rather than appending to
+        // something from another era.
+        const QFileInfo current(path);
+        if (current.exists() && current.lastModified() < cutoff)
+            QFile::remove(path);
     }
 
     g_logFile.setFileName(path);

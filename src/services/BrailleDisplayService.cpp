@@ -777,9 +777,15 @@ void BrailleDisplayService::onDeviceMonitorTimeout()
     // Periodically check for device status changes
     // In a real implementation, this would monitor device connections
     // and update the available devices list accordingly
-    
-    // For now, we'll just log that monitoring is active
-    if (isRunning()) {
-        logDebug("Device monitoring active");
+    //
+    // This fires every 5 seconds for the whole life of the application. It used
+    // to log a line each time, which said nothing (the check does no work yet)
+    // and buried everything else: on a normal install it accounted for well
+    // over half of xfb.log. Say it once, so the tick is still visible in a log
+    // sent with a bug report, and then stay quiet.
+    if (isRunning() && !m_monitorTickLogged) {
+        m_monitorTickLogged = true;
+        logDebug("Device monitoring active (logged once; ticks every "
+                 + QString::number(DEVICE_MONITOR_INTERVAL_MS / 1000) + "s)");
     }
 }

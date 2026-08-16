@@ -223,7 +223,7 @@ background-color: rgb(83, 28, 28);</string>
      <string notr="true">color:#FFF</string>
     </property>
     <property name="text">
-     <string>Dowloading and Converting Video...</string>
+     <string>Downloading and Converting Video...</string>
     </property>
     <property name="alignment">
      <set>Qt::AlignCenter</set>

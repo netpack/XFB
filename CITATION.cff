@@ -7,8 +7,8 @@ authors:
     given-names: Frédéric
     orcid: "https://orcid.org/0000-0002-9816-3216"
     affiliation: "University of Coimbra, CISUC — Department of Informatics Engineering; Netpack - Online Solutions"
-version: 3.1418
-date-released: 2026-08-12
+version: 3.1419
+date-released: 2026-08-16
 license: GPL-3.0
 repository-code: "https://github.com/netpack/XFB"
 url: "https://netpack.pt"
