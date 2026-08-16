@@ -1,6 +1,6 @@
 # XFB Debian Repository
 
-APT repository for XFB Radio Automation Software, version 3.1417.
+APT repository for XFB Radio Automation Software, version 3.1419.
 
 ## Install
 

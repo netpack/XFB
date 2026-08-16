@@ -1,15 +1,15 @@
 Package: xfb
-Version: 3.1417-1
+Version: 1:3.1419-1
 Architecture: amd64
 Maintainer: Frederic Bogaerts <info@netpack.pt>
-Depends: libqt6core6 (>= 6.4), libqt6gui6 (>= 6.4), libqt6widgets6 (>= 6.4), libqt6multimedia6 (>= 6.4), libqt6sql6-sqlite (>= 6.4), libqt6network6 (>= 6.4), libqt6concurrent6 (>= 6.4), libqt6webenginecore6 (>= 6.4), libqt6webenginequick6 (>= 6.4), libqt6opengl6 (>= 6.4), libqt6qml6 (>= 6.4), libqt6quick6 (>= 6.4), libqt6quickwidgets6 (>= 6.4), libqt6positioning6 (>= 6.4), libqt6webchannel6 (>= 6.4), curl, python3
+Depends: libqt6core6 (>= 6.4), libqt6gui6 (>= 6.4), libqt6widgets6 (>= 6.4), libqt6multimedia6 (>= 6.4), libqt6sql6-sqlite (>= 6.4), libqt6network6 (>= 6.4), libqt6concurrent6 (>= 6.4), libqt6webenginecore6 (>= 6.4), libqt6webenginequick6 (>= 6.4), libqt6opengl6 (>= 6.4), libqt6qml6 (>= 6.4), libqt6quick6 (>= 6.4), libqt6quickwidgets6 (>= 6.4), libqt6positioning6 (>= 6.4), libqt6webchannel6 (>= 6.4), libspeechd2, curl, python3
 Recommends: tor, gstreamer1.0-plugins-good, gstreamer1.0-plugins-base, ffmpeg, libimage-exiftool-perl, mediainfo
 Suggests: orca, brltty, espeak-ng, nodejs, soundconverter, audacity, aria2, transmission-cli
-Filename: pool/main/xfb_3.1417-1_amd64.deb
-Size: 4923776
-MD5sum: 6b0242285cb593e27766fe12d0518f8a
-SHA1: da1b35af36cba1a0039788351c56f64fbd8ca930
-SHA256: 60a2e5cb8b5754478a3a347709074e7edbb77e553950bbb1d3c47679da891831
+Filename: pool/main/xfb_3.1419-1_amd64.deb
+Size: 4958112
+MD5sum: 15a1f581dd00796a2d93ef2d59c4c788
+SHA1: 330bc2170ada918b01fbac436678fcad080a40c4
+SHA256: 72e65e1cac6c1413590e83c04c56e33f532b42020904fdbd845b3066daafa4d7
 Section: sound
 Priority: optional
 Description: XFB Radio Automation Software
