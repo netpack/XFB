@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="?attr/selectableItemBackground"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingHorizontal="@dimen/xfb_screen_margin"
+    android:paddingVertical="@dimen/xfb_gap_small">
+
+    <!-- The running number, as on the desktop's playlist. -->
+    <TextView
+        android:id="@+id/index"
+        android:layout_width="28dp"
+        android:layout_height="wrap_content"
+        android:fontFamily="monospace"
+        android:gravity="end"
+        android:textAppearance="?attr/textAppearanceBodySmall"
+        android:textColor="@color/xfb_subtext" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/xfb_gap"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:textAppearance="?attr/textAppearanceBodyLarge" />
+
+        <TextView
+            android:id="@+id/detail"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:textColor="@color/xfb_subtext"
+            android:visibility="gone" />
+
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/bar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/xfb_gap_tight"
+            android:max="100"
+            android:visibility="gone"
+            app:trackCornerRadius="2dp"
+            app:trackThickness="3dp" />
+    </LinearLayout>
+
+    <!-- A tick once the file is on the phone; the word only when it went wrong. -->
+    <ImageView
+        android:id="@+id/onPhone"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:layout_marginStart="@dimen/xfb_gap_small"
+        android:contentDescription="@string/track_on_phone"
+        android:src="@drawable/ic_check_circle"
+        android:visibility="gone"
+        app:tint="?attr/colorPrimary" />
+
+    <TextView
+        android:id="@+id/state"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/xfb_gap_small"
+        android:textAppearance="?attr/textAppearanceBodySmall"
+        android:textColor="@color/xfb_subtext"
+        android:visibility="gone" />
+</LinearLayout>

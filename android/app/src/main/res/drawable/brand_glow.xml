@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    A soft periwinkle halo behind the XFB radio on the pairing screen. The
+    artwork is a warm brown box on a near-white ground; without something cool
+    behind it, it sits on the screen like a pasted-on sticker.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <gradient
+        android:type="radial"
+        android:gradientRadius="50%"
+        android:startColor="@color/xfb_brand_glow"
+        android:endColor="@android:color/transparent" />
+</shape>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    One equalizer band: centre frequency, fader, gain readout.
+    Laid out as a row rather than an upright fader because Material's Slider has
+    no vertical mode, and a rotated one loses its touch target and its
+    accessibility actions along with it. The columns line up, which reads as a
+    console anyway.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal">
+
+    <TextView
+        android:id="@+id/bandLabel"
+        android:layout_width="44dp"
+        android:layout_height="wrap_content"
+        android:fontFamily="monospace"
+        android:gravity="end"
+        android:textAppearance="?attr/textAppearanceBodySmall"
+        android:textColor="@color/xfb_subtext" />
+
+    <com.google.android.material.slider.Slider
+        android:id="@+id/bandSlider"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="@dimen/xfb_gap_tight"
+        android:layout_weight="1"
+        android:stepSize="0.5"
+        android:valueFrom="-12.0"
+        android:valueTo="12.0" />
+
+    <!-- Wide enough for the longest readout the compressor produces
+         ("-60.0 dB"), so no value ever wraps onto a second line. -->
+    <TextView
+        android:id="@+id/bandValue"
+        android:layout_width="76dp"
+        android:layout_height="wrap_content"
+        android:fontFamily="monospace"
+        android:gravity="end"
+        android:textAppearance="?attr/textAppearanceBodySmall" />
+</LinearLayout>

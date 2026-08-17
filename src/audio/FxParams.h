@@ -1,9 +1,17 @@
 #ifndef FXPARAMS_H
 #define FXPARAMS_H
 
+/*
+ * The FxParams struct below is plain C++ so that FxDsp — which includes this
+ * header — can be compiled for Android's NDK, where there is no Qt. Only the
+ * FxSettings helpers need QSettings, so the Android build defines
+ * FXPARAMS_NO_QT to leave them out. Nothing changes for the desktop build.
+ */
+#ifndef FXPARAMS_NO_QT
 #include <QString>
 #include <QSettings>
 #include <QStandardPaths>
+#endif
 
 /**
  * @brief Parameters for one player channel of the XFB audio FX chain.
@@ -57,6 +65,7 @@ struct FxParams
  * is global (one switch for the whole application) while EQ and compressor
  * settings are stored per channel.
  */
+#ifndef FXPARAMS_NO_QT
 namespace FxSettings
 {
 inline QString configFilePath()
@@ -114,5 +123,6 @@ inline void saveChannel(const QString &channel, const FxParams &p)
     s.setValue(prefix + "CompMakeupDb", p.compMakeupDb);
 }
 } // namespace FxSettings
+#endif // FXPARAMS_NO_QT
 
 #endif // FXPARAMS_H

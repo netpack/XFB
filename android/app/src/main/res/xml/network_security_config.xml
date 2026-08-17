@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    XFB is reached over the local network at a plain http:// address, so
+    cleartext has to be permitted.
+
+    It would be better to permit it only for private address ranges, but the
+    network security config has no way to express that: <domain> matches
+    hostnames only, and CIDR notation in it silently matches nothing at all.
+    The station's address is whatever the operator's router handed out, so
+    there is no static host list to enumerate either.
+
+    This is the weakest point in the sync design and it is deliberate for now —
+    tokens and audio cross the LAN unencrypted. Pinning a self-signed
+    certificate at pairing time is the eventual fix, and would let this go back
+    to denying cleartext outright.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

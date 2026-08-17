@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!--
+        Only the system-bar icon polarity differs; every colour comes from
+        values-night/colors.xml, so the two themes cannot drift apart.
+    -->
+    <style name="Theme.XfbCompanion" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/xfb_accent</item>
+        <item name="colorOnPrimary">@color/xfb_on_accent</item>
+        <item name="colorPrimaryContainer">@color/xfb_accent_container</item>
+        <item name="colorOnPrimaryContainer">@color/xfb_on_accent_container</item>
+        <item name="colorSecondary">@color/xfb_accent</item>
+        <item name="colorOnSecondary">@color/xfb_on_accent</item>
+
+        <item name="android:colorBackground">@color/xfb_window</item>
+        <item name="colorSurface">@color/xfb_window</item>
+        <item name="colorOnSurface">@color/xfb_text</item>
+        <item name="colorSurfaceVariant">@color/xfb_alt</item>
+        <item name="colorOnSurfaceVariant">@color/xfb_subtext</item>
+        <item name="colorSurfaceContainer">@color/xfb_base</item>
+        <item name="colorSurfaceContainerHigh">@color/xfb_base</item>
+        <item name="colorSurfaceContainerLow">@color/xfb_base</item>
+        <item name="colorOutline">@color/xfb_border</item>
+        <item name="colorOutlineVariant">@color/xfb_border</item>
+
+        <item name="android:statusBarColor">@color/xfb_window</item>
+        <item name="android:navigationBarColor">@color/xfb_window</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="m">false</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">false</item>
+
+        <item name="toolbarStyle">@style/Widget.Xfb.Toolbar</item>
+        <item name="materialCardViewStyle">@style/Widget.Xfb.Card</item>
+
+        <item name="shapeAppearanceCornerSmall">@style/ShapeAppearance.Xfb.Small</item>
+        <item name="shapeAppearanceCornerMedium">@style/ShapeAppearance.Xfb.Medium</item>
+        <item name="shapeAppearanceCornerLarge">@style/ShapeAppearance.Xfb.Large</item>
+
+        <item name="android:windowAnimationStyle">@style/Animation.Xfb.Activity</item>
+    </style>
+
+    <style name="Theme.XfbCompanion.Pair">
+        <item name="android:statusBarColor">@color/xfb_base</item>
+        <item name="android:colorBackground">@color/xfb_base</item>
+    </style>
+</resources>

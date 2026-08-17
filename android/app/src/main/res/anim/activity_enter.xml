@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Material's shared-axis X: the incoming screen slides a short way rather
+    than the full width, and fades in over the second half of the move. A full
+    edge-to-edge slide reads as a slideshow; this reads as depth.
+-->
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:interpolator="@android:interpolator/fast_out_slow_in">
+
+    <translate
+        android:duration="300"
+        android:fromXDelta="7%"
+        android:toXDelta="0" />
+
+    <alpha
+        android:duration="180"
+        android:fromAlpha="0.0"
+        android:startOffset="60"
+        android:toAlpha="1.0" />
+</set>

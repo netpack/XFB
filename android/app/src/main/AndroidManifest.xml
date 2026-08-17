@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- Playback continues with the screen off, which is the whole point. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Without this the transport notification never appears on Android 13+. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!--
+        Updates come from the paired desktop rather than a store. Android still
+        shows its own confirmation for every install; this only allows XFB to
+        be the app that asks.
+    -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
+    <application
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.XfbCompanion">
+
+        <activity
+            android:name=".PairActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:theme="@style/Theme.XfbCompanion.Pair">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!--
+                The pairing page XFB serves offers an "Open in XFB" link. This
+                is what receives it, which is why the app needs no barcode
+                scanner of its own: the phone's camera reads the QR, the page
+                hands the details over, and pairing completes here.
+            -->
+            <intent-filter android:autoVerify="false">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="xfb" android:host="pair" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".PlaylistsActivity"
+            android:exported="false"
+            android:parentActivityName=".PairActivity" />
+
+        <activity
+            android:name=".PlaylistActivity"
+            android:exported="false"
+            android:parentActivityName=".PlaylistsActivity" />
+
+        <activity
+            android:name=".LibraryActivity"
+            android:exported="false"
+            android:parentActivityName=".PlaylistsActivity" />
+
+        <activity
+            android:name=".TransitionsActivity"
+            android:exported="false"
+            android:parentActivityName=".PlaylistActivity" />
+
+        <activity
+            android:name=".PlayerActivity"
+            android:exported="false"
+            android:parentActivityName=".PlaylistActivity" />
+
+        <activity
+            android:name=".FxActivity"
+            android:exported="false"
+            android:parentActivityName=".PairActivity" />
+
+        <receiver
+            android:name=".InstallReceiver"
+            android:exported="false" />
+
+        <!--
+            Exported with the MediaSessionService filter so the system, the
+            lock screen and Android Auto can bind to it. It holds no data of
+            its own; everything it plays is already on this phone.
+        -->
+        <service
+            android:name=".PlaybackService"
+            android:exported="true"
+            android:foregroundServiceType="mediaPlayback">
+            <intent-filter>
+                <action android:name="androidx.media3.session.MediaSessionService" />
+            </intent-filter>
+        </service>
+
+    </application>
+
+</manifest>

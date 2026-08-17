@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    One spacing scale for the whole app. Screens built by hand drift apart
+    otherwise, and mismatched margins are most of what makes an app look
+    home-made.
+-->
+<resources>
+    <dimen name="xfb_gap_tight">6dp</dimen>
+    <dimen name="xfb_gap_small">10dp</dimen>
+    <dimen name="xfb_gap">16dp</dimen>
+    <dimen name="xfb_gap_large">24dp</dimen>
+    <dimen name="xfb_gap_section">28dp</dimen>
+
+    <dimen name="xfb_screen_margin">16dp</dimen>
+    <dimen name="xfb_card_padding">16dp</dimen>
+    <dimen name="xfb_corner">14dp</dimen>
+
+    <dimen name="xfb_icon_button">48dp</dimen>
+    <dimen name="xfb_transport_button">64dp</dimen>
+    <dimen name="xfb_turntable">132dp</dimen>
+    <dimen name="xfb_brand_mark">140dp</dimen>
+    <!-- The halo behind it; close enough to the mark that the two read as one. -->
+    <dimen name="xfb_brand_glow_size">190dp</dimen>
+</resources>

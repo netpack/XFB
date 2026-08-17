@@ -1,0 +1,173 @@
+package pt.netpack.xfb.companion
+
+import android.content.Context
+import android.os.Environment
+import org.json.JSONArray
+import org.json.JSONObject
+import java.io.File
+
+/**
+ * Where downloaded music lives on the phone.
+ *
+ * Everything goes in the app's own external files directory: no storage
+ * permission is needed for it, and it is removed when the app is uninstalled,
+ * which is the right behaviour for a copy of someone else's library.
+ *
+ * The playlist manifest is saved next to the audio because it carries the
+ * crossfade overlaps and volume lines from the desktop. Phase 03 reads it back
+ * to reproduce the transitions; nothing here uses those fields yet.
+ */
+class LibraryStore(context: Context) {
+
+    private val root: File =
+        context.getExternalFilesDir(Environment.DIRECTORY_MUSIC) ?: context.filesDir
+
+    private val trackDir = File(root, "tracks")
+    private val playlistDir = File(root, "playlists")
+
+    /**
+     * Tracks are named by their station id rather than by artist and title:
+     * the id is already opaque and filesystem-safe, so no sanitising is needed
+     * and two tracks with the same title cannot collide.
+     */
+    fun trackFile(track: Track): File = File(trackDir, track.id)
+
+    fun isComplete(track: Track): Boolean {
+        val file = trackFile(track)
+        return file.exists() && track.bytes > 0 && file.length() == track.bytes
+    }
+
+    fun downloadedBytes(track: Track): Long {
+        val file = trackFile(track)
+        return if (file.exists()) file.length() else 0L
+    }
+
+    fun saveManifest(playlistName: String, tracks: List<Track>) {
+        playlistDir.mkdirs()
+
+        val array = JSONArray()
+        tracks.forEach { track ->
+            array.put(
+                JSONObject()
+                    .put("id", track.id)
+                    .put("artist", track.artist)
+                    .put("song", track.song)
+                    .put("duration", track.duration)
+                    .put("bytes", track.bytes)
+                    .put("overlapMs", track.overlapMs)
+                    .put("volumeEnvelope", track.volumeEnvelope)
+                    .put("file", trackFile(track).absolutePath)
+            )
+        }
+
+        val manifest = JSONObject()
+            .put("name", playlistName)
+            .put("savedAt", System.currentTimeMillis())
+            .put("tracks", array)
+
+        File(playlistDir, manifestName(playlistName)).writeText(manifest.toString())
+    }
+
+    fun manifestExists(playlistName: String): Boolean = manifestFile(playlistName).exists()
+
+    fun manifestFile(playlistName: String): File =
+        File(playlistDir, manifestName(playlistName))
+
+    /** Every playlist saved on this phone, readable with no station in reach. */
+    fun localPlaylistNames(): List<String> {
+        val files = playlistDir.listFiles { file -> file.extension == "json" } ?: return emptyList()
+        return files.mapNotNull { file ->
+            runCatching { JSONObject(file.readText()).optString("name") }
+                .getOrNull()
+                ?.takeIf { it.isNotEmpty() }
+        }.sorted()
+    }
+
+    /**
+     * Writes a playlist the operator built here rather than one pulled from a
+     * station. Same shape as a synced manifest, so playback cannot tell them
+     * apart — only the file it came from differs.
+     */
+    fun saveLocalPlaylist(name: String, tracks: List<SavedTrack>) {
+        playlistDir.mkdirs()
+
+        val array = JSONArray()
+        tracks.forEach { track ->
+            array.put(
+                JSONObject()
+                    .put("id", track.id)
+                    .put("artist", track.artist)
+                    .put("song", track.song)
+                    .put("bytes", track.bytes)
+                    .put("overlapMs", track.overlapMs)
+                    .put("volumeEnvelope", track.volumeEnvelope)
+                    .put("file", track.file.absolutePath)
+            )
+        }
+
+        File(playlistDir, manifestName(name)).writeText(
+            JSONObject()
+                .put("name", name)
+                .put("savedAt", System.currentTimeMillis())
+                .put("madeHere", true)
+                .put("tracks", array)
+                .toString()
+        )
+    }
+
+    fun deleteLocalPlaylist(name: String): Boolean = manifestFile(name).delete()
+
+    /** True for playlists built on this phone, which no station knows about. */
+    fun isLocalPlaylist(name: String): Boolean {
+        val file = manifestFile(name)
+        if (!file.exists()) return false
+        return runCatching { JSONObject(file.readText()).optBoolean("madeHere", false) }
+            .getOrDefault(false)
+    }
+
+    /**
+     * Every distinct track sitting on this phone, gathered from all the saved
+     * manifests. This is what search runs against: the audio is the same files
+     * playback uses, so anything listed here can be played right now.
+     */
+    fun downloadedTracks(): List<SavedTrack> {
+        val files = playlistDir.listFiles { file -> file.extension == "json" } ?: return emptyList()
+
+        val byId = LinkedHashMap<String, SavedTrack>()
+        for (file in files) {
+            val json = runCatching { JSONObject(file.readText()) }.getOrNull() ?: continue
+            val array = json.optJSONArray("tracks") ?: continue
+            for (index in 0 until array.length()) {
+                val item = array.optJSONObject(index) ?: continue
+                val path = item.optString("file")
+                if (path.isEmpty()) continue
+                val audio = File(path)
+                if (!audio.exists()) continue
+
+                val id = item.optString("id")
+                if (id.isEmpty() || byId.containsKey(id)) continue
+
+                byId[id] = SavedTrack(
+                    id = id,
+                    artist = item.optString("artist"),
+                    song = item.optString("song"),
+                    bytes = item.optLong("bytes"),
+                    // Overlaps belong to a playlist, not to the track itself.
+                    overlapMs = 0,
+                    volumeEnvelope = item.optString("volumeEnvelope"),
+                    file = audio
+                )
+            }
+        }
+        return byId.values.sortedWith(compareBy({ it.artist.lowercase() }, { it.song.lowercase() }))
+    }
+
+    /** A playlist name is arbitrary text; a file name is not. */
+    private fun manifestName(playlistName: String): String {
+        val safe = playlistName.map { character ->
+            if (character.isLetterOrDigit() || character == '-' || character == '_') character
+            else '_'
+        }.joinToString("")
+        return "$safe.json"
+    }
+}

@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <!--
+        No action bar: every screen puts up its own MaterialToolbar, which is
+        what lets them carry a subtitle (the station, the playlist, the track
+        count) instead of a bare title. That subtitle is most of what makes the
+        app feel like it knows where you are.
+    -->
+    <style name="Theme.XfbCompanion" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/xfb_accent</item>
+        <item name="colorOnPrimary">@color/xfb_on_accent</item>
+        <item name="colorPrimaryContainer">@color/xfb_accent_container</item>
+        <item name="colorOnPrimaryContainer">@color/xfb_on_accent_container</item>
+        <item name="colorSecondary">@color/xfb_accent</item>
+        <item name="colorOnSecondary">@color/xfb_on_accent</item>
+
+        <item name="android:colorBackground">@color/xfb_window</item>
+        <item name="colorSurface">@color/xfb_window</item>
+        <item name="colorOnSurface">@color/xfb_text</item>
+        <item name="colorSurfaceVariant">@color/xfb_alt</item>
+        <item name="colorOnSurfaceVariant">@color/xfb_subtext</item>
+        <item name="colorSurfaceContainer">@color/xfb_base</item>
+        <item name="colorSurfaceContainerHigh">@color/xfb_base</item>
+        <item name="colorSurfaceContainerLow">@color/xfb_base</item>
+        <item name="colorOutline">@color/xfb_border</item>
+        <item name="colorOutlineVariant">@color/xfb_border</item>
+
+        <!-- XFB's own colours, not the phone's wallpaper. -->
+        <item name="android:statusBarColor">@color/xfb_window</item>
+        <item name="android:navigationBarColor">@color/xfb_window</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="m">true</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">true</item>
+
+        <item name="toolbarStyle">@style/Widget.Xfb.Toolbar</item>
+        <item name="materialCardViewStyle">@style/Widget.Xfb.Card</item>
+
+        <item name="shapeAppearanceCornerSmall">@style/ShapeAppearance.Xfb.Small</item>
+        <item name="shapeAppearanceCornerMedium">@style/ShapeAppearance.Xfb.Medium</item>
+        <item name="shapeAppearanceCornerLarge">@style/ShapeAppearance.Xfb.Large</item>
+
+        <item name="android:windowAnimationStyle">@style/Animation.Xfb.Activity</item>
+    </style>
+
+    <!--
+        The pairing screen is the app's front door and carries the XFB radio at
+        full size, so it gets the deeper backdrop the artwork was drawn against.
+    -->
+    <style name="Theme.XfbCompanion.Pair">
+        <item name="android:statusBarColor">@color/xfb_base</item>
+        <item name="android:colorBackground">@color/xfb_base</item>
+    </style>
+
+    <!-- ======================================== shapes -->
+
+    <style name="ShapeAppearance.Xfb.Small" parent="ShapeAppearance.Material3.Corner.Small">
+        <item name="cornerSize">8dp</item>
+    </style>
+
+    <style name="ShapeAppearance.Xfb.Medium" parent="ShapeAppearance.Material3.Corner.Medium">
+        <item name="cornerSize">14dp</item>
+    </style>
+
+    <style name="ShapeAppearance.Xfb.Large" parent="ShapeAppearance.Material3.Corner.Large">
+        <item name="cornerSize">20dp</item>
+    </style>
+
+    <!-- ======================================== motion -->
+
+    <style name="Animation.Xfb.Activity" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/activity_enter</item>
+        <item name="android:activityOpenExitAnimation">@anim/activity_exit</item>
+        <item name="android:activityCloseEnterAnimation">@anim/activity_pop_enter</item>
+        <item name="android:activityCloseExitAnimation">@anim/activity_pop_exit</item>
+    </style>
+
+    <!-- ======================================== widgets -->
+
+    <style name="Widget.Xfb.Toolbar" parent="Widget.Material3.Toolbar">
+        <item name="android:background">@color/xfb_window</item>
+        <item name="titleTextAppearance">@style/TextAppearance.Xfb.ToolbarTitle</item>
+        <item name="subtitleTextAppearance">@style/TextAppearance.Xfb.ToolbarSubtitle</item>
+        <item name="titleTextColor">@color/xfb_text</item>
+        <item name="subtitleTextColor">@color/xfb_subtext</item>
+    </style>
+
+    <style name="TextAppearance.Xfb.ToolbarTitle" parent="TextAppearance.Material3.TitleLarge">
+        <item name="android:textSize">20sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="TextAppearance.Xfb.ToolbarSubtitle" parent="TextAppearance.Material3.BodySmall">
+        <item name="android:textSize">12sp</item>
+    </style>
+
+    <!--
+        Outlined rather than elevated: XFB's desktop panels are separated by
+        hairlines, not shadows, and a screen of drop shadows on a light grey
+        window reads as clutter.
+    -->
+    <style name="Widget.Xfb.Card" parent="Widget.Material3.CardView.Outlined">
+        <item name="cardBackgroundColor">@color/xfb_base</item>
+        <item name="strokeColor">@color/xfb_border</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="cardCornerRadius">@dimen/xfb_corner</item>
+        <item name="cardElevation">0dp</item>
+        <item name="contentPadding">@dimen/xfb_card_padding</item>
+    </style>
+
+    <!-- The small tracking-wide caption above each section, as on the desk. -->
+    <style name="TextAppearance.Xfb.SectionLabel" parent="TextAppearance.Material3.LabelSmall">
+        <item name="android:textAllCaps">true</item>
+        <item name="android:letterSpacing">0.10</item>
+        <item name="android:textColor">@color/xfb_subtext</item>
+    </style>
+
+    <style name="Widget.Xfb.SectionLabel" parent="">
+        <item name="android:textAppearance">@style/TextAppearance.Xfb.SectionLabel</item>
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+    </style>
+
+    <!-- Times and counters, so digits do not jitter as they change. -->
+    <style name="TextAppearance.Xfb.Readout" parent="TextAppearance.Material3.BodySmall">
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:textColor">@color/xfb_subtext</item>
+    </style>
+
+</resources>

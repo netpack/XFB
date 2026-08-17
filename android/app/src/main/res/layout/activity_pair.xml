@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:scrollbars="none">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="@dimen/xfb_gap_large"
+        android:paddingTop="@dimen/xfb_gap_section"
+        android:paddingBottom="@dimen/xfb_gap_large">
+
+        <!-- The app's own icon, at the size it was drawn for. -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/xfb_gap">
+
+            <View
+                android:layout_width="@dimen/xfb_brand_glow_size"
+                android:layout_height="@dimen/xfb_brand_glow_size"
+                android:layout_gravity="center"
+                android:background="@drawable/brand_glow"
+                android:importantForAccessibility="no" />
+
+            <ImageView
+                android:id="@+id/brand"
+                android:layout_width="@dimen/xfb_brand_mark"
+                android:layout_height="@dimen/xfb_brand_mark"
+                android:layout_gravity="center"
+                android:contentDescription="@string/brand_icon"
+                android:src="@drawable/ic_xfb_large" />
+        </FrameLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="@string/app_name"
+            android:textAppearance="?attr/textAppearanceHeadlineMedium"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tagline"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/xfb_gap_tight"
+            android:gravity="center"
+            android:text="@string/app_tagline"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textColor="@color/xfb_subtext" />
+
+        <!-- ======================================== not yet paired -->
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/pairingForm"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/xfb_gap_section">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/Widget.Xfb.SectionLabel"
+                    android:text="@string/pair_heading" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/xfb_gap_small"
+                    android:lineSpacingMultiplier="1.15"
+                    android:text="@string/pair_intro"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="@color/xfb_subtext" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/addressLayout"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/xfb_gap_large"
+                    android:hint="@string/pair_address_hint"
+                    app:startIconDrawable="@drawable/ic_station">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/addressField"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:autofillHints="XFB address"
+                        android:imeOptions="actionNext"
+                        android:inputType="textUri"
+                        android:maxLines="1" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/codeLayout"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/xfb_gap_small"
+                    android:hint="@string/pair_code_hint">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/codeField"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:autofillHints="Pairing code"
+                        android:imeOptions="actionDone"
+                        android:inputType="number"
+                        android:letterSpacing="0.35"
+                        android:maxLength="6"
+                        android:maxLines="1"
+                        android:textSize="20sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/pairButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/xfb_gap"
+                    android:minHeight="52dp"
+                    android:text="@string/pair_button"
+                    app:cornerRadius="@dimen/xfb_corner" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- ======================================== once paired -->
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/pairedGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/xfb_gap_section"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:importantForAccessibility="no"
+                        android:src="@drawable/ic_check_circle"
+                        app:tint="?attr/colorPrimary" />
+
+                    <TextView
+                        style="@style/Widget.Xfb.SectionLabel"
+                        android:layout_marginStart="@dimen/xfb_gap_small"
+                        android:text="@string/pair_connected" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/pairedLabel"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/xfb_gap_small"
+                    android:textAppearance="?attr/textAppearanceBodyLarge" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/openLibraryButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/xfb_gap"
+                    android:minHeight="52dp"
+                    android:text="@string/pair_open_library"
+                    app:cornerRadius="@dimen/xfb_corner"
+                    app:icon="@drawable/ic_queue_music" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/nowPlayingButton"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/xfb_gap_small"
+                    android:minHeight="52dp"
+                    android:text="@string/pair_now_playing"
+                    app:cornerRadius="@dimen/xfb_corner"
+                    app:icon="@drawable/ic_play" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/fxButton"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/xfb_gap_small"
+                    android:minHeight="52dp"
+                    android:text="@string/fx_title"
+                    app:cornerRadius="@dimen/xfb_corner"
+                    app:icon="@drawable/ic_fx" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/forgetButton"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="@dimen/xfb_gap_tight"
+                    android:text="@string/pair_forget" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.progressindicator.CircularProgressIndicator
+            android:id="@+id/progress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="@dimen/xfb_gap_large"
+            android:indeterminate="true"
+            android:visibility="gone" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/updateButton"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/xfb_gap"
+            android:minHeight="52dp"
+            app:cornerRadius="@dimen/xfb_corner"
+            app:icon="@drawable/ic_download"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/statusLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/xfb_gap"
+            android:gravity="center"
+            android:lineSpacingMultiplier="1.15"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textColor="@color/xfb_subtext"
+            android:visibility="gone" />
+    </LinearLayout>
+</ScrollView>

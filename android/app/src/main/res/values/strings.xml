@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">XFB</string>
+    <string name="app_tagline">Your set, off the desk and in your pocket</string>
+    <string name="brand_icon">XFB</string>
+
+    <string name="pair_heading">Pair with XFB</string>
+    <string name="pair_connected">Paired</string>
+    <string name="pair_intro">On the desktop, open Options › Sync to Phone and show a pairing code. Scan it with your camera and tap “Open in XFB” — or type the details here.</string>
+    <string name="pair_address_hint">Address, e.g. 192.168.1.20</string>
+    <string name="pair_code_hint">Six digit code</string>
+    <string name="pair_button">Pair</string>
+    <string name="pair_working">Pairing with %1$s…</string>
+    <string name="pair_done">Paired with %1$s.</string>
+    <string name="pair_paired_with">Paired with %1$s on port %2$d.</string>
+    <string name="pair_bad_details">Check the address and the six digit code.</string>
+    <string name="pair_bad_link">That link is not an XFB pairing link.</string>
+    <string name="pair_failed_generic">XFB could not be reached. Check that both are on the same network.</string>
+    <string name="pair_forget">Forget this station</string>
+    <string name="pair_open_library">Open playlists</string>
+
+    <string name="playlists_title">Playlists</string>
+    <string name="playlists_empty">This station has no saved playlists yet.</string>
+    <string name="playlist_on_air">On air now</string>
+    <string name="playlist_saved">On this phone</string>
+    <string name="retry">Try again</string>
+    <string name="error_generic">Something went wrong.</string>
+
+    <string name="download_start">Download to phone</string>
+    <string name="download_stop">Stop</string>
+    <string name="download_summary">%1$d of %2$d tracks on this phone.</string>
+    <string name="download_progress">Downloading %1$d of %2$d — %3$s</string>
+    <string name="download_complete">All %1$d tracks are on this phone.</string>
+    <string name="download_partial">%1$d of %2$d tracks arrived. Try again for the rest.</string>
+    <string name="download_partial_reason">%1$d of %2$d tracks arrived. %3$s</string>
+    <string name="download_stopped">Stopped. Downloading again picks up where this left off.</string>
+
+    <string name="track_on_phone">On phone</string>
+    <string name="track_failed">Failed</string>
+    <string name="track_overlap">Crossfade in: %1$.1f s</string>
+
+    <string name="pair_now_playing">Now playing</string>
+    <string name="turntable_netpack">Netpack record</string>
+    <string name="update_available">Update to %1$s</string>
+    <string name="update_downloading">Downloading update… %1$d%%</string>
+    <string name="update_install_failed">The update could not be installed.</string>
+    <string name="update_failed">The update did not download in full. Try again.</string>
+    <string name="player_title">Playing</string>
+    <string name="player_on_air">On air</string>
+    <string name="player_into_next">Crossfade into %1$s</string>
+    <string name="player_artwork">Album artwork</string>
+    <string name="player_play">Play</string>
+    <string name="player_pause">Pause</string>
+    <string name="player_previous">Prev</string>
+    <string name="player_next">Next</string>
+    <string name="player_position">%1$s / %2$s</string>
+    <string name="player_nothing">Nothing loaded</string>
+    <string name="play_offline">Play on this phone</string>
+
+    <string name="library_title">Tracks on this phone</string>
+    <string name="library_search_hint">Search artist or title</string>
+    <string name="library_save">Create playlist</string>
+    <string name="library_save_n">Create playlist (%1$d)</string>
+    <string name="library_name_title">Name this playlist</string>
+    <string name="library_name_hint">Playlist name</string>
+    <string name="library_name_needed">Give the playlist a name.</string>
+    <string name="library_name_taken">There is already a playlist with that name.</string>
+    <string name="library_saved">Saved \"%1$s\" with %2$d tracks.</string>
+    <string name="library_nothing_downloaded">Nothing has been downloaded to this phone yet.</string>
+    <string name="library_no_matches">No track matches that.</string>
+
+    <string name="transitions_title">Crossfades</string>
+    <string name="transitions_join">%1$s → %2$s</string>
+    <string name="transitions_need_two">A playlist needs at least two tracks to have a crossfade.</string>
+    <string name="transitions_saved">Crossfades saved.</string>
+    <string name="wave_overlap">Crossfade %1$.1f s — drag to change</string>
+    <string name="wave_no_overlap">No crossfade — drag left to add one</string>
+
+    <string name="playlists_search_hint">Search playlists</string>
+    <string name="playlists_new">New playlist from tracks on this phone</string>
+    <string name="playlists_new_short">New playlist</string>
+    <string name="playlist_edit_crossfades">Crossfades</string>
+    <string name="playlist_local">Made here</string>
+
+    <!-- The FX section: XFB's own equalizer and compressor, on the phone. -->
+    <string name="fx_title">Sound</string>
+    <string name="fx_subtitle">XFB\'s equalizer and compressor</string>
+    <string name="fx_unavailable">The sound processing is not available on this phone.</string>
+
+    <string name="fx_retune_title">Play at 432 Hz</string>
+    <string name="fx_retune_summary">Retunes everything from A=440 to A=432, as on the desk.</string>
+
+    <string name="fx_eq_title">Equalizer</string>
+    <string name="fx_eq_preamp">Preamp</string>
+    <string name="fx_eq_flat">Flatten</string>
+    <string name="fx_band">%1$s Hz, %2$+.1f decibels</string>
+    <string name="fx_gain_db">%1$+.1f dB</string>
+
+    <string name="fx_comp_title">Compressor</string>
+    <string name="fx_comp_threshold">Threshold</string>
+    <string name="fx_comp_ratio">Ratio</string>
+    <string name="fx_comp_attack">Attack</string>
+    <string name="fx_comp_release">Release</string>
+    <string name="fx_comp_makeup">Make-up gain</string>
+    <string name="fx_comp_ratio_value">%1$.1f:1</string>
+    <string name="fx_ms">%1$.0f ms</string>
+    <string name="fx_reset">Reset to XFB defaults</string>
+
+    <plurals name="track_count">
+        <item quantity="one">%d track</item>
+        <item quantity="other">%d tracks</item>
+    </plurals>
+</resources>

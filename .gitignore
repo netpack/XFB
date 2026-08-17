@@ -7,8 +7,16 @@ Makefile*
 *.dll
 *.dylib
 
-# Executables
-XFB
+# Executables.
+#
+# These are anchored on purpose. An unanchored "XFB" matches a path segment at
+# any depth, and because git sets core.ignoreCase on a case-insensitive
+# filesystem it also matched the Android app's package directory,
+# android/app/src/main/java/pt/netpack/xfb — silently excluding every Kotlin
+# source file in the companion app from a commit that looked complete.
+# qmake's TARGET is XFB, so the binary lands at the repo root or under src/.
+/XFB
+/src/XFB
 XFB.app/
 XFB.exe
 

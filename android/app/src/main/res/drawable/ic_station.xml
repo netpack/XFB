@@ -1,0 +1,17 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="?attr/colorControlNormal">
+    <!-- A desk radiating over the network: the station this phone pairs to. -->
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M12,15m-2,0a2,2 0,1 1,4 0a2,2 0,1 1,-4 0" />
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M8.46,11.46l-1.41,-1.41C6.4,10.7 6,11.6 6,12.6s0.4,1.9 1.05,2.55l1.41,-1.41C8.17,13.36 8,12.99 8,12.6S8.17,11.84 8.46,11.46zM16.95,10.05l-1.41,1.41c0.29,0.38 0.46,0.75 0.46,1.14s-0.17,0.76 -0.46,1.14l1.41,1.41C17.6,14.5 18,13.6 18,12.6S17.6,10.7 16.95,10.05z" />
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M5.64,8.64L4.22,7.22C2.85,8.59 2,10.49 2,12.6s0.85,4.01 2.22,5.38l1.41,-1.41C4.63,15.48 4,14.11 4,12.6S4.63,9.72 5.64,8.64zM19.78,7.22l-1.41,1.41C19.37,9.72 20,11.09 20,12.6s-0.63,2.88 -1.64,3.96l1.41,1.41C21.15,16.61 22,14.71 22,12.6S21.15,8.59 19.78,7.22z" />
+</vector>

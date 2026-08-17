@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    One row arriving. Kept short and shallow on purpose: a list of a hundred
+    downloaded tracks staggered at 30 ms each would still be animating long
+    after the user started scrolling.
+-->
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:interpolator="@android:interpolator/decelerate_quint">
+
+    <translate
+        android:duration="260"
+        android:fromYDelta="12%"
+        android:toYDelta="0" />
+
+    <alpha
+        android:duration="220"
+        android:fromAlpha="0.0"
+        android:toAlpha="1.0" />
+</set>

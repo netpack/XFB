@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Taken from XFB's own ThemeManager so the phone looks like the desk it came
+    from. These are the desktop's "light" spec values verbatim.
+-->
+<resources>
+    <color name="xfb_window">#F2F3F7</color>
+    <color name="xfb_base">#FFFFFF</color>
+    <color name="xfb_alt">#E8EAF0</color>
+    <color name="xfb_text">#242830</color>
+    <color name="xfb_subtext">#6A7080</color>
+    <color name="xfb_border">#C9CDD6</color>
+
+    <!-- The XFB periwinkle, shared by the system/light/dark desktop themes. -->
+    <color name="xfb_accent">#7C7CBA</color>
+    <!--
+        Black rather than white: ThemeManager picks the accent's text colour by
+        lightness, and periwinkle lands above its threshold. It is also the
+        more legible of the two (5.3:1 against 3.9:1).
+    -->
+    <color name="xfb_on_accent">#000000</color>
+    <!-- Behind the launcher icon; the radio itself is warm, so a cool near-white sets it off. -->
+    <color name="xfb_icon_background">#ECEEF3</color>
+
+    <!--
+        A tinted container for the accent, used for badges and the on-air
+        marker. Periwinkle at low saturation over the light surface, so it
+        reads as "XFB" without competing with the accent itself.
+    -->
+    <color name="xfb_accent_container">#E4E4F3</color>
+    <color name="xfb_on_accent_container">#2F2F55</color>
+
+    <!-- The scrim under the pairing screen's radio artwork. -->
+    <color name="xfb_brand_glow">#1A7C7CBA</color>
+</resources>
