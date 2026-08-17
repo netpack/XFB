@@ -28,6 +28,7 @@ SOURCES += \
     ArtworkStore.cpp \
     ThemeManager.cpp \
     dialogs/AudioFxDialog.cpp \
+    dialogs/MobileSyncDialog.cpp \
     add_music_single.cpp \
     add_full_dir.cpp \
     addgenre.cpp \
@@ -40,6 +41,7 @@ SOURCES += \
     config.cpp \
     externaldownloader.cpp \
     commonFunctions.cpp \
+    QrCode.cpp \
     mediaduration.cpp \
     streamingcatalog.cpp \
     services/IService.cpp \
@@ -79,6 +81,7 @@ SOURCES += \
     services/TorrentSearchService.cpp \
     services/TorrentDownloadService.cpp \
     services/NgrokTunnelService.cpp \
+    services/MobileSyncServer.cpp \
     services/UpdateCheckService.cpp
 
 HEADERS += \
@@ -96,6 +99,7 @@ HEADERS += \
     ArtworkStore.h \
     ThemeManager.h \
     dialogs/AudioFxDialog.h \
+    dialogs/MobileSyncDialog.h \
     add_music_single.h \
     add_full_dir.h \
     addgenre.h \
@@ -108,6 +112,7 @@ HEADERS += \
     config.h \
     externaldownloader.h \
     commonFunctions.h \
+    QrCode.h \
     mediaduration.h \
     streamingcatalog.h \
     services/IService.h \
@@ -148,6 +153,7 @@ HEADERS += \
     services/TorrentSearchService.h \
     services/TorrentDownloadService.h \
     services/NgrokTunnelService.h \
+    services/MobileSyncServer.h \
     services/UpdateCheckService.h
 
 FORMS += \

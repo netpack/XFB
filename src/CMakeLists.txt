@@ -14,6 +14,7 @@ set(SOURCES
     config.cpp
     externaldownloader.cpp
     commonFunctions.cpp
+    QrCode.cpp
     # Shared track-duration probe (exiftool with ffmpeg fallback)
     mediaduration.cpp
     # Spotify / Apple Music track listings for the downloader
@@ -27,6 +28,7 @@ set(SOURCES
     audio/BpmDetector.cpp
     audio/BpmLibrary.cpp
     dialogs/AudioFxDialog.cpp
+    dialogs/MobileSyncDialog.cpp
     # Playlist sound-wave view (crossfade preparation)
     PlaylistWaveView.cpp
     # Pads tab: touch-friendly grid of instant-play pads (cart wall)
@@ -97,6 +99,7 @@ set(SOURCES
     services/TorrentDownloadService.cpp
     services/DependencyChecker.cpp
     services/NgrokTunnelService.cpp
+    services/MobileSyncServer.cpp
     services/UpdateCheckService.cpp
 )
 
@@ -115,6 +118,7 @@ set(HEADERS
     config.h
     externaldownloader.h
     commonFunctions.h
+    QrCode.h
     mediaduration.h
     streamingcatalog.h
     # Audio FX engine headers
@@ -123,6 +127,7 @@ set(HEADERS
     audio/FxEngine.h
     audio/FxPlayer.h
     dialogs/AudioFxDialog.h
+    dialogs/MobileSyncDialog.h
     # Pads tab
     PadBoard.h
     # Service layer headers
@@ -181,6 +186,7 @@ set(HEADERS
     services/DependencyChecker.h
     services/TorrentTypes.h
     services/NgrokTunnelService.h
+    services/MobileSyncServer.h
     services/UpdateCheckService.h
 )
 

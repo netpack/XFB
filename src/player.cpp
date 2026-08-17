@@ -116,6 +116,8 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include "services/AccessibilitySettingsService.h"
 #include "services/BrailleDisplayService.h"
 #include "dialogs/AccessibilityPreferencesDialog.h"
+#include "dialogs/MobileSyncDialog.h"
+#include "services/MobileSyncServer.h"
 #include "dialogs/AccessibilityTutorialDialog.h"
 #include "services/AudioFeedbackService.h"
 #include "services/LiveRegionManager.h"
@@ -2925,6 +2927,24 @@ void player::musicViewContextMenu(const QPoint& pos) {
                     : tr("Retune this track to 432 Hz..."));
     thisMenu.addSeparator();
 
+    // Sync to phone. The server cannot push to a phone, so these mark tracks
+    // and the phone collects them as a playlist called "Marked for this phone".
+    QAction *actSyncSelection = thisMenu.addAction(
+        QIcon(":/icons/flat/Upload to Cloud-48.png"),
+        multiSelect ? tr("Sync %1 tracks to the phone").arg(count)
+                    : tr("Sync this track to the phone"));
+    QAction *actSyncAll = thisMenu.addAction(
+        QIcon(":/icons/flat/Connection Sync-48.png"),
+        tr("Sync the whole music list to the phone"));
+    QAction *actSyncClear = nullptr;
+    if (m_mobileSyncServer && !m_mobileSyncServer->syncSet().isEmpty()) {
+        actSyncClear = thisMenu.addAction(
+            QIcon(":/icons/sync_off.png"),
+            tr("Clear what is marked for the phone (%1)")
+                .arg(m_mobileSyncServer->syncSet().size()));
+    }
+    thisMenu.addSeparator();
+
     QAction *actDelete = thisMenu.addAction(
         multiSelect ? tr("Delete %1 tracks from database").arg(count)
                     : tr("Delete this track from database"));
@@ -2965,6 +2985,17 @@ void player::musicViewContextMenu(const QPoint& pos) {
 
     } else if (selectedItem == actRetune432) {
         convertMusicsTo432(getSelectedPaths());
+
+    } else if (selectedItem == actSyncSelection) {
+        markForPhone(getSelectedPaths());
+
+    } else if (selectedItem == actSyncAll) {
+        markForPhone(allListedMusicPaths(), true);
+
+    } else if (actSyncClear && selectedItem == actSyncClear) {
+        mobileSyncServer()->clearSyncSet();
+        ui->statusBar->showMessage(tr("Nothing is marked for the phone now."), 6000);
+        announceAccessible(tr("Cleared what was marked for the phone"));
 
     } else if (selectedItem == actAddTop) {
         QStringList paths = getSelectedPaths();
@@ -5145,6 +5176,189 @@ void player::setupPlaybackShortcuts()
         ui->menuXFB->addAction(a11yPrefs);
         addAction(a11yPrefs);
     }
+
+    // Sync to phone. Lives next to the other station-wide settings because it
+    // is a property of this installation, not of the playlist on air.
+    if (ui->menuXFB) {
+        QAction *mobileSync = new QAction(
+            QIcon(":/icons/flat/Connection Sync-48.png"), tr("Sync to &Phone..."), this);
+        mobileSync->setMenuRole(QAction::NoRole);
+        connect(mobileSync, &QAction::triggered, this, [this]() {
+            if (!m_mobileSyncDialog) {
+                m_mobileSyncDialog = new MobileSyncDialog(mobileSyncServer(), this);
+                m_mobileSyncDialog->setAttribute(Qt::WA_DeleteOnClose, false);
+                connect(m_mobileSyncDialog, &MobileSyncDialog::announcementRequested,
+                        this, &player::announceAccessible);
+            }
+            m_mobileSyncDialog->show();
+            m_mobileSyncDialog->raise();
+            m_mobileSyncDialog->activateWindow();
+        });
+        ui->menuXFB->addAction(mobileSync);
+        addAction(mobileSync);
+
+        // Constructing the server is what honours the auto-start setting, so
+        // an operator who asked for it does not have to open the dialog first.
+        QSettings syncSettings;
+        if (syncSettings.value(QStringLiteral("MobileSync/AutoStart"), false).toBool())
+            mobileSyncServer();
+    }
+}
+
+// The sync server is created on demand and never listens until it is told to,
+// so an operator who never opens the dialog has no port open.
+MobileSyncServer *player::mobileSyncServer()
+{
+    if (m_mobileSyncServer)
+        return m_mobileSyncServer;
+
+    m_mobileSyncServer = new MobileSyncServer(this);
+
+    // Only the player can read the playlist that is loaded right now, and that
+    // is the one an operator most often wants to carry out of the studio.
+    m_mobileSyncServer->setLivePlaylistProvider([this]() {
+        QVector<MobileSyncServer::Track> tracks;
+        if (!ui || !ui->playlist)
+            return tracks;
+
+        QSqlQuery lookup(QSqlDatabase::database());
+        const bool haveDb = lookup.prepare(
+            QStringLiteral("SELECT artist, song, time FROM musics WHERE path = :path"));
+
+        const int count = ui->playlist->count();
+        for (int row = 0; row < count; ++row) {
+            QListWidgetItem *item = ui->playlist->item(row);
+            if (!item)
+                continue;
+
+            MobileSyncServer::Track track;
+            track.path = item->text();
+            if (track.path.isEmpty())
+                continue;
+
+            track.id = MobileSyncServer::idForPath(track.path);
+            track.overlapMs =
+                item->data(PlaylistWaveView::OverlapRole).toLongLong();
+            track.volumeEnvelope =
+                item->data(PlaylistWaveView::VolumeEnvelopeRole).toString();
+
+            const QFileInfo info(track.path);
+            track.bytes = info.size();
+            track.song = info.completeBaseName();
+
+            if (haveDb) {
+                lookup.bindValue(QStringLiteral(":path"), track.path);
+                if (lookup.exec() && lookup.next()) {
+                    const QString artist = lookup.value(0).toString();
+                    const QString song = lookup.value(1).toString();
+                    if (!artist.isEmpty()) track.artist = artist;
+                    if (!song.isEmpty())   track.song = song;
+                    track.duration = lookup.value(2).toString();
+                }
+            }
+
+            tracks << track;
+        }
+        return tracks;
+    });
+
+    connect(m_mobileSyncServer, &MobileSyncServer::errorOccurred, this,
+            [this](const QString &message) {
+                ui->statusBar->showMessage(tr("Phone sync: %1").arg(message), 8000);
+                qWarning() << "MobileSyncServer:" << message;
+            });
+    connect(m_mobileSyncServer, &MobileSyncServer::devicePaired, this,
+            [this](const QString &name) {
+                ui->statusBar->showMessage(tr("%1 paired with XFB").arg(name), 6000);
+            });
+
+    QSettings settings;
+    if (settings.value(QStringLiteral("MobileSync/AutoStart"), false).toBool())
+        m_mobileSyncServer->start();
+
+    return m_mobileSyncServer;
+}
+
+QStringList player::allListedMusicPaths() const
+{
+    QStringList paths;
+    QAbstractItemModel *model = ui->musicView ? ui->musicView->model() : nullptr;
+    if (!model)
+        return paths;
+
+    // The music model loads rows as the view scrolls, so without this an
+    // unscrolled list would only ever offer its first screenful.
+    while (model->canFetchMore(QModelIndex()))
+        model->fetchMore(QModelIndex());
+
+    const int rows = model->rowCount();
+    paths.reserve(rows);
+    for (int row = 0; row < rows; ++row) {
+        const QModelIndex pathIdx = model->index(row, 7);   // musics.path
+        if (!pathIdx.isValid())
+            continue;
+        const QString path = model->data(pathIdx).toString();
+        if (!path.isEmpty())
+            paths << path;
+    }
+    return paths;
+}
+
+void player::markForPhone(const QStringList &paths, bool confirmFirst)
+{
+    if (paths.isEmpty()) {
+        ui->statusBar->showMessage(tr("There are no tracks to send to the phone."), 6000);
+        return;
+    }
+
+    if (confirmFirst) {
+        // Sending a whole library over Wi-Fi is worth a moment's thought, so
+        // the size is shown before anything is marked.
+        qint64 bytes = 0;
+        int missing = 0;
+        for (const QString &path : paths) {
+            const QFileInfo info(path);
+            if (info.exists())
+                bytes += info.size();
+            else
+                ++missing;
+        }
+
+        QString question = tr("Mark %1 tracks (%2) for the phone to download?")
+                               .arg(paths.size())
+                               .arg(QLocale().formattedDataSize(bytes));
+        if (missing > 0)
+            question += tr("\n\n%1 of them are missing from disk and will be skipped.").arg(missing);
+
+        if (QMessageBox::question(this, tr("Sync to Phone"), question,
+                                  QMessageBox::Yes | QMessageBox::No) != QMessageBox::Yes) {
+            return;
+        }
+    }
+
+    MobileSyncServer *server = mobileSyncServer();
+    const int added = server->addToSyncSet(paths);
+    const int total = server->syncSet().size();
+
+    QString message = (added == 0)
+        ? tr("Already marked for the phone; %n track(s) waiting.", "", total)
+        : tr("%n track(s) marked for the phone.", "", added);
+
+    // Marking is useless if nothing is listening, and asking to sync is a clear
+    // enough instruction to start serving on the operator's behalf.
+    if (!server->isListening()) {
+        if (server->start()) {
+            message += tr(" Now serving on port %1 — open XFB on the phone and "
+                          "download \"Marked for this phone\".").arg(server->port());
+        } else {
+            message += tr(" Could not start serving; check Options > Sync to Phone.");
+        }
+    } else {
+        message += tr(" Open XFB on the phone and download \"Marked for this phone\".");
+    }
+
+    ui->statusBar->showMessage(message, 12000);
+    announceAccessible(message);
 }
 
 // "00:02:35" is read out by a screen reader as a run of digits, which is slow

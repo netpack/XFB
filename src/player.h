@@ -541,6 +541,17 @@ private slots:
     // operator was last reading.
     QPointer<class AccessibilityTutorialDialog> m_tutorialDialog;
 
+    // --- Sync to phone ---
+    // Serves the library and playlists to the XFB companion app over the local
+    // network. Created lazily, and only listens once the operator says so.
+    class MobileSyncServer *mobileSyncServer();
+    /** Every path currently listed in the Music List, filter and all. */
+    QStringList allListedMusicPaths() const;
+    /** Marks tracks for the phone to collect; confirms first for big batches. */
+    void markForPhone(const QStringList &paths, bool confirmFirst = false);
+    QPointer<class MobileSyncServer> m_mobileSyncServer;
+    QPointer<class MobileSyncDialog> m_mobileSyncDialog;
+
     // --- Adding library tracks to the playlist from the keyboard ---
     // The library views' only route into the playlist used to be the
     // right-click context menu, which is unreachable on a Mac keyboard (no
