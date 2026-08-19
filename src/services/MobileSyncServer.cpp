@@ -619,6 +619,17 @@ void MobileSyncServer::handlePairPage(QTcpSocket *socket, const Request &request
             "Play Store.</p>")
             .arg(version.isEmpty() ? QString()
                                    : QStringLiteral(" (%1)").arg(version.toHtmlEscaped()));
+    } else {
+        // Say so rather than showing nothing. Without this the page above still
+        // reads "install it below" while there is no "below", which looks like
+        // the page failed to load rather than like this XFB having no copy of
+        // the app to hand out.
+        install = QStringLiteral(
+            "<p class=\"note\">This XFB has no copy of the phone app to hand "
+            "out, so there is nothing to download here. Put "
+            "<code>xfb-companion.apk</code> next to XFB on the computer &mdash; "
+            "the folder is named under Options &rsaquo; Sync to Phone &mdash; "
+            "and this page will offer it.</p>");
     }
 
     QString body;
@@ -629,8 +640,8 @@ void MobileSyncServer::handlePairPage(QTcpSocket *socket, const Request &request
             "<p class=\"code\">%1</p>"
             "<p><a class=\"button\" href=\"%2\">Open in XFB</a></p>"
             "<p class=\"note\">Nothing happens when you tap that? The XFB app "
-            "is not installed on this phone yet &mdash; install it below, then "
-            "scan the code again, or type the six digits into the app by hand.</p>"
+            "is not installed on this phone yet &mdash; install it, then scan "
+            "the code again, or type the six digits into the app by hand.</p>"
             "%3")
             .arg(code, deepLink, install);
     } else if (pairingOpen()) {
@@ -933,6 +944,13 @@ QString MobileSyncServer::companionApkPath() const
             return info.absoluteFilePath();
     }
     return QString();
+}
+
+QString MobileSyncServer::companionDropDirectory() const
+{
+    const QStringList locations =
+        QStandardPaths::standardLocations(QStandardPaths::AppDataLocation);
+    return locations.isEmpty() ? QString() : locations.first();
 }
 
 /** Reads the sidecar written next to the APK, if there is one. */

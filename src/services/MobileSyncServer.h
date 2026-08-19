@@ -156,6 +156,15 @@ public:
     int companionVersionCode() const;
     QString companionVersionName() const;
 
+    /**
+     * Where to put xfb-companion.apk so this XFB will hand it out.
+     *
+     * companionApkPath() searches several places, but only this one is both
+     * writable and stable across upgrades, so it is the one worth telling the
+     * operator about. The directory is not created here.
+     */
+    QString companionDropDirectory() const;
+
     QStringList syncSet() const { return m_syncSet; }
     /** Adds paths, ignoring duplicates. Returns how many were actually new. */
     int addToSyncSet(const QStringList &paths);

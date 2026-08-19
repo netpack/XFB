@@ -57,6 +57,7 @@ private:
     QListWidget *m_deviceList = nullptr;
     QCheckBox   *m_autoStart = nullptr;
     QLabel      *m_playlistsLabel = nullptr;
+    QLabel      *m_companionLabel = nullptr;
     QTimer      *m_refreshTimer = nullptr;
 
     /// Redrawing the QR on every countdown tick would be wasteful and would

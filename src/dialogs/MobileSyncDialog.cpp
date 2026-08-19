@@ -12,6 +12,7 @@
 #include <QPixmap>
 #include <QSignalBlocker>
 #include <QDialogButtonBox>
+#include <QDir>
 #include <QFileDialog>
 #include <QFont>
 #include <QGroupBox>
@@ -141,6 +142,12 @@ MobileSyncDialog::MobileSyncDialog(MobileSyncServer *server, QWidget *parent)
     folderRow->addWidget(chooseButton);
     layout->addLayout(folderRow);
 
+    m_companionLabel = new QLabel(this);
+    m_companionLabel->setWordWrap(true);
+    m_companionLabel->setTextInteractionFlags(Qt::TextSelectableByMouse
+                                              | Qt::TextSelectableByKeyboard);
+    layout->addWidget(m_companionLabel);
+
     auto *buttons = new QDialogButtonBox(QDialogButtonBox::Close, this);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::close);
     layout->addWidget(buttons);
@@ -264,6 +271,23 @@ void MobileSyncDialog::refresh()
     updateDeviceList();
 
     m_playlistsLabel->setText(tr("Saved playlists: %1").arg(m_server->playlistsDirectory()));
+
+    // The pairing page only offers the app when a copy is sitting next to XFB.
+    // Without this line an operator whose phone shows no download link has
+    // nothing to go on, because the page cannot say what is missing.
+    const QString apk = m_server->companionApkPath();
+    if (apk.isEmpty()) {
+        m_companionLabel->setText(
+            tr("Phone app: none to hand out. Put xfb-companion.apk in %1 and "
+               "the pairing page will offer it.")
+                .arg(QDir::toNativeSeparators(m_server->companionDropDirectory())));
+    } else {
+        const QString version = m_server->companionVersionName();
+        m_companionLabel->setText(version.isEmpty()
+            ? tr("Phone app: offering %1").arg(QDir::toNativeSeparators(apk))
+            : tr("Phone app: offering %1 (%2)")
+                  .arg(QDir::toNativeSeparators(apk), version));
+    }
 }
 
 void MobileSyncDialog::updateDeviceList()
