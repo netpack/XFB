@@ -32,4 +32,12 @@
 
     <!-- The scrim under the pairing screen's radio artwork. -->
     <color name="xfb_brand_glow">#1A7C7CBA</color>
+    <!--
+        A hairline for card edges. The full border colour is right for a
+        separator carrying real weight and too loud drawn around every card on
+        a screen, which reads as a wireframe rather than a surface.
+    -->
+    <color name="xfb_hairline">#1F000000</color>
+    <!-- The tint behind a pressed or dragged waveform. -->
+    <color name="xfb_well">#0A000000</color>
 </resources>

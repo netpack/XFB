@@ -4,11 +4,19 @@
     android:viewportWidth="24"
     android:viewportHeight="24"
     android:tint="?attr/colorControlNormal">
-    <!-- Two ramps crossing: one level coming down as the other goes up. -->
+    <!--
+        A crossfader: the track with its handle at the midpoint, and the two
+        levels it trades between. Drawn corner to corner, the crossing ramps
+        this replaced made an X — which every other app on the phone uses to
+        mean "close".
+    -->
     <path
         android:fillColor="@android:color/white"
-        android:pathData="M3,18.5L3,17L19.5,5.5L21,5.5L21,7L4.5,18.5Z" />
+        android:pathData="M3,11.25h18v1.5h-18z" />
     <path
         android:fillColor="@android:color/white"
-        android:pathData="M3,7L3,5.5L4.5,5.5L21,17L21,18.5L19.5,18.5Z" />
+        android:pathData="M10.5,6.5h3a0.9,0.9 0,0 1,0.9 0.9v9.2a0.9,0.9 0,0 1,-0.9 0.9h-3a0.9,0.9 0,0 1,-0.9 -0.9v-9.2a0.9,0.9 0,0 1,0.9 -0.9z" />
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M3.5,7.5h4v1.5h-4zM16.5,15h4v1.5h-4z" />
 </vector>

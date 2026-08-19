@@ -100,7 +100,7 @@
     -->
     <style name="Widget.Xfb.Card" parent="Widget.Material3.CardView.Outlined">
         <item name="cardBackgroundColor">@color/xfb_base</item>
-        <item name="strokeColor">@color/xfb_border</item>
+        <item name="strokeColor">@color/xfb_hairline</item>
         <item name="strokeWidth">1dp</item>
         <item name="cardCornerRadius">@dimen/xfb_corner</item>
         <item name="cardElevation">0dp</item>
@@ -120,10 +120,74 @@
         <item name="android:layout_height">wrap_content</item>
     </style>
 
+    <!--
+        Large type gets slightly negative tracking. Display faces are spaced for
+        their smallest optical size, so at headline sizes the default reads
+        loose; pulling it in is most of what separates a set headline from a
+        default one.
+    -->
+    <style name="TextAppearance.Xfb.Display" parent="TextAppearance.Material3.HeadlineMedium">
+        <item name="android:letterSpacing">-0.02</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/xfb_text</item>
+    </style>
+
+    <style name="TextAppearance.Xfb.TrackTitle" parent="TextAppearance.Material3.TitleLarge">
+        <item name="android:letterSpacing">-0.01</item>
+        <item name="android:textColor">@color/xfb_text</item>
+    </style>
+
     <!-- Times and counters, so digits do not jitter as they change. -->
     <style name="TextAppearance.Xfb.Readout" parent="TextAppearance.Material3.BodySmall">
         <item name="android:fontFamily">monospace</item>
         <item name="android:textColor">@color/xfb_subtext</item>
+    </style>
+
+    <!-- ======================================== transport -->
+
+    <!--
+        Icon-only buttons must have symmetric horizontal padding. The stock
+        icon+label styles set paddingStart 16dp against paddingEnd 24dp, which
+        is right when a word follows the glyph and pushes it visibly off centre
+        when nothing does — that 8dp was the play button's lean.
+    -->
+    <style name="Widget.Xfb.TransportButton" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="iconGravity">textStart</item>
+        <item name="iconPadding">0dp</item>
+        <item name="iconSize">22dp</item>
+        <item name="iconTint">?attr/colorOnSurface</item>
+        <item name="strokeColor">@color/xfb_border</item>
+        <item name="cornerRadius">@dimen/xfb_icon_button_radius</item>
+        <item name="android:paddingStart">0dp</item>
+        <item name="android:paddingEnd">0dp</item>
+        <item name="android:paddingLeft">0dp</item>
+        <item name="android:paddingRight">0dp</item>
+        <item name="android:minWidth">0dp</item>
+        <item name="android:minHeight">0dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:insetLeft">0dp</item>
+        <item name="android:insetRight">0dp</item>
+    </style>
+
+    <style name="Widget.Xfb.PlayButton" parent="Widget.Material3.Button">
+        <item name="iconGravity">textStart</item>
+        <item name="iconPadding">0dp</item>
+        <item name="iconSize">30dp</item>
+        <item name="iconTint">?attr/colorOnPrimary</item>
+        <item name="cornerRadius">@dimen/xfb_transport_radius</item>
+        <item name="elevation">0dp</item>
+        <item name="android:stateListAnimator">@null</item>
+        <item name="android:paddingStart">0dp</item>
+        <item name="android:paddingEnd">0dp</item>
+        <item name="android:paddingLeft">0dp</item>
+        <item name="android:paddingRight">0dp</item>
+        <item name="android:minWidth">0dp</item>
+        <item name="android:minHeight">0dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:insetLeft">0dp</item>
+        <item name="android:insetRight">0dp</item>
     </style>
 
 </resources>

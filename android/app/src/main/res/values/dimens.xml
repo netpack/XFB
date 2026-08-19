@@ -15,8 +15,10 @@
     <dimen name="xfb_card_padding">16dp</dimen>
     <dimen name="xfb_corner">14dp</dimen>
 
-    <dimen name="xfb_icon_button">48dp</dimen>
-    <dimen name="xfb_transport_button">64dp</dimen>
+    <dimen name="xfb_icon_button">52dp</dimen>
+    <dimen name="xfb_icon_button_radius">26dp</dimen>
+    <dimen name="xfb_transport_button">68dp</dimen>
+    <dimen name="xfb_transport_radius">34dp</dimen>
     <dimen name="xfb_turntable">132dp</dimen>
     <dimen name="xfb_brand_mark">140dp</dimen>
     <!-- The halo behind it; close enough to the mark that the two read as one. -->

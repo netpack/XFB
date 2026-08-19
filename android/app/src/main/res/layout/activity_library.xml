@@ -46,10 +46,13 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:gravity="center"
+            android:drawableTop="@drawable/ic_search"
+            android:drawablePadding="@dimen/xfb_gap"
             android:padding="@dimen/xfb_gap_section"
             android:textAppearance="?attr/textAppearanceBodyMedium"
             android:textColor="@color/xfb_subtext"
-            android:visibility="gone" />
+            android:visibility="gone"
+            app:drawableTint="@color/xfb_border" />
     </FrameLayout>
 
     <LinearLayout
@@ -72,6 +75,7 @@
             android:minHeight="52dp"
             android:text="@string/library_save"
             app:cornerRadius="@dimen/xfb_corner"
-            app:icon="@drawable/ic_queue_music" />
+            app:icon="@drawable/ic_queue_music"
+            app:iconGravity="textStart" />
     </LinearLayout>
 </LinearLayout>

@@ -57,11 +57,14 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:gravity="center"
+            android:drawableTop="@drawable/ic_queue_music"
+            android:drawablePadding="@dimen/xfb_gap"
             android:padding="@dimen/xfb_gap_section"
             android:text="@string/playlists_empty"
             android:textAppearance="?attr/textAppearanceBodyMedium"
             android:textColor="@color/xfb_subtext"
-            android:visibility="gone" />
+            android:visibility="gone"
+            app:drawableTint="@color/xfb_border" />
 
         <LinearLayout
             android:id="@+id/errorGroup"
