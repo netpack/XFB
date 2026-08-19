@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <!--
+        The list refreshes itself while the screen is open, but a station that
+        has just had a playlist saved on it is exactly when someone reaches for
+        this, and waiting out a poll for no visible reason feels broken.
+    -->
+    <item
+        android:id="@+id/action_refresh"
+        android:icon="@drawable/ic_refresh"
+        android:title="@string/playlists_refresh"
+        app:showAsAction="ifRoom" />
+</menu>

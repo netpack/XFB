@@ -121,19 +121,30 @@ private class TransitionAdapter(
         holder.wave.onOverlapChanged = { overlap -> onOverlap(trackIndex, overlap) }
 
         // Decoding is slow the first time and instant afterwards; the row draws
-        // straight away and fills in when the peaks arrive.
+        // straight away, pulses while it waits, and fills in when peaks arrive.
         val target = holder.wave
         val tag = incoming.id
         target.tag = tag
-        for (file in listOf(outgoing.file, incoming.file)) {
+
+        val pending = listOf(outgoing.file, incoming.file)
+            .filter { WaveformStore.peek(it) == null }
+            .toMutableSet()
+        target.setAnalysing(outgoing.file in pending, incoming.file in pending)
+
+        for (file in pending.toList()) {
             WaveformStore.fetch(file, cacheDir) {
                 main.post {
-                    if (target.tag == tag) {
-                        target.setTracks(
-                            WaveformStore.peek(outgoing.file),
-                            WaveformStore.peek(incoming.file)
-                        )
-                    }
+                    // The row may have been recycled onto another transition
+                    // while this was decoding; the tag is what says so.
+                    if (target.tag != tag) return@post
+                    pending -= file
+                    target.setTracks(
+                        WaveformStore.peek(outgoing.file),
+                        WaveformStore.peek(incoming.file)
+                    )
+                    target.setAnalysing(
+                        outgoing.file in pending, incoming.file in pending
+                    )
                 }
             }
         }

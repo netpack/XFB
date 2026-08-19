@@ -187,11 +187,15 @@ class PlayerActivity : AppCompatActivity() {
             val next = loadedTracks.getOrNull(index + 1)
 
             strip.setWaveform(null, current?.volumeEnvelope.orEmpty())
+            strip.isAnalysing = current != null
             current?.let { track ->
                 WaveformStore.fetch(track.file, cacheDir) { wave ->
                     runOnUiThread {
-                        if (loadedIndex == index)
-                            strip.setWaveform(wave, track.volumeEnvelope)
+                        if (loadedIndex != index) return@runOnUiThread
+                        // Cleared even when wave is null: a file that cannot be
+                        // decoded must stop the indicator, not spin for ever.
+                        strip.isAnalysing = false
+                        if (wave != null) strip.setWaveform(wave, track.volumeEnvelope)
                     }
                 }
             }
@@ -208,15 +212,27 @@ class PlayerActivity : AppCompatActivity() {
                     WaveformStore.peek(current!!.file), WaveformStore.peek(next.file)
                 )
                 crossfade.onOverlapChanged = { overlap -> rememberOverlap(overlap) }
-                for (file in listOfNotNull(current.file, next.file)) {
+
+                // Which files are still being read. Tracked by hand rather than
+                // by asking the store, because a file that cannot be decoded
+                // never gains peaks and would leave its lane pulsing for ever.
+                val pending = listOf(current.file, next.file)
+                    .filter { WaveformStore.peek(it) == null }
+                    .toMutableSet()
+                crossfade.setAnalysing(current.file in pending, next.file in pending)
+
+                for (file in pending.toList()) {
                     WaveformStore.fetch(file, cacheDir) {
                         runOnUiThread {
-                            if (loadedIndex == index) {
-                                crossfade.setTracks(
-                                    WaveformStore.peek(current.file),
-                                    WaveformStore.peek(next.file)
-                                )
-                            }
+                            if (loadedIndex != index) return@runOnUiThread
+                            pending -= file
+                            crossfade.setTracks(
+                                WaveformStore.peek(current.file),
+                                WaveformStore.peek(next.file)
+                            )
+                            crossfade.setAnalysing(
+                                current.file in pending, next.file in pending
+                            )
                         }
                     }
                 }

@@ -74,9 +74,11 @@
     <string name="transitions_need_two">A playlist needs at least two tracks to have a crossfade.</string>
     <string name="transitions_saved">Crossfades saved.</string>
     <string name="wave_overlap">Crossfade %1$.1f s — drag to change</string>
+    <string name="wave_analysing">Reading the waveform…</string>
     <string name="wave_no_overlap">No crossfade — drag left to add one</string>
 
     <string name="playlists_search_hint">Search playlists</string>
+    <string name="playlists_refresh">Refresh</string>
     <string name="playlists_new">New playlist from tracks on this phone</string>
     <string name="playlists_new_short">New playlist</string>
     <string name="playlist_edit_crossfades">Crossfades</string>

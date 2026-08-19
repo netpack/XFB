@@ -2,6 +2,10 @@ package pt.netpack.xfb.companion
 
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.view.Menu
+import android.view.MenuItem
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -19,7 +23,9 @@ import android.widget.EditText
 import android.widget.ProgressBar
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /** The playlists the paired station is offering. */
 class PlaylistsActivity : AppCompatActivity() {
@@ -37,6 +43,7 @@ class PlaylistsActivity : AppCompatActivity() {
     private lateinit var library: LibraryStore
     private val adapter = PlaylistAdapter(::open)
     private var everything: List<PlaylistSummary> = emptyList()
+    private val poller = Handler(Looper.getMainLooper())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -89,6 +96,34 @@ class PlaylistsActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         load()
+        poller.postDelayed(poll, POLL_MS)
+    }
+
+    override fun onPause() {
+        // Only while the screen is in front: a poll running behind another
+        // activity would keep the station awake for nothing.
+        poller.removeCallbacksAndMessages(null)
+        super.onPause()
+    }
+
+    private val poll = object : Runnable {
+        override fun run() {
+            load(silent = true)
+            poller.postDelayed(this, POLL_MS)
+        }
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.playlists, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == R.id.action_refresh) {
+            load()
+            return true
+        }
+        return super.onOptionsItemSelected(item)
     }
 
     override fun onSupportNavigateUp(): Boolean {
@@ -96,24 +131,35 @@ class PlaylistsActivity : AppCompatActivity() {
         return true
     }
 
-    private fun load() {
+    /**
+     * @param silent for the background poll: it must not flash the spinner or
+     *        raise an error panel over a list that is already on screen, or the
+     *        screen would twitch every few seconds on a flaky network.
+     */
+    private fun load(silent: Boolean = false) {
         val station = store.station()
         if (station == null) {
             finish()
             return
         }
 
-        // What is already on the phone shows first and always, so the list is
-        // useful with no station in reach — which is the whole point of taking
-        // a set on the road.
-        val local = library.localPlaylistNames().map { name ->
-            PlaylistSummary(name = name, title = name, live = false, trackCount = -1)
-        }
-        everything = local
-        showFiltered()
-
-        setBusy(true)
+        setBusy(!silent)
         lifecycleScope.launch {
+            // What is already on the phone shows first and always, so the list
+            // is useful with no station in reach — which is the whole point of
+            // taking a set on the road. Reading every manifest for its name is
+            // disk work and the poll repeats it every few seconds, so it does
+            // not belong on the main thread.
+            val local = withContext(Dispatchers.IO) {
+                library.localPlaylistNames().map { name ->
+                    PlaylistSummary(name = name, title = name, live = false, trackCount = -1)
+                }
+            }
+            if (!silent) {
+                everything = local
+                showFiltered()
+            }
+
             runCatching { SyncClient.playlists(station) }
                 .onSuccess { fromStation ->
                     setBusy(false)
@@ -125,7 +171,7 @@ class PlaylistsActivity : AppCompatActivity() {
                 }
                 .onFailure { error ->
                     setBusy(false)
-                    if (everything.isEmpty()) {
+                    if (!silent && everything.isEmpty()) {
                         errorLabel.text = error.message ?: getString(R.string.error_generic)
                         errorGroup.visibility = View.VISIBLE
                     }
@@ -137,6 +183,11 @@ class PlaylistsActivity : AppCompatActivity() {
         val needle = searchField.text.toString().trim()
         val matches = if (needle.isEmpty()) everything
                       else everything.filter { it.title.contains(needle, ignoreCase = true) }
+
+        // submit() rebinds only when the playlists actually differ. The poll
+        // runs every few seconds and almost always finds the same ones, and
+        // rebinding regardless would restart the entrance animation and throw
+        // away the scroll position on a timer.
         adapter.submit(matches, library)
         emptyLabel.visibility = if (matches.isEmpty()) View.VISIBLE else View.GONE
     }
@@ -152,6 +203,15 @@ class PlaylistsActivity : AppCompatActivity() {
     private fun setBusy(busy: Boolean) {
         progress.visibility = if (busy) View.VISIBLE else View.GONE
     }
+
+    private companion object {
+        /**
+         * How often to ask the station again while this screen is open. Slow
+         * enough to be free on a LAN, quick enough that a playlist saved on the
+         * desk shows up before anyone reaches for the refresh button.
+         */
+        const val POLL_MS = 5_000L
+    }
 }
 
 private class PlaylistAdapter(
@@ -161,7 +221,27 @@ private class PlaylistAdapter(
     private var items: List<PlaylistSummary> = emptyList()
     private var library: LibraryStore? = null
 
+    /** What the rows currently show; null until the first submit. */
+    private var shownSignature: String? = null
+
+    /**
+     * Rebinds only when something a row actually shows has changed. The
+     * playlists screen re-asks the station on a timer, so this is called far
+     * more often than anything changes, and notifying every time would restart
+     * the row animation and lose the scroll position every few seconds.
+     *
+     * The signature includes whether each playlist is on the phone, because
+     * that is drawn as a badge and changes on its own when a download finishes
+     * — comparing only the station's own fields would leave it stale.
+     */
     fun submit(playlists: List<PlaylistSummary>, library: LibraryStore) {
+        val signature = playlists.joinToString("\u0000") { item ->
+            "${item.name}|${item.title}|${item.live}|${item.trackCount}|" +
+                library.manifestExists(item.name)
+        }
+        if (signature == shownSignature && this.library === library) return
+
+        shownSignature = signature
         this.items = playlists
         this.library = library
         notifyDataSetChanged()

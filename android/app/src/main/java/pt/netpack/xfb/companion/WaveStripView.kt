@@ -46,6 +46,20 @@ class WaveStripView @JvmOverloads constructor(
     /** Called when the operator drags the playhead. */
     var onSeek: ((Long) -> Unit)? = null
 
+    /**
+     * True while the phone is still decoding this track's peaks. Decoding a
+     * long track takes seconds the first time, and an empty strip for that long
+     * looks like a track with no waveform rather than one still being read.
+     */
+    var isAnalysing: Boolean = false
+        set(value) {
+            if (field == value) return
+            field = value
+            contentDescription =
+                if (value) context.getString(R.string.wave_analysing) else null
+            invalidate()
+        }
+
     private val playedPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val aheadPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val headPaint = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -97,6 +111,11 @@ class WaveStripView @JvmOverloads constructor(
         val centre = h / 2f
         val wave = waveform
         val headX = if (durationMs > 0) (positionMs.toFloat() / durationMs) * w else 0f
+
+        if (wave == null && isAnalysing) {
+            drawAnalysing(canvas, w, centre, h)
+            return
+        }
 
         if (wave != null && wave.peaks.isNotEmpty()) {
             // Discrete rounded bars rather than a column per pixel. A solid
@@ -159,6 +178,42 @@ class WaveStripView @JvmOverloads constructor(
         canvas.drawCircle(clampedHead, centre, dp(5f), knobPaint)
     }
 
+    /**
+     * A pulse travelling along the strip while the peaks are being read. Built
+     * from the same bars the real waveform uses rather than a spinner, so the
+     * strip keeps its shape and the wait reads as this track being worked on.
+     */
+    private fun drawAnalysing(canvas: Canvas, w: Float, centre: Float, h: Float) {
+        val step = BAR_WIDTH_DP + BAR_GAP_DP
+        val barWidth = dp(BAR_WIDTH_DP)
+        val radius = barWidth / 2f
+        val maxAmplitude = h / 2f - dp(3f)
+        val bars = (w / dp(step)).toInt().coerceAtLeast(1)
+
+        // The pulse wraps rather than entering and leaving: run off the end and
+        // there is a stretch of every sweep with nothing moving on screen,
+        // which reads as the decode having stalled.
+        val phase = (System.currentTimeMillis() % SWEEP_MS) / SWEEP_MS.toFloat()
+        val spread = bars * 0.18f
+        val head = phase * bars
+
+        for (bar in 0 until bars) {
+            val direct = kotlin.math.abs(bar - head)
+            val distance = kotlin.math.min(direct, bars - direct) / spread
+            val boost = (1f - distance).coerceAtLeast(0f)
+            val amplitude = radius + boost * boost * maxAmplitude * 0.55f
+            aheadPaint.alpha = (56 + boost * 150f).toInt().coerceAtMost(255)
+            val left = bar * dp(step)
+            canvas.drawRoundRect(
+                left, centre - amplitude, left + barWidth, centre + amplitude,
+                radius, radius, aheadPaint
+            )
+        }
+        aheadPaint.alpha = 56
+
+        postInvalidateOnAnimation()
+    }
+
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if (durationMs <= 0) return false
         when (event.actionMasked) {
@@ -199,5 +254,7 @@ class WaveStripView @JvmOverloads constructor(
     private companion object {
         const val BAR_WIDTH_DP = 2.5f
         const val BAR_GAP_DP = 1.5f
+        /** One pass of the analysing pulse, end to end. */
+        const val SWEEP_MS = 1100L
     }
 }

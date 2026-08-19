@@ -99,6 +99,24 @@ class CrossfadeView @JvmOverloads constructor(
         return min(maxOverlapMs, min(outDuration, inDuration))
     }
 
+    /**
+     * Whether each lane is still having its peaks decoded. Tracked per lane
+     * because the two tracks are read separately and one is often ready well
+     * before the other — marking the whole view busy would hide a waveform
+     * that has already arrived.
+     */
+    fun setAnalysing(outgoing: Boolean, incoming: Boolean) {
+        if (outgoingAnalysing == outgoing && incomingAnalysing == incoming) return
+        outgoingAnalysing = outgoing
+        incomingAnalysing = incoming
+        contentDescription = if (outgoing || incoming)
+            context.getString(R.string.wave_analysing) else null
+        invalidate()
+    }
+
+    private var outgoingAnalysing = false
+    private var incomingAnalysing = false
+
     override fun onMeasure(widthSpec: Int, heightSpec: Int) {
         val width = MeasureSpec.getSize(widthSpec)
         val height = dp(160f).toInt()
@@ -124,6 +142,9 @@ class CrossfadeView @JvmOverloads constructor(
             canvas.drawRect(RectF(overlapLeft, 0f, joinX, h - dp(20f)), overlapPaint)
         }
 
+        if (outgoing == null && outgoingAnalysing)
+            drawAnalysingLane(canvas, w, laneTop = 0f, laneHeight = laneHeight)
+
         // Outgoing: its last `windowMs` up to the join, then its tail continues
         // under the overlap until it runs out.
         outgoing?.let { wave ->
@@ -135,6 +156,11 @@ class CrossfadeView @JvmOverloads constructor(
                 pixelsPerMs = pixelsPerMs,
                 fadeFromX = overlapLeft, fadeToX = joinX + overlapWidth
             )
+        }
+
+        if (incoming == null && incomingAnalysing) {
+            drawAnalysingLane(canvas, w,
+                laneTop = laneHeight + dp(8f), laneHeight = laneHeight)
         }
 
         // Incoming: starts at overlapLeft and runs to the right.
@@ -204,6 +230,42 @@ class CrossfadeView @JvmOverloads constructor(
             x += bucketPx
             index++
         }
+    }
+
+    /**
+     * The travelling pulse shown in a lane whose peaks are still being read.
+     * Deliberately the same gesture as WaveStripView's, so waiting looks the
+     * same wherever a waveform is about to appear.
+     */
+    private fun drawAnalysingLane(canvas: Canvas, w: Float, laneTop: Float, laneHeight: Float) {
+        val centre = laneTop + laneHeight / 2f
+        val barWidth = dp(2.5f)
+        val stride = dp(4f)
+        val radius = barWidth / 2f
+        val maxAmplitude = laneHeight / 2f
+        val bars = (w / stride).toInt().coerceAtLeast(1)
+
+        // Wraps, for the same reason as WaveStripView's.
+        val phase = (System.currentTimeMillis() % SWEEP_MS) / SWEEP_MS.toFloat()
+        val spread = bars * 0.18f
+        val head = phase * bars
+
+        val base = wavePaint.color
+        for (bar in 0 until bars) {
+            val direct = abs(bar - head)
+            val distance = min(direct, bars - direct) / spread
+            val boost = (1f - distance).coerceAtLeast(0f)
+            val amplitude = radius + boost * boost * maxAmplitude * 0.55f
+            wavePaint.color = withAlpha(base, (50 + boost * 150f).toInt().coerceAtMost(255))
+            val left = bar * stride
+            canvas.drawRoundRect(
+                left, centre - amplitude, left + barWidth, centre + amplitude,
+                radius, radius, wavePaint
+            )
+        }
+        wavePaint.color = base
+
+        postInvalidateOnAnimation()
     }
 
     /**
@@ -292,6 +354,11 @@ class CrossfadeView @JvmOverloads constructor(
 
     private fun withAlpha(color: Int, alpha: Int) =
         Color.argb(alpha, Color.red(color), Color.green(color), Color.blue(color))
+
+    private companion object {
+        /** One pass of the analysing pulse; matches WaveStripView. */
+        const val SWEEP_MS = 1100L
+    }
 }
 
 /** Largest overlap the editor offers, matching the desktop's default ceiling. */

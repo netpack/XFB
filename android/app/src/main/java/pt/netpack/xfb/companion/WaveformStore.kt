@@ -37,33 +37,52 @@ object WaveformStore {
 
     private val memory = ConcurrentHashMap<String, Waveform>()
     private val workers = Executors.newSingleThreadExecutor()
-    private val inFlight = ConcurrentHashMap<String, Boolean>()
+
+    /**
+     * Everyone waiting on a file that is being decoded right now, keyed by
+     * path. A list rather than a flag because the same file is asked for from
+     * more than one place — the on-air strip and the crossfade view both want
+     * the current track — and every caller has to be answered, or whichever one
+     * arrived second would be left showing a progress indicator for ever.
+     */
+    private val waiting = HashMap<String, MutableList<(Waveform?) -> Unit>>()
 
     /** Already-known peaks, or null. Never blocks. */
     fun peek(file: File): Waveform? = memory[file.absolutePath]
 
     /**
-     * Requests peaks for [file]. [onReady] runs on a background thread, once,
-     * when they are available — or not at all if the file cannot be decoded.
+     * Requests peaks for [file]. [onDone] runs on a background thread, exactly
+     * once, with the peaks — or with null if the file cannot be decoded, so a
+     * caller showing "reading the waveform" knows to stop.
      */
-    fun fetch(file: File, cacheDir: File, onReady: (Waveform) -> Unit) {
+    fun fetch(file: File, cacheDir: File, onDone: (Waveform?) -> Unit) {
         val key = file.absolutePath
-        memory[key]?.let { onReady(it); return }
+        memory[key]?.let { onDone(it); return }
 
-        if (inFlight.putIfAbsent(key, true) != null) return
+        val mine = synchronized(waiting) {
+            val queue = waiting[key]
+            if (queue != null) {
+                queue.add(onDone)
+                false
+            } else {
+                waiting[key] = mutableListOf(onDone)
+                true
+            }
+        }
+        if (!mine) return   // someone else is already decoding it; we are in the queue
 
         workers.execute {
+            var result: Waveform? = null
             try {
                 val cache = File(cacheDir, "${file.name}.wf")
-                val loaded = readCache(cache) ?: analyse(file)?.also { writeCache(cache, it) }
-                if (loaded != null) {
-                    memory[key] = loaded
-                    onReady(loaded)
-                }
+                result = readCache(cache) ?: analyse(file)?.also { writeCache(cache, it) }
+                if (result != null) memory[key] = result
             } catch (e: Exception) {
                 Log.w(TAG, "waveform failed for ${file.name}", e)
             } finally {
-                inFlight.remove(key)
+                val callbacks = synchronized(waiting) { waiting.remove(key).orEmpty() }
+                // Outside the lock: a callback may well ask for another file.
+                callbacks.forEach { it(result) }
             }
         }
     }
