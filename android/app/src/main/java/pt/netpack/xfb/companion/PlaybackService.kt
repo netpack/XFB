@@ -76,7 +76,9 @@ class PlaybackService : MediaSessionService() {
 
     /** Shuffle, and the seed both decks share so they agree on the order. */
     private var shuffle = false
-    private var shuffleSeed = 0L
+    // Drawn per process rather than left at zero: shuffle remembered from a
+    // previous run would otherwise replay the very same order every launch.
+    private var shuffleSeed = System.nanoTime()
 
     /** XFB's equalizer and compressor, one instance per deck. */
     private var fxA: FxAudioProcessor? = null
@@ -363,9 +365,16 @@ class PlaybackService : MediaSessionService() {
         if (reorder) shuffleSeed = System.nanoTime()
         shuffle = enabled
 
+        // The order has to start on the track that is playing. A plain random
+        // permutation puts it wherever it falls, and when that is the last
+        // position there is no next track at all: the crossfade never fires and
+        // the set stops at the end of whatever happened to be on. Shuffling
+        // means shuffling what is still to come.
+        val order = shuffledOrder(tracks.size, current?.currentMediaItemIndex ?: 0, shuffleSeed)
+
         for (deck in listOfNotNull(deckA, deckB)) {
-            if (tracks.isNotEmpty()) {
-                deck.setShuffleOrder(ShuffleOrder.DefaultShuffleOrder(tracks.size, shuffleSeed))
+            if (order.isNotEmpty()) {
+                deck.setShuffleOrder(ShuffleOrder.DefaultShuffleOrder(order, shuffleSeed))
             }
             deck.shuffleModeEnabled = enabled
         }
@@ -379,6 +388,18 @@ class PlaybackService : MediaSessionService() {
 
         Log.d(TAG, "shuffle=$enabled seed=$shuffleSeed " +
                    "current=${current?.currentMediaItemIndex} next=${current?.nextMediaItemIndex}")
+    }
+
+    /**
+     * A play order for [count] tracks that begins on [first], with everything
+     * else after it in random order. Handed to both decks so they agree.
+     */
+    private fun shuffledOrder(count: Int, first: Int, seed: Long): IntArray {
+        if (count <= 0) return IntArray(0)
+        val head = first.coerceIn(0, count - 1)
+        val rest = (0 until count).filter { it != head }.toMutableList()
+        rest.shuffle(java.util.Random(seed))
+        return (listOf(head) + rest).toIntArray()
     }
 
     /**
