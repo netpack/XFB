@@ -10,6 +10,7 @@ import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.DefaultRenderersFactory
@@ -17,6 +18,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.RenderersFactory
 import androidx.media3.exoplayer.audio.AudioSink
 import androidx.media3.exoplayer.audio.DefaultAudioSink
+import androidx.media3.exoplayer.source.ShuffleOrder
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import kotlin.math.max
@@ -66,6 +68,16 @@ class PlaybackService : MediaSessionService() {
 
     private var lastLogAt = 0L
 
+    /**
+     * How many tracks in a row have failed to decode. Bounds the walk forward
+     * so a set of entirely unreadable files stops instead of spinning.
+     */
+    private var unplayableRun = 0
+
+    /** Shuffle, and the seed both decks share so they agree on the order. */
+    private var shuffle = false
+    private var shuffleSeed = 0L
+
     /** XFB's equalizer and compressor, one instance per deck. */
     private var fxA: FxAudioProcessor? = null
     private var fxB: FxAudioProcessor? = null
@@ -102,6 +114,7 @@ class PlaybackService : MediaSessionService() {
         standby = b
 
         applyFx(settings)
+        shuffle = getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(KEY_SHUFFLE, false)
 
         a.addListener(deckListener(a))
         b.addListener(deckListener(b))
@@ -168,6 +181,39 @@ class PlaybackService : MediaSessionService() {
             // the standby itself, and parking it would cut the fade short.
             if (fadingDeck == null) parkStandby()
         }
+
+        override fun onIsPlayingChanged(isPlaying: Boolean) {
+            // Something decoded, so whatever run of bad files came before it is
+            // over.
+            if (isPlaying) unplayableRun = 0
+        }
+
+        /**
+         * A file that will not decode costs its own track, not the whole set.
+         *
+         * ExoPlayer stops on a source error, which is right for a playlist
+         * somebody built and wrong for "everything on this phone" — that is an
+         * arbitrary pile, and one stale file in it would look like the app
+         * simply refusing to play. Stepping to the next item re-walks the same
+         * order, shuffled or not; the run counter stops it looping when the
+         * whole set is unreadable.
+         */
+        override fun onPlayerError(error: PlaybackException) {
+            Log.w(TAG, "unplayable track at ${deck.currentMediaItemIndex}: ${error.errorCodeName}")
+
+            if (++unplayableRun > tracks.size) {
+                Log.w(TAG, "nothing in this set could be decoded; stopping")
+                return
+            }
+
+            val next = nextIndexOf(deck)
+            if (next !in tracks.indices) return
+
+            val wasAudible = deck === current
+            deck.seekTo(next, 0L)
+            deck.prepare()
+            if (wasAudible) deck.play() else deck.playWhenReady = false
+        }
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = session
@@ -183,10 +229,15 @@ class PlaybackService : MediaSessionService() {
             return super.onStartCommand(intent, flags, startId)
         }
 
+        if (intent?.action == ACTION_SHUFFLE) {
+            setShuffle(intent.getBooleanExtra(EXTRA_SHUFFLE, false), reorder = true)
+            return super.onStartCommand(intent, flags, startId)
+        }
+
         val name = intent?.getStringExtra(EXTRA_PLAYLIST)
         if (name != null) {
             val index = intent.getIntExtra(EXTRA_INDEX, 0)
-            LibraryStore(this).loadManifest(name)?.let { playlist ->
+            resolvePlaylist(name)?.let { playlist ->
                 load(playlist, index)
                 current?.play()
             }
@@ -194,9 +245,29 @@ class PlaybackService : MediaSessionService() {
         return super.onStartCommand(intent, flags, startId)
     }
 
+    /**
+     * The saved playlist of that name, or — for [ALL_TRACKS] — everything
+     * sitting on this phone gathered from every manifest.
+     *
+     * The gathered set carries no overlaps: a crossfade belongs to a playlist
+     * somebody shaped, and inventing one for an arbitrary pile of tracks would
+     * be putting words in the operator's mouth. They play as clean cuts.
+     */
+    private fun resolvePlaylist(name: String): SavedPlaylist? {
+        val library = LibraryStore(this)
+        if (name == ALL_TRACKS) {
+            val everything = library.downloadedTracks()
+            return if (everything.isEmpty()) null else SavedPlaylist(ALL_TRACKS, everything)
+        }
+        return library.loadManifest(name)
+    }
+
     /** Picks up crossfades edited while the set is playing. */
     private fun reloadMix() {
         val playlistName = loadedPlaylist ?: return
+        // Nothing to re-read for the gathered set: it has no manifest, and no
+        // crossfades to have been edited.
+        if (playlistName == ALL_TRACKS) return
         val saved = LibraryStore(this).loadManifest(playlistName) ?: return
 
         val byId = saved.tracks.associateBy { it.id }
@@ -238,6 +309,9 @@ class PlaybackService : MediaSessionService() {
         tracks = playlist.tracks.filter { it.playable }
         envelopes = tracks.map { VolumeEnvelope.parse(it.volumeEnvelope) }
 
+        val displayName = if (playlist.name == ALL_TRACKS)
+            getString(R.string.player_all_tracks) else playlist.name
+
         val items = tracks.map { track ->
             MediaItem.Builder()
                 .setUri(track.file.toURI().toString())
@@ -245,7 +319,9 @@ class PlaybackService : MediaSessionService() {
                 .setMediaMetadata(
                     MediaMetadata.Builder()
                         .setTitle(track.song)
-                        .setArtist(track.artist.ifEmpty { playlist.name })
+                        .setArtist(track.artist.ifEmpty { displayName })
+                        // The raw name, because this is what identifies the set
+                        // to the player screen when it reattaches.
                         .setAlbumTitle(playlist.name)
                         .build()
                 )
@@ -264,7 +340,55 @@ class PlaybackService : MediaSessionService() {
         segueFiredForIndex = -1
         fadingDeck = null
         fadeDurationMs = 0
+        unplayableRun = 0
+
+        // The order is built for a queue length, so it has to be rebuilt now
+        // the queue has one — but keep the sequence, this is the same session.
+        setShuffle(shuffle, reorder = false)
         parkStandby()
+    }
+
+    /**
+     * Turns shuffle on or off across both decks.
+     *
+     * The two decks must agree on what "next" is. Each ExoPlayer would
+     * otherwise roll its own random order, and the deck taking over after a
+     * crossfade would be holding a different sequence from the one that just
+     * started — so both are given the same order, built from one seed.
+     *
+     * @param reorder true to draw a fresh order, so switching shuffle off and
+     *        on again does not replay the same sequence.
+     */
+    private fun setShuffle(enabled: Boolean, reorder: Boolean) {
+        if (reorder) shuffleSeed = System.nanoTime()
+        shuffle = enabled
+
+        for (deck in listOfNotNull(deckA, deckB)) {
+            if (tracks.isNotEmpty()) {
+                deck.setShuffleOrder(ShuffleOrder.DefaultShuffleOrder(tracks.size, shuffleSeed))
+            }
+            deck.shuffleModeEnabled = enabled
+        }
+
+        getSharedPreferences(PREFS, MODE_PRIVATE).edit().putBoolean(KEY_SHUFFLE, enabled).apply()
+
+        // The track after this one has just changed, so the parked deck is on
+        // the wrong one until it is re-parked.
+        segueFiredForIndex = -1
+        if (fadingDeck == null) parkStandby()
+
+        Log.d(TAG, "shuffle=$enabled seed=$shuffleSeed " +
+                   "current=${current?.currentMediaItemIndex} next=${current?.nextMediaItemIndex}")
+    }
+
+    /**
+     * Where the audible deck will go next, honouring shuffle. Reading
+     * `currentMediaItemIndex + 1` would walk the queue in its stored order and
+     * quietly ignore the shuffle.
+     */
+    private fun nextIndexOf(player: ExoPlayer): Int {
+        val next = player.nextMediaItemIndex
+        return if (next == C.INDEX_UNSET) -1 else next
     }
 
     /** Positions the silent deck on the next track, ready to start at once. */
@@ -272,7 +396,7 @@ class PlaybackService : MediaSessionService() {
         val playing = current ?: return
         val waiting = standby ?: return
 
-        val next = playing.currentMediaItemIndex + 1
+        val next = nextIndexOf(playing)
         if (next !in tracks.indices) return
 
         waiting.volume = 0f
@@ -309,7 +433,7 @@ class PlaybackService : MediaSessionService() {
             }
         }
 
-        val nextIndex = index + 1
+        val nextIndex = nextIndexOf(playing)
         if (nextIndex !in tracks.indices) return
 
         // In XFB an overlap belongs to the track being mixed *into*.
@@ -384,6 +508,14 @@ class PlaybackService : MediaSessionService() {
         const val EXTRA_INDEX = "index"
         const val ACTION_RELOAD_MIX = "pt.netpack.xfb.companion.RELOAD_MIX"
         const val ACTION_RELOAD_FX = "pt.netpack.xfb.companion.RELOAD_FX"
+        const val ACTION_SHUFFLE = "pt.netpack.xfb.companion.SHUFFLE"
+        const val EXTRA_SHUFFLE = "shuffle"
+
+        /** Stands in for "everything downloaded onto this phone". */
+        const val ALL_TRACKS = "__all__"
+
+        private const val PREFS = "playback"
+        private const val KEY_SHUFFLE = "shuffle"
         private const val TAG = "XfbPlayback"
         private const val VERBOSE = false
         private const val TICK_MS = 40L

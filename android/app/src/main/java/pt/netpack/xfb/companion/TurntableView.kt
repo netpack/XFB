@@ -12,6 +12,7 @@ import android.graphics.Paint
 import android.graphics.Shader
 import android.util.AttributeSet
 import android.view.View
+import android.view.animation.PathInterpolator
 import kotlin.math.min
 
 /**
@@ -63,15 +64,38 @@ class TurntableView @JvmOverloads constructor(
         setLayerType(LAYER_TYPE_SOFTWARE, null)
     }
 
-    /** Artwork to use as the label, or null for the Netpack record. */
-    fun setLabel(bitmap: Bitmap?) {
-        if (label == bitmap) return
+    /**
+     * Puts a record on the deck.
+     *
+     * @param slide true to change records the way a DJ does — the old one
+     *        travelling off to the left as the new one comes in from the
+     *        right. A track changing under a crossfade is a gradual thing in
+     *        the audio, and having the picture of it snap was the one abrupt
+     *        moment left on the screen.
+     */
+    fun setLabel(bitmap: Bitmap?, slide: Boolean = false) {
+        if (label == bitmap && !slide) return
+
+        if (slide) {
+            outgoing = label
+            outgoingAngle = angle
+            slideStartedAt = System.currentTimeMillis()
+        }
         label = bitmap
         contentDescription = context.getString(
             if (bitmap == null) R.string.turntable_netpack else R.string.player_artwork
         )
         invalidate()
     }
+
+    /** The record on its way out, and where its label had turned to. */
+    private var outgoing: Bitmap? = null
+    private var outgoingAngle = 0f
+    private var slideStartedAt = 0L
+
+    private val sliding: Boolean
+        get() = slideStartedAt != 0L &&
+            System.currentTimeMillis() - slideStartedAt < SLIDE_MS
 
     fun setSpinning(value: Boolean) {
         if (spinning == value) return
@@ -110,6 +134,33 @@ class TurntableView @JvmOverloads constructor(
             lastFrameAt = now
         }
 
+        if (sliding) {
+            // Eased so the record leaves briskly and settles, rather than
+            // travelling at a constant speed like a slide projector.
+            val raw = (System.currentTimeMillis() - slideStartedAt) / SLIDE_MS.toFloat()
+            val t = slideInterpolator.getInterpolation(raw.coerceIn(0f, 1f))
+            val travel = width * 1.15f
+
+            drawRecord(canvas, outgoing, cx - t * travel, cy, side, outgoingAngle)
+            drawRecord(canvas, label, cx + (1f - t) * travel, cy, side, angle)
+            postInvalidateOnAnimation()
+            return
+        }
+
+        // The slide is over; let go of the record that left.
+        if (slideStartedAt != 0L) {
+            slideStartedAt = 0L
+            outgoing = null
+        }
+
+        drawRecord(canvas, label, cx, cy, side, angle)
+        if (spinning) postInvalidateOnAnimation()
+    }
+
+    /** One complete record — shadow, platter, label and spindle — centred on [cx]. */
+    private fun drawRecord(
+        canvas: Canvas, artwork: Bitmap?, cx: Float, cy: Float, side: Float, degrees: Float
+    ) {
         canvas.drawOval(
             cx - side * VINYL_RADIUS_RATIO * 0.94f,
             cy - side * VINYL_RADIUS_RATIO * 0.80f + side * 0.045f,
@@ -118,11 +169,9 @@ class TurntableView @JvmOverloads constructor(
             shadowPaint
         )
 
-        val artwork = label
         if (artwork == null) {
             // No cover: the Netpack record, turning.
-            netpack?.let { drawDisc(canvas, it, cx, cy, side, angle) }
-            if (spinning) postInvalidateOnAnimation()
+            netpack?.let { drawDisc(canvas, it, cx, cy, side, degrees) }
             return
         }
 
@@ -134,7 +183,7 @@ class TurntableView @JvmOverloads constructor(
         val labelRadius = vinylRadius * LABEL_RADIUS_RATIO
 
         canvas.save()
-        canvas.rotate(angle, cx, cy)
+        canvas.rotate(degrees, cx, cy)
 
         val shader = BitmapShader(artwork, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP)
         val scale = (labelRadius * 2f) / min(artwork.width, artwork.height).toFloat()
@@ -152,8 +201,6 @@ class TurntableView @JvmOverloads constructor(
         // The spindle sits on top of the label, as on a real record.
         canvas.restore()
         platter?.let { drawSpindleFrom(canvas, it, cx, cy, side) }
-
-        if (spinning) postInvalidateOnAnimation()
     }
 
     private fun drawDisc(
@@ -192,5 +239,15 @@ class TurntableView @JvmOverloads constructor(
         // A twelve inch label is about a third of the record's radius; a little
         // larger here so the cover is actually visible on a phone.
         const val LABEL_RADIUS_RATIO = 0.42f
+
+        /**
+         * How long a record takes to travel across. Long enough to read as a
+         * change of record, short enough that it is over well inside even the
+         * shortest crossfade anybody sets.
+         */
+        const val SLIDE_MS = 620L
+
+        /** Material's standard easing: leaves briskly, settles gently. */
+        val slideInterpolator = PathInterpolator(0.2f, 0f, 0f, 1f)
     }
 }

@@ -14,10 +14,12 @@ import android.view.Menu
 import android.view.MenuItem
 import android.widget.Button
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
+import androidx.media3.common.C
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
@@ -45,10 +47,15 @@ class PlayerActivity : AppCompatActivity() {
     private lateinit var nextButton: Button
     private lateinit var turntable: TurntableView
 
+    private var shuffleItem: MenuItem? = null
     private var shownArtwork: ByteArray? = null
+    private var shownLabel: android.graphics.Bitmap? = null
+    /** Which track the deck is showing, so a change can be animated. */
+    private var shownTrackKey: String? = null
     private lateinit var library: LibraryStore
     private var loadedPlaylist: String? = null
     private var loadedIndex = -1
+    private var loadedNextIndex = -1
     private var loadedTracks: List<SavedTrack> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -78,7 +85,13 @@ class PlayerActivity : AppCompatActivity() {
 
         playButton.setOnClickListener {
             val player = controller ?: return@setOnClickListener
-            if (player.isPlaying) player.pause() else player.play()
+            when {
+                player.isPlaying -> player.pause()
+                // Reached from "Now playing" with nothing queued: play what is
+                // on the phone rather than sitting there doing nothing.
+                player.mediaItemCount == 0 -> playEverything()
+                else -> player.play()
+            }
             render()
         }
         previousButton.setOnClickListener { controller?.seekToPreviousMediaItem() }
@@ -148,14 +161,27 @@ class PlayerActivity : AppCompatActivity() {
         // works offline with no help from the desktop. Tracks without any fall
         // back to XFB's own icon rather than an empty hole.
         val art = metadata.artworkData
-        if (!art.contentEquals(shownArtwork)) {
+        val artChanged = !art.contentEquals(shownArtwork)
+        if (artChanged) {
             shownArtwork = art
-            turntable.setLabel(art?.let { BitmapFactory.decodeByteArray(it, 0, it.size) })
+            shownLabel = art?.let { BitmapFactory.decodeByteArray(it, 0, it.size) }
         }
+
+        // A change of track is what the deck should animate, not a change of
+        // picture: two tracks running back to back with the same cover — or
+        // with none at all — are still a change of record.
+        val trackKey = player.currentMediaItem?.mediaId
+        val changedTrack = trackKey != null && shownTrackKey != null && trackKey != shownTrackKey
+        if (artChanged || changedTrack) {
+            turntable.setLabel(shownLabel, slide = changedTrack)
+        }
+        shownTrackKey = trackKey
+
         // The record turns while the music plays and stops when it does.
         turntable.setSpinning(player.isPlaying)
 
         setPlayIcon(player.isPlaying)
+        updateShuffleIcon()
 
         val duration = player.duration.takeIf { it > 0 } ?: 0L
         val position = player.currentPosition.coerceAtLeast(0L)
@@ -177,14 +203,25 @@ class PlayerActivity : AppCompatActivity() {
     private fun refreshMixViews(player: MediaController) {
         val playlistName = player.mediaMetadata.albumTitle?.toString().orEmpty()
         val index = player.currentMediaItemIndex
+        // Asking the player rather than adding one: under shuffle the next
+        // track is not the one after this in the stored order, and this card
+        // has to name the track the crossfade will actually run into.
+        val nextIndex = player.nextMediaItemIndex.takeIf { it != C.INDEX_UNSET } ?: -1
 
-        if (playlistName != loadedPlaylist || index != loadedIndex) {
+        if (playlistName != loadedPlaylist || index != loadedIndex || nextIndex != loadedNextIndex) {
+            if (playlistName != loadedPlaylist) {
+                loadedTracks = if (playlistName == PlaybackService.ALL_TRACKS) {
+                    library.downloadedTracks()
+                } else {
+                    library.loadManifest(playlistName)?.tracks.orEmpty()
+                }
+            }
             loadedPlaylist = playlistName
             loadedIndex = index
-            loadedTracks = library.loadManifest(playlistName)?.tracks.orEmpty()
+            loadedNextIndex = nextIndex
 
             val current = loadedTracks.getOrNull(index)
-            val next = loadedTracks.getOrNull(index + 1)
+            val next = loadedTracks.getOrNull(nextIndex)
 
             strip.setWaveform(null, current?.volumeEnvelope.orEmpty())
             strip.isAnalysing = current != null
@@ -246,7 +283,11 @@ class PlayerActivity : AppCompatActivity() {
      */
     private fun rememberOverlap(overlapMs: Long) {
         val name = loadedPlaylist ?: return
-        val nextIndex = loadedIndex + 1
+        // Never for the gathered set: it has no manifest to write back to, and
+        // saving one under its internal name would invent a playlist.
+        if (name == PlaybackService.ALL_TRACKS) return
+
+        val nextIndex = loadedNextIndex
         if (nextIndex !in loadedTracks.indices) return
 
         loadedTracks = loadedTracks.toMutableList().also {
@@ -272,15 +313,73 @@ class PlayerActivity : AppCompatActivity() {
     // straight onto the view is discarded.
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.player, menu)
+        shuffleItem = menu.findItem(R.id.action_shuffle)
+        updateShuffleIcon()
         return true
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        if (item.itemId == R.id.action_fx) {
-            startActivity(Intent(this, FxActivity::class.java))
-            return true
+        when (item.itemId) {
+            R.id.action_fx -> {
+                startActivity(Intent(this, FxActivity::class.java))
+                return true
+            }
+            R.id.action_shuffle -> {
+                toggleShuffle()
+                return true
+            }
         }
         return super.onOptionsItemSelected(item)
+    }
+
+    /**
+     * Shuffle runs through the service rather than straight onto the
+     * controller: both decks have to be given the same order, and a controller
+     * only reaches the audible one.
+     */
+    private fun toggleShuffle() {
+        val wanted = !(controller?.shuffleModeEnabled ?: false)
+        startService(
+            Intent(this, PlaybackService::class.java)
+                .setAction(PlaybackService.ACTION_SHUFFLE)
+                .putExtra(PlaybackService.EXTRA_SHUFFLE, wanted)
+        )
+        Toast.makeText(
+            this,
+            if (wanted) R.string.player_shuffle_on else R.string.player_shuffle_off,
+            Toast.LENGTH_SHORT
+        ).show()
+    }
+
+    /** Lit when shuffle is on; the icon is the only thing carrying that state. */
+    private fun updateShuffleIcon() {
+        val item = shuffleItem ?: return
+        val on = controller?.shuffleModeEnabled ?: false
+        item.isChecked = on
+        item.icon = ContextCompat.getDrawable(this, R.drawable.ic_shuffle)?.apply {
+            setTint(
+                ContextCompat.getColor(
+                    this@PlayerActivity,
+                    if (on) R.color.xfb_accent else R.color.xfb_text
+                )
+            )
+        }
+        item.title =
+            getString(if (on) R.string.player_shuffle_is_on else R.string.player_shuffle_is_off)
+    }
+
+    /** Queues everything downloaded onto this phone and starts it. */
+    private fun playEverything() {
+        if (library.downloadedTracks().isEmpty()) {
+            Toast.makeText(this, R.string.library_nothing_downloaded, Toast.LENGTH_LONG).show()
+            return
+        }
+        ContextCompat.startForegroundService(
+            this,
+            Intent(this, PlaybackService::class.java)
+                .putExtra(PlaybackService.EXTRA_PLAYLIST, PlaybackService.ALL_TRACKS)
+                .putExtra(PlaybackService.EXTRA_INDEX, 0)
+        )
     }
 
     /**

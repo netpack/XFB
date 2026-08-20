@@ -3,6 +3,17 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <!--
+        Shuffle is a mode rather than a transport action, so it sits with the
+        other settings up here instead of crowding the transport row, where it
+        would also break the symmetry of prev / play / next.
+    -->
+    <item
+        android:id="@+id/action_shuffle"
+        android:icon="@drawable/ic_shuffle"
+        android:title="@string/player_shuffle"
+        app:showAsAction="ifRoom" />
+
+    <!--
         The FX section is reachable from the player as well as the front
         screen: shaping the sound is something you do while listening.
     -->

@@ -56,6 +56,18 @@
     <string name="player_position">%1$s / %2$s</string>
     <string name="player_nothing">Nothing loaded</string>
     <string name="play_offline">Play on this phone</string>
+    <string name="player_all_tracks">Everything on this phone</string>
+    <string name="player_shuffle">Shuffle</string>
+    <!-- Confirmation of the tap. -->
+    <string name="player_shuffle_on">Shuffle on</string>
+    <string name="player_shuffle_off">Shuffle off</string>
+    <!--
+        The button's own label, which is what a screen reader announces. It has
+        to say which way the switch is currently set: "Shuffle off" on a button
+        reads as though tapping it would turn shuffle off.
+    -->
+    <string name="player_shuffle_is_on">Shuffle is on</string>
+    <string name="player_shuffle_is_off">Shuffle is off</string>
 
     <string name="library_title">Tracks on this phone</string>
     <string name="library_search_hint">Search artist or title</string>
