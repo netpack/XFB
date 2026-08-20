@@ -257,20 +257,18 @@ class PlaybackService : MediaSessionService() {
      */
     private fun resolvePlaylist(name: String): SavedPlaylist? {
         val library = LibraryStore(this)
-        if (name == ALL_TRACKS) {
-            val everything = library.downloadedTracks()
-            return if (everything.isEmpty()) null else SavedPlaylist(ALL_TRACKS, everything)
-        }
-        return library.loadManifest(name)
+        if (name != ALL_TRACKS) return library.loadManifest(name)
+
+        val everything = library.gatheredSet()
+        return if (everything.isEmpty()) null else SavedPlaylist(ALL_TRACKS, everything)
     }
 
     /** Picks up crossfades edited while the set is playing. */
     private fun reloadMix() {
         val playlistName = loadedPlaylist ?: return
-        // Nothing to re-read for the gathered set: it has no manifest, and no
-        // crossfades to have been edited.
-        if (playlistName == ALL_TRACKS) return
-        val saved = LibraryStore(this).loadManifest(playlistName) ?: return
+        // Through the same resolver as loading, so a crossfade set on the
+        // gathered set is picked up exactly like one set on a playlist.
+        val saved = resolvePlaylist(playlistName) ?: return
 
         val byId = saved.tracks.associateBy { it.id }
         tracks = tracks.map { track ->
@@ -533,7 +531,7 @@ class PlaybackService : MediaSessionService() {
         const val EXTRA_SHUFFLE = "shuffle"
 
         /** Stands in for "everything downloaded onto this phone". */
-        const val ALL_TRACKS = "__all__"
+        const val ALL_TRACKS = LibraryStore.ALL_TRACKS
 
         private const val PREFS = "playback"
         private const val KEY_SHUFFLE = "shuffle"

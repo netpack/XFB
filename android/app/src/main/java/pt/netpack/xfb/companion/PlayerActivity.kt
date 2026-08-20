@@ -173,7 +173,15 @@ class PlayerActivity : AppCompatActivity() {
         val trackKey = player.currentMediaItem?.mediaId
         val changedTrack = trackKey != null && shownTrackKey != null && trackKey != shownTrackKey
         if (artChanged || changedTrack) {
-            turntable.setLabel(shownLabel, slide = changedTrack)
+            // Run the slide for as long as the crossfade into this track: the
+            // overlap belongs to the track being mixed *into*, so it is the one
+            // now playing that says how long the two are audible together.
+            val overlap = loadedTracks.getOrNull(player.currentMediaItemIndex)?.overlapMs ?: 0L
+            turntable.setLabel(
+                shownLabel,
+                slide = changedTrack,
+                slideMs = if (overlap > 0) overlap else TurntableView.SLIDE_MS
+            )
         }
         shownTrackKey = trackKey
 
@@ -211,7 +219,10 @@ class PlayerActivity : AppCompatActivity() {
         if (playlistName != loadedPlaylist || index != loadedIndex || nextIndex != loadedNextIndex) {
             if (playlistName != loadedPlaylist) {
                 loadedTracks = if (playlistName == PlaybackService.ALL_TRACKS) {
-                    library.downloadedTracks()
+                    // Through the same reader the service uses, or this screen
+                    // would show no crossfades on a set that has them — and
+                    // saving one would write the others back as zero.
+                    library.gatheredSet()
                 } else {
                     library.loadManifest(playlistName)?.tracks.orEmpty()
                 }
@@ -283,10 +294,6 @@ class PlayerActivity : AppCompatActivity() {
      */
     private fun rememberOverlap(overlapMs: Long) {
         val name = loadedPlaylist ?: return
-        // Never for the gathered set: it has no manifest to write back to, and
-        // saving one under its internal name would invent a playlist.
-        if (name == PlaybackService.ALL_TRACKS) return
-
         val nextIndex = loadedNextIndex
         if (nextIndex !in loadedTracks.indices) return
 

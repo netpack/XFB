@@ -79,7 +79,7 @@ class LibraryStore(context: Context) {
         return files.mapNotNull { file ->
             runCatching { JSONObject(file.readText()).optString("name") }
                 .getOrNull()
-                ?.takeIf { it.isNotEmpty() }
+                ?.takeIf { it.isNotEmpty() && it != ALL_TRACKS }
         }.sorted()
     }
 
@@ -160,6 +160,41 @@ class LibraryStore(context: Context) {
             }
         }
         return byId.values.sortedWith(compareBy({ it.artist.lowercase() }, { it.song.lowercase() }))
+    }
+
+    /**
+     * "Everything on this phone", with any crossfades that have been set on it.
+     *
+     * [downloadedTracks] deliberately drops overlaps, because one belongs to a
+     * playlist rather than to a track. The gathered set keeps its own in a
+     * manifest under the reserved name, so they are laid back over the top
+     * here — by id, so tracks downloaded since simply arrive with none.
+     *
+     * Both the player screen and the playback service go through this: reading
+     * the gathered set two different ways is what made a crossfade set on it
+     * save correctly and then play as a hard cut.
+     */
+    fun gatheredSet(): List<SavedTrack> {
+        val everything = downloadedTracks()
+        if (everything.isEmpty()) return everything
+
+        val saved = loadManifest(ALL_TRACKS)?.tracks.orEmpty().associateBy { it.id }
+        return everything.map { track ->
+            val previous = saved[track.id] ?: return@map track
+            track.copy(
+                overlapMs = previous.overlapMs,
+                volumeEnvelope = previous.volumeEnvelope
+            )
+        }
+    }
+
+    companion object {
+        /**
+         * The reserved name for "everything on this phone". It is stored like
+         * a playlist so the crossfades set on it survive a restart, but it is
+         * not one the operator made, so it stays out of the playlists list.
+         */
+        const val ALL_TRACKS = "__all__"
     }
 
     /** A playlist name is arbitrary text; a file name is not. */

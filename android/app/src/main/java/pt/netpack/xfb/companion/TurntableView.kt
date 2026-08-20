@@ -73,13 +73,14 @@ class TurntableView @JvmOverloads constructor(
      *        the audio, and having the picture of it snap was the one abrupt
      *        moment left on the screen.
      */
-    fun setLabel(bitmap: Bitmap?, slide: Boolean = false) {
+    fun setLabel(bitmap: Bitmap?, slide: Boolean = false, slideMs: Long = SLIDE_MS) {
         if (label == bitmap && !slide) return
 
         if (slide) {
             outgoing = label
             outgoingAngle = angle
             slideStartedAt = System.currentTimeMillis()
+            slideDuration = slideMs.coerceIn(SLIDE_MS, MAX_SLIDE_MS)
         }
         label = bitmap
         contentDescription = context.getString(
@@ -92,10 +93,11 @@ class TurntableView @JvmOverloads constructor(
     private var outgoing: Bitmap? = null
     private var outgoingAngle = 0f
     private var slideStartedAt = 0L
+    private var slideDuration = SLIDE_MS
 
     private val sliding: Boolean
         get() = slideStartedAt != 0L &&
-            System.currentTimeMillis() - slideStartedAt < SLIDE_MS
+            System.currentTimeMillis() - slideStartedAt < slideDuration
 
     fun setSpinning(value: Boolean) {
         if (spinning == value) return
@@ -125,6 +127,7 @@ class TurntableView @JvmOverloads constructor(
         // Advance by wall clock rather than per frame, so a dropped frame does
         // not slow the record down.
         if (spinning) {
+            val previousAngle = angle
             val now = System.nanoTime()
             if (lastFrameAt != 0L) {
                 val seconds = (now - lastFrameAt) / 1_000_000_000f
@@ -132,15 +135,21 @@ class TurntableView @JvmOverloads constructor(
                 angle = (angle + seconds * 360f / 1.8f) % 360f
             }
             lastFrameAt = now
+            if (sliding) outgoingAngle = (outgoingAngle + (angle - previousAngle)) % 360f
         }
 
         if (sliding) {
-            // Eased so the record leaves briskly and settles, rather than
-            // travelling at a constant speed like a slide projector.
-            val raw = (System.currentTimeMillis() - slideStartedAt) / SLIDE_MS.toFloat()
-            val t = slideInterpolator.getInterpolation(raw.coerceIn(0f, 1f))
+            // Linear, and lasting exactly as long as the crossfade it is
+            // showing: both records stay partly in view the whole way across,
+            // which is the point — the audio has two tracks running, so the
+            // deck should look like it does too. Easing would rush that to a
+            // near-stop and spend most of the crossfade looking settled.
+            val t = ((System.currentTimeMillis() - slideStartedAt) /
+                slideDuration.toFloat()).coerceIn(0f, 1f)
             val travel = width * 1.15f
 
+            // The outgoing record is still playing under the fade, so it is
+            // still turning; freezing it made it look like it had stopped.
             drawRecord(canvas, outgoing, cx - t * travel, cy, side, outgoingAngle)
             drawRecord(canvas, label, cx + (1f - t) * travel, cy, side, angle)
             postInvalidateOnAnimation()
@@ -231,7 +240,7 @@ class TurntableView @JvmOverloads constructor(
         canvas.restore()
     }
 
-    private companion object {
+    companion object {
         // Measured from the platter image: 241 px square, vinyl radius 95,
         // hub radius 15, both centred.
         const val VINYL_RADIUS_RATIO = 95f / 241f
@@ -245,7 +254,14 @@ class TurntableView @JvmOverloads constructor(
          * change of record, short enough that it is over well inside even the
          * shortest crossfade anybody sets.
          */
+        /** The shortest slide, and the one a clean cut gets. */
         const val SLIDE_MS = 620L
+
+        /**
+         * The longest. XFB allows a 25 s overlap and a record drifting for
+         * that long stops reading as a change and starts reading as a fault.
+         */
+        const val MAX_SLIDE_MS = 6_000L
 
         /** Material's standard easing: leaves briskly, settles gently. */
         val slideInterpolator = PathInterpolator(0.2f, 0f, 0f, 1f)
