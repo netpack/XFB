@@ -20,6 +20,9 @@
 #include <QLabel>
 #include <QListWidget>
 #include <QPalette>
+#include <QScreen>
+#include <QScrollArea>
+#include <QGuiApplication>
 #include <QPushButton>
 #include <QSettings>
 #include <QTimer>
@@ -32,7 +35,15 @@ MobileSyncDialog::MobileSyncDialog(MobileSyncServer *server, QWidget *parent)
     setWindowTitle(tr("Sync to Phone"));
     setModal(false);   // the operator may want to keep working while pairing
 
-    auto *layout = new QVBoxLayout(this);
+    // The content scrolls. This dialog grows when a pairing code is shown — a
+    // QR is 220 px on its own — and on a laptop the extra height has to come
+    // from somewhere; without this the window simply clipped, squeezing the
+    // buttons below their own minimum and cutting the bottom off the QR, which
+    // is the one thing here that has to be photographed to work.
+    auto *outer = new QVBoxLayout(this);
+    auto *content = new QWidget(this);
+    auto *layout = new QVBoxLayout(content);
+    layout->setContentsMargins(0, 0, 0, 0);
 
     auto *intro = new QLabel(
         tr("Serve this station's library and playlists to the XFB app on your "
@@ -143,6 +154,9 @@ MobileSyncDialog::MobileSyncDialog(MobileSyncServer *server, QWidget *parent)
 
     m_deviceList = new QListWidget(this);
     m_deviceList->setAccessibleName(tr("Phones paired with this station"));
+    // A handful of phones at most, and it is not the point of this dialog: an
+    // expanding list would take the height the pairing code needs.
+    m_deviceList->setMaximumHeight(m_deviceList->fontMetrics().height() * 6);
     connect(m_deviceList, &QListWidget::itemSelectionChanged,
             this, &MobileSyncDialog::updateRevokeButton);
     deviceLayout->addWidget(m_deviceList);
@@ -171,9 +185,28 @@ MobileSyncDialog::MobileSyncDialog(MobileSyncServer *server, QWidget *parent)
                                               | Qt::TextSelectableByKeyboard);
     layout->addWidget(m_companionLabel);
 
+    auto *scroll = new QScrollArea(this);
+    scroll->setWidgetResizable(true);
+    scroll->setFrameShape(QFrame::NoFrame);
+    scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    scroll->setWidget(content);
+    outer->addWidget(scroll, 1);
+
+    // Outside the scroll area, so Close is always where the operator left it.
     auto *buttons = new QDialogButtonBox(QDialogButtonBox::Close, this);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::close);
-    layout->addWidget(buttons);
+    outer->addWidget(buttons);
+
+    // Tall enough for the QR where the screen allows it, and never taller than
+    // the screen. Width is set from the content so the paragraphs wrap the way
+    // they were written rather than to whatever the QR happened to make.
+    {
+        const int wanted = content->sizeHint().height() + buttons->sizeHint().height() + 48;
+        int ceiling = 900;
+        if (const QScreen *screen = QGuiApplication::primaryScreen())
+            ceiling = int(screen->availableGeometry().height() * 0.9);
+        resize(qMax(520, content->sizeHint().width() + 40), qMin(wanted, ceiling));
+    }
 
     if (m_server) {
         connect(m_server, &MobileSyncServer::started, this, &MobileSyncDialog::refresh);
