@@ -3,3 +3,10 @@ local.properties
 .idea/
 *.iml
 captures/
+
+# The release signing key and its passwords. The keystore itself must be kept
+# somewhere safe and backed up — Android identifies an app by its signing key,
+# so losing it means no existing install can ever be updated again.
+keystore.properties
+*.jks
+*.keystore

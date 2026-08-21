@@ -1,7 +1,24 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
 }
+
+/**
+ * Release signing details, kept out of the repository.
+ *
+ * Android will not install an unsigned APK, and the desktop hands this one out
+ * itself rather than a store doing it, so the release build has to be signed
+ * here. Create android/keystore.properties with storeFile, storePassword,
+ * keyAlias and keyPassword; without it the release build still runs and says
+ * plainly that what comes out cannot be installed.
+ */
+val signingProperties = Properties().apply {
+    val file = rootProject.file("keystore.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+val hasSigningKey = signingProperties.getProperty("storeFile") != null
 
 android {
     namespace = "pt.netpack.xfb.companion"
@@ -11,8 +28,10 @@ android {
         applicationId = "pt.netpack.xfb.companion"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "0.1"
+        // The update check compares versionCode; versionName is what the
+        // desktop's pairing page and the app's own update prompt show.
+        versionCode = 2
+        versionName = "1.0"
 
         ndk {
             // The two ABIs any current phone actually is. AGP passes APP_ABI to
@@ -38,10 +57,42 @@ android {
         buildConfig = true
     }
 
+    signingConfigs {
+        if (hasSigningKey) {
+            create("release") {
+                storeFile = rootProject.file(signingProperties.getProperty("storeFile"))
+                storePassword = signingProperties.getProperty("storePassword")
+                keyAlias = signingProperties.getProperty("keyAlias")
+                keyPassword = signingProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            // R8 is deliberately off. Nothing here is short of space, the app
+            // is handed out by the desk rather than downloaded over and over,
+            // and shrinking a Media3 player is a class of bug nobody needs for
+            // a saving nobody will notice.
             isMinifyEnabled = false
+
+            if (hasSigningKey) {
+                signingConfig = signingConfigs.getByName("release")
+            } else {
+                logger.warn(
+                    "XFB companion: no android/keystore.properties, so the " +
+                    "release APK will be unsigned and Android will refuse to " +
+                    "install it. See RELEASING.md."
+                )
+            }
         }
+    }
+
+    lint {
+        // Lint's own artifacts are not in the Gradle cache, so lintVital — which
+        // the release build runs — cannot resolve them offline and fails before
+        // anything is packaged. Run `lint` deliberately when there is a network.
+        checkReleaseBuilds = false
     }
 
     compileOptions {
