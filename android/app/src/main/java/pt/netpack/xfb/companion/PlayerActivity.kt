@@ -46,8 +46,11 @@ class PlayerActivity : AppCompatActivity() {
     private lateinit var previousButton: Button
     private lateinit var nextButton: Button
     private lateinit var turntable: TurntableView
+    private lateinit var backdrop: BackdropView
 
     private var shuffleItem: MenuItem? = null
+    private var autoMixItem: MenuItem? = null
+    private var autoMix = true
     private var shownArtwork: ByteArray? = null
     private var shownLabel: android.graphics.Bitmap? = null
     /** Which track the deck is showing, so a change can be animated. */
@@ -73,6 +76,7 @@ class PlayerActivity : AppCompatActivity() {
         previousButton = findViewById(R.id.previousButton)
         nextButton = findViewById(R.id.nextButton)
         turntable = findViewById(R.id.turntable)
+        backdrop = findViewById(R.id.backdrop)
 
         val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
@@ -81,6 +85,7 @@ class PlayerActivity : AppCompatActivity() {
         toolbar.setNavigationOnClickListener { finish() }
 
         library = LibraryStore(this)
+        autoMix = AutoMixSettings.isEnabled(this)
         requestNotificationPermissionIfNeeded()
 
         playButton.setOnClickListener {
@@ -165,6 +170,9 @@ class PlayerActivity : AppCompatActivity() {
         if (artChanged) {
             shownArtwork = art
             shownLabel = art?.let { BitmapFactory.decodeByteArray(it, 0, it.size) }
+            // The same picture in two places, doing two different jobs: sharp
+            // on the record, blurred to a wash behind the whole deck.
+            backdrop.setArtwork(shownLabel)
         }
 
         // A change of track is what the deck should animate, not a change of
@@ -176,7 +184,7 @@ class PlayerActivity : AppCompatActivity() {
             // Run the slide for as long as the crossfade into this track: the
             // overlap belongs to the track being mixed *into*, so it is the one
             // now playing that says how long the two are audible together.
-            val overlap = loadedTracks.getOrNull(player.currentMediaItemIndex)?.overlapMs ?: 0L
+            val overlap = overlapInto(player.currentMediaItemIndex)
             turntable.setLabel(
                 shownLabel,
                 slide = changedTrack,
@@ -252,10 +260,10 @@ class PlayerActivity : AppCompatActivity() {
                 crossfadeGroup.visibility = View.GONE
             } else {
                 crossfadeGroup.visibility = View.VISIBLE
-                crossfadeLabel.text = getString(R.string.player_into_next, next.song)
+                showTransitionLabel(next.song, index)
                 crossfade.onOverlapChanged = null
                 crossfade.maxOverlapMs = MAX_OVERLAP_MS
-                crossfade.overlapMs = next.overlapMs
+                crossfade.overlapMs = overlapInto(nextIndex)
                 crossfade.setTracks(
                     WaveformStore.peek(current!!.file), WaveformStore.peek(next.file)
                 )
@@ -284,13 +292,66 @@ class PlayerActivity : AppCompatActivity() {
                         }
                     }
                 }
+
+                // Auto-mix measures the silence at the join off the same peaks,
+                // so once both waveforms are in, an untouched join has a
+                // crossfade to show. Reading them here rather than waiting for
+                // the fetches above, because a waveform already in memory means
+                // no fetch will fire at all.
+                if (autoMix && !next.overlapPinned) {
+                    val refresh: () -> Unit = { runOnUiThread {
+                        if (loadedIndex == index) {
+                            // Without dropping the listener first, filling the
+                            // card in would go straight back out through it as
+                            // though the operator had dragged it — pinning the
+                            // join to the auto value and writing it to the
+                            // playlist, which is precisely what Auto-mix must
+                            // not do.
+                            crossfade.onOverlapChanged = null
+                            crossfade.overlapMs = overlapInto(nextIndex)
+                            crossfade.onOverlapChanged = { o -> rememberOverlap(o) }
+                            showTransitionLabel(next.song, index)
+                        }
+                    } }
+                    AutoMix.ensure(current.file, cacheDir, refresh)
+                    AutoMix.ensure(next.file, cacheDir, refresh)
+                    refresh()
+                }
             }
         }
     }
 
     /**
+     * The crossfade running into [index] — whatever was set for it, or what
+     * Auto-mix makes of the join when nobody has.
+     */
+    private fun overlapInto(index: Int): Long =
+        AutoMix.effectiveOverlapMs(
+            autoMix, loadedTracks.getOrNull(index - 1), loadedTracks.getOrNull(index)
+        )
+
+    /**
+     * Names the transition, and says so when the value on it was worked out
+     * rather than set. Without that the card looks like it is reporting a
+     * crossfade somebody chose, and dragging it feels like it went missing.
+     */
+    private fun showTransitionLabel(nextSong: String, index: Int) {
+        val automatic = AutoMix.isAutomatic(
+            autoMix, loadedTracks.getOrNull(index), loadedTracks.getOrNull(index + 1)
+        )
+        crossfadeLabel.text = getString(
+            if (automatic) R.string.player_into_next_auto else R.string.player_into_next,
+            nextSong
+        )
+    }
+
+    /**
      * Writes the new overlap to the playlist and tells the service, so a change
      * made mid-set applies to the segue that is about to happen.
+     *
+     * Dragging pins the join: from here on it is the operator's number, and
+     * Auto-mix leaves it alone — including when they drag it down to a clean
+     * cut, which is a decision like any other.
      */
     private fun rememberOverlap(overlapMs: Long) {
         val name = loadedPlaylist ?: return
@@ -298,9 +359,10 @@ class PlayerActivity : AppCompatActivity() {
         if (nextIndex !in loadedTracks.indices) return
 
         loadedTracks = loadedTracks.toMutableList().also {
-            it[nextIndex] = it[nextIndex].copy(overlapMs = overlapMs)
+            it[nextIndex] = it[nextIndex].copy(overlapMs = overlapMs, overlapPinned = true)
         }
         library.saveLocalPlaylist(name, loadedTracks)
+        showTransitionLabel(loadedTracks[nextIndex].song, loadedIndex)
 
         startService(
             Intent(this, PlaybackService::class.java)
@@ -321,7 +383,9 @@ class PlayerActivity : AppCompatActivity() {
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.player, menu)
         shuffleItem = menu.findItem(R.id.action_shuffle)
+        autoMixItem = menu.findItem(R.id.action_automix)
         updateShuffleIcon()
+        updateAutoMixItem()
         return true
     }
 
@@ -333,6 +397,10 @@ class PlayerActivity : AppCompatActivity() {
             }
             R.id.action_shuffle -> {
                 toggleShuffle()
+                return true
+            }
+            R.id.action_automix -> {
+                toggleAutoMix()
                 return true
             }
         }
@@ -356,6 +424,41 @@ class PlayerActivity : AppCompatActivity() {
             if (wanted) R.string.player_shuffle_on else R.string.player_shuffle_off,
             Toast.LENGTH_SHORT
         ).show()
+    }
+
+    /**
+     * Turns Auto-mix on or off for the whole app, not just this set: it is a
+     * preference about how untouched joins should play, and having it mean
+     * something different on the next playlist would be surprising.
+     */
+    private fun toggleAutoMix() {
+        autoMix = !autoMix
+        AutoMixSettings.setEnabled(this, autoMix)
+        updateAutoMixItem()
+
+        startService(
+            Intent(this, PlaybackService::class.java)
+                .setAction(PlaybackService.ACTION_AUTOMIX)
+        )
+
+        // The card is showing the old answer for the join ahead.
+        loadedPlaylist = null
+        controller?.let { refreshMixViews(it) }
+
+        Toast.makeText(
+            this,
+            if (autoMix) R.string.automix_on else R.string.automix_off,
+            Toast.LENGTH_SHORT
+        ).show()
+    }
+
+    /** The tick is the only thing carrying whether Auto-mix is on. */
+    private fun updateAutoMixItem() {
+        val item = autoMixItem ?: return
+        item.isChecked = autoMix
+        item.title = getString(
+            if (autoMix) R.string.automix_is_on else R.string.automix_is_off
+        )
     }
 
     /** Lit when shuffle is on; the icon is the only thing carrying that state. */

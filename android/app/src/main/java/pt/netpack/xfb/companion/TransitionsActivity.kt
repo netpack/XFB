@@ -56,8 +56,11 @@ class TransitionsActivity : AppCompatActivity() {
         tracks = loaded.tracks.toMutableList()
 
         list.layoutManager = LinearLayoutManager(this)
-        list.adapter = TransitionAdapter(tracks, cacheDir) { index, overlap ->
-            tracks[index] = tracks[index].copy(overlapMs = overlap)
+        // Dragging a join pins it: from then on it is the operator's number and
+        // Auto-mix stops having an opinion about it.
+        list.adapter = TransitionAdapter(tracks, cacheDir, AutoMixSettings.isEnabled(this)) {
+            index, overlap ->
+            tracks[index] = tracks[index].copy(overlapMs = overlap, overlapPinned = true)
             dirty = true
         }
 
@@ -88,6 +91,7 @@ class TransitionsActivity : AppCompatActivity() {
 private class TransitionAdapter(
     private val tracks: List<SavedTrack>,
     private val cacheDir: File,
+    private val autoMix: Boolean,
     private val onOverlap: (index: Int, overlapMs: Long) -> Unit
 ) : RecyclerView.Adapter<TransitionAdapter.Holder>() {
 
@@ -113,7 +117,11 @@ private class TransitionAdapter(
 
         holder.wave.onOverlapChanged = null
         holder.wave.maxOverlapMs = MAX_OVERLAP_MS
-        holder.wave.overlapMs = incoming.overlapMs
+        // What this join will actually play with, which for one nobody has
+        // touched is whatever Auto-mix makes of it. Showing the stored zero
+        // instead would tell the operator there is no crossfade on a join that
+        // has one.
+        holder.wave.overlapMs = AutoMix.effectiveOverlapMs(autoMix, outgoing, incoming)
         holder.wave.setTracks(
             WaveformStore.peek(outgoing.file),
             WaveformStore.peek(incoming.file)
@@ -147,6 +155,24 @@ private class TransitionAdapter(
                     )
                 }
             }
+        }
+
+        // The auto value arrives with the peaks it is measured from — but a
+        // track already read has no fetch above to ride in on, so this asks in
+        // its own right. Nulling the listener first: filling the row in is not
+        // the operator setting a crossfade.
+        if (autoMix && !incoming.overlapPinned) {
+            val refresh: () -> Unit = { main.post {
+                if (target.tag == tag) {
+                    target.onOverlapChanged = null
+                    target.overlapMs =
+                        AutoMix.effectiveOverlapMs(true, outgoing, incoming)
+                    target.onOverlapChanged = { overlap -> onOverlap(trackIndex, overlap) }
+                }
+            } }
+            AutoMix.ensure(outgoing.file, cacheDir, refresh)
+            AutoMix.ensure(incoming.file, cacheDir, refresh)
+            refresh()
         }
     }
 

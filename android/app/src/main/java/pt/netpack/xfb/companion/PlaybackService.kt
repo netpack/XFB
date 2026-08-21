@@ -74,6 +74,12 @@ class PlaybackService : MediaSessionService() {
      */
     private var unplayableRun = 0
 
+    /**
+     * Whether joins nobody has set should get a crossfade worked out from the
+     * silence at the join. Read once and kept, because the tick reads it.
+     */
+    private var autoMix = true
+
     /** Shuffle, and the seed both decks share so they agree on the order. */
     private var shuffle = false
     // Drawn per process rather than left at zero: shuffle remembered from a
@@ -116,6 +122,7 @@ class PlaybackService : MediaSessionService() {
         standby = b
 
         applyFx(settings)
+        autoMix = AutoMixSettings.isEnabled(this)
         shuffle = getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(KEY_SHUFFLE, false)
 
         a.addListener(deckListener(a))
@@ -231,6 +238,16 @@ class PlaybackService : MediaSessionService() {
             return super.onStartCommand(intent, flags, startId)
         }
 
+        if (intent?.action == ACTION_AUTOMIX) {
+            autoMix = AutoMixSettings.isEnabled(this)
+            // The join that was about to happen may have just gained or lost
+            // its crossfade, so let the tick decide again.
+            segueFiredForIndex = -1
+            if (autoMix) ensureAutoMixEdges()
+            Log.d(TAG, "auto-mix=$autoMix")
+            return super.onStartCommand(intent, flags, startId)
+        }
+
         if (intent?.action == ACTION_SHUFFLE) {
             setShuffle(intent.getBooleanExtra(EXTRA_SHUFFLE, false), reorder = true)
             return super.onStartCommand(intent, flags, startId)
@@ -251,9 +268,9 @@ class PlaybackService : MediaSessionService() {
      * The saved playlist of that name, or — for [ALL_TRACKS] — everything
      * sitting on this phone gathered from every manifest.
      *
-     * The gathered set carries no overlaps: a crossfade belongs to a playlist
-     * somebody shaped, and inventing one for an arbitrary pile of tracks would
-     * be putting words in the operator's mouth. They play as clean cuts.
+     * The gathered set carries only the overlaps somebody set on it by hand.
+     * The rest of its joins have none, which is what Auto-mix is for: see
+     * [overlapInto].
      */
     private fun resolvePlaylist(name: String): SavedPlaylist? {
         val library = LibraryStore(this)
@@ -273,7 +290,11 @@ class PlaybackService : MediaSessionService() {
         val byId = saved.tracks.associateBy { it.id }
         tracks = tracks.map { track ->
             byId[track.id]?.let {
-                track.copy(overlapMs = it.overlapMs, volumeEnvelope = it.volumeEnvelope)
+                track.copy(
+                    overlapMs = it.overlapMs,
+                    overlapPinned = it.overlapPinned,
+                    volumeEnvelope = it.volumeEnvelope
+                )
             } ?: track
         }
         envelopes = tracks.map { VolumeEnvelope.parse(it.volumeEnvelope) }
@@ -421,7 +442,39 @@ class PlaybackService : MediaSessionService() {
         waiting.volume = 0f
         waiting.playWhenReady = false
         waiting.seekTo(next, 0L)
+
+        // Reading a waveform takes seconds, and the answer is needed by the end
+        // of the track that is playing. This is the right moment to start: it
+        // runs at load and again on every transition, which is exactly when the
+        // pair making up the next join changes.
+        if (autoMix) ensureAutoMixEdges()
     }
+
+    /**
+     * Starts reading the silent edges of the tracks either side of the next
+     * join. Idempotent — anything already known or already being read costs
+     * nothing — and deliberately only two tracks deep: the gathered set can be
+     * the whole phone, and decoding all of it to plan a crossfade three hours
+     * away would be an hour of somebody's battery.
+     */
+    private fun ensureAutoMixEdges() {
+        val playing = current ?: return
+        val index = playing.currentMediaItemIndex
+        val next = nextIndexOf(playing)
+        tracks.getOrNull(index)?.let { AutoMix.ensure(it.file, cacheDir) }
+        tracks.getOrNull(next)?.let { AutoMix.ensure(it.file, cacheDir) }
+    }
+
+    /**
+     * The crossfade to run into [nextIndex]. A value set on the desk or dragged
+     * on this phone is used as it stands; a join nobody has touched gets one
+     * from Auto-mix, once the two waveforms have been read. Until then it is a
+     * clean cut, which is what it would have been anyway.
+     */
+    private fun overlapInto(index: Int, nextIndex: Int): Long =
+        AutoMix.effectiveOverlapMs(
+            autoMix, tracks.getOrNull(index), tracks.getOrNull(nextIndex)
+        )
 
     // -------------------------------------------------------------- the tick
 
@@ -456,7 +509,7 @@ class PlaybackService : MediaSessionService() {
         if (nextIndex !in tracks.indices) return
 
         // In XFB an overlap belongs to the track being mixed *into*.
-        val overlap = tracks[nextIndex].overlapMs
+        val overlap = overlapInto(index, nextIndex)
         if (overlap <= 0 || segueFiredForIndex == index) return
 
         val duration = playing.duration
@@ -528,6 +581,7 @@ class PlaybackService : MediaSessionService() {
         const val ACTION_RELOAD_MIX = "pt.netpack.xfb.companion.RELOAD_MIX"
         const val ACTION_RELOAD_FX = "pt.netpack.xfb.companion.RELOAD_FX"
         const val ACTION_SHUFFLE = "pt.netpack.xfb.companion.SHUFFLE"
+        const val ACTION_AUTOMIX = "pt.netpack.xfb.companion.AUTOMIX"
         const val EXTRA_SHUFFLE = "shuffle"
 
         /** Stands in for "everything downloaded onto this phone". */

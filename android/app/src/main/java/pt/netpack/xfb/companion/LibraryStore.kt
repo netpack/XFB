@@ -55,6 +55,9 @@ class LibraryStore(context: Context) {
                     .put("duration", track.duration)
                     .put("bytes", track.bytes)
                     .put("overlapMs", track.overlapMs)
+                    // An overlap that arrived from the desk is somebody's
+                    // decision; a zero there is simply a join nobody set.
+                    .put("overlapPinned", track.overlapMs > 0)
                     .put("volumeEnvelope", track.volumeEnvelope)
                     .put("file", trackFile(track).absolutePath)
             )
@@ -100,6 +103,7 @@ class LibraryStore(context: Context) {
                     .put("song", track.song)
                     .put("bytes", track.bytes)
                     .put("overlapMs", track.overlapMs)
+                    .put("overlapPinned", track.overlapPinned)
                     .put("volumeEnvelope", track.volumeEnvelope)
                     .put("file", track.file.absolutePath)
             )
@@ -154,6 +158,7 @@ class LibraryStore(context: Context) {
                     bytes = item.optLong("bytes"),
                     // Overlaps belong to a playlist, not to the track itself.
                     overlapMs = 0,
+                    overlapPinned = false,
                     volumeEnvelope = item.optString("volumeEnvelope"),
                     file = audio
                 )
@@ -183,6 +188,7 @@ class LibraryStore(context: Context) {
             val previous = saved[track.id] ?: return@map track
             track.copy(
                 overlapMs = previous.overlapMs,
+                overlapPinned = previous.overlapPinned,
                 volumeEnvelope = previous.volumeEnvelope
             )
         }

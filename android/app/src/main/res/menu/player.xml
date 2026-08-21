@@ -17,6 +17,18 @@
         The FX section is reachable from the player as well as the front
         screen: shaping the sound is something you do while listening.
     -->
+    <!--
+        Auto-mix is a preference rather than something you reach for mid-set, so
+        it lives in the overflow with its state on a checkbox. The transport bar
+        stays prev / play / next.
+    -->
+    <item
+        android:id="@+id/action_automix"
+        android:checkable="true"
+        android:icon="@drawable/ic_crossfade"
+        android:title="@string/automix_title"
+        app:showAsAction="never" />
+
     <item
         android:id="@+id/action_fx"
         android:icon="@drawable/ic_fx"

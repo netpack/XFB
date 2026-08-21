@@ -11,6 +11,14 @@ data class SavedTrack(
     val bytes: Long,
     /** Crossfade into this track, in milliseconds. Zero means a clean cut. */
     val overlapMs: Long,
+    /**
+     * True when [overlapMs] is somebody's decision rather than a default: set
+     * on the desk, or dragged here. Auto-mix fills in the joins nobody has
+     * touched and leaves the rest alone, and without this a crossfade
+     * deliberately dragged down to a clean cut would be indistinguishable from
+     * one that was simply never set — so Auto-mix would put it back.
+     */
+    val overlapPinned: Boolean,
     val volumeEnvelope: String,
     val file: File
 ) {
@@ -81,12 +89,16 @@ fun LibraryStore.loadManifest(playlistName: String): SavedPlaylist? {
         val item = array.optJSONObject(index) ?: return@mapNotNull null
         val path = item.optString("file")
         if (path.isEmpty()) return@mapNotNull null
+        val overlapMs = item.optLong("overlapMs")
         SavedTrack(
             id = item.optString("id"),
             artist = item.optString("artist"),
             song = item.optString("song"),
             bytes = item.optLong("bytes"),
-            overlapMs = item.optLong("overlapMs"),
+            overlapMs = overlapMs,
+            // Manifests written before Auto-mix existed carry no such flag; an
+            // overlap in one of those came off the desk, so it is pinned.
+            overlapPinned = item.optBoolean("overlapPinned", overlapMs > 0),
             volumeEnvelope = item.optString("volumeEnvelope"),
             file = File(path)
         )

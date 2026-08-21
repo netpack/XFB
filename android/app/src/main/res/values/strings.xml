@@ -19,6 +19,13 @@
     <string name="pair_forget">Forget this station</string>
     <string name="pair_open_library">Open playlists</string>
 
+    <!--
+        Said plainly, without alarm: this is a local network service, which is
+        the ordinary way these things work, and the honest thing is to say what
+        it does and does not protect.
+    -->
+    <string name="lan_notice">Syncing runs over your local network and is not encrypted. Anyone else on the same Wi-Fi could see which tracks are copied. Pair on a network you trust.</string>
+
     <string name="playlists_title">Playlists</string>
     <string name="playlists_empty">This station has no saved playlists yet.</string>
     <string name="playlist_on_air">On air now</string>
@@ -48,6 +55,8 @@
     <string name="player_title">Playing</string>
     <string name="player_on_air">On air</string>
     <string name="player_into_next">Crossfade into %1$s</string>
+    <!-- The same card when the number on it was worked out rather than set. -->
+    <string name="player_into_next_auto">Crossfade into %1$s · auto</string>
     <string name="player_artwork">Album artwork</string>
     <string name="player_play">Play</string>
     <string name="player_pause">Pause</string>
@@ -68,6 +77,16 @@
     -->
     <string name="player_shuffle_is_on">Shuffle is on</string>
     <string name="player_shuffle_is_off">Shuffle is off</string>
+
+    <!--
+        Auto-mix. The menu item has to say which way the switch is set, not what
+        tapping it would do: "Auto-mix off" on a control reads as the command.
+    -->
+    <string name="automix_title">Auto-mix</string>
+    <string name="automix_is_on">Auto-mix is on</string>
+    <string name="automix_is_off">Auto-mix is off</string>
+    <string name="automix_on">Auto-mix on — untouched joins get a crossfade</string>
+    <string name="automix_off">Auto-mix off — untouched joins play as clean cuts</string>
 
     <string name="library_title">Tracks on this phone</string>
     <string name="library_search_hint">Search artist or title</string>
