@@ -34,6 +34,14 @@ class TurntableView @JvmOverloads constructor(
     private val netpack: Bitmap? =
         BitmapFactory.decodeResource(resources, R.drawable.lp_netpack)
 
+    /**
+     * The Netpack wave, stamped into the vinyl the way a pressing plant etches
+     * its mark into the run-out. Silhouette only, tinted at draw time, so the
+     * same asset gives both the cut and the light catching its lip.
+     */
+    private val mark: Bitmap? =
+        BitmapFactory.decodeResource(resources, R.drawable.netpack_mark)
+
     private var label: Bitmap? = null
     private var angle = 0f
     private var spinning = false
@@ -54,6 +62,10 @@ class TurntableView @JvmOverloads constructor(
         )
     }
     private val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { isFilterBitmap = true }
+
+    /** Reused for both passes of the engraving; the colour filter is what differs. */
+    private val engravingPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { isFilterBitmap = true }
+
     private val matrix = Matrix()
 
     init {
@@ -179,8 +191,12 @@ class TurntableView @JvmOverloads constructor(
         )
 
         if (artwork == null) {
-            // No cover: the Netpack record, turning.
+            // No cover: the Netpack record, turning. Its own vinyl gets the
+            // same etching as any other — the mark printed on that image sits
+            // out at the rim, so the two do not collide.
             netpack?.let { drawDisc(canvas, it, cx, cy, side, degrees) }
+            val radius = side * VINYL_RADIUS_RATIO
+            drawEngraving(canvas, cx, cy, radius, radius * LABEL_RADIUS_RATIO, degrees)
             return
         }
 
@@ -190,6 +206,10 @@ class TurntableView @JvmOverloads constructor(
 
         val vinylRadius = side * VINYL_RADIUS_RATIO
         val labelRadius = vinylRadius * LABEL_RADIUS_RATIO
+
+        // The one thing on the vinyl that is not symmetric, so unlike the
+        // grooves it does show the record turning.
+        drawEngraving(canvas, cx, cy, vinylRadius, labelRadius, degrees)
 
         canvas.save()
         canvas.rotate(degrees, cx, cy)
@@ -210,6 +230,49 @@ class TurntableView @JvmOverloads constructor(
         // The spindle sits on top of the label, as on a real record.
         canvas.restore()
         platter?.let { drawSpindleFrom(canvas, it, cx, cy, side) }
+    }
+
+    /**
+     * The Netpack mark cut into the black between the label and the edge.
+     *
+     * Drawn twice: a black copy at the mark's own position, which is the cut,
+     * and a white one a fraction below it, which is the light catching the
+     * lower lip of the cut. That pair is the whole illusion — a single flat
+     * shape at any opacity reads as a sticker, not as something pressed in.
+     */
+    private fun drawEngraving(
+        canvas: Canvas, cx: Float, cy: Float,
+        vinylRadius: Float, labelRadius: Float, degrees: Float
+    ) {
+        val source = mark ?: return
+
+        val ring = vinylRadius - labelRadius
+        if (ring <= 0f) return
+
+        // A third of the black band, so it clears both the label and the edge
+        // at any view size.
+        val height = ring * MARK_HEIGHT_RATIO
+        val width = height * source.width / source.height
+        val centreY = cy + (labelRadius + vinylRadius) / 2f
+        val lip = (height * 0.09f).coerceAtLeast(1f)
+
+        canvas.save()
+        canvas.rotate(degrees, cx, cy)
+
+        val scale = height / source.height
+        matrix.reset()
+        matrix.setScale(scale, scale)
+        matrix.postTranslate(cx - width / 2f, centreY - height / 2f)
+
+        engravingPaint.colorFilter = cutFilter
+        canvas.drawBitmap(source, matrix, engravingPaint)
+
+        matrix.postTranslate(0f, lip)
+        engravingPaint.colorFilter = lipFilter
+        canvas.drawBitmap(source, matrix, engravingPaint)
+
+        engravingPaint.colorFilter = null
+        canvas.restore()
     }
 
     private fun drawDisc(
@@ -240,7 +303,24 @@ class TurntableView @JvmOverloads constructor(
         canvas.restore()
     }
 
+    /** The cut itself: darker than the vinyl it is pressed into. */
+    private val cutFilter = android.graphics.PorterDuffColorFilter(
+        Color.argb(150, 0, 0, 0), android.graphics.PorterDuff.Mode.SRC_IN
+    )
+
+    /** And the light along its lower lip. */
+    private val lipFilter = android.graphics.PorterDuffColorFilter(
+        Color.argb(62, 255, 255, 255), android.graphics.PorterDuff.Mode.SRC_IN
+    )
+
     companion object {
+        /**
+         * How much of the black band the mark takes up. Small: an etching in
+         * the run-out is something you notice on the second look, and anything
+         * bigger starts competing with the cover on the label.
+         */
+        const val MARK_HEIGHT_RATIO = 0.34f
+
         // Measured from the platter image: 241 px square, vinyl radius 95,
         // hub radius 15, both centred.
         const val VINYL_RADIUS_RATIO = 95f / 241f

@@ -22,16 +22,33 @@
             android:padding="@dimen/xfb_screen_margin">
 
             <!-- Deck: the platter beside what is on it, the way the desktop
-                 pairs a deck with its track information. -->
+                 pairs a deck with its track information.
+
+                 The card carries no padding of its own so the backdrop can
+                 reach its edges; the content below brings its own. -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+                android:layout_height="wrap_content"
+                app:contentPadding="0dp">
+
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <!-- The cover art, blurred, behind the deck — as behind the
+                         media notification this screen mirrors. -->
+                    <pt.netpack.xfb.companion.BackdropView
+                        android:id="@+id/backdrop"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:importantForAccessibility="no" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center_vertical"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:padding="@dimen/xfb_card_padding">
 
                     <pt.netpack.xfb.companion.TurntableView
                         android:id="@+id/turntable"
@@ -71,6 +88,7 @@
                             android:textAppearance="@style/TextAppearance.Xfb.Readout" />
                     </LinearLayout>
                 </LinearLayout>
+                </FrameLayout>
             </com.google.android.material.card.MaterialCardView>
 
             <!-- On air: the same strip the desktop shows above its playlist. -->
