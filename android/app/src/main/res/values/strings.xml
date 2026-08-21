@@ -47,6 +47,8 @@
     <string name="track_overlap">Crossfade in: %1$.1f s</string>
 
     <string name="pair_now_playing">Now playing</string>
+    <string name="pair_on_this_phone">On this phone</string>
+    <string name="player_station">Station and playlists</string>
     <string name="turntable_netpack">Netpack record</string>
     <string name="update_available">Update to %1$s</string>
     <string name="update_downloading">Downloading update… %1$d%%</string>

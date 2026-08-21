@@ -31,6 +31,8 @@ class PairActivity : AppCompatActivity() {
     private lateinit var fxButton: Button
     private lateinit var pairingForm: View
     private lateinit var pairedGroup: View
+    private lateinit var musicGroup: View
+    private lateinit var library: LibraryStore
     private lateinit var brand: View
     private lateinit var pairedLabel: TextView
     private lateinit var statusLabel: TextView
@@ -53,6 +55,8 @@ class PairActivity : AppCompatActivity() {
         fxButton = findViewById(R.id.fxButton)
         pairingForm = findViewById(R.id.pairingForm)
         pairedGroup = findViewById(R.id.pairedGroup)
+        musicGroup = findViewById(R.id.musicGroup)
+        library = LibraryStore(this)
         brand = findViewById(R.id.brand)
         pairedLabel = findViewById(R.id.pairedLabel)
         statusLabel = findViewById(R.id.statusLabel)
@@ -93,6 +97,13 @@ class PairActivity : AppCompatActivity() {
 
         handleIntent(intent)
         render()
+
+        // With a set already on the phone, the player is the screen somebody
+        // opened the app for; pairing is the errand they did once. Cold start
+        // only, and never over a pairing link somebody has just followed.
+        if (savedInstanceState == null && intent?.data == null && library.hasDownloadedTracks()) {
+            startActivity(Intent(this, PlayerActivity::class.java))
+        }
     }
 
     /**
@@ -120,6 +131,9 @@ class PairActivity : AppCompatActivity() {
         // delivers onNewIntent and onCreate never runs again — which meant the
         // check never happened in the session where pairing had just finished.
         checkForUpdate()
+        // Same reason: a download finished on another screen is what puts music
+        // on this phone, and this card has to appear when the operator returns.
+        render()
     }
 
     override fun onNewIntent(intent: Intent?) {
@@ -221,6 +235,9 @@ class PairActivity : AppCompatActivity() {
         // worth a fade; the first render is just the screen arriving.
         show(pairedGroup, paired, animate = rendered)
         show(pairingForm, !paired, animate = rendered)
+        // Not tied to the station: what has already been downloaded plays with
+        // nothing in reach, which is the whole point of the app.
+        show(musicGroup, paired || library.hasDownloadedTracks(), animate = rendered)
         rendered = true
 
         if (station != null) {

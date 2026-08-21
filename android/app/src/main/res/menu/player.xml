@@ -29,6 +29,16 @@
         android:title="@string/automix_title"
         app:showAsAction="never" />
 
+    <!--
+        The way back to the station and the playlists. The player is the first
+        screen when there is music on the phone, so it cannot be a dead end.
+    -->
+    <item
+        android:id="@+id/action_station"
+        android:icon="@drawable/ic_station"
+        android:title="@string/player_station"
+        app:showAsAction="never" />
+
     <item
         android:id="@+id/action_fx"
         android:icon="@drawable/ic_fx"

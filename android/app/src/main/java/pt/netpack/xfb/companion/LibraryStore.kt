@@ -168,6 +168,26 @@ class LibraryStore(context: Context) {
     }
 
     /**
+     * Whether there is anything on this phone worth opening the player for.
+     *
+     * Stops at the first playable file rather than building the whole list:
+     * this runs on the way into the app, where the answer is wanted before the
+     * first frame and a library of a few hundred tracks would be felt.
+     */
+    fun hasDownloadedTracks(): Boolean {
+        val files = playlistDir.listFiles { file -> file.extension == "json" } ?: return false
+        for (file in files) {
+            val json = runCatching { JSONObject(file.readText()) }.getOrNull() ?: continue
+            val array = json.optJSONArray("tracks") ?: continue
+            for (index in 0 until array.length()) {
+                val path = array.optJSONObject(index)?.optString("file").orEmpty()
+                if (path.isNotEmpty() && File(path).exists()) return true
+            }
+        }
+        return false
+    }
+
+    /**
      * "Everything on this phone", with any crossfades that have been set on it.
      *
      * [downloadedTracks] deliberately drops overlaps, because one belongs to a

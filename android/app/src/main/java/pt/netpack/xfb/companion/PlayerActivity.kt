@@ -395,6 +395,12 @@ class PlayerActivity : AppCompatActivity() {
                 startActivity(Intent(this, FxActivity::class.java))
                 return true
             }
+            R.id.action_station -> {
+                // PairActivity is singleTask, so this returns to the one that
+                // is already there rather than stacking a second front door.
+                startActivity(Intent(this, PairActivity::class.java))
+                return true
+            }
             R.id.action_shuffle -> {
                 toggleShuffle()
                 return true

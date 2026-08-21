@@ -54,6 +54,67 @@
             android:textAppearance="?attr/textAppearanceBodyMedium"
             android:textColor="@color/xfb_subtext" />
 
+        <!-- ========================================
+             What is already on this phone.
+
+             Its own card rather than part of the paired one: music downloaded
+             here is playable whether or not a station is in reach, and the app
+             is for taking a set out of the studio. Hiding the way into it
+             behind a pairing would mean losing the desk loses the music.
+        -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/musicGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/xfb_gap_section"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/Widget.Xfb.SectionLabel"
+                    android:text="@string/pair_on_this_phone" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/nowPlayingButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/xfb_gap"
+                    android:minHeight="52dp"
+                    android:text="@string/pair_now_playing"
+                    app:cornerRadius="@dimen/xfb_corner"
+                    app:icon="@drawable/ic_play"
+                    app:iconGravity="textStart" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/openLibraryButton"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/xfb_gap_small"
+                    android:minHeight="52dp"
+                    android:text="@string/pair_open_library"
+                    app:cornerRadius="@dimen/xfb_corner"
+                    app:icon="@drawable/ic_queue_music"
+                    app:iconGravity="textStart" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/fxButton"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/xfb_gap_small"
+                    android:minHeight="52dp"
+                    android:text="@string/fx_title"
+                    app:cornerRadius="@dimen/xfb_corner"
+                    app:icon="@drawable/ic_fx"
+                    app:iconGravity="textStart" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
         <!-- ======================================== not yet paired -->
 
         <com.google.android.material.card.MaterialCardView
@@ -170,41 +231,6 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/xfb_gap_small"
                     android:textAppearance="?attr/textAppearanceBodyLarge" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/openLibraryButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/xfb_gap"
-                    android:minHeight="52dp"
-                    android:text="@string/pair_open_library"
-                    app:cornerRadius="@dimen/xfb_corner"
-                    app:icon="@drawable/ic_queue_music"
-                    app:iconGravity="textStart" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/nowPlayingButton"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/xfb_gap_small"
-                    android:minHeight="52dp"
-                    android:text="@string/pair_now_playing"
-                    app:cornerRadius="@dimen/xfb_corner"
-                    app:icon="@drawable/ic_play"
-                    app:iconGravity="textStart" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/fxButton"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/xfb_gap_small"
-                    android:minHeight="52dp"
-                    android:text="@string/fx_title"
-                    app:cornerRadius="@dimen/xfb_corner"
-                    app:icon="@drawable/ic_fx"
-                    app:iconGravity="textStart" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/forgetButton"
