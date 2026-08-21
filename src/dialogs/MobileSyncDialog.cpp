@@ -19,6 +19,7 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QListWidget>
+#include <QPalette>
 #include <QPushButton>
 #include <QSettings>
 #include <QTimer>
@@ -39,6 +40,28 @@ MobileSyncDialog::MobileSyncDialog(MobileSyncServer *server, QWidget *parent)
            "play it offline."), this);
     intro->setWordWrap(true);
     layout->addWidget(intro);
+
+    // Said here rather than in a document nobody opens: this is where somebody
+    // decides whether to start serving, so it is where they need to know what
+    // serving does and does not protect. The transport is plain HTTP on the
+    // local network — tokens keep strangers out of the library, they do not
+    // encrypt what a paired phone then downloads.
+    auto *privacyNote = new QLabel(
+        tr("Syncing runs over your local network and is not encrypted. Pairing "
+           "keeps other people from browsing your library, but anyone on the "
+           "same network can see which tracks a paired phone downloads. Serve "
+           "on a network you trust."), this);
+    privacyNote->setWordWrap(true);
+    {
+        QFont noteFont = privacyNote->font();
+        noteFont.setPointSizeF(noteFont.pointSizeF() * 0.92);
+        privacyNote->setFont(noteFont);
+        QPalette notePalette = privacyNote->palette();
+        notePalette.setColor(QPalette::WindowText,
+                             notePalette.color(QPalette::Disabled, QPalette::WindowText));
+        privacyNote->setPalette(notePalette);
+    }
+    layout->addWidget(privacyNote);
 
     // --- server state ------------------------------------------------------
     auto *serverBox = new QGroupBox(tr("Server"), this);

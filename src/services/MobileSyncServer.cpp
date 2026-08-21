@@ -678,7 +678,14 @@ void MobileSyncServer::handlePairPage(QTcpSocket *socket, const Request &request
         "@media(prefers-color-scheme:dark){.note{color:#a6b0b9}"
         ".button{background:#7c7cba;color:#000}"
         ".button.secondary{background:transparent;color:#9a9ad0;border-color:#9a9ad0}}"
-        "</style></head><body><h1>Pair with XFB</h1>%1</body></html>")
+        "</style></head><body><h1>Pair with XFB</h1>%1"
+        // The phone is standing in front of the decision, so this is where the
+        // transport gets described. Plain HTTP on the local network: the code
+        // keeps strangers out, it does not encrypt anything.
+        "<p class=\"note\">XFB serves your library over this local network "
+        "without encryption. Anyone else on the same Wi-Fi can see which "
+        "tracks your phone downloads.</p>"
+        "</body></html>")
         .arg(body);
 
     const QByteArray encoded = page.toUtf8();

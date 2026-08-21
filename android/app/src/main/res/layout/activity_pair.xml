@@ -247,5 +247,38 @@
             android:textAppearance="?attr/textAppearanceBodyMedium"
             android:textColor="@color/xfb_subtext"
             android:visibility="gone" />
+
+        <!--
+            What pairing actually is. The sync runs in the clear over the local
+            network, and somebody deciding whether to pair on a café's Wi-Fi
+            should be told that here, where the decision is, rather than find it
+            in a document nobody opens.
+        -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/xfb_gap_section"
+            android:gravity="top"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:layout_marginTop="2dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_lock_open"
+                app:tint="@color/xfb_subtext" />
+
+            <TextView
+                android:id="@+id/lanNotice"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/xfb_gap_small"
+                android:layout_weight="1"
+                android:lineSpacingMultiplier="1.15"
+                android:text="@string/lan_notice"
+                android:textAppearance="?attr/textAppearanceBodySmall"
+                android:textColor="@color/xfb_subtext" />
+        </LinearLayout>
     </LinearLayout>
 </ScrollView>
