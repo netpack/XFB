@@ -112,8 +112,13 @@ running `build-windows.bat`, or that installer ships without the phone app.
 
 ### Arch needs the hashes
 
-Upload `xfb-companion.apk` and `xfb-companion.json` as assets on the GitHub
-release, then replace `REPLACE_WITH_APK_SHA256` and
+Upload both files as assets on the GitHub release:
+
+```bash
+gh release upload "v${VERSION}" packaging/companion/xfb-companion.apk packaging/companion/xfb-companion.json --repo netpack/XFB --clobber
+```
+
+Then replace `REPLACE_WITH_APK_SHA256` and
 `REPLACE_WITH_SIDECAR_SHA256` in both `PKGBUILD` and `aur-xfb/PKGBUILD`.
 `package-companion.sh` prints both hashes when it finishes.
 
