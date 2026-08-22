@@ -184,7 +184,9 @@ class PlayerActivity : AppCompatActivity() {
             // Run the slide for as long as the crossfade into this track: the
             // overlap belongs to the track being mixed *into*, so it is the one
             // now playing that says how long the two are audible together.
-            val overlap = overlapInto(player.currentMediaItemIndex)
+            val overlap = overlapBetween(
+                player.previousMediaItemIndex, player.currentMediaItemIndex
+            )
             turntable.setLabel(
                 shownLabel,
                 slide = changedTrack,
@@ -260,10 +262,10 @@ class PlayerActivity : AppCompatActivity() {
                 crossfadeGroup.visibility = View.GONE
             } else {
                 crossfadeGroup.visibility = View.VISIBLE
-                showTransitionLabel(next.song, index)
+                showTransitionLabel(next.song, index, nextIndex)
                 crossfade.onOverlapChanged = null
                 crossfade.maxOverlapMs = MAX_OVERLAP_MS
-                crossfade.overlapMs = overlapInto(nextIndex)
+                crossfade.overlapMs = overlapBetween(index, nextIndex)
                 crossfade.setTracks(
                     WaveformStore.peek(current!!.file), WaveformStore.peek(next.file)
                 )
@@ -308,9 +310,9 @@ class PlayerActivity : AppCompatActivity() {
                             // playlist, which is precisely what Auto-mix must
                             // not do.
                             crossfade.onOverlapChanged = null
-                            crossfade.overlapMs = overlapInto(nextIndex)
+                            crossfade.overlapMs = overlapBetween(index, nextIndex)
                             crossfade.onOverlapChanged = { o -> rememberOverlap(o) }
-                            showTransitionLabel(next.song, index)
+                            showTransitionLabel(next.song, index, nextIndex)
                         }
                     } }
                     AutoMix.ensure(current.file, cacheDir, refresh)
@@ -322,12 +324,17 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     /**
-     * The crossfade running into [index] — whatever was set for it, or what
-     * Auto-mix makes of the join when nobody has.
+     * The crossfade for the join from [fromIndex] into [toIndex] — whatever was
+     * set for it, or what Auto-mix makes of the join when nobody has.
+     *
+     * Both ends are passed in. Under shuffle the track before this one is not
+     * the one before it in the stored order, so deriving either end from the
+     * other by adding or subtracting one names the wrong pair and reads the
+     * wrong crossfade. Only the player knows what actually comes next.
      */
-    private fun overlapInto(index: Int): Long =
+    private fun overlapBetween(fromIndex: Int, toIndex: Int): Long =
         AutoMix.effectiveOverlapMs(
-            autoMix, loadedTracks.getOrNull(index - 1), loadedTracks.getOrNull(index)
+            autoMix, loadedTracks.getOrNull(fromIndex), loadedTracks.getOrNull(toIndex)
         )
 
     /**
@@ -335,9 +342,9 @@ class PlayerActivity : AppCompatActivity() {
      * rather than set. Without that the card looks like it is reporting a
      * crossfade somebody chose, and dragging it feels like it went missing.
      */
-    private fun showTransitionLabel(nextSong: String, index: Int) {
+    private fun showTransitionLabel(nextSong: String, fromIndex: Int, toIndex: Int) {
         val automatic = AutoMix.isAutomatic(
-            autoMix, loadedTracks.getOrNull(index), loadedTracks.getOrNull(index + 1)
+            autoMix, loadedTracks.getOrNull(fromIndex), loadedTracks.getOrNull(toIndex)
         )
         crossfadeLabel.text = getString(
             if (automatic) R.string.player_into_next_auto else R.string.player_into_next,
@@ -362,7 +369,7 @@ class PlayerActivity : AppCompatActivity() {
             it[nextIndex] = it[nextIndex].copy(overlapMs = overlapMs, overlapPinned = true)
         }
         library.saveLocalPlaylist(name, loadedTracks)
-        showTransitionLabel(loadedTracks[nextIndex].song, loadedIndex)
+        showTransitionLabel(loadedTracks[nextIndex].song, loadedIndex, nextIndex)
 
         startService(
             Intent(this, PlaybackService::class.java)
