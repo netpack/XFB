@@ -28,6 +28,7 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include "secretstore.h"
 #include "services/NgrokTunnelService.h"
 #include "services/UpdateCheckService.h"
+#include "ui/DonationNotice.h"
 
 #include <QMessageBox>
 #include <QInputDialog>
@@ -60,7 +61,6 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include <QVector>
 #include <QMovie>
 #include <QProgressDialog>
-#include <QTextBrowser>
 #include <QMouseEvent>
 #include <QCloseEvent>
 #include <QDesktopServices>
@@ -135,6 +135,11 @@ int player::s_recursionDepth = 0;
 // when the set of docks changes so stale layouts are discarded.
 // v2: the artwork panel moved from its own dock into the side panel.
 static constexpr int kLayoutStateVersion = 2;
+
+// The "support XFB" notice: a beat after the window is up, then once every
+// two days for as long as the session lasts.
+static constexpr int kDonationNoticeStartupDelayMs = 2500;
+static constexpr int kDonationNoticeIntervalMs = 2 * 24 * 60 * 60 * 1000;
 
 // Item data role holding the audio file of a history row (its text is a
 // timestamped line, not a path), so its artwork icon can be found again.
@@ -217,66 +222,6 @@ protected:
             }
         }
         return QStyledItemDelegate::helpEvent(event, view, option, index);
-    }
-};
-
-class ClickableTextBrowser : public QTextBrowser {
-public:
-    explicit ClickableTextBrowser(QWidget* parent = nullptr) : QTextBrowser(parent) {}
-
-protected:
-    void mousePressEvent(QMouseEvent* event) override {
-        QTextBrowser::mousePressEvent(event);
-        if (event->button() == Qt::LeftButton) {
-            QTextCursor cursor = cursorForPosition(event->pos());
-            cursor.select(QTextCursor::WordUnderCursor);
-            QString href = cursor.selectedText();
-            if (href.startsWith("http://") || href.startsWith("https://")) {
-                QDesktopServices::openUrl(QUrl(href));
-                event->accept(); // Indicate that the event has been handled
-            }
-        }
-    }
-};
-
-class CustomMessageBox : public QDialog {
-    // Same as BpmCellDelegate: no moc here, so bind tr() to this class's own
-    // context or the translations lupdate collected can never be found.
-    Q_DECLARE_TR_FUNCTIONS(CustomMessageBox)
-public:
-    CustomMessageBox(const QString& title, const QString& message, const QPixmap& pixmap, QWidget* parent = nullptr)
-        : QDialog(parent) {
-        setWindowTitle(title);
-
-        QIcon icon(":/48x48.png");
-
-        setWindowIcon(icon);
-        qreal level(0.86);
-        setWindowOpacity(level);
-        setMinimumWidth(586);
-
-
-
-        QVBoxLayout* layout = new QVBoxLayout(this);
-
-        // Add image
-        QLabel* imageLabel = new QLabel(this);
-        imageLabel->setPixmap(pixmap);
-        imageLabel->setAlignment(Qt::AlignCenter);
-        layout->addWidget(imageLabel);
-
-
-        // Add message (as a clickable QTextBrowser)
-        ClickableTextBrowser* messageBrowser = new ClickableTextBrowser(this);
-        messageBrowser->setOpenExternalLinks(true);
-        messageBrowser->setHtml(message);
-        layout->addWidget(messageBrowser);
-
-
-        // Add OK button
-        QPushButton* okButton = new QPushButton(tr("I'll donate if I can"), this);
-        layout->addWidget(okButton);
-        connect(okButton, &QPushButton::clicked, this, &CustomMessageBox::accept);
     }
 };
 
@@ -1343,20 +1288,32 @@ checkDbOpen();
    }
 
 
-    // Show the donation dialog on every startup (skipped only for scripted
-    // runs via --no-dialogs)
+    // The reminder to support XFB used to be a modal dialog fired in front of
+    // the splash screen — nothing could be done until it was dismissed. It is
+    // now a small notice in the corner of the window: it appears shortly after
+    // startup and again every two days for sessions that stay open (this app
+    // is often left running for days), and closing it costs one click.
+    // Scripted runs (--no-dialogs) never see it.
     if (!QApplication::arguments().contains("--no-dialogs")) {
-        try {
-            QPixmap pixmap(":/images/donate.png");
-            CustomMessageBox msgBox(tr("Donate to the Developer!"), tr("Please support the development of XFB!<br>If you appreciate this software, kindly consider making a donation to support the developer!<br><a href=\"https://www.paypal.com/donate/?hosted_button_id=TFDSZU78WLMC6\">Donate via PayPal!</a><br>Contact for professional support and custom development!<br><br>Why did the computer get a little emotional when using WinRAR?<br>_Because even after all the \"evaluation\", it still felt unzipped!"), pixmap);
-            msgBox.exec();
-        } catch (const std::exception& e) {
-            qWarning() << "Exception showing donation dialog:" << e.what();
-        } catch (...) {
-            qWarning() << "Unknown exception showing donation dialog";
-        }
+        m_donationNotice = new DonationNotice(this);
+
+        auto showNotice = [this]() {
+            if (!m_donationNotice)
+                return;
+            qDebug() << "Showing the donation notice";
+            m_donationNotice->popUp();
+            announceAccessible(m_donationNotice->spokenText());
+        };
+
+        // Let the main window finish appearing before the notice fades in.
+        QTimer::singleShot(kDonationNoticeStartupDelayMs, this, showNotice);
+
+        m_donationNoticeTimer = new QTimer(this);
+        m_donationNoticeTimer->setInterval(kDonationNoticeIntervalMs);
+        connect(m_donationNoticeTimer, &QTimer::timeout, this, showNotice);
+        m_donationNoticeTimer->start();
     } else {
-        qDebug() << "Skipping donation dialog (--no-dialogs flag)";
+        qDebug() << "Skipping the donation notice (--no-dialogs flag)";
     }
 
    // Theming (palette + stylesheet) is applied application-wide by

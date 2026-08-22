@@ -68,6 +68,7 @@ SOURCES += \
     controllers/MainController.cpp \
     controllers/PlayerUIController.cpp \
     ui/ProgressIndicatorWidget.cpp \
+    ui/DonationNotice.cpp \
     models/MusicListModel.cpp \
     dialogs/EnhancedAddMusicSingleDialog.cpp \
     dialogs/EnhancedAddDirectoryDialog.cpp \
@@ -140,6 +141,7 @@ HEADERS += \
     controllers/PlayerUIController.h \
     controllers/ModernSignalConnections.h \
     ui/ProgressIndicatorWidget.h \
+    ui/DonationNotice.h \
     models/MusicListModel.h \
     dialogs/EnhancedAddMusicSingleDialog.h \
     dialogs/EnhancedAddDirectoryDialog.h \

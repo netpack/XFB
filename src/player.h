@@ -48,6 +48,7 @@ class TorrentSearchService;
 class TorrentDownloadService;
 class NgrokTunnelService;
 class UpdateCheckService;
+class DonationNotice;
 class AudioFxWidget;
 class WaveformStore;
 class PlaylistWaveView;
@@ -432,6 +433,11 @@ private slots:
     // Update notifications
     UpdateCheckService *m_updateService = nullptr;
     bool m_updateCheckManual = false;
+
+    // The corner "support XFB" notice, and the two-day timer that brings it
+    // back for sessions that are never closed.
+    DonationNotice *m_donationNotice = nullptr;
+    QTimer *m_donationNoticeTimer = nullptr;
 
     // Audio FX tab (inserted after the Pads tab; visibility via ShowFxTab)
     AudioFxWidget *m_fxTabWidget = nullptr;

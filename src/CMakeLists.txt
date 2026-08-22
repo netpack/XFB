@@ -81,6 +81,8 @@ set(SOURCES
     controllers/PlayerUIController.cpp
     # UI Components
     ui/ProgressIndicatorWidget.cpp
+    # Corner "support XFB" notice (replaces the old startup donation dialog)
+    ui/DonationNotice.cpp
     # Models
     models/MusicListModel.cpp
     # Enhanced Dialogs
@@ -167,6 +169,7 @@ set(HEADERS
     controllers/ModernSignalConnections.h
     # UI Components
     ui/ProgressIndicatorWidget.h
+    ui/DonationNotice.h
     # Models
     models/MusicListModel.h
     # Enhanced Dialogs
