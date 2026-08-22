@@ -27,7 +27,7 @@ echo ========================================
 echo.
 
 set PROJECT_NAME=XFB
-set VERSION=3.1420
+set VERSION=3.1421
 set BUILD_DIR=build
 set INSTALL_DIR=install
 

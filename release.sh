@@ -4,7 +4,7 @@
 
 set -e
 
-VERSION="3.1420"
+VERSION="3.1421"
 RELEASE_NAME="XFB $VERSION — Pour Mr. De La Plume (Alain Bogaerts) pour l'Éternité."
 
 echo "╔══════════════════════════════════════════════════════════╗"

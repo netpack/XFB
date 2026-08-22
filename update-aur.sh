@@ -4,7 +4,7 @@
 
 set -e
 
-VERSION="3.1420"
+VERSION="3.1421"
 PKGREL="1"
 
 echo "=========================================="
@@ -66,7 +66,7 @@ echo "Committing changes..."
 git add PKGBUILD .SRCINFO xfb.install
 git commit -m "Update to version $VERSION-$PKGREL
 
-- Updated to XFB 3.1420
+- Updated to XFB 3.1421
 - Adds epoch=1. pacman compares the dot-separated segments as integers, so
   3.14159 outranked 3.1416 and every rounded release looked like a downgrade
   ('local is newer than AUR'). The epoch restores the ordering
