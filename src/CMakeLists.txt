@@ -327,6 +327,19 @@ if(APPLE)
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${XFB_SERVER_SCRIPTS} "$<TARGET_BUNDLE_DIR:XFB>/Contents/Resources/scripts"
         COMMENT "Copying server script templates into app bundle"
     )
+
+    # The phone app, if one has been staged. XFB serves this to phones itself —
+    # there is no store in the loop — and Resources is the second place
+    # MobileSyncServer::companionApkPath() looks on macOS. Run at build time
+    # rather than as an install rule because build-macos.sh takes the bundle
+    # straight out of the build tree and never calls cmake --install.
+    add_custom_command(TARGET XFB POST_BUILD
+        COMMAND ${CMAKE_COMMAND}
+                -DAPK_DIR=${CMAKE_SOURCE_DIR}/packaging/companion
+                -DDEST=$<TARGET_BUNDLE_DIR:XFB>/Contents/Resources
+                -P ${CMAKE_SOURCE_DIR}/cmake/StageCompanionApk.cmake
+        COMMENT "Staging the companion APK into the app bundle (if present)"
+    )
 elseif(WIN32)
     # Windows-specific properties
     set_target_properties(XFB PROPERTIES
@@ -382,6 +395,17 @@ if(UNIX AND NOT APPLE)
     file(GLOB XFB_SERVER_SCRIPTS "${CMAKE_SOURCE_DIR}/scripts/serverFtpCmds*")
     install(FILES ${XFB_SERVER_SCRIPTS}
         DESTINATION share/xfb/scripts
+    )
+
+    # The phone app, if one has been staged. OPTIONAL because it is a build
+    # product of the Android toolchain: a desktop build with none staged must
+    # still install, and XFB then simply says it has no app to hand out.
+    # /usr/share/xfb is the last path companionApkPath() tries.
+    install(FILES
+        "${CMAKE_SOURCE_DIR}/packaging/companion/xfb-companion.apk"
+        "${CMAKE_SOURCE_DIR}/packaging/companion/xfb-companion.json"
+        DESTINATION share/xfb
+        OPTIONAL
     )
 
     # Pixmaps fallback (used by older menus). The file name must match the

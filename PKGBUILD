@@ -55,8 +55,16 @@ optdepends=(
     'opus-tools: Opus audio support'
     'mediainfo: Media file information'
 )
-source=("git+https://github.com/netpack/XFB.git#tag=v${pkgver}")
-sha256sums=('SKIP')
+# The companion APK comes from the release rather than the tag: it is a build
+# product of the Android toolchain, signed with a key that is not in the
+# repository, so it is never committed. sha256 is the released file's own --
+# see android/RELEASING.md, which prints it.
+source=("git+https://github.com/netpack/XFB.git#tag=v${pkgver}"
+        "xfb-companion-${pkgver}.apk::https://github.com/netpack/XFB/releases/download/v${pkgver}/xfb-companion.apk"
+        "xfb-companion-${pkgver}.json::https://github.com/netpack/XFB/releases/download/v${pkgver}/xfb-companion.json")
+sha256sums=('SKIP'
+            'REPLACE_WITH_APK_SHA256'
+            'REPLACE_WITH_SIDECAR_SHA256')
 
 build() {
     cd "$srcdir/XFB"
@@ -120,6 +128,17 @@ package() {
         fi
     fi
     
+    # Install the phone app. XFB serves this to phones itself, and
+    # /usr/share/xfb is the last path MobileSyncServer::companionApkPath()
+    # tries. Both files or neither: without the sidecar the APK is offered as a
+    # download but never recognised as an update.
+    if [ -f "$srcdir/xfb-companion-${pkgver}.apk" ]; then
+        install -Dm644 "$srcdir/xfb-companion-${pkgver}.apk" \
+            "$pkgdir/usr/share/xfb/xfb-companion.apk"
+        install -Dm644 "$srcdir/xfb-companion-${pkgver}.json" \
+            "$pkgdir/usr/share/xfb/xfb-companion.json"
+    fi
+
     # Install the server-sync script templates (executable: legacy call
     # sites exec the extensionless ones directly)
     if [ -d "scripts" ]; then

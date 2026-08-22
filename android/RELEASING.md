@@ -85,16 +85,47 @@ it. Uninstall that one first; it is not a problem with the key.
 
 ## 5. Shipping it inside the desktop packages
 
-Steps 1–4 put the APK on **your** machine, so your XFB hands it out. For
-everybody else's XFB to hand it out, the APK has to travel inside the desktop
-packages, and that is not wired up yet. What each channel needs:
+`package-companion.sh` stages the two files twice: into XFB's drop directory, so
+*this* machine serves them straight away, and into `packaging/companion/`, which
+is what the desktop packaging reads. Neither file is committed — they are build
+products of another toolchain, 8 MB a release, and the key that makes them
+installable is not in the repository.
 
-- **macOS** — copy into `XFB.app/Contents/Resources/` alongside the icon, in the
-  same CMake install step that assembles the bundle.
-- **Windows** — `installer.nsi` should place it beside `XFB.exe`.
-- **Debian / Arch** — install to `/usr/share/xfb/`.
+Every channel treats them as optional. With nothing staged the packages build
+exactly as before and XFB says it has no app to hand out.
 
-The APK is a build product of a different toolchain, so it cannot simply be a
-CMake target: either commit the signed APK for the packaging steps to pick up,
-or build it first and point the packaging at
-`android/app/build/outputs/apk/release/`. Both put the sidecar next to it.
+| channel | lands at | wired in |
+|---|---|---|
+| macOS | `XFB.app/Contents/Resources/` | `cmake/StageCompanionApk.cmake`, run at build time — `build-macos.sh` takes the bundle out of the build tree and never runs `cmake --install` |
+| Debian | `/usr/share/xfb/` | `install(FILES ... OPTIONAL)` in `src/CMakeLists.txt`; the Docker build `COPY . /src` brings the staged files in |
+| Windows | beside `XFB.exe` | `build-windows.bat` copies them into the dist folder, and NSIS packs the folder whole |
+| Arch | `/usr/share/xfb/` | the PKGBUILD **downloads them from the release** — it builds from a git tag and never sees `packaging/companion/` |
+
+So the order for a full release is: build and stage the APK first, then build the
+desktop packages, then publish.
+
+### Windows needs the file carried over
+
+The Android build runs on the Mac. Copy `packaging/companion/xfb-companion.apk`
+and `xfb-companion.json` into the same directory on the Windows machine before
+running `build-windows.bat`, or that installer ships without the phone app.
+
+### Arch needs the hashes
+
+Upload `xfb-companion.apk` and `xfb-companion.json` as assets on the GitHub
+release, then replace `REPLACE_WITH_APK_SHA256` and
+`REPLACE_WITH_SIDECAR_SHA256` in both `PKGBUILD` and `aur-xfb/PKGBUILD`.
+`package-companion.sh` prints both hashes when it finishes.
+
+### Checking a package actually carries it
+
+```bash
+unzip -l XFB-*-Setup.exe | grep companion
+ls "XFB.app/Contents/Resources/" | grep companion
+dpkg -c xfb_*.deb | grep companion
+```
+
+Then, from the installed copy rather than a build tree, open Options › Sync to
+Phone: the last line names the APK it is offering and its version. That line
+reading "none to hand out" is the whole failure mode, and it is the only check
+that exercises the lookup the phone actually depends on.

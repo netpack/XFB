@@ -263,6 +263,25 @@ if exist "%DIST_DIR%" rmdir /s /q "%DIST_DIR%"
 mkdir "%DIST_DIR%"
 copy "%BUILD_DIR%\%EXE_PATH%" "%DIST_DIR%\XFB.exe"
 
+REM --- The phone app, if one has been staged ---
+REM XFB hands the companion APK to phones itself, and the first place it looks
+REM is beside XFB.exe. Optional: the APK is built by the Android toolchain on
+REM another machine, so a Windows build without one must still produce an
+REM installer -- XFB then says it has no app to hand out. NSIS packs the whole
+REM dist folder, so dropping the two files here is all that is needed.
+if exist "packaging\companion\xfb-companion.apk" (
+    echo [INFO] Including the companion APK for phones.
+    copy /y "packaging\companion\xfb-companion.apk" "%DIST_DIR%\xfb-companion.apk" >nul
+    if exist "packaging\companion\xfb-companion.json" (
+        copy /y "packaging\companion\xfb-companion.json" "%DIST_DIR%\xfb-companion.json" >nul
+    ) else (
+        echo [WARNING] No xfb-companion.json beside the APK: phones will be
+        echo [WARNING] offered the download but never told it is an update.
+    )
+) else (
+    echo [INFO] No companion APK staged; Sync to Phone will offer no download.
+)
+
 REM Pick the windeployqt to run. windeployqt is a native tool, so when
 REM cross-compiling (e.g. arm64 target on an x64 host) the target Qt's
 REM windeployqt can't execute. In that case use the HOST Qt's windeployqt and

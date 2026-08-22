@@ -83,14 +83,29 @@ else
     destination="$HOME/.local/share/Netpack - Online Solutions/XFB"
 fi
 
+sidecar_json='{"versionName": "'"$version"'", "versionCode": '"$code"'}'
+
 mkdir -p "$destination"
 cp "$apk" "$destination/xfb-companion.apk"
-cat > "$destination/xfb-companion.json" <<EOF
-{"versionName": "$version", "versionCode": $code}
-EOF
+printf '%s\n' "$sidecar_json" > "$destination/xfb-companion.json"
+
+# --- and where the desktop packaging picks it up -----------------------------
+# The same two files, staged in the tree, are what the macOS bundle, the Debian
+# install rule and the Windows dist folder each copy from. Not committed: see
+# packaging/companion/README.md.
+staging="$(cd "$here/.." && pwd)/packaging/companion"
+mkdir -p "$staging"
+cp "$apk" "$staging/xfb-companion.apk"
+printf '%s\n' "$sidecar_json" > "$staging/xfb-companion.json"
 
 echo
 echo "xfb-companion.apk $version (versionCode $code)"
 echo "  -> $destination"
+echo "     (this machine's XFB serves it now)"
+echo "  -> $staging"
+echo "     (desktop packages built from here will carry it)"
 echo
-echo "Options > Sync to Phone should now say it is offering that file."
+echo "Arch builds from the git tag and cannot see the staging directory, so its"
+echo "PKGBUILD downloads these from the release. Its sha256sums are:"
+echo "  apk     $(shasum -a 256 "$apk" | cut -d" " -f1)"
+echo "  sidecar $(printf '%s\n' "$sidecar_json" | shasum -a 256 | cut -d" " -f1)"
