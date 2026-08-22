@@ -42,7 +42,60 @@ class LibraryStore(context: Context) {
         return if (file.exists()) file.length() else 0L
     }
 
+    /**
+     * Writes what the station says a playlist is.
+     *
+     * Crossfades dragged on this phone are laid back over the station's own:
+     * the desk has no idea a join was edited here, so taking its number would
+     * quietly undo the edit the next time the set was downloaded.
+     */
     fun saveManifest(playlistName: String, tracks: List<Track>) {
+        val edited = editedOverlaps(playlistName)
+
+        writeManifest(
+            playlistName,
+            tracks.map { track ->
+                val edit = edited[track.id]
+                SavedTrack(
+                    id = track.id,
+                    artist = track.artist,
+                    song = track.song,
+                    duration = track.duration,
+                    bytes = track.bytes,
+                    overlapMs = edit?.overlapMs ?: track.overlapMs,
+                    // An overlap that arrived from the desk is somebody's
+                    // decision; a zero there is simply a join nobody set.
+                    overlapPinned = edit?.overlapPinned ?: (track.overlapMs > 0),
+                    overlapEditedHere = edit != null,
+                    volumeEnvelope = track.volumeEnvelope,
+                    file = trackFile(track)
+                )
+            },
+            // Where a playlist came from is settled when its manifest is first
+            // written, and no later write is entitled to change its mind.
+            madeHere = isLocalPlaylist(playlistName)
+        )
+    }
+
+    /**
+     * The station's tracks with the crossfades edited here laid over them, for
+     * showing a playlist that is being read live from the desk.
+     */
+    fun withLocalOverlaps(playlistName: String, tracks: List<Track>): List<Track> {
+        val edited = editedOverlaps(playlistName)
+        if (edited.isEmpty()) return tracks
+        return tracks.map { track ->
+            edited[track.id]?.let { track.copy(overlapMs = it.overlapMs) } ?: track
+        }
+    }
+
+    /** The joins of a saved playlist that were dragged on this phone, by id. */
+    private fun editedOverlaps(playlistName: String): Map<String, SavedTrack> =
+        loadManifest(playlistName)?.tracks.orEmpty()
+            .filter { it.overlapEditedHere }
+            .associateBy { it.id }
+
+    private fun writeManifest(name: String, tracks: List<SavedTrack>, madeHere: Boolean) {
         playlistDir.mkdirs()
 
         val array = JSONArray()
@@ -55,20 +108,22 @@ class LibraryStore(context: Context) {
                     .put("duration", track.duration)
                     .put("bytes", track.bytes)
                     .put("overlapMs", track.overlapMs)
-                    // An overlap that arrived from the desk is somebody's
-                    // decision; a zero there is simply a join nobody set.
-                    .put("overlapPinned", track.overlapMs > 0)
+                    .put("overlapPinned", track.overlapPinned)
+                    .put("overlapEditedHere", track.overlapEditedHere)
                     .put("volumeEnvelope", track.volumeEnvelope)
-                    .put("file", trackFile(track).absolutePath)
+                    .put("file", track.file.absolutePath)
             )
         }
 
         val manifest = JSONObject()
-            .put("name", playlistName)
+            .put("name", name)
             .put("savedAt", System.currentTimeMillis())
             .put("tracks", array)
+        // Written only when true, so a synced manifest keeps the shape it has
+        // always had: no flag at all.
+        if (madeHere) manifest.put("madeHere", true)
 
-        File(playlistDir, manifestName(playlistName)).writeText(manifest.toString())
+        File(playlistDir, manifestName(name)).writeText(manifest.toString())
     }
 
     fun manifestExists(playlistName: String): Boolean = manifestFile(playlistName).exists()
@@ -90,34 +145,24 @@ class LibraryStore(context: Context) {
      * Writes a playlist the operator built here rather than one pulled from a
      * station. Same shape as a synced manifest, so playback cannot tell them
      * apart — only the file it came from differs.
+     *
+     * The name is a new one, so this is where the origin gets decided; a
+     * manifest already on disk keeps whatever it said, since nothing here
+     * knows better than the write that created it.
      */
-    fun saveLocalPlaylist(name: String, tracks: List<SavedTrack>) {
-        playlistDir.mkdirs()
+    fun saveLocalPlaylist(name: String, tracks: List<SavedTrack>) =
+        writeManifest(name, tracks, madeHere = !manifestExists(name) || isLocalPlaylist(name))
 
-        val array = JSONArray()
-        tracks.forEach { track ->
-            array.put(
-                JSONObject()
-                    .put("id", track.id)
-                    .put("artist", track.artist)
-                    .put("song", track.song)
-                    .put("bytes", track.bytes)
-                    .put("overlapMs", track.overlapMs)
-                    .put("overlapPinned", track.overlapPinned)
-                    .put("volumeEnvelope", track.volumeEnvelope)
-                    .put("file", track.file.absolutePath)
-            )
-        }
-
-        File(playlistDir, manifestName(name)).writeText(
-            JSONObject()
-                .put("name", name)
-                .put("savedAt", System.currentTimeMillis())
-                .put("madeHere", true)
-                .put("tracks", array)
-                .toString()
-        )
-    }
+    /**
+     * Rewrites a playlist whose crossfades were edited on the phone.
+     *
+     * Dragging a join says nothing about where the playlist came from, so the
+     * origin flag is carried over rather than stamped: a synced playlist that
+     * is edited here stays a synced playlist, and goes on being looked up on
+     * the station like one.
+     */
+    fun saveOverlapEdit(name: String, tracks: List<SavedTrack>) =
+        writeManifest(name, tracks, madeHere = isLocalPlaylist(name))
 
     fun deleteLocalPlaylist(name: String): Boolean = manifestFile(name).delete()
 
@@ -155,10 +200,12 @@ class LibraryStore(context: Context) {
                     id = id,
                     artist = item.optString("artist"),
                     song = item.optString("song"),
+                    duration = item.optString("duration"),
                     bytes = item.optLong("bytes"),
                     // Overlaps belong to a playlist, not to the track itself.
                     overlapMs = 0,
                     overlapPinned = false,
+                    overlapEditedHere = false,
                     volumeEnvelope = item.optString("volumeEnvelope"),
                     file = audio
                 )
@@ -209,6 +256,7 @@ class LibraryStore(context: Context) {
             track.copy(
                 overlapMs = previous.overlapMs,
                 overlapPinned = previous.overlapPinned,
+                overlapEditedHere = previous.overlapEditedHere,
                 volumeEnvelope = previous.volumeEnvelope
             )
         }

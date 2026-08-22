@@ -120,8 +120,10 @@ class PlaylistActivity : AppCompatActivity() {
             runCatching { SyncClient.playlist(station, name) }
                 .onSuccess { loaded ->
                     progress.visibility = View.GONE
-                    tracks = loaded
-                    adapter.submit(loaded, library)
+                    // A join dragged here outranks the station's number for
+                    // it, on this screen exactly as in the manifest.
+                    tracks = library.withLocalOverlaps(name, loaded)
+                    adapter.submit(tracks, library)
                     updateSummary()
                     downloadButton.isEnabled = loaded.isNotEmpty()
                 }
@@ -144,7 +146,7 @@ class PlaylistActivity : AppCompatActivity() {
                 id = track.id,
                 artist = track.artist,
                 song = track.song,
-                duration = "",
+                duration = track.duration,
                 bytes = track.bytes,
                 overlapMs = track.overlapMs,
                 volumeEnvelope = track.volumeEnvelope

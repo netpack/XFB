@@ -8,6 +8,8 @@ data class SavedTrack(
     val id: String,
     val artist: String,
     val song: String,
+    /** As the station words it, e.g. "3:41". Empty when nothing said. */
+    val duration: String,
     val bytes: Long,
     /** Crossfade into this track, in milliseconds. Zero means a clean cut. */
     val overlapMs: Long,
@@ -19,6 +21,12 @@ data class SavedTrack(
      * one that was simply never set — so Auto-mix would put it back.
      */
     val overlapPinned: Boolean,
+    /**
+     * True when [overlapMs] was dragged on this phone rather than sent by the
+     * station. Syncing the playlist again keeps these joins as they are: the
+     * desk never heard about the edit, so its own number is not an update.
+     */
+    val overlapEditedHere: Boolean,
     val volumeEnvelope: String,
     val file: File
 ) {
@@ -77,7 +85,7 @@ object VolumeEnvelope {
     }
 }
 
-/** Reads back what [LibraryStore.saveManifest] wrote. */
+/** Reads back what [LibraryStore.saveManifest] and its siblings wrote. */
 fun LibraryStore.loadManifest(playlistName: String): SavedPlaylist? {
     val file = manifestFile(playlistName)
     if (!file.exists()) return null
@@ -94,11 +102,16 @@ fun LibraryStore.loadManifest(playlistName: String): SavedPlaylist? {
             id = item.optString("id"),
             artist = item.optString("artist"),
             song = item.optString("song"),
+            duration = item.optString("duration"),
             bytes = item.optLong("bytes"),
             overlapMs = overlapMs,
             // Manifests written before Auto-mix existed carry no such flag; an
             // overlap in one of those came off the desk, so it is pinned.
             overlapPinned = item.optBoolean("overlapPinned", overlapMs > 0),
+            // Likewise for manifests written before edits were told apart from
+            // the desk's own: taking those for the desk's is the safe reading,
+            // since it only means a resync can still overwrite them.
+            overlapEditedHere = item.optBoolean("overlapEditedHere", false),
             volumeEnvelope = item.optString("volumeEnvelope"),
             file = File(path)
         )

@@ -366,9 +366,11 @@ class PlayerActivity : AppCompatActivity() {
         if (nextIndex !in loadedTracks.indices) return
 
         loadedTracks = loadedTracks.toMutableList().also {
-            it[nextIndex] = it[nextIndex].copy(overlapMs = overlapMs, overlapPinned = true)
+            it[nextIndex] = it[nextIndex].copy(
+                overlapMs = overlapMs, overlapPinned = true, overlapEditedHere = true
+            )
         }
-        library.saveLocalPlaylist(name, loadedTracks)
+        library.saveOverlapEdit(name, loadedTracks)
         showTransitionLabel(loadedTracks[nextIndex].song, loadedIndex, nextIndex)
 
         startService(

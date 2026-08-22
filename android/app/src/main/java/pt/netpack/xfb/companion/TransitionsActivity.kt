@@ -60,7 +60,9 @@ class TransitionsActivity : AppCompatActivity() {
         // Auto-mix stops having an opinion about it.
         list.adapter = TransitionAdapter(tracks, cacheDir, AutoMixSettings.isEnabled(this)) {
             index, overlap ->
-            tracks[index] = tracks[index].copy(overlapMs = overlap, overlapPinned = true)
+            tracks[index] = tracks[index].copy(
+                overlapMs = overlap, overlapPinned = true, overlapEditedHere = true
+            )
             dirty = true
         }
 
@@ -71,7 +73,7 @@ class TransitionsActivity : AppCompatActivity() {
         // Saved on the way out rather than on every drag: a drag produces
         // hundreds of values and none of the intermediate ones matter.
         if (dirty) {
-            playlist?.let { library.saveLocalPlaylist(it.name, tracks) }
+            playlist?.let { library.saveOverlapEdit(it.name, tracks) }
             dirty = false
             Toast.makeText(this, R.string.transitions_saved, Toast.LENGTH_SHORT).show()
         }
