@@ -71,9 +71,13 @@ class LibraryStore(context: Context) {
                     file = trackFile(track)
                 )
             },
-            // Where a playlist came from is settled when its manifest is first
-            // written, and no later write is entitled to change its mind.
-            madeHere = isLocalPlaylist(playlistName)
+            // Not carried over, unlike an overlap edit: this method is only
+            // ever called with what the station just sent, so the download
+            // itself is proof the playlist is not one made here. Reading the
+            // old flag instead would leave any manifest the earlier bug
+            // mislabelled stuck as local for ever — re-syncing it from the
+            // desk, the obvious repair, would keep saying "made here".
+            madeHere = false
         )
     }
 
