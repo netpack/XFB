@@ -24,7 +24,7 @@ class QGraphicsOpacityEffect;
  * is resized, and the auto-hide countdown pauses while the pointer rests on
  * the notice so a reader is never cut off mid-sentence.
  *
- * @since XFB 3.1419
+ * @since XFB 3.1420
  */
 class DonationNotice : public QWidget
 {

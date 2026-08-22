@@ -13,7 +13,7 @@
 
 set -e
 
-VERSION="${1:-3.1419}"
+VERSION="${1:-3.1420}"
 DMG="XFB-${VERSION}-macOS.dmg"
 TAP_REPO="netpack/homebrew-xfb"
 TAP_DIR="homebrew-xfb"
