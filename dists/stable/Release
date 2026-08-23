@@ -6,19 +6,19 @@ Version: 2.0
 Architectures: amd64 arm64
 Components: main
 Description: XFB Radio Automation Software - radio broadcasting with comprehensive accessibility support
-Date: Sat, 22 Aug 2026 12:40:05 +0000
+Date: Sun, 23 Aug 2026 14:44:13 +0000
 MD5Sum:
- 880040933075111080cd456199d20258             1311 main/binary-amd64/Packages
- 0116045876726bff6fc72833f8c314c8              738 main/binary-amd64/Packages.gz
- 23fcdca03efbc284c35819a447e50fb2             1311 main/binary-arm64/Packages
- 7693a8ddfdf579128e8985a628f6bd8b              739 main/binary-arm64/Packages.gz
+ a4b727baf0defa6b0b9c870fa0fb7b06             1311 main/binary-amd64/Packages
+ c72c8e2f31e3ef5887f09208ff1bcb5f              738 main/binary-amd64/Packages.gz
+ cac255721560c68121079536068fbef6             1311 main/binary-arm64/Packages
+ 25eceb699ce6afc919feb6fae4c2029a              740 main/binary-arm64/Packages.gz
 SHA1:
- 7e745f091c587e1d51d63c51e01b68f2bfbfd3cb             1311 main/binary-amd64/Packages
- 302b77993844a5a092e99764946cf3b80a803555              738 main/binary-amd64/Packages.gz
- ce718528ab000142418d7f4a6db65cefe07d6b30             1311 main/binary-arm64/Packages
- 52e316c4822827af0fffa30b40abcab61a4fe871              739 main/binary-arm64/Packages.gz
+ 6b7e1305c06b99715f235576b56dd297d3e55e1f             1311 main/binary-amd64/Packages
+ 438a79b08b85af187bff89089036c0eedabe24d2              738 main/binary-amd64/Packages.gz
+ c1adf16e5e1c86db2a8aef52b0353ad61523e5c0             1311 main/binary-arm64/Packages
+ 7a5c47763ce3a36341c178b9847042ed60cca4e8              740 main/binary-arm64/Packages.gz
 SHA256:
- 9a18d019e321561302e3fe25c759552d67da37c29930bd694305db60f1dc259d             1311 main/binary-amd64/Packages
- 39a66d657a3a1f70bd0c42207dddabffa8361bda30dbcf967df2cee547061368              738 main/binary-amd64/Packages.gz
- 824b9c87a77286de3386ee2efe2c3b96f61d81b1c25b38e0179b19b38da88063             1311 main/binary-arm64/Packages
- b4d14b5be11dfcaf83414bf7b70dc26fbd1e09bb5b3b1d9f43a19c7ab7258cdb              739 main/binary-arm64/Packages.gz
+ 2c531c375d43c3ccb4a47f3605ded9777d89441d89e1399e57e111408957e508             1311 main/binary-amd64/Packages
+ 9b71aabfc9b63a8619ee5b59b5d32905ea22fe9ab7a441de9fc47535b7e9464b              738 main/binary-amd64/Packages.gz
+ 8c99fe1e78792f43d44e4376e6afac93862dcb0bba486800e5271977f2a1cd7a             1311 main/binary-arm64/Packages
+ 1f519c5b95126cf290cf15edad583560657b97ea9b038c27d88c5c76365aba14              740 main/binary-arm64/Packages.gz
