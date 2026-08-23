@@ -2382,6 +2382,7 @@ void player::updateConfig() {
     // the previous one's before it stops being a smooth crossfade.
     m_bpmMatch = settings.value("AutoModeMatchBpm", false).toBool();
     m_bpmTolerance = qBound(1, settings.value("AutoModeBpmTolerance", 8).toInt(), 60);
+    m_autoModeNoRepeat = qBound(0, settings.value("AutoModeNoRepeatCount", 10).toInt(), 500);
 
     // Stereo LED output meter: visibility and docking position. Horizontal
     // lives in the volume-slider strip; vertical docks between the main
@@ -6275,6 +6276,19 @@ void player::on_bt_autoMode_clicked()
 // The track the next auto mode pick will follow: the tail of the running
 // order, or — when nothing is queued — whatever is on air. Its tempo is
 // what the crossfade into the new track has to work across.
+// Auto Mode's memory of what it has put up lately. Bounded well above the
+// window it is actually asked for, so raising AutoModeNoRepeatCount at runtime
+// has something to look back on.
+void player::rememberAutoModePick(const QString &path)
+{
+    if (path.isEmpty())
+        return;
+    m_recentAutoPicks.removeAll(path);
+    m_recentAutoPicks.append(path);
+    while (m_recentAutoPicks.size() > 500)
+        m_recentAutoPicks.removeFirst();
+}
+
 QString player::autoModeReferenceTrack() const
 {
     const int rows = ui->playlist->count();
@@ -6347,6 +6361,16 @@ checkDbOpen();
     // programmed genre holds nothing playable (the reference track may be the
     // only one in it) — must still keep the playlist fed, so a miss on an
     // earlier pass is not a failure. Only running out of library is.
+    // The size of the library bounds the no-repeat window below.
+    int libraryCount = 0;
+    {
+        QSqlQuery countQuery(db);
+        if (countQuery.exec(QStringLiteral("select count(*) from musics"))
+            && countQuery.next()) {
+            libraryCount = countQuery.value(0).toInt();
+        }
+    }
+
     const bool haveGenre = !currentGenre.isEmpty();
     const int lastPass = haveGenre ? 2 : 1; // no genre: pass 1 is already the wide one
     for (int pass = 0; pass <= lastPass; ++pass) {
@@ -6355,20 +6379,38 @@ checkDbOpen();
             continue; // nothing measured to match against
         const bool matchGenre = (pass < 2 && haveGenre);
 
-        // The two exclusions keep Auto Mode from playing the same track twice
-        // in a row, but they are only added when there is something to
-        // exclude. Binding an empty QString here used to bind SQL NULL, and
-        // "path <> NULL" is NULL rather than true, so *every* row was filtered
-        // out — which is why Auto Mode could never pick its first track from a
-        // cold start, and only worked once something had already played.
-        const bool excludeLast = !lastPlayedSong.isEmpty();
-        const bool excludeReference = !referenceTrack.isEmpty();
+        // What Auto Mode refuses to play again. Remembering only the track
+        // just played is not enough: whenever the pool it draws from is
+        // narrow — an hour's programmed genre, or the handful of tracks that
+        // happen to have a measured BPM — two or three titles ping-pong for
+        // hours. The window never covers more than half the library, so a
+        // small one cannot exclude everything it has.
+        const int windowSize = qMin(m_autoModeNoRepeat, qMax(0, libraryCount / 2));
+        QStringList excluded;
+        for (int i = qMax(0, m_recentAutoPicks.size() - windowSize);
+             i < m_recentAutoPicks.size(); ++i) {
+            const QString &recent = m_recentAutoPicks.at(i);
+            if (!recent.isEmpty() && !excluded.contains(recent))
+                excluded << recent;
+        }
+        // These two are the immediate neighbours and are excluded whatever the
+        // window is. An empty one is left out rather than bound: binding an
+        // empty QString binds SQL NULL, "path <> NULL" is NULL rather than
+        // true, and that is why Auto Mode could never pick its first track
+        // from a cold start until it had already played something.
+        for (const QString &neighbour : {lastPlayedSong, referenceTrack}) {
+            if (!neighbour.isEmpty() && !excluded.contains(neighbour))
+                excluded << neighbour;
+        }
 
         QString sql = QStringLiteral("select path from musics where 1 = 1");
-        if (excludeLast)
-            sql += QStringLiteral(" and path <> :last");
-        if (excludeReference)
-            sql += QStringLiteral(" and path <> :reference");
+        if (!excluded.isEmpty()) {
+            QStringList placeholders;
+            for (int i = 0; i < excluded.size(); ++i)
+                placeholders << QStringLiteral(":x%1").arg(i);
+            sql += QStringLiteral(" and path not in (%1)")
+                       .arg(placeholders.join(QStringLiteral(", ")));
+        }
         if (matchGenre)
             sql += QStringLiteral(" and genre1 like :genre");
         if (matchBpm) {
@@ -6383,10 +6425,8 @@ checkDbOpen();
 
         QSqlQuery query(db);
         query.prepare(sql);
-        if (excludeLast)
-            query.bindValue(QStringLiteral(":last"), lastPlayedSong);
-        if (excludeReference)
-            query.bindValue(QStringLiteral(":reference"), referenceTrack);
+        for (int i = 0; i < excluded.size(); ++i)
+            query.bindValue(QStringLiteral(":x%1").arg(i), excluded.at(i));
         if (matchGenre)
             query.bindValue(QStringLiteral(":genre"), currentGenre);
         if (matchBpm) {
@@ -6413,19 +6453,20 @@ checkDbOpen();
                          << currentGenre << "— falling back to the whole library";
                 continue;
             }
-            // Last resort: a library too small to offer anything *but* the
-            // track just played would otherwise leave the station silent,
-            // which is the one thing Auto Mode exists to prevent. Repeating
-            // is better than dead air.
-            if (excludeLast || excludeReference) {
+            // Last resort: a library too small to offer anything *but* what
+            // was just played would otherwise leave the station silent, which
+            // is the one thing Auto Mode exists to prevent. Repeating is
+            // better than dead air.
+            if (!excluded.isEmpty()) {
                 QSqlQuery again(db);
                 if (again.exec(QStringLiteral("select path from musics"
                                               " order by random() limit 1"))
                     && again.next()) {
                     const QString onlyChoice = again.value(0).toString();
-                    qDebug() << "autoMode has nothing but the track just played;"
+                    qDebug() << "autoMode has nothing it has not played recently;"
                              << "repeating" << onlyChoice << "rather than going silent";
                     ui->playlist->addItem(onlyChoice);
+                    rememberAutoModePick(onlyChoice);
                     return true;
                 }
             }
@@ -6435,6 +6476,7 @@ checkDbOpen();
 
         const QString path = query.value(0).toString();
         ui->playlist->addItem(path);
+        rememberAutoModePick(path);
         if (matchBpm) {
             qDebug() << "autoMode tempo-matched chooser adding:" << path
                      << "at" << m_bpmLibrary->bpmFor(path) << "BPM, following"

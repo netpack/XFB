@@ -505,6 +505,11 @@ private slots:
     // Options: pick the next auto mode track near the previous one's tempo
     bool m_bpmMatch = false;
     int m_bpmTolerance = 8; // BPM, either side
+    /// How many recently played tracks Auto Mode refuses to play again.
+    int m_autoModeNoRepeat = 10;
+    void rememberAutoModePick(const QString &path);
+    /// What it has put up lately, newest last — its no-repeat window.
+    QStringList m_recentAutoPicks;
 
     // Overlap segue: when the next playlist item defines an overlap, the
     // dying tail of the current track is handed to this dedicated player
