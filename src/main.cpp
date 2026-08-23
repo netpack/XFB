@@ -500,6 +500,18 @@ int main(int argc, char *argv[])
     QApplication app(argc, argv);
 
     QCoreApplication::setApplicationName("XFB");
+    // A second, separate XFB on the same machine. Everything XFB keeps —
+    // settings, library, caches — hangs off the application name, so naming
+    // the profile is all it takes to run one alongside another without the
+    // two treading on each other. This is what makes it possible to try
+    // Station Backup (XFB → Station Backup) with two instances on one desk
+    // before there is a second machine to put the backup on:
+    //     XFB_PROFILE=backup open -n /Applications/XFB.app
+    if (qEnvironmentVariableIsSet("XFB_PROFILE")) {
+        const QString profile = qEnvironmentVariable("XFB_PROFILE").trimmed();
+        if (!profile.isEmpty())
+            QCoreApplication::setApplicationName("XFB-" + profile);
+    }
     QCoreApplication::setApplicationVersion(XFB_VERSION);
     QCoreApplication::setOrganizationName("Netpack - Online Solutions");
 

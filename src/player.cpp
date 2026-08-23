@@ -90,6 +90,8 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include <QLabel>
 #include <QPainter>
 #include <QPainterPath>
+#include <QScopedValueRollback>
+#include <QSpacerItem>
 #include <QScrollArea>
 #include <QSlider>
 #include <QSpinBox>
@@ -117,7 +119,9 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include "services/BrailleDisplayService.h"
 #include "dialogs/AccessibilityPreferencesDialog.h"
 #include "dialogs/MobileSyncDialog.h"
+#include "dialogs/StationSyncDialog.h"
 #include "services/MobileSyncServer.h"
+#include "services/StationSyncClient.h"
 #include "dialogs/AccessibilityTutorialDialog.h"
 #include "services/AudioFeedbackService.h"
 #include "services/LiveRegionManager.h"
@@ -135,6 +139,24 @@ int player::s_recursionDepth = 0;
 // when the set of docks changes so stale layouts are discarded.
 // v2: the artwork panel moved from its own dock into the side panel.
 static constexpr int kLayoutStateVersion = 2;
+
+// How wide the volume slider is allowed to get, whatever room the row has.
+static constexpr int kVolumeSliderMaxWidth = 360;
+
+// The transport buttons and the Auto Mode button announce their state by
+// filling with colour. Every one of these fills is a light one, and the label
+// on top of it has to stay readable: left to the theme, a dark theme draws its
+// own near-white foreground, which on this green all but disappears. Black is
+// the higher-contrast choice on all four (6:1 on the darkest of them, better
+// on the rest), so it is spelled out rather than inherited.
+static const char *const kAutoModeOnStyle =
+    "background-color: rgb(175, 227, 59); color: black;";
+static const char *const kPlayingGreenDarkStyle =
+    "background-color:#5e9604; color: black;";
+static const char *const kPlayingGreenLightStyle =
+    "background-color:#2CCD54; color: black;";
+static const char *const kPlayingAmberStyle =
+    "background-color:#F0DB1B; color: black;";
 
 // The "support XFB" notice: a beat after the window is up, then once every
 // two days for as long as the session lasts.
@@ -453,6 +475,32 @@ player::player(QWidget *parent) :
             if (settings.value("LayoutLocked", false).toBool())
                 m_lockLayoutAction->setChecked(true); // triggers setLayoutLocked
         }
+
+        // The player panel's controls are placed by hand for whatever width
+        // the panel ends up with — see relayoutPlayerFrame().
+        ui->frame_4->installEventFilter(this);
+        ui->frame_4->setMinimumHeight(121);
+        // A volume slider is a coarse control — a couple of hundred pixels is
+        // already finer than anyone needs, and a metre of it is just harder to
+        // aim at. Capping it also means toggling the wave view (which takes
+        // the progress slider off the row beside it) no longer changes the
+        // size of the volume control under the operator's hand.
+        ui->sliderVolume->setMaximumWidth(kVolumeSliderMaxWidth);
+        // Their labels must not soak up the room the sliders give back, or
+        // hiding the progress slider leaves "Volume" stretched across half the
+        // panel with its slider stranded on the far right.
+        ui->label->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
+        ui->label_2->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
+        // With nothing able to grow, a QHBoxLayout centres what it has, which
+        // would slide the volume control into the middle of the row whenever
+        // the progress slider went away. This spacer claims the free room at
+        // the right-hand end instead, but only while there is any.
+        m_volumeRowSpacer = new QSpacerItem(0, 0, QSizePolicy::Fixed,
+                                            QSizePolicy::Minimum);
+        ui->horizontalLayout_7->addItem(m_volumeRowSpacer);
+        relayoutPlayerFrame();
+        ui->frame->installEventFilter(this);
+        relayoutClockFrame();
 
         qDebug() << "Rebuilt the main window into a customizable dock layout";
     }
@@ -1272,7 +1320,7 @@ checkDbOpen();
 
        autoMode = 1;
        qDebug()<<"Role is set to Server, so autoMode is ON by default";
-       ui->bt_autoMode->setStyleSheet("background-color: rgb(175, 227, 59)");
+       ui->bt_autoMode->setStyleSheet(kAutoModeOnStyle);
        ui->bt_takeOver->setHidden(true);
        ui->menuClient_3->setEnabled(false);
 
@@ -1761,12 +1809,19 @@ checkDbOpen();
    // on a single press — built to be driven from a touch screen.
    {
        m_padBoard = new PadBoardWidget(this);
+       // A 4x6 grid of finger-sized pads insists on some 310 px of height, and
+       // a QTabWidget is as tall as its tallest page whichever page is on
+       // show — so without this the Pads tab alone kept the central area from
+       // ever shrinking, and the library panel underneath had almost no travel
+       // left to be dragged. In the scroll area the pads shrink first and
+       // scroll after that.
+       m_padBoardPage = wrapInScrollArea(m_padBoard, this);
 
        QSettings settings(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
                               + "/xfb.conf", QSettings::IniFormat);
        if (settings.value("ShowPadsTab", true).toBool()) {
            const int djIndex = ui->tabWidget_2->indexOf(ui->tab_dj);
-           ui->tabWidget_2->insertTab(djIndex + 1, m_padBoard,
+           ui->tabWidget_2->insertTab(djIndex + 1, m_padBoardPage,
                                       QIcon(":/icons/flat/Natural User Interface 2-48.png"),
                                       tr("Pads"));
        }
@@ -1795,6 +1850,13 @@ checkDbOpen();
                m_fxTabWidget->reloadFromSettings();
        });
    }
+
+   // Every pane that was drawn at a fixed size gets a scroll bar rather than
+   // hiding its lower half on a laptop screen. Done last, once every page the
+   // side toolbox is going to hold has been added to it.
+   makeSidePanelScrollable();
+   makeTabScrollable(ui->tabTorrents);
+
 
    qDebug() << "Player constructor completed successfully";
 
@@ -2240,8 +2302,8 @@ int player::djGroupInsertIndex() const
 {
     if (!ui || !ui->tabWidget_2)
         return 0;
-    if (m_padBoard) {
-        const int padsIndex = ui->tabWidget_2->indexOf(m_padBoard);
+    if (m_padBoardPage) {
+        const int padsIndex = ui->tabWidget_2->indexOf(m_padBoardPage);
         if (padsIndex != -1)
             return padsIndex + 1;
     }
@@ -2414,11 +2476,11 @@ void player::updateConfig() {
     // Show or hide the Pads tab (next to the DJ tab). Hiding it does not
     // discard anything: the pads stay in xfb.conf and come back with the tab.
     bool showPadsTab = settings.value("ShowPadsTab", true).toBool();
-    if (ui && ui->tabWidget_2 && m_padBoard) {
-        int padsTabIndex = ui->tabWidget_2->indexOf(m_padBoard);
+    if (ui && ui->tabWidget_2 && m_padBoardPage) {
+        int padsTabIndex = ui->tabWidget_2->indexOf(m_padBoardPage);
         if (showPadsTab && padsTabIndex == -1) {
             const int djIndex = ui->tabWidget_2->indexOf(ui->tab_dj);
-            ui->tabWidget_2->insertTab(djIndex + 1, m_padBoard,
+            ui->tabWidget_2->insertTab(djIndex + 1, m_padBoardPage,
                                        QIcon(":/icons/flat/Natural User Interface 2-48.png"),
                                        tr("Pads"));
         } else if (!showPadsTab && padsTabIndex != -1) {
@@ -2427,8 +2489,8 @@ void player::updateConfig() {
             ui->tabWidget_2->removeTab(padsTabIndex);
             // removeTab() leaves the page parentless — hand it back to the
             // window so it is owned (and destroyed) with it.
-            m_padBoard->setParent(this);
-            m_padBoard->hide();
+            m_padBoardPage->setParent(this);
+            m_padBoardPage->hide();
         }
         qDebug() << "ShowPadsTab setting:" << showPadsTab;
     }
@@ -2450,6 +2512,9 @@ void player::updateConfig() {
     bool waveView = settings.value("PlaylistWaveView", false).toBool();
     if (m_waveViewToggle && m_waveViewToggle->isChecked() != waveView)
         m_waveViewToggle->setChecked(waveView); // toggled() applies it
+    // Covers the case where the state did not change but the preference did.
+    applyProgressBarVisibility();
+    relayoutPlayerFrame();
 
     // Re-apply the FX chain settings (covers the 432 Hz switch in the
     // Options dialog; no-op during construction, before the players exist)
@@ -3680,10 +3745,10 @@ void player::on_btPlay_clicked(){
         }
 
         if(darkMode){
-            ui->btPlay->setStyleSheet("background-color:#5e9604"); //green
+            ui->btPlay->setStyleSheet(kPlayingGreenDarkStyle);
         }else{
 
-            ui->btPlay->setStyleSheet("background-color:#2CCD54"); //green
+            ui->btPlay->setStyleSheet(kPlayingGreenLightStyle);
         }
         ui->btPlay->setText(tr("Play and Segue"));
         PlayMode = "Playing_Segue";
@@ -3692,17 +3757,17 @@ void player::on_btPlay_clicked(){
     }  else if(PlayMode=="Playing_StopAtNextOne"){
 
         if(darkMode){
-            ui->btPlay->setStyleSheet("background-color:#5e9604"); //green
+            ui->btPlay->setStyleSheet(kPlayingGreenDarkStyle);
         }else{
 
-            ui->btPlay->setStyleSheet("background-color:#2CCD54"); //green
+            ui->btPlay->setStyleSheet(kPlayingGreenLightStyle);
         }
         ui->btPlay->setText(tr("Play and Segue"));
         PlayMode = "Playing_Segue";
 
     } else if(PlayMode=="Playing_Segue"){
 
-        ui->btPlay->setStyleSheet("background-color:#F0DB1B"); //amarillo
+        ui->btPlay->setStyleSheet(kPlayingAmberStyle);
         PlayMode = "Playing_StopAtNextOne";
         ui->btPlay->setText(tr("Play and Stop"));
 
@@ -4669,6 +4734,9 @@ void player::setPlaylistWaveView(bool on)
         m_maxOverlapBox->setVisible(on);
     if (m_autoMixButton)
         m_autoMixButton->setVisible(on);
+    // The wave strip already draws a playhead, so the slider row can go.
+    applyProgressBarVisibility();
+    relayoutPlayerFrame();
     // A running auto-mix pass is deliberately not canceled here: the
     // overlaps it sets are honoured by playback whether the view is on or
     // off, and the progress dialog's Cancel button still works.
@@ -5159,7 +5227,72 @@ void player::setupPlaybackShortcuts()
         QSettings syncSettings;
         if (syncSettings.value(QStringLiteral("MobileSync/AutoStart"), false).toBool())
             mobileSyncServer();
+
+        // Station backup: the same window is used on the machine that is on
+        // air and on the one standing by, because when it is being set up
+        // nobody yet knows which will turn out to be which.
+        QAction *stationSync = new QAction(
+            QIcon(":/icons/flat/Connection Sync-48.png"), tr("Station &Backup..."), this);
+        stationSync->setMenuRole(QAction::NoRole);
+        connect(stationSync, &QAction::triggered, this, [this]() {
+            if (!m_stationSyncDialog) {
+                m_stationSyncDialog = new StationSyncDialog(mobileSyncServer(),
+                                                            stationSyncClient(), this);
+                m_stationSyncDialog->setAttribute(Qt::WA_DeleteOnClose, false);
+                connect(m_stationSyncDialog, &StationSyncDialog::announcementRequested,
+                        this, &player::announceAccessible);
+            }
+            m_stationSyncDialog->show();
+            m_stationSyncDialog->raise();
+            m_stationSyncDialog->activateWindow();
+        });
+        ui->menuXFB->addAction(stationSync);
+        addAction(stationSync);
+
+        // A backup that only copies when somebody remembers to ask is not a
+        // backup, so the client is built at startup whenever it has standing
+        // orders — that is what starts its timer and its first pull.
+        {
+            QSettings stationSettings(
+                QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
+                    + "/xfb.conf", QSettings::IniFormat);
+            stationSettings.beginGroup(QStringLiteral("StationSync"));
+            const bool onStart = stationSettings.value(QStringLiteral("SyncOnStart"),
+                                                       false).toBool();
+            const int every = stationSettings.value(QStringLiteral("AutoSyncMinutes"),
+                                                    0).toInt();
+            stationSettings.endGroup();
+            if (onStart || every > 0) {
+                StationSyncClient *client = stationSyncClient();
+                if (onStart && client->paired()) {
+                    // Not during the constructor: the library database and the
+                    // rest of the window are not up yet, and the first thing a
+                    // sync does is write to both.
+                    QTimer::singleShot(15000, client, &StationSyncClient::sync);
+                }
+            }
+        }
     }
+}
+
+// Like the phone sync server, the backup client is built on demand and does
+// nothing at all until it has been paired with a station.
+StationSyncClient *player::stationSyncClient()
+{
+    if (m_stationSync)
+        return m_stationSync;
+
+    m_stationSync = new StationSyncClient(this);
+    connect(m_stationSync, &StationSyncClient::finished, this,
+            [this](const QString &summary) {
+                ui->statusBar->showMessage(tr("Station backup: %1").arg(summary), 10000);
+            });
+    connect(m_stationSync, &StationSyncClient::failed, this,
+            [this](const QString &reason) {
+                ui->statusBar->showMessage(tr("Station backup: %1").arg(reason), 10000);
+                qWarning() << "StationSyncClient:" << reason;
+            });
+    return m_stationSync;
 }
 
 // The sync server is created on demand and never listens until it is told to,
@@ -6131,7 +6264,7 @@ void player::on_bt_autoMode_clicked()
     if(autoMode == 0){
         autoMode = 1;
         qDebug()<<"autoMode is ON";
-        ui->bt_autoMode->setStyleSheet("background-color: rgb(175, 227, 59)");
+        ui->bt_autoMode->setStyleSheet(kAutoModeOnStyle);
     } else {
         autoMode = 0;
         qDebug()<<"autoMode is OFF";
@@ -6222,8 +6355,20 @@ checkDbOpen();
             continue; // nothing measured to match against
         const bool matchGenre = (pass < 2 && haveGenre);
 
-        QString sql = QStringLiteral("select path from musics"
-                                     " where path <> :last and path <> :reference");
+        // The two exclusions keep Auto Mode from playing the same track twice
+        // in a row, but they are only added when there is something to
+        // exclude. Binding an empty QString here used to bind SQL NULL, and
+        // "path <> NULL" is NULL rather than true, so *every* row was filtered
+        // out — which is why Auto Mode could never pick its first track from a
+        // cold start, and only worked once something had already played.
+        const bool excludeLast = !lastPlayedSong.isEmpty();
+        const bool excludeReference = !referenceTrack.isEmpty();
+
+        QString sql = QStringLiteral("select path from musics where 1 = 1");
+        if (excludeLast)
+            sql += QStringLiteral(" and path <> :last");
+        if (excludeReference)
+            sql += QStringLiteral(" and path <> :reference");
         if (matchGenre)
             sql += QStringLiteral(" and genre1 like :genre");
         if (matchBpm) {
@@ -6238,8 +6383,10 @@ checkDbOpen();
 
         QSqlQuery query(db);
         query.prepare(sql);
-        query.bindValue(QStringLiteral(":last"), lastPlayedSong);
-        query.bindValue(QStringLiteral(":reference"), referenceTrack);
+        if (excludeLast)
+            query.bindValue(QStringLiteral(":last"), lastPlayedSong);
+        if (excludeReference)
+            query.bindValue(QStringLiteral(":reference"), referenceTrack);
         if (matchGenre)
             query.bindValue(QStringLiteral(":genre"), currentGenre);
         if (matchBpm) {
@@ -6266,7 +6413,23 @@ checkDbOpen();
                          << currentGenre << "— falling back to the whole library";
                 continue;
             }
-            qDebug() << "autoMode found no track to add (empty or fully excluded library)";
+            // Last resort: a library too small to offer anything *but* the
+            // track just played would otherwise leave the station silent,
+            // which is the one thing Auto Mode exists to prevent. Repeating
+            // is better than dead air.
+            if (excludeLast || excludeReference) {
+                QSqlQuery again(db);
+                if (again.exec(QStringLiteral("select path from musics"
+                                              " order by random() limit 1"))
+                    && again.next()) {
+                    const QString onlyChoice = again.value(0).toString();
+                    qDebug() << "autoMode has nothing but the track just played;"
+                             << "repeating" << onlyChoice << "rather than going silent";
+                    ui->playlist->addItem(onlyChoice);
+                    return true;
+                }
+            }
+            qDebug() << "autoMode found no track to add (empty library)";
             return false;
         }
 
@@ -9463,6 +9626,17 @@ void player::startPlatterEffectAnimation(int deck, bool backspin)
 
 bool player::eventFilter(QObject *watched, QEvent *event)
 {
+    // The player panel positions its controls by hand, so it has to be told
+    // whenever the space it has to fit them into changes.
+    if (watched == ui->frame_4 && event->type() == QEvent::Resize) {
+        relayoutPlayerFrame();
+        return false; // let the frame see its own resize too
+    }
+    if (watched == ui->frame && event->type() == QEvent::Resize) {
+        relayoutClockFrame();
+        return false;
+    }
+
     int deck = -1;
     if (watched == ui->lp_1)
         deck = 0;
@@ -13355,6 +13529,264 @@ void player::setPubTabsCollapsed(bool collapsed)
     } else {
         tw->setMaximumHeight(QWIDGETSIZE_MAX);
     }
+}
+
+
+// --------------------------------------------------------------- small screens
+//
+// The player panel (frame_4) was drawn in Qt Designer with every control at a
+// fixed pixel position inside a 1060-px-wide frame. Docked next to the clock on
+// a laptop screen there is nowhere near that much room, so the right-hand end
+// of the panel — including the progress slider — simply disappeared under the
+// clock beside it.
+//
+// The panel is not rebuilt out of nested layouts because three of its controls
+// are deliberately drawn *on top of* others (the record LED and the record
+// pause button sit inside the Record button; the play pause button sits inside
+// the Play button) and three more are status banners that cover the program
+// area while a program is being made. A layout cannot express that. Instead the
+// hand-made positions are recomputed from the panel's real width every time it
+// changes, keeping the same design at whatever size it is given.
+void player::relayoutPlayerFrame()
+{
+    if (!ui || !ui->frame_4)
+        return;
+
+    // Moving a child can make the frame itself be measured again, and the
+    // measurement arrives as another resize: without this guard the panel
+    // lays itself out inside its own layout pass until the stack runs out.
+    if (m_relayoutingPlayerFrame)
+        return;
+    QScopedValueRollback<bool> guard(m_relayoutingPlayerFrame, true);
+
+    const int w = ui->frame_4->width();
+    const int h = ui->frame_4->height();
+    if (w <= 0 || h <= 0)
+        return;
+
+    constexpr int kMargin = 9;
+    // The design geometry these ratios come from: the transport block runs
+    // from x=9 to x=581, the program block from x=510 to x=1051.
+    constexpr double kTransportSpan = 572.0;
+    constexpr double kProgramSpan   = 541.0;
+
+    auto place = [](QWidget *widget, int x, int y, int width, int height) {
+        if (widget)
+            widget->setGeometry(x, y, qMax(1, width), qMax(1, height));
+    };
+
+    // The transport keeps its designed size while the panel is wide enough for
+    // it, is never allowed more than a bit over half the panel, and below that
+    // shrinks as one block so the buttons keep their proportions.
+    const double transportScale =
+        qBound(0.42, qMin(1.0, ((w - 2 * kMargin) * 0.60) / kTransportSpan), 1.0);
+    auto tx = [&](int designX) { return kMargin + int((designX - 9) * transportScale); };
+    auto tw = [&](int designW) { return qMax(18, int(designW * transportScale)); };
+
+    // Row 1, left: play / next / stop / record.
+    const int playX = tx(9), playW = tw(221);
+    place(ui->btPlay, playX, 10, playW, 55);
+    place(ui->btPlayNext, tx(239), 10, tw(171), 25);
+    place(ui->btStop, tx(239), 40, tw(171), 25);
+    const int recX = tx(420), recW = tw(161);
+    place(ui->bt_rec, recX, 40, recW, 25);
+    place(ui->txt_recTime, recX, 10, tw(150), 20);
+
+    // The three controls that ride on top of the two big buttons are anchored
+    // to those buttons rather than scaled, so they stay legible and stay
+    // inside their host at every size.
+    place(ui->bt_pause_play, playX + playW - 29, 36, 25, 25);
+    place(ui->led_rec, recX + int(45 * transportScale), 43, 22, 20);
+    place(ui->bt_pause_rec, recX + recW - 31, 42, 25, 19);
+
+    // Row 1, right: the program area gets whatever is left.
+    const int programLeft  = qMin(tx(581) + 12, qMax(kMargin, w - 150));
+    const int programWidth = qMax(110, w - kMargin - programLeft);
+    auto px = [&](int designX) {
+        return programLeft + int((designX - 510) * programWidth / kProgramSpan);
+    };
+    auto pw = [&](int designW) {
+        return qMax(24, int(designW * programWidth / kProgramSpan));
+    };
+    place(ui->txt_ProgramName, programLeft, 10, programWidth, 37);
+    place(ui->bt_ProgramStopandProcess, px(750), 10, pw(301), 34);
+    place(ui->txtDuration, programLeft, 45, programWidth, 20);
+    // Status banners, drawn over the program area while they are shown.
+    place(ui->txt_uploadingPrograms, programLeft, 0, programWidth, 51);
+    place(ui->txt_creatingPrograms, programLeft, 0, programWidth, 51);
+    place(ui->txt_loading, programLeft, 0, programWidth, 56);
+
+    // Row 2: the volume and progress sliders, full width — this is the row
+    // that used to run off the right-hand edge.
+    const int slidersY = (h >= 121) ? 66 : qBound(40, h - 55, 66);
+    place(ui->layoutWidget1, kMargin + 1, slidersY, w - 2 * (kMargin + 1), 27);
+
+    // Row 3: the now-playing line, full width.
+    const int nowPlayingY = qBound(slidersY + 28, (h >= 121) ? 90 : h - 31, qMax(1, h - 20));
+    place(ui->txtNowPlaying, kMargin + 11, nowPlayingY, w - 2 * (kMargin + 11), 31);
+}
+
+// The clock panel has the same hand-placed contents as the player panel, and
+// the same problem with them: the 8-digit readout was drawn 301 px wide, so on
+// a narrow panel the seconds fell off the right-hand edge. QLCDNumber scales
+// its digits to whatever room it is given, so filling the panel is all this
+// takes.
+void player::relayoutClockFrame()
+{
+    if (!ui || !ui->frame)
+        return;
+
+    const int w = ui->frame->width();
+    const int h = ui->frame->height();
+    if (w <= 0 || h <= 0)
+        return;
+
+    constexpr int kMargin = 8;
+    const int inner = qMax(40, w - 2 * kMargin);
+
+    // The Auto Mode button keeps its designed height; the readout takes the
+    // rest, so a shorter panel loses digit height rather than the button.
+    const int buttonHeight = qMin(31, qMax(20, h - 30));
+    const int clockHeight = qMax(24, h - buttonHeight - 3 * kMargin);
+
+    if (ui->txt_horas)
+        ui->txt_horas->setGeometry(kMargin, kMargin, inner, clockHeight);
+    if (ui->bt_autoMode)
+        ui->bt_autoMode->setGeometry(kMargin, kMargin + clockHeight + kMargin,
+                                     inner, buttonHeight);
+}
+
+// The wave strip above the playlist draws the on-air track with a playhead
+// running across it, which is the same information the progress slider carries
+// — and on a small screen the slider's row is worth reclaiming. Hiding it
+// leaves the volume slider the whole row. Config key HideProgressInWaveView
+// (default true) turns the behaviour off for anyone who wants both.
+void player::applyProgressBarVisibility()
+{
+    if (!ui || !ui->sliderProgress || !ui->label_2)
+        return;
+
+    QSettings settings(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
+                           + "/xfb.conf", QSettings::IniFormat);
+    const bool hideWithWave = settings.value("HideProgressInWaveView", true).toBool();
+    const bool waveOn = m_waveViewToggle && m_waveViewToggle->isChecked();
+    const bool show = !(waveOn && hideWithWave);
+
+    ui->label_2->setVisible(show);
+    ui->sliderProgress->setVisible(show);
+
+    if (m_volumeRowSpacer) {
+        m_volumeRowSpacer->changeSize(0, 0,
+                                      show ? QSizePolicy::Fixed
+                                           : QSizePolicy::Expanding,
+                                      QSizePolicy::Minimum);
+        ui->horizontalLayout_7->invalidate();
+    }
+}
+
+QScrollArea *player::wrapInScrollArea(QWidget *content, QWidget *parent)
+{
+    auto *area = new QScrollArea(parent);
+    area->setFrameShape(QFrame::NoFrame);
+    area->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    area->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+
+    if (content && !content->layout()) {
+        // A widget laid out by hand reports no size of its own, so the scroll
+        // area would squash it to nothing and never scroll. The box its
+        // children actually occupy is the size it needs.
+        //
+        // childrenRect() would give that box, except it leaves out anything
+        // currently hidden — and several of these panes keep controls hidden
+        // until they are needed, which would shrink the page and strand them
+        // again the moment they appeared.
+        QRect used;
+        const QObjectList children = content->children();
+        for (QObject *child : children) {
+            if (auto *widget = qobject_cast<QWidget *>(child))
+                used |= widget->geometry();
+        }
+        if (used.isValid())
+            content->setMinimumSize(used.right() + 8, used.bottom() + 8);
+
+        // The hand-placed pane is parked inside a holder that *does* have a
+        // layout, and the holder is what the scroll area resizes. Handing a
+        // layout-less widget straight to a resizable scroll area sets up a
+        // loop — the area resizes the widget, the widget's new size is
+        // measured again, the area resizes it again — which ends as a stack
+        // overflow rather than as a wrong-looking panel.
+        auto *holder = new QWidget(area);
+        auto *box = new QVBoxLayout(holder);
+        box->setContentsMargins(0, 0, 0, 0);
+        box->setSpacing(0);
+        content->setParent(holder);
+        box->addWidget(content, 0);
+        box->addStretch(1);
+        area->setWidgetResizable(true);
+        area->setWidget(holder);
+        return area;
+    }
+
+    area->setWidgetResizable(true);
+    area->setWidget(content);
+    return area;
+}
+
+// A QTabWidget is as tall and as wide as its most demanding page, whichever
+// page happens to be on show. The Torrents tab — a toolbar, a search row, a
+// results table and a downloads panel — is far and away the largest of the
+// library tabs, and it was holding the whole library panel at a size the
+// operator could barely drag: the Musics tab needs 66 px, Torrents insists on
+// 226. Moving a tab's contents into a scroll area inside the tab lets the
+// panel be dragged down to whatever the operator wants, and the tab that
+// needs the room scrolls instead of dictating to the other four.
+void player::makeTabScrollable(QWidget *tab)
+{
+    if (!tab)
+        return;
+    QLayout *inner = tab->layout();
+    if (!inner || qobject_cast<QScrollArea *>(tab->findChild<QScrollArea *>()))
+        return;
+
+    // setLayout() takes the layout off its old parent widget, bringing the
+    // laid-out children with it, so the tab is left free for a new one.
+    auto *content = new QWidget;
+    content->setLayout(inner);
+
+    auto *outer = new QVBoxLayout(tab);
+    outer->setContentsMargins(0, 0, 0, 0);
+    outer->setSpacing(0);
+    outer->addWidget(wrapInScrollArea(content, tab));
+}
+
+// Every page of the side toolbox (Search / Filters / Extras / Playlist) is
+// another hand-positioned pane, and the pages are taller than the panel is on
+// a laptop: the controls at the bottom were simply off-screen, reachable only
+// by collapsing the library underneath — which nobody would guess at. Each
+// page goes into a scroll area, which both scrolls when it has to and lets the
+// panel be dragged narrow without a fight.
+void player::makeSidePanelScrollable()
+{
+    QToolBox *box = ui ? ui->page_FTP_Connection : nullptr;
+    if (!box)
+        return;
+
+    const int pages = box->count();
+    for (int index = 0; index < pages; ++index) {
+        QWidget *page = box->widget(index);
+        if (!page || qobject_cast<QScrollArea *>(page))
+            continue;
+
+        const QString label = box->itemText(index);
+        const QIcon icon = box->itemIcon(index);
+        const QString tip = box->itemToolTip(index);
+
+        box->removeItem(index);
+        QScrollArea *area = wrapInScrollArea(page, box);
+        box->insertItem(index, area, icon, label);
+        box->setItemToolTip(index, tip);
+    }
+    box->setCurrentIndex(0);
 }
 
 void player::setLayoutLocked(bool locked)

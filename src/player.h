@@ -40,6 +40,8 @@ class QProgressDialog;
 class QQuickWidget;
 class QToolButton;
 class QSplitter;
+class QScrollArea;
+class QSpacerItem;
 class QMovie;
 
 // Project forward declarations
@@ -371,6 +373,27 @@ private slots:
     void setLayoutLocked(bool locked);
     void resetDockLayout();
 
+    // Fitting the window onto a small screen. Three of the panels came out of
+    // Qt Designer with every control at a hand-picked pixel position, which
+    // only ever fitted the wide window they were drawn in: on a laptop the
+    // player panel's progress slider ran underneath the clock beside it, and
+    // the side panel's lower controls sat below the bottom edge with no way to
+    // scroll down to them.
+    void relayoutPlayerFrame();          ///< re-places frame_4's children for its real width
+    /// Takes up the room the progress slider leaves behind, so the volume
+    /// slider stays where it was instead of drifting into the middle.
+    QSpacerItem *m_volumeRowSpacer = nullptr;
+    void relayoutClockFrame();           ///< the same for the clock panel
+    bool m_relayoutingPlayerFrame = false;
+    void applyProgressBarVisibility();   ///< the wave view already shows the playhead
+    void makeSidePanelScrollable();      ///< scroll bars for the side toolbox pages
+    void makeTabScrollable(QWidget *tab);///< moves a tab's contents into a scroll area
+    /** Puts @p content inside a scroll area so it can shrink below its own
+     *  minimum size instead of forcing the whole window to stay tall. */
+    static QScrollArea *wrapInScrollArea(QWidget *content, QWidget *parent);
+    /// Scroll area holding m_padBoard; this, not m_padBoard, is the tab page.
+    QWidget *m_padBoardPage = nullptr;
+
     // Track artwork (cover icons + the Artwork panel)
     ArtworkStore *m_artStore = nullptr;
     NowPlayingArtPanel *m_artPanel = nullptr;
@@ -557,6 +580,15 @@ private slots:
     void markForPhone(const QStringList &paths, bool confirmFirst = false);
     QPointer<class MobileSyncServer> m_mobileSyncServer;
     QPointer<class MobileSyncDialog> m_mobileSyncDialog;
+
+    // --- Station backup ---
+    // Mirrors another XFB on the network onto this one — the whole catalogue,
+    // its media, the schedule and the saved playlists — so a station whose
+    // studio machine dies is one launch away from being back on air. Uses the
+    // same server as the phone sync above, with a role of its own.
+    class StationSyncClient *stationSyncClient();
+    QPointer<class StationSyncClient> m_stationSync;
+    QPointer<class StationSyncDialog> m_stationSyncDialog;
 
     // --- Adding library tracks to the playlist from the keyboard ---
     // The library views' only route into the playlist used to be the

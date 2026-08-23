@@ -15,6 +15,8 @@ class QTcpServer;
 class QTcpSocket;
 class QTimer;
 
+#include <QJsonObject>
+
 /**
  * @brief Serves XFB's library and playlists to the XFB companion app over the
  *        local network, so a phone can take a set on the road and play it
@@ -56,11 +58,35 @@ public:
         QString volumeEnvelope; ///< "ms:gain;..." volume line, may be empty
     };
 
+    /**
+     * What a paired peer is allowed to ask for.
+     *
+     * A phone gets the library and playlists it needs to play a set offline.
+     * A second XFB standing by as the station's backup needs rather more —
+     * the whole catalogue, the jingles, the ads, the programs and the
+     * schedule — so that role is granted separately and only from the Station
+     * Backup dialog, never from the phone pairing window.
+     */
+    enum class PeerRole {
+        Mobile,   ///< the companion app on a phone
+        Station,  ///< another XFB mirroring this one as a backup
+    };
+
     struct PairedDevice {
         QString name;
         QString tokenId;    ///< first 8 chars of the token, for display/revoke
         QDateTime pairedAt;
         QDateTime lastSeen;
+        PeerRole role = PeerRole::Mobile;
+    };
+
+    /** One file the backup station has to end up holding a copy of. */
+    struct MirrorFile {
+        QString id;
+        QString path;
+        QString relative;   ///< where to put it under the backup's own root
+        qint64  bytes = 0;
+        qint64  modified = 0;   ///< seconds since the epoch
     };
 
     explicit MobileSyncServer(QObject *parent = nullptr);
@@ -112,8 +138,15 @@ public:
 
     // --- pairing -----------------------------------------------------------
 
-    /** Opens a pairing window and returns the six-digit code to show. */
-    QString beginPairing();
+    /**
+     * Opens a pairing window and returns the six-digit code to show.
+     *
+     * The role is fixed by whoever opened the window, not asked for by the
+     * device that turns up: a phone cannot talk its way into a station token.
+     */
+    QString beginPairing(PeerRole role = PeerRole::Mobile);
+    /** The role the open pairing window will grant. */
+    PeerRole pairingRole() const { return m_pairingRole; }
     void endPairing();
     bool pairingOpen() const { return !m_pairingCode.isEmpty(); }
     /** The code currently on offer, empty when no window is open. */
@@ -127,6 +160,17 @@ public:
 
     /** The opaque id a given file is addressed by. */
     static QString idForPath(const QString &path);
+
+    /**
+     * The settings a backup station copies from the station it mirrors.
+     *
+     * Public because both ends need it: this side to decide what to put in the
+     * manifest, and the backup to decide what it is willing to accept out of
+     * one. A key that is not on this list is machine-specific — a folder, a
+     * port, a credential, a window position — and copying it would point the
+     * backup at the very machine it exists to replace.
+     */
+    static QStringList mirroredSettingKeys();
 
     // --- tracks marked on the desktop for the phone ----------------------
 
@@ -210,13 +254,24 @@ private:
     void handlePlaylist(QTcpSocket *socket, const Request &request);
     void handleTrack(QTcpSocket *socket, const Request &request);
 
+    // station mirroring (a second XFB kept ready to take over)
+    void handleStationManifest(QTcpSocket *socket);
+    void handleStationFile(QTcpSocket *socket, const Request &request);
+    void handleStationPlaylist(QTcpSocket *socket, const Request &request);
+    QJsonObject buildStationManifest();
+    void rebuildStationIndexIfStale();
+    QString stationPathForId(const QString &id);
+    static QString categoryRoot(const QString &category);
+    static MirrorFile describeFile(const QString &path, const QString &category);
+
     // responses
     void sendJson(QTcpSocket *socket, const QByteArray &json, int status = 200);
     void sendError(QTcpSocket *socket, int status, const QString &message);
     void sendFile(QTcpSocket *socket, const QString &path, const Request &request);
 
     // auth
-    QString authenticate(const Request &request);   ///< returns device name, empty when rejected
+    /** Returns the device name, empty when rejected; fills in its role. */
+    QString authenticate(const Request &request, PeerRole *role = nullptr);
     void loadTokens();
     void saveTokens() const;
 
@@ -237,6 +292,7 @@ private:
 
     // pairing
     QString m_pairingCode;
+    PeerRole m_pairingRole = PeerRole::Mobile;
     QTimer *m_pairingTimer = nullptr;
     QDateTime m_pairingExpiry;
     int m_pairingAttempts = 0;
@@ -247,6 +303,11 @@ private:
     // id -> absolute path, rebuilt lazily
     QHash<QString, QString> m_index;
     QDateTime m_indexBuiltAt;
+
+    /// The same, over everything a backup station may fetch (music, jingles,
+    /// ads and programs), kept apart so a phone's allow-list stays narrow.
+    QHash<QString, QString> m_stationIndex;
+    QDateTime m_stationIndexBuiltAt;
 
     std::function<QVector<Track>()> m_livePlaylistProvider;
     QString m_playlistsDir;

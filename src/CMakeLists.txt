@@ -29,6 +29,7 @@ set(SOURCES
     audio/BpmLibrary.cpp
     dialogs/AudioFxDialog.cpp
     dialogs/MobileSyncDialog.cpp
+    dialogs/StationSyncDialog.cpp
     # Playlist sound-wave view (crossfade preparation)
     PlaylistWaveView.cpp
     # Pads tab: touch-friendly grid of instant-play pads (cart wall)
@@ -102,6 +103,7 @@ set(SOURCES
     services/DependencyChecker.cpp
     services/NgrokTunnelService.cpp
     services/MobileSyncServer.cpp
+    services/StationSyncClient.cpp
     services/UpdateCheckService.cpp
 )
 
@@ -130,6 +132,7 @@ set(HEADERS
     audio/FxPlayer.h
     dialogs/AudioFxDialog.h
     dialogs/MobileSyncDialog.h
+    dialogs/StationSyncDialog.h
     # Pads tab
     PadBoard.h
     # Service layer headers
@@ -190,6 +193,7 @@ set(HEADERS
     services/TorrentTypes.h
     services/NgrokTunnelService.h
     services/MobileSyncServer.h
+    services/StationSyncClient.h
     services/UpdateCheckService.h
 )
 

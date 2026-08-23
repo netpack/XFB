@@ -23,7 +23,10 @@
 #include <QTimer>
 #include <QUrl>
 #include <QUrlQuery>
+#include <QSqlRecord>
 #include <QXmlStreamReader>
+
+#include <functional>
 
 namespace {
 
@@ -250,11 +253,12 @@ void MobileSyncServer::setPlaylistsDirectory(const QString &dir)
 
 // ------------------------------------------------------------------ pairing
 
-QString MobileSyncServer::beginPairing()
+QString MobileSyncServer::beginPairing(PeerRole role)
 {
     // Six digits, zero-padded, from the system CSPRNG.
     const quint32 value = QRandomGenerator::system()->bounded(1000000);
     m_pairingCode = QStringLiteral("%1").arg(value, 6, 10, QLatin1Char('0'));
+    m_pairingRole = role;
     m_pairingAttempts = 0;
     m_pairingExpiry = QDateTime::currentDateTime().addSecs(kPairingWindowSeconds);
     m_pairingTimer->start(kPairingWindowSeconds * 1000);
@@ -321,6 +325,9 @@ void MobileSyncServer::loadTokens()
         device.tokenId  = token.left(8);
         device.pairedAt = settings.value(QStringLiteral("pairedAt")).toDateTime();
         device.lastSeen = settings.value(QStringLiteral("lastSeen")).toDateTime();
+        device.role = settings.value(QStringLiteral("role")).toString()
+                              == QLatin1String("station")
+                          ? PeerRole::Station : PeerRole::Mobile;
         m_tokens.insert(token, device);
     }
     settings.endArray();
@@ -337,6 +344,9 @@ void MobileSyncServer::saveTokens() const
         settings.setValue(QStringLiteral("name"), it.value().name);
         settings.setValue(QStringLiteral("pairedAt"), it.value().pairedAt);
         settings.setValue(QStringLiteral("lastSeen"), it.value().lastSeen);
+        settings.setValue(QStringLiteral("role"),
+                          it.value().role == PeerRole::Station
+                              ? QStringLiteral("station") : QStringLiteral("mobile"));
     }
     settings.endArray();
 }
@@ -481,7 +491,8 @@ void MobileSyncServer::route(QTcpSocket *socket, const Request &request)
         return;
     }
 
-    const QString device = authenticate(request);
+    PeerRole role = PeerRole::Mobile;
+    const QString device = authenticate(request, &role);
     if (device.isEmpty()) {
         sendError(socket, 401, tr("Not paired with this XFB."));
         return;
@@ -489,6 +500,26 @@ void MobileSyncServer::route(QTcpSocket *socket, const Request &request)
 
     if (request.method != "GET") {
         sendError(socket, 405, tr("Only GET is supported here."));
+        return;
+    }
+
+    // Everything a standby station needs to become this one. Locked to the
+    // station role: a paired phone gets 403 here, not the catalogue.
+    if (request.path.startsWith(QLatin1String("/api/station/"))) {
+        if (role != PeerRole::Station) {
+            sendError(socket, 403, tr("This device is not paired as a backup station."));
+            return;
+        }
+        if (request.path == QLatin1String("/api/station/manifest")) {
+            emit deviceActivity(device, tr("read the station manifest"));
+            handleStationManifest(socket);
+        } else if (request.path == QLatin1String("/api/station/file")) {
+            handleStationFile(socket, request);
+        } else if (request.path == QLatin1String("/api/station/playlist")) {
+            handleStationPlaylist(socket, request);
+        } else {
+            sendError(socket, 404, tr("No such endpoint."));
+        }
         return;
     }
 
@@ -508,7 +539,7 @@ void MobileSyncServer::route(QTcpSocket *socket, const Request &request)
     }
 }
 
-QString MobileSyncServer::authenticate(const Request &request)
+QString MobileSyncServer::authenticate(const Request &request, PeerRole *role)
 {
     QByteArray header = request.headers.value("authorization");
     if (!header.startsWith("Bearer "))
@@ -520,6 +551,8 @@ QString MobileSyncServer::authenticate(const Request &request)
         return QString();
 
     it->lastSeen = QDateTime::currentDateTime();
+    if (role)
+        *role = it->role;
     return it->name;
 }
 
@@ -545,8 +578,10 @@ void MobileSyncServer::handlePair(QTcpSocket *socket, const Request &request)
     const QJsonObject body = QJsonDocument::fromJson(request.body).object();
     const QString code = body.value(QStringLiteral("code")).toString().trimmed();
     QString deviceName = body.value(QStringLiteral("device")).toString().trimmed();
-    if (deviceName.isEmpty())
-        deviceName = tr("Android device");
+    if (deviceName.isEmpty()) {
+        deviceName = m_pairingRole == PeerRole::Station ? tr("Backup station")
+                                                        : tr("Android device");
+    }
     deviceName = deviceName.left(64);
 
     if (code != m_pairingCode) {
@@ -569,6 +604,9 @@ void MobileSyncServer::handlePair(QTcpSocket *socket, const Request &request)
     device.tokenId  = token.left(8);
     device.pairedAt = QDateTime::currentDateTime();
     device.lastSeen = device.pairedAt;
+    // The role comes from the window the operator opened, never from what the
+    // caller asked for — otherwise a paired phone could request the lot.
+    device.role     = m_pairingRole;
     m_tokens.insert(token, device);
     saveTokens();
 
@@ -578,6 +616,9 @@ void MobileSyncServer::handlePair(QTcpSocket *socket, const Request &request)
     QJsonObject object;
     object.insert(QStringLiteral("token"), token);
     object.insert(QStringLiteral("protocol"), protocolVersion());
+    object.insert(QStringLiteral("role"),
+                  device.role == PeerRole::Station ? QStringLiteral("station")
+                                                   : QStringLiteral("mobile"));
     sendJson(socket, QJsonDocument(object).toJson(QJsonDocument::Compact));
 
     emit devicePaired(deviceName);
@@ -1132,6 +1173,291 @@ QVector<MobileSyncServer::Track> MobileSyncServer::playlistTracks(const QString 
 }
 
 // ----------------------------------------------------------------- responses
+
+
+// ------------------------------------------- mirroring onto a backup station
+//
+// A radio station cannot wait for a rebuild when the studio machine dies. The
+// answer here is a second XFB on the same network that holds a copy of
+// everything — the catalogue, the jingles, the ads, the programs, the schedule
+// and the saved playlists — and is one launch away from going on air. This
+// side of that is the source station: it describes what it holds and hands
+// over whatever the backup asks for. Nothing is ever pushed, so the backup can
+// be behind a firewall, switched off for a week, or moved to another building
+// without anything here having to know.
+
+QString MobileSyncServer::categoryRoot(const QString &category)
+{
+    // The media folders live in xfb.conf (the Options dialog writes them
+    // there), not in the native settings this class keeps its own keys in.
+    QSettings settings(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
+                           + QStringLiteral("/xfb.conf"), QSettings::IniFormat);
+    if (category == QLatin1String("musics"))
+        return settings.value(QStringLiteral("MusicPath")).toString();
+    if (category == QLatin1String("jingles"))
+        return settings.value(QStringLiteral("JinglePath")).toString();
+    if (category == QLatin1String("programs"))
+        return settings.value(QStringLiteral("ProgramsPath")).toString();
+    if (category == QLatin1String("pub"))
+        return settings.value(QStringLiteral("StationSync/PubPath")).toString();
+    return QString();
+}
+
+MobileSyncServer::MirrorFile MobileSyncServer::describeFile(const QString &path,
+                                                            const QString &category)
+{
+    MirrorFile file;
+    file.path = path;
+    file.id = idForPath(path);
+
+    const QFileInfo info(path);
+    if (info.exists()) {
+        file.bytes = info.size();
+        file.modified = info.lastModified().toSecsSinceEpoch();
+    }
+
+    // The backup keeps its own media folders, so what travels is the position
+    // of the file *inside* its category, never the source machine's paths.
+    const QString root = QDir::cleanPath(categoryRoot(category));
+    const QString clean = QDir::cleanPath(path);
+    if (!root.isEmpty() && clean.startsWith(root + QLatin1Char('/'))) {
+        file.relative = clean.mid(root.size() + 1);
+    } else {
+        // Files the operator added from somewhere else entirely still have to
+        // land somewhere predictable and collision-free. Everything from one
+        // source folder stays together in one folder on the backup.
+        const QString folderKey = QString::fromLatin1(
+            QCryptographicHash::hash(info.absolutePath().toUtf8(),
+                                     QCryptographicHash::Sha1).toHex().left(8));
+        file.relative = QStringLiteral("_elsewhere/") + folderKey
+                        + QLatin1Char('/') + info.fileName();
+    }
+    return file;
+}
+
+QStringList MobileSyncServer::mirroredSettingKeys()
+{
+    // Everything machine-specific is left out on purpose: folders, ports,
+    // credentials and window geometry all belong to the machine XFB runs on.
+    return {
+        QStringLiteral("Normalize_Soft"),
+        QStringLiteral("Disable_Seek_Bar"),
+        QStringLiteral("Disable_Volume"),
+        QStringLiteral("AutoAutoMix"),
+        QStringLiteral("AutoMixThresholdPercent"),
+        QStringLiteral("AutoModeMatchBpm"),
+        QStringLiteral("AutoModeBpmTolerance"),
+        QStringLiteral("MaxOverlapSeconds"),
+        QStringLiteral("PlaylistWaveView"),
+        QStringLiteral("HideProgressInWaveView"),
+        QStringLiteral("MusicFormat"),
+        QStringLiteral("MusicKeepVideo"),
+        QStringLiteral("MusicEmbedThumbnail"),
+        QStringLiteral("MusicEmbedMetadata"),
+        QStringLiteral("ComHour"),
+        QStringLiteral("Theme"),
+        QStringLiteral("AccentColor"),
+        QStringLiteral("Language"),
+        QStringLiteral("ShowFxTab"),
+        QStringLiteral("ShowPadsTab"),
+        QStringLiteral("ShowLevelMeter"),
+        QStringLiteral("LevelMeterPlacement"),
+    };
+}
+
+namespace {
+
+/**
+ * Reads a whole table into JSON, column names and all, so the shape of the
+ * manifest follows the database rather than a hand-written list that would
+ * quietly drop a column the next migration adds.
+ *
+ * A `path` column never travels as itself: the backup has its own folders, so
+ * the row carries an opaque file id and a position inside its category
+ * instead, and the absolute path stays on this machine.
+ */
+QJsonArray dumpTable(QSqlDatabase &db, const QString &table, const QString &category,
+                     QHash<QString, QString> *index,
+                     const std::function<MobileSyncServer::MirrorFile(const QString &,
+                                                                      const QString &)> &describe)
+{
+    QJsonArray rows;
+    QSqlQuery query(db);
+    if (!query.exec(QStringLiteral("SELECT * FROM \"%1\"").arg(table)))
+        return rows;
+
+    while (query.next()) {
+        const QSqlRecord record = query.record();
+        QJsonObject row;
+        QString path;
+        for (int column = 0; column < record.count(); ++column) {
+            const QString name = record.fieldName(column);
+            const QVariant value = query.value(column);
+            if (name.compare(QLatin1String("path"), Qt::CaseInsensitive) == 0) {
+                path = value.toString();
+                continue;
+            }
+            if (value.isNull()) {
+                row.insert(name, QJsonValue::Null);
+            } else if (value.typeId() == QMetaType::Int
+                       || value.typeId() == QMetaType::LongLong) {
+                row.insert(name, value.toLongLong());
+            } else if (value.typeId() == QMetaType::Double) {
+                row.insert(name, value.toDouble());
+            } else {
+                row.insert(name, value.toString());
+            }
+        }
+
+        if (!category.isEmpty()) {
+            if (path.isEmpty())
+                continue;   // a media row with no file is of no use to a backup
+            const MobileSyncServer::MirrorFile file = describe(path, category);
+            QJsonObject fileObject;
+            fileObject.insert(QStringLiteral("id"), file.id);
+            fileObject.insert(QStringLiteral("rel"), file.relative);
+            fileObject.insert(QStringLiteral("bytes"), file.bytes);
+            fileObject.insert(QStringLiteral("mtime"), file.modified);
+            row.insert(QStringLiteral("file"), fileObject);
+            if (index)
+                index->insert(file.id, file.path);
+        }
+
+        rows.append(row);
+    }
+    return rows;
+}
+
+} // namespace
+
+QJsonObject MobileSyncServer::buildStationManifest()
+{
+    QJsonObject manifest;
+    manifest.insert(QStringLiteral("protocol"), protocolVersion());
+    manifest.insert(QStringLiteral("station"), QSysInfo::machineHostName());
+    manifest.insert(QStringLiteral("generatedAt"),
+                    QDateTime::currentDateTimeUtc().toString(Qt::ISODate));
+
+    m_stationIndex.clear();
+
+    QSqlDatabase db = libraryDatabase();
+    QJsonObject tables;
+    if (db.isValid() && db.isOpen()) {
+        auto describe = [](const QString &path, const QString &category) {
+            return describeFile(path, category);
+        };
+        // Tables whose rows point at a file the backup has to fetch...
+        const struct { const char *table; const char *category; } media[] = {
+            {"musics",   "musics"},
+            {"jingles",  "jingles"},
+            {"pub",      "pub"},
+            {"programs", "programs"},
+        };
+        for (const auto &entry : media) {
+            tables.insert(QLatin1String(entry.table),
+                          dumpTable(db, QLatin1String(entry.table),
+                                    QLatin1String(entry.category),
+                                    &m_stationIndex, describe));
+        }
+        // ...and the ones that are pure station configuration.
+        for (const char *table : {"genres1", "genres2", "hourgenre",
+                                  "hourprograms", "scheduler"}) {
+            tables.insert(QLatin1String(table),
+                          dumpTable(db, QLatin1String(table), QString(),
+                                    nullptr, describe));
+        }
+    }
+    manifest.insert(QStringLiteral("tables"), tables);
+    m_stationIndexBuiltAt = QDateTime::currentDateTime();
+
+    // Saved playlists travel as their own XML, so a backup that takes over
+    // mid-show can load the very playlist that was on air.
+    QJsonArray playlists;
+    QDir dir(playlistsDirectory());
+    const QFileInfoList files = dir.entryInfoList(QStringList()
+                                                      << QStringLiteral("*.xml"),
+                                                  QDir::Files);
+    for (const QFileInfo &info : files) {
+        QJsonObject entry;
+        entry.insert(QStringLiteral("name"), info.completeBaseName());
+        entry.insert(QStringLiteral("bytes"), info.size());
+        entry.insert(QStringLiteral("mtime"), info.lastModified().toSecsSinceEpoch());
+        playlists.append(entry);
+    }
+    manifest.insert(QStringLiteral("playlists"), playlists);
+
+    QSettings settings(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
+                           + QStringLiteral("/xfb.conf"), QSettings::IniFormat);
+    QJsonObject mirrored;
+    const QStringList wanted = mirroredSettingKeys();
+    for (const QString &key : wanted) {
+        const QVariant value = settings.value(key);
+        if (value.isValid())
+            mirrored.insert(key, value.toString());
+    }
+    // The FX chain is a group rather than a fixed list of keys.
+    settings.beginGroup(QStringLiteral("Fx"));
+    const QStringList fxKeys = settings.allKeys();
+    for (const QString &key : fxKeys)
+        mirrored.insert(QStringLiteral("Fx/") + key, settings.value(key).toString());
+    settings.endGroup();
+    manifest.insert(QStringLiteral("settings"), mirrored);
+
+    return manifest;
+}
+
+void MobileSyncServer::rebuildStationIndexIfStale()
+{
+    if (m_stationIndexBuiltAt.isValid()
+        && m_stationIndexBuiltAt.secsTo(QDateTime::currentDateTime()) < kIndexTtlSeconds) {
+        return;
+    }
+    buildStationManifest();   // building it is what fills the index
+}
+
+QString MobileSyncServer::stationPathForId(const QString &id)
+{
+    rebuildStationIndexIfStale();
+    const QString path = m_stationIndex.value(id);
+    if (path.isEmpty())
+        return QString();
+    return QFile::exists(path) ? path : QString();
+}
+
+void MobileSyncServer::handleStationManifest(QTcpSocket *socket)
+{
+    const QJsonObject manifest = buildStationManifest();
+    sendJson(socket, QJsonDocument(manifest).toJson(QJsonDocument::Compact));
+}
+
+void MobileSyncServer::handleStationFile(QTcpSocket *socket, const Request &request)
+{
+    const QString id = request.query.value(QStringLiteral("id"));
+    const QString path = stationPathForId(id);
+    if (path.isEmpty()) {
+        sendError(socket, 404, tr("This station holds no such file."));
+        return;
+    }
+    sendFile(socket, path, request);
+}
+
+void MobileSyncServer::handleStationPlaylist(QTcpSocket *socket, const Request &request)
+{
+    const QString name = request.query.value(QStringLiteral("name"));
+    // The name addresses a file in one known folder and nothing else: anything
+    // that could climb out of it is not a playlist name.
+    if (name.isEmpty() || name.contains(QLatin1Char('/'))
+        || name.contains(QLatin1Char('\\')) || name.contains(QLatin1String(".."))) {
+        sendError(socket, 400, tr("That is not a playlist name."));
+        return;
+    }
+    const QString path = QDir(playlistsDirectory()).filePath(name + QStringLiteral(".xml"));
+    if (!QFile::exists(path)) {
+        sendError(socket, 404, tr("No playlist by that name."));
+        return;
+    }
+    sendFile(socket, path, request);
+}
 
 void MobileSyncServer::sendJson(QTcpSocket *socket, const QByteArray &json, int status)
 {
