@@ -63,8 +63,8 @@ source=("git+https://github.com/netpack/XFB.git#tag=v${pkgver}"
         "xfb-companion-${pkgver}.apk::https://github.com/netpack/XFB/releases/download/v${pkgver}/xfb-companion.apk"
         "xfb-companion-${pkgver}.json::https://github.com/netpack/XFB/releases/download/v${pkgver}/xfb-companion.json")
 sha256sums=('SKIP'
-            'REPLACE_WITH_APK_SHA256'
-            'REPLACE_WITH_SIDECAR_SHA256')
+            '9539dd7b728f5ea89919c45079d9783977842ba2eb42943f84cd4d3b96bdfbcc'
+            'd754c7f394ac54103b3b5e980a4a6ef6bd5aac7955dca6a0c245ecd7ba1387a9')
 
 build() {
     cd "$srcdir/XFB"
@@ -177,22 +177,18 @@ package() {
     echo "The shared folders are under: /usr/share/xfb"
     echo "You may want to install yt-dlp for downloading media"
     echo ""
-    # TODO(3.1421): these bullets still describe 3.1420. bump-version.sh moves
-    # the heading above and never the list below it, which has shipped stale
-    # notes three times. Rewrite them against `git log v3.1420..HEAD` before
-    # the release, not after.
     echo "New in v3.1421:"
-    echo "  - Take a set with you: XFB serves its playlists to an Android"
-    echo "    companion app over your own network, and hands out the app"
-    echo "    itself — Options > Sync to Phone, scan the code, done"
-    echo "  - The phone plays offline with XFB's crossfades, volume lines,"
-    echo "    equalizer and compressor, and its 432 Hz retune"
-    echo "  - Auto-mix on the phone works out a crossfade for joins nobody"
-    echo "    set, so everything on it plays as a set rather than as cuts"
-    echo "  - Syncing says plainly that it is not encrypted, so you can"
-    echo "    decide whether to serve on the network you are on"
-    echo "  - The reminder to support XFB is a corner notice now, not a"
-    echo "    dialog in front of the splash screen holding up playout"
+    echo "  - Station Backup: a second XFB on your network keeps a full copy"
+    echo "    of this one — music, jingles, ads, programs, schedule and"
+    echo "    playlists — so a dead studio machine is one launch from air"
+    echo "  - XFB fits a low-resolution screen: the player and clock panels"
+    echo "    scale to the room they have, the side panel scrolls, and the"
+    echo "    music list can be resized properly again"
+    echo "  - The progress bar steps aside while the wave view is showing,"
+    echo "    which already draws the playhead"
+    echo "  - Auto Mode plays a random track when you press Play on an empty"
+    echo "    running order, which it never actually managed before"
+    echo "  - XFB_PROFILE=<name> runs a second, separate XFB on one machine"
     echo ""
     echo "Can you share some ETH? 0x9700225FcD115230C9166BD68CEdc23e329D3CdF"
     echo "Thank you for installing XFB! Made with love & linux!"
