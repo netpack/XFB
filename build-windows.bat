@@ -407,6 +407,7 @@ if %errorlevel% equ 0 (
     makensis /DVERSION=%VERSION% /DARCH=%ARCH% /DDISTDIR=%DIST_DIR% installer.nsi
     if !errorlevel! equ 0 if exist "%INSTALLER_NAME%" (
         echo [SUCCESS] Installer created: %INSTALLER_NAME%
+        set "INSTALLER_MADE=1"
     ) else (
         echo [WARNING] NSIS installer creation failed. No installer was produced; run the portable %DIST_DIR%\XFB.exe instead.
     )
@@ -423,8 +424,15 @@ echo.
 echo   Portable: %DIST_DIR%\XFB.exe
 echo   Version:  %VERSION%
 echo   Arch:     %ARCH%
-if /i "%ARCH%"=="x64"   echo   Installer: XFB-%VERSION%-Setup.exe
-if /i "%ARCH%"=="arm64" echo   Installer: XFB-%VERSION%-arm64-Setup.exe
+REM Only claim an installer when one is actually on disk. This line used to be
+REM printed from %ARCH% alone, so a run where NSIS was missing or makensis had
+REM failed still ended with "Build completed successfully" and an installer
+REM name under it, while the line saying otherwise had already scrolled away.
+if defined INSTALLER_MADE (
+    echo   Installer: %INSTALLER_NAME%
+) else (
+    echo   Installer: NOT PRODUCED - see the NSIS message further up
+)
 echo.
 echo   To run: %DIST_DIR%\XFB.exe
 echo.
