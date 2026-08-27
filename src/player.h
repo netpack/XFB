@@ -595,6 +595,18 @@ private slots:
     QPointer<class StationSyncClient> m_stationSync;
     QPointer<class StationSyncDialog> m_stationSyncDialog;
 
+    // --- Production computers ---
+    // The other direction: another XFB where the programme is prepared, which
+    // reads this station's catalogue and publishes back what it made, so the
+    // machine on air is never the machine being worked on. Same server, same
+    // pairing, a role of its own — the only one allowed to write here.
+    class ProductionSyncClient *productionSyncClient();
+    QPointer<class ProductionSyncClient> m_productionSync;
+    QPointer<class ProductionSyncDialog> m_productionSyncDialog;
+    /// A batch of published entries arrives as several requests; the tables on
+    /// screen are reloaded once when it settles, not once per request.
+    bool m_peerCatalogueRefreshQueued = false;
+
     // --- Adding library tracks to the playlist from the keyboard ---
     // The library views' only route into the playlist used to be the
     // right-click context menu, which is unreachable on a Mac keyboard (no

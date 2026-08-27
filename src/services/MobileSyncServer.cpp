@@ -23,10 +23,12 @@
 #include <QTimer>
 #include <QUrl>
 #include <QUrlQuery>
+#include <QSqlIndex>
 #include <QSqlRecord>
 #include <QXmlStreamReader>
 
 #include <functional>
+#include <utility>
 
 namespace {
 
@@ -38,6 +40,17 @@ constexpr int kMaxPairingAttempts = 5;
 
 /** Requests larger than this are refused outright (no legitimate one is big). */
 constexpr int kMaxRequestBytes = 64 * 1024;
+
+/**
+ * Except the one kind that is: a production computer publishing a jingle has
+ * to get the file here somehow. It arrives in chunks rather than in one piece,
+ * so this bounds a chunk, not a track, and a machine that has not authenticated
+ * still cannot make this server hold more than one chunk.
+ */
+constexpr int kMaxUploadBytes = 8 * 1024 * 1024;
+
+/** Uploads are parked under this suffix until the last chunk has landed. */
+const QString kPartSuffix = QStringLiteral(".xfbpart");
 
 /** The track index is cheap to build but not free; reuse it for a minute. */
 constexpr int kIndexTtlSeconds = 60;
@@ -55,9 +68,12 @@ QString reasonPhrase(int status)
     case 403: return QStringLiteral("Forbidden");
     case 404: return QStringLiteral("Not Found");
     case 405: return QStringLiteral("Method Not Allowed");
+    case 409: return QStringLiteral("Conflict");
     case 413: return QStringLiteral("Payload Too Large");
     case 416: return QStringLiteral("Range Not Satisfiable");
     case 429: return QStringLiteral("Too Many Requests");
+    case 500: return QStringLiteral("Internal Server Error");
+    case 503: return QStringLiteral("Service Unavailable");
     default:  return QStringLiteral("Error");
     }
 }
@@ -325,9 +341,7 @@ void MobileSyncServer::loadTokens()
         device.tokenId  = token.left(8);
         device.pairedAt = settings.value(QStringLiteral("pairedAt")).toDateTime();
         device.lastSeen = settings.value(QStringLiteral("lastSeen")).toDateTime();
-        device.role = settings.value(QStringLiteral("role")).toString()
-                              == QLatin1String("station")
-                          ? PeerRole::Station : PeerRole::Mobile;
+        device.role = roleFromName(settings.value(QStringLiteral("role")).toString());
         m_tokens.insert(token, device);
     }
     settings.endArray();
@@ -344,9 +358,7 @@ void MobileSyncServer::saveTokens() const
         settings.setValue(QStringLiteral("name"), it.value().name);
         settings.setValue(QStringLiteral("pairedAt"), it.value().pairedAt);
         settings.setValue(QStringLiteral("lastSeen"), it.value().lastSeen);
-        settings.setValue(QStringLiteral("role"),
-                          it.value().role == PeerRole::Station
-                              ? QStringLiteral("station") : QStringLiteral("mobile"));
+        settings.setValue(QStringLiteral("role"), roleName(it.value().role));
     }
     settings.endArray();
 }
@@ -377,7 +389,12 @@ void MobileSyncServer::onReadyRead(QTcpSocket *socket)
 
     it->append(socket->readAll());
 
-    if (it->size() > kMaxRequestBytes) {
+    // Only one kind of request is allowed to be big, and it is recognisable
+    // from its request line, which arrives first. Everything else — including
+    // anything that never sends a request line at all — stays on the tight
+    // bound it has always had.
+    const bool upload = it->startsWith("POST /api/production/file");
+    if (it->size() > (upload ? kMaxUploadBytes : kMaxRequestBytes)) {
         sendError(socket, 413, tr("Request too large."));
         return;
     }
@@ -498,15 +515,46 @@ void MobileSyncServer::route(QTcpSocket *socket, const Request &request)
         return;
     }
 
-    if (request.method != "GET") {
+    // Publishing is the one thing a peer may do that changes this station, so
+    // it is also the only thing that may arrive as anything but a GET.
+    const bool production = request.path.startsWith(QLatin1String("/api/production/"));
+    if (request.method != "GET" && !(production && request.method == "POST")) {
         sendError(socket, 405, tr("Only GET is supported here."));
         return;
     }
 
-    // Everything a standby station needs to become this one. Locked to the
-    // station role: a paired phone gets 403 here, not the catalogue.
+    // What a production computer publishes: files first, then the catalogue
+    // rows that point at them, then any playlist it built. Locked to the
+    // production role — a backup station reads this station, it does not
+    // write to it, and a phone does neither.
+    if (production) {
+        if (role != PeerRole::Production) {
+            sendError(socket, 403,
+                      tr("This device is not paired as a production computer."));
+            return;
+        }
+        if (request.path == QLatin1String("/api/production/hello")) {
+            handleProductionHello(socket);
+        } else if (request.path == QLatin1String("/api/production/have")) {
+            handleProductionHave(socket, request);
+        } else if (request.path == QLatin1String("/api/production/file")) {
+            handleProductionFile(socket, request);
+        } else if (request.path == QLatin1String("/api/production/rows")) {
+            handleProductionRows(socket, request, device);
+        } else if (request.path == QLatin1String("/api/production/playlist")) {
+            handleProductionPlaylist(socket, request);
+        } else {
+            sendError(socket, 404, tr("No such endpoint."));
+        }
+        return;
+    }
+
+    // Everything a standby station needs to become this one. A production
+    // computer reads the very same thing — it cannot prepare next week's
+    // programme without the catalogue it will be added to. A paired phone
+    // gets 403 here, not the catalogue.
     if (request.path.startsWith(QLatin1String("/api/station/"))) {
-        if (role != PeerRole::Station) {
+        if (role != PeerRole::Station && role != PeerRole::Production) {
             sendError(socket, 403, tr("This device is not paired as a backup station."));
             return;
         }
@@ -579,8 +627,11 @@ void MobileSyncServer::handlePair(QTcpSocket *socket, const Request &request)
     const QString code = body.value(QStringLiteral("code")).toString().trimmed();
     QString deviceName = body.value(QStringLiteral("device")).toString().trimmed();
     if (deviceName.isEmpty()) {
-        deviceName = m_pairingRole == PeerRole::Station ? tr("Backup station")
-                                                        : tr("Android device");
+        switch (m_pairingRole) {
+        case PeerRole::Station:    deviceName = tr("Backup station"); break;
+        case PeerRole::Production: deviceName = tr("Production computer"); break;
+        case PeerRole::Mobile:     deviceName = tr("Android device"); break;
+        }
     }
     deviceName = deviceName.left(64);
 
@@ -616,9 +667,7 @@ void MobileSyncServer::handlePair(QTcpSocket *socket, const Request &request)
     QJsonObject object;
     object.insert(QStringLiteral("token"), token);
     object.insert(QStringLiteral("protocol"), protocolVersion());
-    object.insert(QStringLiteral("role"),
-                  device.role == PeerRole::Station ? QStringLiteral("station")
-                                                   : QStringLiteral("mobile"));
+    object.insert(QStringLiteral("role"), roleName(device.role));
     sendJson(socket, QJsonDocument(object).toJson(QJsonDocument::Compact));
 
     emit devicePaired(deviceName);
@@ -886,6 +935,55 @@ QString MobileSyncServer::idForPath(const QString &path)
     return QString::fromLatin1(
         QCryptographicHash::hash(path.toUtf8(), QCryptographicHash::Sha256)
             .toHex().left(32));
+}
+
+QString MobileSyncServer::roleName(PeerRole role)
+{
+    switch (role) {
+    case PeerRole::Station:    return QStringLiteral("station");
+    case PeerRole::Production: return QStringLiteral("production");
+    case PeerRole::Mobile:     break;
+    }
+    return QStringLiteral("mobile");
+}
+
+MobileSyncServer::PeerRole MobileSyncServer::roleFromName(const QString &name)
+{
+    if (name == QLatin1String("station"))
+        return PeerRole::Station;
+    if (name == QLatin1String("production"))
+        return PeerRole::Production;
+    // Anything unrecognised — an older XFB, a garbled settings file, a caller
+    // trying its luck — gets the role that can do the least.
+    return PeerRole::Mobile;
+}
+
+QStringList MobileSyncServer::mediaCategories()
+{
+    return {
+        QStringLiteral("musics"), QStringLiteral("jingles"),
+        QStringLiteral("pub"), QStringLiteral("programs"),
+    };
+}
+
+bool MobileSyncServer::isSafeRelativePath(const QString &relative)
+{
+    if (relative.isEmpty() || relative.size() > 512)
+        return false;
+    if (relative.startsWith(QLatin1Char('/')) || relative.startsWith(QLatin1Char('\\')))
+        return false;
+    if (relative.contains(QLatin1Char(':')))
+        return false;
+    const QStringList parts = relative.split(QLatin1Char('/'), Qt::SkipEmptyParts);
+    if (parts.isEmpty())
+        return false;
+    for (const QString &part : parts) {
+        if (part == QLatin1String("..") || part == QLatin1String("."))
+            return false;
+        if (part.contains(QLatin1Char('\\')))
+            return false;
+    }
+    return true;
 }
 
 void MobileSyncServer::rebuildIndexIfStale()
@@ -1561,4 +1659,438 @@ void MobileSyncServer::sendFile(QTcpSocket *socket, const QString &path, const R
 
     connect(socket, &QTcpSocket::bytesWritten, socket, [pump](qint64) { pump(); });
     pump();
+}
+
+// -------------------------------------------- taking work from a production PC
+//
+// The other half of the same idea as the backup station, pointed the other way.
+// A station of any size prepares more than it plays: next week's music is
+// tagged, this month's ads are cut, a jingle is re-recorded — and none of that
+// wants doing on the machine that is on air, where a stray click is heard by
+// everybody. So a second XFB does the preparing, reads this one's catalogue to
+// know what is already there, and publishes what it made back here.
+//
+// Everything below is a write, which is why it is fenced off behind a role of
+// its own: only a machine the operator deliberately paired from the Production
+// Computers dialog can reach any of it. What arrives is still not trusted —
+// the category has to be one this station keeps, the relative path has to be
+// one that cannot climb out of its folder, the table has to be one of the
+// station's own, and every column name is matched against the schema before it
+// is allowed anywhere near a statement.
+
+QString MobileSyncServer::ensureCategoryRoot(const QString &category)
+{
+    QString root = categoryRoot(category).trimmed();
+    if (!root.isEmpty()) {
+        QDir().mkpath(root);
+        return root;
+    }
+
+    // Ads have never had a folder of their own, and a station whose operator
+    // has not set one cannot be told "no" here — the ad has already been made.
+    // So one is chosen, created, and written down where the rest of XFB looks,
+    // which also keeps the manifest's relative paths agreeing with reality.
+    const QString base = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    root = QDir(base).filePath(QStringLiteral("media/") + category);
+    QDir().mkpath(root);
+
+    QSettings settings(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
+                           + QStringLiteral("/xfb.conf"), QSettings::IniFormat);
+    if (category == QLatin1String("musics"))
+        settings.setValue(QStringLiteral("MusicPath"), root);
+    else if (category == QLatin1String("jingles"))
+        settings.setValue(QStringLiteral("JinglePath"), root);
+    else if (category == QLatin1String("programs"))
+        settings.setValue(QStringLiteral("ProgramsPath"), root);
+    else if (category == QLatin1String("pub"))
+        settings.setValue(QStringLiteral("StationSync/PubPath"), root);
+    settings.sync();
+
+    return root;
+}
+
+bool MobileSyncServer::allowsMediaDeletion()
+{
+    QSettings settings(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
+                           + QStringLiteral("/xfb.conf"), QSettings::IniFormat);
+    return settings.value(QStringLiteral("ProductionSync/AllowMediaDeletion"), false).toBool();
+}
+
+void MobileSyncServer::setAllowMediaDeletion(bool allow)
+{
+    QSettings settings(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
+                           + QStringLiteral("/xfb.conf"), QSettings::IniFormat);
+    settings.setValue(QStringLiteral("ProductionSync/AllowMediaDeletion"), allow);
+    settings.sync();
+}
+
+QString MobileSyncServer::incomingPath(const QString &category, const QString &relative)
+{
+    if (!mediaCategories().contains(category) || !isSafeRelativePath(relative))
+        return QString();
+    const QString root = ensureCategoryRoot(category);
+    if (root.isEmpty())
+        return QString();
+    const QString target = QDir::cleanPath(QDir(root).filePath(relative));
+    // cleanPath resolves what is left of any trickery; the result still has to
+    // sit inside the folder it was meant for.
+    if (!target.startsWith(QDir::cleanPath(root) + QLatin1Char('/')))
+        return QString();
+    return target;
+}
+
+void MobileSyncServer::handleProductionHello(QTcpSocket *socket)
+{
+    QJsonObject object;
+    object.insert(QStringLiteral("application"), QStringLiteral("XFB"));
+    object.insert(QStringLiteral("protocol"), protocolVersion());
+    object.insert(QStringLiteral("station"), QSysInfo::machineHostName());
+
+    // Which categories this station can actually take delivery of, so the
+    // production end can say so plainly instead of failing file by file.
+    QJsonArray categories;
+    for (const QString &category : mediaCategories())
+        categories.append(category);
+    object.insert(QStringLiteral("categories"), categories);
+
+    sendJson(socket, QJsonDocument(object).toJson(QJsonDocument::Compact));
+}
+
+void MobileSyncServer::handleProductionHave(QTcpSocket *socket, const Request &request)
+{
+    const QString category = request.query.value(QStringLiteral("category"));
+    const QString relative = request.query.value(QStringLiteral("rel"));
+    const QString target = incomingPath(category, relative);
+    if (target.isEmpty()) {
+        sendError(socket, 400, tr("That is not a file this station can hold."));
+        return;
+    }
+
+    QJsonObject object;
+    const QFileInfo whole(target);
+    object.insert(QStringLiteral("bytes"), whole.exists() ? whole.size() : 0);
+    // What of a previous attempt is still on disk decides where the next one
+    // starts, so an upload interrupted at 90% costs 10%, not the lot.
+    const QFileInfo part(target + kPartSuffix);
+    object.insert(QStringLiteral("partial"), part.exists() ? part.size() : 0);
+    sendJson(socket, QJsonDocument(object).toJson(QJsonDocument::Compact));
+}
+
+void MobileSyncServer::handleProductionFile(QTcpSocket *socket, const Request &request)
+{
+    const QString category = request.query.value(QStringLiteral("category"));
+    const QString relative = request.query.value(QStringLiteral("rel"));
+    const QString target = incomingPath(category, relative);
+    if (target.isEmpty()) {
+        sendError(socket, 400, tr("That is not a file this station can hold."));
+        return;
+    }
+
+    bool offsetOk = false;
+    bool totalOk = false;
+    const qint64 offset = request.query.value(QStringLiteral("offset")).toLongLong(&offsetOk);
+    const qint64 total  = request.query.value(QStringLiteral("total")).toLongLong(&totalOk);
+    if (!offsetOk || !totalOk || offset < 0 || total <= 0 || offset > total) {
+        sendError(socket, 400, tr("The upload did not say where it was up to."));
+        return;
+    }
+
+    const QString partPath = target + kPartSuffix;
+    QDir().mkpath(QFileInfo(target).absolutePath());
+
+    // The offset the sender believes it is at has to match what is here, or
+    // two attempts at the same file would interleave into a corrupt one. A
+    // mismatch is answered with the truth rather than an error, so the sender
+    // can simply carry on from the right place.
+    const qint64 have = QFileInfo(partPath).exists() ? QFileInfo(partPath).size() : 0;
+    if (offset != have) {
+        QJsonObject object;
+        object.insert(QStringLiteral("received"), have);
+        object.insert(QStringLiteral("complete"), false);
+        sendJson(socket, QJsonDocument(object).toJson(QJsonDocument::Compact), 409);
+        return;
+    }
+
+    QFile part(partPath);
+    if (!part.open(offset > 0 ? QIODevice::Append : QIODevice::WriteOnly)) {
+        sendError(socket, 500, tr("This station could not write that file."));
+        return;
+    }
+    if (offset == 0)
+        part.resize(0);
+    const qint64 written = part.write(request.body);
+    part.close();
+    if (written != request.body.size()) {
+        sendError(socket, 500, tr("This station ran out of room for that file."));
+        return;
+    }
+
+    const qint64 received = offset + written;
+    const bool complete = received >= total;
+    if (complete) {
+        QFile::remove(target);
+        if (!QFile::rename(partPath, target)) {
+            sendError(socket, 500, tr("This station could not store that file."));
+            return;
+        }
+        // The allow-lists are built from what the database says; a file that
+        // has just arrived is not in them yet.
+        m_stationIndexBuiltAt = QDateTime();
+        m_indexBuiltAt = QDateTime();
+    }
+
+    QJsonObject object;
+    object.insert(QStringLiteral("received"), received);
+    object.insert(QStringLiteral("complete"), complete);
+    if (complete)
+        object.insert(QStringLiteral("id"), idForPath(target));
+    sendJson(socket, QJsonDocument(object).toJson(QJsonDocument::Compact));
+}
+
+void MobileSyncServer::handleProductionRows(QTcpSocket *socket, const Request &request,
+                                            const QString &device)
+{
+    const QJsonObject body = QJsonDocument::fromJson(request.body).object();
+    const QString table = body.value(QStringLiteral("table")).toString();
+    const QString mode  = body.value(QStringLiteral("mode")).toString();
+    const QJsonArray rows = body.value(QStringLiteral("rows")).toArray();
+
+    // A table name cannot be bound as a parameter, so it is never taken from
+    // the request: it is matched against the list of tables this station has
+    // agreed to accept, and the matching entry is what reaches the statement.
+    const bool media = mediaCategories().contains(table);
+    const QStringList configTables = {
+        QStringLiteral("genres1"), QStringLiteral("genres2"),
+        QStringLiteral("hourgenre"), QStringLiteral("hourprograms"),
+        QStringLiteral("scheduler"),
+    };
+    if (!media && !configTables.contains(table)) {
+        sendError(socket, 400, tr("This station does not take entries for \"%1\".").arg(table));
+        return;
+    }
+
+    QSqlDatabase db = libraryDatabase();
+    if (!db.isValid() || !db.isOpen()) {
+        sendError(socket, 503, tr("This station's library is not open."));
+        return;
+    }
+
+    QStringList known;
+    const QSqlRecord record = db.record(table);
+    for (int i = 0; i < record.count(); ++i)
+        known << record.fieldName(i);
+    if (known.isEmpty()) {
+        sendError(socket, 400, tr("This station has no \"%1\" table.").arg(table));
+        return;
+    }
+
+    // Two XFBs number their own rows, so an ad prepared on the production
+    // machine may carry an id this station already gave to something else.
+    // Where that happens the id is left off and SQLite assigns one here: the
+    // entry belongs to this station now, and its numbering is this station's
+    // business. Media rows are identified by their file, never by their id.
+    QString keyColumn;
+    const QSqlIndex primary = db.primaryIndex(table);
+    if (primary.count() == 1)
+        keyColumn = primary.fieldName(0);
+
+    int written = 0;
+    int skipped = 0;
+    int removed = 0;
+    int filesRemoved = 0;
+    QJsonArray missing;
+
+    db.transaction();
+
+    // An ad campaign that ended, a jingle withdrawn, a track pulled: what the
+    // production machine took out has to come out here too, or the station
+    // keeps playing it. The entry always goes; whether its audio goes with it
+    // is the station operator's decision and nobody else's, so it is read
+    // here rather than taken from the request.
+    const bool deleteFiles = media && allowsMediaDeletion();
+    for (const QJsonValue &value : body.value(QStringLiteral("remove")).toArray()) {
+        if (!media)
+            break;   // configuration tables travel whole; there is nothing to remove
+        const QString path = incomingPath(table, value.toString());
+        if (path.isEmpty())
+            continue;
+        QSqlQuery drop(db);
+        drop.prepare(QStringLiteral("DELETE FROM \"%1\" WHERE path = ?").arg(table));
+        drop.addBindValue(path);
+        if (!drop.exec())
+            continue;
+        removed += drop.numRowsAffected() > 0 ? drop.numRowsAffected() : 0;
+
+        if (!deleteFiles)
+            continue;
+        // Only ever a file inside one of this station's own media folders —
+        // incomingPath() has already established that — and only one nothing
+        // else still plays. A jingle used as an ad as well keeps its file.
+        bool stillListed = false;
+        for (const QString &other : mediaCategories()) {
+            QSqlQuery used(db);
+            used.prepare(QStringLiteral("SELECT 1 FROM \"%1\" WHERE path = ?").arg(other));
+            used.addBindValue(path);
+            if (used.exec() && used.next()) {
+                stillListed = true;
+                break;
+            }
+        }
+        if (!stillListed && QFile::remove(path))
+            ++filesRemoved;
+    }
+
+    // The schedule is a shape, not a set of rows: an hour that was cleared on
+    // the production machine has to end up cleared here too, and there is no
+    // row left to carry that news. So those tables travel whole.
+    if (!media && mode == QLatin1String("replace")) {
+        QSqlQuery clear(db);
+        if (!clear.exec(QStringLiteral("DELETE FROM \"%1\"").arg(table))) {
+            db.rollback();
+            sendError(socket, 500, tr("This station could not clear \"%1\".").arg(table));
+            return;
+        }
+    }
+
+    for (const QJsonValue &value : rows) {
+        const QJsonObject row = value.toObject();
+
+        QString path;
+        if (media) {
+            const QJsonObject file = row.value(QStringLiteral("file")).toObject();
+            path = incomingPath(table, file.value(QStringLiteral("rel")).toString());
+            if (path.isEmpty() || !QFile::exists(path)) {
+                // The row is refused rather than written: an entry whose file
+                // never arrived is an entry Auto Mode would play as silence.
+                missing.append(file.value(QStringLiteral("rel")).toString());
+                ++skipped;
+                continue;
+            }
+        }
+
+        QStringList columns;
+        QVariantList values;
+        for (auto it = row.constBegin(); it != row.constEnd(); ++it) {
+            if (it.key() == QLatin1String("file"))
+                continue;
+            if (it.key().compare(QLatin1String("path"), Qt::CaseInsensitive) == 0)
+                continue;   // the path here is this station's, never the sender's
+            if (!known.contains(it.key(), Qt::CaseInsensitive))
+                continue;
+            columns << it.key();
+            values << (it.value().isNull() ? QVariant() : QVariant(it.value().toVariant()));
+        }
+
+        if (media) {
+            // Publishing the same track twice must update it, not double it.
+            QSqlQuery replace(db);
+            replace.prepare(QStringLiteral("DELETE FROM \"%1\" WHERE path = ?").arg(table));
+            replace.addBindValue(path);
+            replace.exec();
+
+            int keyAt = -1;
+            for (int i = 0; !keyColumn.isEmpty() && i < columns.size(); ++i) {
+                if (columns.at(i).compare(keyColumn, Qt::CaseInsensitive) == 0) {
+                    keyAt = i;
+                    break;
+                }
+            }
+            if (keyAt >= 0) {
+                QSqlQuery clash(db);
+                clash.prepare(QStringLiteral("SELECT 1 FROM \"%1\" WHERE \"%2\" = ?")
+                                  .arg(table, keyColumn));
+                clash.addBindValue(values.at(keyAt));
+                if (clash.exec() && clash.next()) {
+                    columns.removeAt(keyAt);
+                    values.removeAt(keyAt);
+                }
+            }
+
+            columns << QStringLiteral("path");
+            values << path;
+        }
+
+        if (columns.isEmpty()) {
+            ++skipped;
+            continue;
+        }
+
+        QStringList quoted;
+        QStringList placeholders;
+        for (const QString &column : std::as_const(columns)) {
+            quoted << QLatin1Char('"') + column + QLatin1Char('"');
+            placeholders << QStringLiteral("?");
+        }
+
+        QSqlQuery insert(db);
+        insert.prepare(QStringLiteral("INSERT INTO \"%1\" (%2) VALUES (%3)")
+                           .arg(table, quoted.join(QStringLiteral(", ")),
+                                placeholders.join(QStringLiteral(", "))));
+        for (const QVariant &bound : std::as_const(values))
+            insert.addBindValue(bound);
+        if (insert.exec())
+            ++written;
+        else
+            ++skipped;
+    }
+
+    if (!db.commit()) {
+        db.rollback();
+        sendError(socket, 500, tr("This station could not write those entries."));
+        return;
+    }
+
+    if (written > 0 || removed > 0) {
+        m_stationIndexBuiltAt = QDateTime();
+        m_indexBuiltAt = QDateTime();
+        QString summary;
+        if (written > 0 && removed > 0) {
+            summary = tr("%n change(s) to %1", nullptr, written + removed).arg(table);
+        } else if (written > 0) {
+            summary = tr("%n entry/entries in %1", nullptr, written).arg(table);
+        } else {
+            summary = tr("the removal of %n entry/entries from %1", nullptr, removed).arg(table);
+        }
+        emit deviceActivity(device, tr("published %1").arg(summary));
+        emit catalogueChangedByPeer(device, summary);
+    }
+
+    QJsonObject object;
+    object.insert(QStringLiteral("written"), written);
+    object.insert(QStringLiteral("skipped"), skipped);
+    object.insert(QStringLiteral("removed"), removed);
+    object.insert(QStringLiteral("filesRemoved"), filesRemoved);
+    object.insert(QStringLiteral("missing"), missing);
+    sendJson(socket, QJsonDocument(object).toJson(QJsonDocument::Compact));
+}
+
+void MobileSyncServer::handleProductionPlaylist(QTcpSocket *socket, const Request &request)
+{
+    const QString name = request.query.value(QStringLiteral("name")).trimmed();
+    // A playlist name becomes a file name here, so it may be a name and
+    // nothing else — no folders, no climbing, no surprises.
+    if (name.isEmpty() || name.size() > 128
+        || name.contains(QLatin1Char('/')) || name.contains(QLatin1Char('\\'))
+        || name.contains(QLatin1Char(':')) || name.startsWith(QLatin1Char('.'))) {
+        sendError(socket, 400, tr("That is not a name this station can save."));
+        return;
+    }
+    if (request.body.isEmpty()) {
+        sendError(socket, 400, tr("The playlist arrived empty."));
+        return;
+    }
+
+    const QString dir = playlistsDirectory();
+    QDir().mkpath(dir);
+    QFile file(QDir(dir).filePath(name + QStringLiteral(".xml")));
+    if (!file.open(QIODevice::WriteOnly)) {
+        sendError(socket, 500, tr("This station could not save that playlist."));
+        return;
+    }
+    file.write(request.body);
+    file.close();
+
+    QJsonObject object;
+    object.insert(QStringLiteral("saved"), name);
+    sendJson(socket, QJsonDocument(object).toJson(QJsonDocument::Compact));
 }

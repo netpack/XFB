@@ -30,6 +30,7 @@ SOURCES += \
     dialogs/AudioFxDialog.cpp \
     dialogs/MobileSyncDialog.cpp \
     dialogs/StationSyncDialog.cpp \
+    dialogs/ProductionSyncDialog.cpp \
     add_music_single.cpp \
     add_full_dir.cpp \
     addgenre.cpp \
@@ -85,6 +86,7 @@ SOURCES += \
     services/NgrokTunnelService.cpp \
     services/MobileSyncServer.cpp \
     services/StationSyncClient.cpp \
+    services/ProductionSyncClient.cpp \
     services/UpdateCheckService.cpp
 
 HEADERS += \
@@ -104,6 +106,7 @@ HEADERS += \
     dialogs/AudioFxDialog.h \
     dialogs/MobileSyncDialog.h \
     dialogs/StationSyncDialog.h \
+    dialogs/ProductionSyncDialog.h \
     add_music_single.h \
     add_full_dir.h \
     addgenre.h \
@@ -160,6 +163,7 @@ HEADERS += \
     services/NgrokTunnelService.h \
     services/MobileSyncServer.h \
     services/StationSyncClient.h \
+    services/ProductionSyncClient.h \
     services/UpdateCheckService.h
 
 FORMS += \

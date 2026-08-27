@@ -66,10 +66,18 @@ public:
      * the whole catalogue, the jingles, the ads, the programs and the
      * schedule — so that role is granted separately and only from the Station
      * Backup dialog, never from the phone pairing window.
+     *
+     * A production computer reads the same catalogue as a backup does, and is
+     * additionally allowed to *write*: it is the machine where next week's
+     * music, jingles and ads are prepared, and what it publishes has to reach
+     * the station on air or the work stays on the wrong machine. That is the
+     * one role that can change anything here, which is why it too is granted
+     * only from its own dialog.
      */
     enum class PeerRole {
-        Mobile,   ///< the companion app on a phone
-        Station,  ///< another XFB mirroring this one as a backup
+        Mobile,      ///< the companion app on a phone
+        Station,     ///< another XFB mirroring this one as a backup
+        Production,  ///< another XFB used to prepare what this one broadcasts
     };
 
     struct PairedDevice {
@@ -161,6 +169,35 @@ public:
     /** The opaque id a given file is addressed by. */
     static QString idForPath(const QString &path);
 
+    /** The word a role travels and is stored as. */
+    static QString roleName(PeerRole role);
+    /** The role that word means; anything unknown is the least privileged one. */
+    static PeerRole roleFromName(const QString &name);
+
+    /** The media categories a station holds, in manifest order. */
+    static QStringList mediaCategories();
+
+    /**
+     * Whether a relative path that arrived over the network may be used to
+     * name a file on this machine: no absolute paths, no drive letters, no
+     * climbing out with "..", nothing empty.
+     */
+    static bool isSafeRelativePath(const QString &relative);
+
+    /**
+     * Whether a production computer withdrawing an entry may also delete the
+     * audio file it pointed at.
+     *
+     * Off unless the operator of the station on air turns it on, and it is
+     * their switch alone: the machine that would do the deleting does not get
+     * to decide. With it off, a withdrawal removes the catalogue entry and
+     * leaves the file on disk, which is recoverable; with it on, an ad
+     * campaign that ends takes its audio with it and the station's disk does
+     * not fill up with material nobody will play again.
+     */
+    static bool allowsMediaDeletion();
+    static void setAllowMediaDeletion(bool allow);
+
     /**
      * The settings a backup station copies from the station it mirrors.
      *
@@ -228,6 +265,14 @@ signals:
     void pairingWindowChanged();
     void syncSetChanged(int trackCount);
 
+    /**
+     * A production computer has written something into this station's library.
+     *
+     * The player listens so the tables on screen show what arrived; Auto Mode
+     * itself needs no telling, because every pick is a fresh query.
+     */
+    void catalogueChangedByPeer(const QString &deviceName, const QString &summary);
+
 private:
     struct Request {
         QByteArray method;
@@ -253,6 +298,18 @@ private:
     void handlePlaylists(QTcpSocket *socket);
     void handlePlaylist(QTcpSocket *socket, const Request &request);
     void handleTrack(QTcpSocket *socket, const Request &request);
+
+    // production computers (another XFB that prepares what this one plays)
+    void handleProductionHello(QTcpSocket *socket);
+    void handleProductionHave(QTcpSocket *socket, const Request &request);
+    void handleProductionFile(QTcpSocket *socket, const Request &request);
+    void handleProductionRows(QTcpSocket *socket, const Request &request,
+                              const QString &device);
+    void handleProductionPlaylist(QTcpSocket *socket, const Request &request);
+    /** The folder incoming files of a category land in, created if need be. */
+    static QString ensureCategoryRoot(const QString &category);
+    /** Where @p relative lands under that folder, empty when it is not safe. */
+    static QString incomingPath(const QString &category, const QString &relative);
 
     // station mirroring (a second XFB kept ready to take over)
     void handleStationManifest(QTcpSocket *socket);

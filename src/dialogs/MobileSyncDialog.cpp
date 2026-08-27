@@ -359,10 +359,19 @@ void MobileSyncDialog::updateDeviceList()
     labels.reserve(devices.size());
     tokenIds.reserve(devices.size());
     for (const auto &device : devices) {
+        // Backups and production computers are paired from their own windows
+        // but revoked here, so they are named for what they are rather than
+        // sitting in a list of phones pretending to be one.
+        QString name = device.name;
+        if (device.role == MobileSyncServer::PeerRole::Station)
+            name = tr("%1 (backup station)").arg(name);
+        else if (device.role == MobileSyncServer::PeerRole::Production)
+            name = tr("%1 (production computer)").arg(name);
+
         labels << (device.lastSeen.isValid()
-            ? tr("%1 — last seen %2").arg(device.name,
+            ? tr("%1 — last seen %2").arg(name,
                                           device.lastSeen.toString(QStringLiteral("d MMM, HH:mm")))
-            : device.name);
+            : name);
         tokenIds << device.tokenId;
     }
 

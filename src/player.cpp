@@ -119,8 +119,10 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include "services/BrailleDisplayService.h"
 #include "dialogs/AccessibilityPreferencesDialog.h"
 #include "dialogs/MobileSyncDialog.h"
+#include "dialogs/ProductionSyncDialog.h"
 #include "dialogs/StationSyncDialog.h"
 #include "services/MobileSyncServer.h"
+#include "services/ProductionSyncClient.h"
 #include "services/StationSyncClient.h"
 #include "dialogs/AccessibilityTutorialDialog.h"
 #include "services/AudioFeedbackService.h"
@@ -5273,6 +5275,57 @@ void player::setupPlaybackShortcuts()
                 }
             }
         }
+
+        // Production computers: the same window on both machines again, for
+        // the same reason — the one on air lets a production machine in from
+        // the top half, the production machine points itself at the station
+        // from the bottom half.
+        QAction *productionSync = new QAction(
+            QIcon(":/icons/flat/Connection Sync-48.png"), tr("&Production Computers..."), this);
+        productionSync->setMenuRole(QAction::NoRole);
+        connect(productionSync, &QAction::triggered, this, [this]() {
+            if (!m_productionSyncDialog) {
+                m_productionSyncDialog = new ProductionSyncDialog(mobileSyncServer(),
+                                                                  productionSyncClient(), this);
+                m_productionSyncDialog->setAttribute(Qt::WA_DeleteOnClose, false);
+                connect(m_productionSyncDialog, &ProductionSyncDialog::announcementRequested,
+                        this, &player::announceAccessible);
+            }
+            m_productionSyncDialog->show();
+            m_productionSyncDialog->raise();
+            m_productionSyncDialog->activateWindow();
+        });
+        ui->menuXFB->addAction(productionSync);
+        addAction(productionSync);
+
+        // A production machine with standing orders fetches without being
+        // asked, the same way the backup does.
+        {
+            QSettings productionSettings(
+                QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
+                    + "/xfb.conf", QSettings::IniFormat);
+            productionSettings.beginGroup(QStringLiteral("ProductionSync"));
+            const bool onStart = productionSettings.value(QStringLiteral("SyncOnStart"),
+                                                          false).toBool();
+            const int every = productionSettings.value(QStringLiteral("AutoSyncMinutes"),
+                                                       0).toInt();
+            const bool alsoPublish =
+                productionSettings.value(QStringLiteral("PublishAutomatically"), true).toBool();
+            productionSettings.endGroup();
+            if (onStart || every > 0) {
+                ProductionSyncClient *client = productionSyncClient();
+                if (onStart && client->paired()) {
+                    // Same reasoning as the backup's delay: nothing this
+                    // touches — the database, the tables on screen — is up yet.
+                    QTimer::singleShot(20000, client, [client, alsoPublish]() {
+                        if (alsoPublish)
+                            client->sync();
+                        else
+                            client->pull();
+                    });
+                }
+            }
+        }
     }
 }
 
@@ -5294,6 +5347,29 @@ StationSyncClient *player::stationSyncClient()
                 qWarning() << "StationSyncClient:" << reason;
             });
     return m_stationSync;
+}
+
+// Built on demand like the others, and equally inert until it has been paired
+// with a station to produce for.
+ProductionSyncClient *player::productionSyncClient()
+{
+    if (m_productionSync)
+        return m_productionSync;
+
+    m_productionSync = new ProductionSyncClient(this);
+    connect(m_productionSync, &ProductionSyncClient::finished, this,
+            [this](const QString &summary) {
+                ui->statusBar->showMessage(tr("Production sync: %1").arg(summary), 10000);
+                // A fetch writes rows straight into the library, so what is on
+                // screen is out of date until the tables are read again.
+                update_music_table();
+            });
+    connect(m_productionSync, &ProductionSyncClient::failed, this,
+            [this](const QString &reason) {
+                ui->statusBar->showMessage(tr("Production sync: %1").arg(reason), 10000);
+                qWarning() << "ProductionSyncClient:" << reason;
+            });
+    return m_productionSync;
 }
 
 // The sync server is created on demand and never listens until it is told to,
@@ -5358,6 +5434,23 @@ MobileSyncServer *player::mobileSyncServer()
                 ui->statusBar->showMessage(tr("Phone sync: %1").arg(message), 8000);
                 qWarning() << "MobileSyncServer:" << message;
             });
+    // A production computer has just added something to this station's library.
+    // Auto Mode needs no telling — every pick is a fresh query, so the next one
+    // can already choose what has just arrived — but the tables on screen are
+    // showing what the library held a moment ago.
+    connect(m_mobileSyncServer, &MobileSyncServer::catalogueChangedByPeer, this,
+            [this](const QString &device, const QString &summary) {
+                ui->statusBar->showMessage(tr("%1 published %2").arg(device, summary), 10000);
+                announceAccessible(tr("%1 published %2 to this station").arg(device, summary));
+                if (m_peerCatalogueRefreshQueued)
+                    return;
+                m_peerCatalogueRefreshQueued = true;
+                QTimer::singleShot(2000, this, [this]() {
+                    m_peerCatalogueRefreshQueued = false;
+                    update_music_table();
+                });
+            });
+
     connect(m_mobileSyncServer, &MobileSyncServer::devicePaired, this,
             [this](const QString &name) {
                 ui->statusBar->showMessage(tr("%1 paired with XFB").arg(name), 6000);

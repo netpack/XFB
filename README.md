@@ -33,6 +33,7 @@ in academic work, please cite it via [`CITATION.cff`](CITATION.cff).
 - **Streaming Client** — Listen to any Icecast/Shoutcast stream or .m3u/.pls playlist from within XFB (with automatic reconnect), e.g. to monitor your station's output
 - **Torrent Search** — Search music via Tor-routed onion sites (searching is anonymised; the BitTorrent download itself is not — your IP is visible to peers)
 - **Accessibility** — Screen reader support (ORCA, VoiceOver, NVDA), full keyboard operation, spoken status announcements, audio feedback, braille display output via BrlTTY, and a built-in tutorial for blind operators (Help menu)
+- **Production Computers** — Prepare the programme on another computer instead of on the one that is broadcasting. A production machine copies down the station's music, jingles, ads, programs and schedule, plays them locally while the work is done, and publishes new or changed entries back to the station, where Auto Mode uses them from its next choice onwards (XFB → Production Computers)
 - **Themes** — Light, Dark, Midnight and Studio, or follow the system setting, with a configurable accent colour
 - **Languages** — English, Portuguese and French (Options → Language)
 - **Cross-Platform** — Runs on macOS, Linux (Debian/Arch), and Windows
