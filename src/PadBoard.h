@@ -132,6 +132,12 @@ private:
 
     QMediaPlayer *m_player = nullptr;
     QAudioOutput *m_output = nullptr;
+
+    // As-run log: the open airlog row for this pad, and whether the stop
+    // about to happen is one the operator asked for (a retrigger or the stop
+    // action) rather than the file simply running out.
+    qint64 m_airHandle = 0;
+    bool   m_padStopping = false;
 };
 
 /**

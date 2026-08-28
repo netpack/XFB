@@ -1,5 +1,7 @@
 #include "PadBoard.h"
 
+#include "services/AirLog.h"
+
 #include <QAudioOutput>
 #include <QCheckBox>
 #include <QColorDialog>
@@ -171,6 +173,8 @@ void PadButton::ensurePlayer()
 
     connect(m_player, &QMediaPlayer::positionChanged, this, [this](qint64 pos) {
         m_position = pos;
+        if (m_airHandle > 0)
+            AirLog::instance()->heartbeat(m_airHandle, pos);
         if (m_playing)
             update();
     });
@@ -181,8 +185,18 @@ void PadButton::ensurePlayer()
     connect(m_player, &QMediaPlayer::playbackStateChanged, this,
             [this](QMediaPlayer::PlaybackState state) {
         m_playing = (state == QMediaPlayer::PlayingState);
-        if (state == QMediaPlayer::StoppedState)
+        if (state == QMediaPlayer::StoppedState) {
+            // As-run log: a pad that reached its end played out; one the
+            // operator hit again, or hit stop on, was cut. m_padStopping is
+            // what tells the two apart.
+            if (m_airHandle > 0) {
+                AirLog::instance()->close(m_airHandle, m_position,
+                                          m_padStopping ? QStringLiteral("stopped")
+                                                        : QStringLiteral("end"));
+                m_airHandle = 0;
+            }
             m_position = 0;
+        }
         refreshAccessibility();
         update();
     });
@@ -250,15 +264,33 @@ void PadButton::trigger()
 
     applyConfigToPlayer();
     // stop() rewinds, so a pad hit again always fires from the top — which
-    // is what a stab or a stinger has to do.
+    // is what a stab or a stinger has to do. The rewind closes the previous
+    // as-run row through the state handler before the new one opens.
+    m_padStopping = true;
     m_player->stop();
+    m_padStopping = false;
     m_player->play();
+
+    // As-run log: a pad is always the operator's own doing, and the file
+    // behind it may well not be in the library at all.
+    AirLog::Entry entry = AirLog::entryForPath(m_cfg.path, false);
+    if (entry.source == QLatin1String("fallback")) {
+        entry.source = QStringLiteral("pad");
+        entry.sourceId = -1;
+        entry.title = displayLabel();
+    }
+    if (m_duration > 0)
+        entry.plannedMs = m_duration;
+    m_airHandle = AirLog::instance()->open(entry);
 }
 
 void PadButton::stop()
 {
-    if (m_player)
-        m_player->stop();
+    if (!m_player)
+        return;
+    m_padStopping = true;
+    m_player->stop();
+    m_padStopping = false;
 }
 
 void PadButton::mousePressEvent(QMouseEvent *event)

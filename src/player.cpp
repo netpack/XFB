@@ -118,11 +118,13 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include "services/AccessibilitySettingsService.h"
 #include "services/BrailleDisplayService.h"
 #include "dialogs/AccessibilityPreferencesDialog.h"
+#include "dialogs/AirLogDialog.h"
 #include "dialogs/MobileSyncDialog.h"
 #include "dialogs/ProductionSyncDialog.h"
 #include "dialogs/StationSyncDialog.h"
 #include "dialogs/StreamDialog.h"
 #include "services/StreamService.h"
+#include "services/AirLog.h"
 #include "services/MobileSyncServer.h"
 #include "services/ProductionSyncClient.h"
 #include "services/StationSyncClient.h"
@@ -1182,6 +1184,10 @@ player::player(QWidget *parent) :
         // Continue without music table — don't abort the entire constructor
     }
 checkDbOpen();
+    // As-run log: close whatever a crash left hanging and drop anything past
+    // the retention window, before the first track of this session opens a row.
+    AirLog::instance()->start();
+
     /*Populate jingles table with an editable table field on double-click*/
     if (dbAvailable) {
     QSqlDatabase db = QSqlDatabase::database("xfb_connection");
@@ -2773,6 +2779,10 @@ bool player::checkDbOpen() {
         qDebug() << "Torrents table created or already exists";
     }
 
+    // The as-run log. Created here rather than in a migration so an
+    // install that predates it gets the table on its next launch.
+    AirLog::ensureSchema(adb);
+
     // Tempo column, added to libraries created before BPM existed. NULL
     // means "never analysed", 0 means "analysed, no steady tempo" — see
     // BpmLibrary. SQLite has no ADD COLUMN IF NOT EXISTS, so the presence
@@ -4022,6 +4032,15 @@ void player::playNextSong(){
                     }
                 }
 
+                // As-run log: on the running order the outgoing item ends
+                // the instant this one starts. An overlap segue has already
+                // closed its own row (with the position it really reached),
+                // so this is a no-op in that case. Closing is queued, so it
+                // costs nothing here.
+                closeAirLogEntry(m_airEndReason.isEmpty() ? QStringLiteral("end")
+                                                          : m_airEndReason);
+                m_airEndReason.clear();
+
                 Xplayer->play();
                 
                 // Re-enable automatic advancement now that playback has started
@@ -4031,6 +4050,12 @@ void player::playNextSong(){
                 m_lastKnownPosition = -1;
                 m_stallCount = 0;
                 m_playbackWatchdog->start();
+
+                // Opening the as-run row means looking the path up in four
+                // tables, so it happens after play() has been issued rather
+                // than in front of it.
+                m_airHandle = AirLog::instance()->openPath(itemDaPlaylist, autoMode == 1);
+                m_airPosition = 0;
 
                 // Safely delete the first playlist item
                 QListWidgetItem* itemToDelete = ui->playlist->item(0);
@@ -4115,6 +4140,8 @@ void player::playNextSong(){
 
 void player::on_btStop_clicked()
 {
+    closeAirLogEntry(QStringLiteral("stopped"));
+
     m_manualAdvancing = true;  // Prevent playbackStateChanged from triggering playNextMedia
 
     stopTailPlayer(); // silence a crossfade tail that may still be fading out
@@ -4156,6 +4183,13 @@ void player::on_sliderVolume_sliderMoved(int position)
 
 void player::onPositionChanged(qint64 position)
 {
+    // As-run log: remember where the on-air item got to, and leave a
+    // breadcrumb in the database now and then. The write itself is queued —
+    // this runs ten times a second while audio is going out.
+    m_airPosition = position;
+    if (m_airHandle > 0)
+        AirLog::instance()->heartbeat(m_airHandle, position);
+
     // Never move the slider while the user is holding it — the playback
     // ticks would drag the handle back to the playing position mid-grab
     if (!ui->sliderProgress->isSliderDown())
@@ -4271,6 +4305,9 @@ void player::durationChanged(qint64 position)
     qDebug()<<"Xplayer durationChanged changed to "<<position;
     ui->sliderProgress->setMaximum(position);
     trackTotalDuration = position;
+    // The library's stored time is a rounded guess; this is the real length.
+    if (m_airHandle > 0)
+        AirLog::instance()->setPlannedMs(m_airHandle, position);
     m_overlapSegueFired = false; // new media: re-arm the overlap segue
     m_nextPrepared = false;      // new media: re-arm the gapless preload
 
@@ -4682,6 +4719,10 @@ void player::startOverlapSegue(qint64 fadeMs)
     const QUrl endingSource = Xplayer->source();
     const qint64 endingPos = Xplayer->position();
 
+    // As-run log: the outgoing item ends here, at the position it really
+    // reached, even though its tail keeps fading for another few seconds.
+    closeAirLogEntry(QStringLiteral("segue"), endingPos);
+
     // When the FX engine drives playback and the next track is already
     // preloaded, the engine crossfades internally: the outgoing decoder
     // keeps feeding the same audio stream, faded out per sample — no cut,
@@ -4719,6 +4760,16 @@ void player::startOverlapSegue(qint64 fadeMs)
     // From the state machine's point of view this is just a manual advance;
     // playNextSong() guards the source switch with m_manualAdvancing itself.
     playNextSong();
+}
+
+void player::closeAirLogEntry(const QString &reason, qint64 playedMs)
+{
+    if (m_airHandle <= 0)
+        return;
+    AirLog::instance()->close(m_airHandle,
+                              playedMs < 0 ? m_airPosition : playedMs, reason);
+    m_airHandle = 0;
+    m_airPosition = 0;
 }
 
 void player::stopTailPlayer()
@@ -5281,6 +5332,27 @@ void player::setupPlaybackShortcuts()
         // open the window first; constructing the service is what honours it.
         if (StreamService::autoStartEnabled())
             streamService()->start();
+        // The as-run log. In the XFB menu with the other station-wide things:
+        // it is a property of the installation, not of what is on air now.
+        QAction *airLog = new QAction(tr("As-Run &Log..."), this);
+        airLog->setMenuRole(QAction::NoRole);
+        airLog->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_L));
+        airLog->setShortcutContext(Qt::ApplicationShortcut);
+        airLog->setStatusTip(tr("What actually went to air, and when"));
+        connect(airLog, &QAction::triggered, this, [this]() {
+            if (!m_airLogDialog) {
+                m_airLogDialog = new AirLogDialog(this);
+                m_airLogDialog->setAttribute(Qt::WA_DeleteOnClose, false);
+                connect(m_airLogDialog, &AirLogDialog::announcementRequested,
+                        this, &player::announceAccessible);
+            }
+            m_airLogDialog->show();
+            m_airLogDialog->raise();
+            m_airLogDialog->activateWindow();
+            announceAccessible(tr("As-run log opened"));
+        });
+        ui->menuXFB->addAction(airLog);
+        addAction(airLog);
 
         // A backup that only copies when somebody remembers to ask is not a
         // backup, so the client is built at startup whenever it has standing
@@ -6702,11 +6774,15 @@ void player::on_actionAdd_a_single_song_triggered()
 void player::on_btPlayNext_clicked()
 {
     qDebug() << "Play Next button clicked";
-    
+
+    // The operator cut it short — the log has to say so, not "played out".
+    m_airEndReason = QStringLiteral("skipped");
+
     // Suppress the auto-advance that fires when the current source stops
     m_manualAdvancing = true;
     
     playNextSong();
+    m_airEndReason.clear();
     
     // Re-enable auto-advance after the event loop processes the state change
     QTimer::singleShot(200, this, [this]() { m_manualAdvancing = false; });

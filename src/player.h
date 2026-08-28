@@ -561,6 +561,17 @@ private slots:
     static int s_recursionDepth;
     static const int MAX_RECURSION_DEPTH = 5;
     bool m_manualAdvancing = false;
+
+    // --- As-run log ---
+    // The airlog row for whatever is on air, plus how the item it replaces
+    // ended: the segue, the skip and the stop all funnel through
+    // playNextSong(), so the reason has to be handed in from the call site.
+    qint64  m_airHandle = 0;
+    qint64  m_airPosition = 0;   ///< last position reported for that row
+    QString m_airEndReason;      ///< empty means the track simply ran out
+    QPointer<class AirLogDialog> m_airLogDialog;
+    /** Closes the open as-run row, if any. playedMs < 0: use m_airPosition. */
+    void closeAirLogEntry(const QString &reason, qint64 playedMs = -1);
     
     // Watchdog timer to detect stalled playback
     QTimer *m_playbackWatchdog = nullptr;

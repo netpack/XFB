@@ -29,6 +29,8 @@ set(SOURCES
     audio/BpmLibrary.cpp
     dialogs/AudioFxDialog.cpp
     dialogs/MobileSyncDialog.cpp
+    # As-run log viewer + advertiser report
+    dialogs/AirLogDialog.cpp
     dialogs/StationSyncDialog.cpp
     dialogs/ProductionSyncDialog.cpp
     dialogs/StreamDialog.cpp
@@ -54,6 +56,8 @@ set(SOURCES
     services/InputValidator.cpp
     services/DatabaseOptimizer.cpp
     services/MusicCache.cpp
+    # As-run log: one row per item that actually went to air
+    services/AirLog.cpp
     # Basic accessibility (working components)
     services/AccessibilityManager.cpp
     services/AccessibilitySettingsService.cpp
@@ -141,6 +145,7 @@ set(HEADERS
     dialogs/StationSyncDialog.h
     dialogs/ProductionSyncDialog.h
     dialogs/StreamDialog.h
+    dialogs/AirLogDialog.h
     # Pads tab
     PadBoard.h
     # Service layer headers
@@ -155,6 +160,7 @@ set(HEADERS
     services/InputValidator.h
     services/DatabaseOptimizer.h
     services/MusicCache.h
+    services/AirLog.h
     services/AccessibilityManager.h
     services/AccessibilitySettingsService.h
     services/BrailleDisplayService.h
