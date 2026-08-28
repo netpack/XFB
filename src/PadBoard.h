@@ -79,6 +79,13 @@ public:
     /** Load the media now so the first hit does not wait for the decoder. */
     void preload();
 
+    /**
+     * Pads go to air, so they follow the main output device chosen in
+     * Options. Empty means "system default"; a device that has gone away
+     * falls back to the default rather than going silent.
+     */
+    void setOutputDeviceId(const QByteArray &deviceId);
+
     bool isPlaying() const { return m_playing; }
 
 public slots:
@@ -91,6 +98,8 @@ signals:
     void message(const QString &text);
     /** This pad took the focus: the board moves the Tab stop onto it. */
     void focused(int row, int col);
+    /** The operator asked to hear this pad in the cue headphones. */
+    void cueRequested(const QString &path, const QString &label);
 
 protected:
     void paintEvent(QPaintEvent *event) override;
@@ -132,6 +141,7 @@ private:
 
     QMediaPlayer *m_player = nullptr;
     QAudioOutput *m_output = nullptr;
+    QByteArray m_deviceId; // on-air output device (empty = system default)
 
     // As-run log: the open airlog row for this pad, and whether the stop
     // about to happen is one the operator asked for (a retrigger or the stop
@@ -226,6 +236,12 @@ public:
 public slots:
     /** Stops every pad of every bank (the panic button). */
     void stopAll();
+    /** Route every pad, on every bank, to the configured on-air output. */
+    void setOutputDeviceId(const QByteArray &deviceId);
+
+signals:
+    /** A pad wants to be auditioned on the cue device (see CueBus). */
+    void cueRequested(const QString &path, const QString &label);
 
 protected:
     void showEvent(QShowEvent *event) override;
@@ -273,6 +289,7 @@ private:
     /// The one pad Tab reaches; shared by the banks so it survives a switch.
     int  m_rovingRow = 0;
     int  m_rovingCol = 0;
+    QByteArray m_deviceId; // on-air output for every pad on the board
 };
 
 #endif // PADBOARD_H

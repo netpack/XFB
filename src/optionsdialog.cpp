@@ -8,6 +8,7 @@
 #include <QtSql>
 #include "commonFunctions.h"
 #include "secretstore.h"
+#include "audio/CueBus.h"
 #include "audio/FxParams.h"
 #include "ThemeManager.h"
 #include <QDebug>
@@ -227,8 +228,189 @@ optionsDialog::optionsDialog(QWidget *parent) :
     ui->txt_spotifyClientSecret->setText(
         SecretStore::open(settings.value("SpotifyClientSecret").toString()));
 
+    // Cue bus / output routing. Built in C++ rather than in the .ui file:
+    // the device lists only exist at runtime anyway, and a .ui edit here
+    // would mean regenerating ui_optionsdialog.h by hand.
+    buildCueTab();
+
     qDebug() << "Finished loading settings in options dialog.";
     // Dialog styling comes from the application-wide theme (ThemeManager)
+}
+
+// ---------------------------------------------------------------------------
+// "Cue and outputs" tab
+//
+// Two device pickers — where XFB goes to air, and the private ear it cues
+// into — plus the cue monitor level and the spoken-cue switches. Everything
+// here is live-applied: the player re-reads the Cue/ group from the dialog's
+// finished() signal, so a device swapped mid-show reaches the next cue.
+// ---------------------------------------------------------------------------
+
+void optionsDialog::fillDeviceCombo(QComboBox *combo, const QByteArray &storedId,
+                                    bool allowSystemDefault)
+{
+    combo->clear();
+    if (allowSystemDefault) {
+        const QAudioDevice def = QMediaDevices::defaultAudioOutput();
+        combo->addItem(def.isNull() ? tr("System default")
+                                    : tr("System default (%1)").arg(def.description()),
+                       QVariant(QByteArray()));
+    } else {
+        // The cue output has no "system default" entry on purpose: the
+        // default is the output that goes to air, so offering it as the
+        // private ear would be offering a way to put an audition to air.
+        combo->addItem(tr("None — cueing off"), QVariant(QByteArray()));
+    }
+
+    const QList<QAudioDevice> devices = QMediaDevices::audioOutputs();
+    for (const QAudioDevice &device : devices) {
+        QString label = device.description();
+        if (device.maximumChannelCount() < 2)
+            label = tr("%1 (mono)").arg(label);
+        combo->addItem(label, QVariant(device.id()));
+    }
+
+    int index = combo->findData(QVariant(storedId));
+    if (index < 0 && !storedId.isEmpty()) {
+        // Configured but not plugged in right now: keep the choice visible
+        // instead of silently resetting it to the default.
+        combo->addItem(tr("%1 (not connected)").arg(QString::fromUtf8(storedId)),
+                       QVariant(storedId));
+        index = combo->count() - 1;
+    }
+    combo->setCurrentIndex(index < 0 ? 0 : index);
+}
+
+void optionsDialog::refreshCueWarning()
+{
+    if (!m_cueWarning || !m_cueOutputCombo || !m_mainOutputCombo)
+        return;
+
+    const QByteArray cueId = m_cueOutputCombo->currentData().toByteArray();
+    const QByteArray mainId = m_mainOutputCombo->currentData().toByteArray();
+    const QAudioDevice onAir = mainId.isEmpty() ? QMediaDevices::defaultAudioOutput()
+                                                : QAudioDevice();
+    const QByteArray resolvedMain = mainId.isEmpty() ? onAir.id() : mainId;
+
+    if (cueId.isEmpty()) {
+        m_cueWarning->setText(tr("Cueing is off. Pick a second output — headphones on "
+                                 "another sound card — to audition tracks without "
+                                 "putting them to air."));
+    } else if (cueId == resolvedMain) {
+        m_cueWarning->setText(tr("⚠ The cue output is the same device as the on-air "
+                                 "output. Cueing stays disabled: an audition would go "
+                                 "to air."));
+    } else {
+        m_cueWarning->setText(tr("Cue audio plays only on the cue output. It never "
+                                 "reaches the on-air output or the stream."));
+    }
+    m_cueWarning->setAccessibleName(m_cueWarning->text());
+}
+
+void optionsDialog::buildCueTab()
+{
+    if (!ui->SystemResouces)
+        return;
+
+    QString configFileName = "xfb.conf";
+    QString writableConfigPath = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
+    QSettings settings(writableConfigPath + "/" + configFileName, QSettings::IniFormat);
+
+    auto *page = new QWidget(ui->SystemResouces);
+    auto *outer = new QVBoxLayout(page);
+    auto *form = new QFormLayout();
+    form->setFieldGrowthPolicy(QFormLayout::ExpandingFieldsGrow);
+
+    m_mainOutputCombo = new QComboBox(page);
+    m_mainOutputCombo->setAccessibleName(tr("On-air output device"));
+    m_mainOutputCombo->setToolTip(tr("Where the main player, the DJ decks, the pads "
+                                     "and the stream player send their audio."));
+    fillDeviceCombo(m_mainOutputCombo,
+                    settings.value("Cue/MainOutputDevice").toByteArray(), true);
+    form->addRow(tr("On-air output:"), m_mainOutputCombo);
+
+    m_cueOutputCombo = new QComboBox(page);
+    m_cueOutputCombo->setAccessibleName(tr("Cue output device (headphones)"));
+    m_cueOutputCombo->setToolTip(tr("The private ear. Auditions and spoken cues play "
+                                    "here and nowhere else."));
+    fillDeviceCombo(m_cueOutputCombo,
+                    settings.value("Cue/CueOutputDevice").toByteArray(), false);
+    form->addRow(tr("Cue output:"), m_cueOutputCombo);
+
+    auto *volumeRow = new QWidget(page);
+    auto *volumeLayout = new QHBoxLayout(volumeRow);
+    volumeLayout->setContentsMargins(0, 0, 0, 0);
+    m_cueVolume = new QSlider(Qt::Horizontal, volumeRow);
+    m_cueVolume->setRange(0, 100);
+    m_cueVolume->setValue(qBound(0, settings.value("Cue/Volume", 80).toInt(), 100));
+    m_cueVolume->setAccessibleName(tr("Cue monitor level"));
+    m_cueVolumeLabel = new QLabel(QString::number(m_cueVolume->value()) + "%", volumeRow);
+    m_cueVolumeLabel->setAccessibleName(tr("Cue monitor level in percent"));
+    m_cueVolumeLabel->setMinimumWidth(45);
+    volumeLayout->addWidget(m_cueVolume);
+    volumeLayout->addWidget(m_cueVolumeLabel);
+    connect(m_cueVolume, &QSlider::valueChanged, this, [this](int v) {
+        m_cueVolumeLabel->setText(QString::number(v) + "%");
+    });
+    form->addRow(tr("Cue level:"), volumeRow);
+
+    outer->addLayout(form);
+
+    m_cueWarning = new QLabel(page);
+    m_cueWarning->setWordWrap(true);
+    m_cueWarning->setAccessibleName(tr("Cue routing status"));
+    outer->addWidget(m_cueWarning);
+    connect(m_cueOutputCombo, &QComboBox::currentIndexChanged, this,
+            [this](int) { refreshCueWarning(); });
+    connect(m_mainOutputCombo, &QComboBox::currentIndexChanged, this,
+            [this](int) { refreshCueWarning(); });
+
+    auto *speechBox = new QGroupBox(tr("Spoken cues in the private ear"), page);
+    auto *speechLayout = new QVBoxLayout(speechBox);
+
+    m_cueSpeak = new QCheckBox(tr("Speak XFB's own announcements into the cue output"),
+                               speechBox);
+    m_cueSpeak->setAccessibleName(tr("Speak XFB's announcements into the cue output"));
+    m_cueSpeak->setToolTip(tr("XFB's own status messages are also spoken privately. "
+                              "Your screen reader keeps speaking through its own "
+                              "output — XFB cannot move that."));
+    m_cueSpeak->setChecked(settings.value("Cue/SpeakAnnouncements", false).toBool());
+    speechLayout->addWidget(m_cueSpeak);
+
+    m_cueCountdown = new QCheckBox(tr("Count the on-air track down (30, 20, 10, 5 seconds) "
+                                      "and say the intro length"), speechBox);
+    m_cueCountdown->setAccessibleName(tr("Spoken countdown to the end of the on-air track"));
+    m_cueCountdown->setToolTip(tr("Spoken in the cue headphones only, so it never goes "
+                                  "to air."));
+    m_cueCountdown->setChecked(settings.value("Cue/SpokenCountdown", false).toBool());
+    speechLayout->addWidget(m_cueCountdown);
+
+    auto *speechNote = new QLabel(speechBox);
+    speechNote->setWordWrap(true);
+    speechNote->setText(CueBus::speechAvailable()
+        ? tr("Spoken cues are rendered by the system's own speech tool.")
+        : tr("No text-to-speech tool was found on this system, so spoken cues "
+             "cannot be produced. Everything is still shown on screen and sent "
+             "to your screen reader."));
+    speechNote->setAccessibleName(speechNote->text());
+    speechLayout->addWidget(speechNote);
+
+    outer->addWidget(speechBox);
+    outer->addStretch(1);
+
+    ui->SystemResouces->addTab(page, tr("Cue and outputs"));
+    refreshCueWarning();
+}
+
+void optionsDialog::saveCueSettings(QSettings &settings)
+{
+    if (!m_mainOutputCombo || !m_cueOutputCombo)
+        return;
+    settings.setValue("Cue/MainOutputDevice", m_mainOutputCombo->currentData().toByteArray());
+    settings.setValue("Cue/CueOutputDevice", m_cueOutputCombo->currentData().toByteArray());
+    settings.setValue("Cue/Volume", m_cueVolume ? m_cueVolume->value() : 80);
+    settings.setValue("Cue/SpeakAnnouncements", m_cueSpeak && m_cueSpeak->isChecked());
+    settings.setValue("Cue/SpokenCountdown", m_cueCountdown && m_cueCountdown->isChecked());
 }
 
 void optionsDialog::updateAccentButton()
@@ -436,6 +618,8 @@ void optionsDialog::saveSettings2Db()
         settings.remove("Pass");
         settings.setValue("Role", "Client"); // Set default role
     }
+
+    saveCueSettings(settings); // on-air / cue output devices, spoken cues
 
     // QSettings automatically saves on destruction or explicitly via sync()
     settings.sync(); // Force save to file immediately

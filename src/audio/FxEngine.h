@@ -4,6 +4,7 @@
 #include <QByteArray>
 #include <QObject>
 #include <QString>
+#include <QAudioDevice>
 #include <QAudioFormat>
 #include <vector>
 
@@ -51,6 +52,16 @@ public:
     static constexpr int kTapSampleRate = 48000;
     static constexpr int kTapChannels = 2;
 
+    // --- Output routing (read by the tests and by the cue-leak assertions) ---
+    /** Device the sink is actually open on; empty while there is no sink. */
+    QByteArray sinkDeviceId() const { return m_sinkDeviceId; }
+    /** Device that was asked for; empty means "system default". */
+    QByteArray requestedDeviceId() const { return m_requestedDeviceId; }
+    /** True when this engine may only ever open its named device (cue bus). */
+    bool deviceIsLocked() const { return m_strictDevice; }
+    /** True while an audio sink is open. */
+    bool hasOpenSink() const { return m_sink != nullptr; }
+
 public slots:
     /** Accepts a local file path or an http(s) stream URL (live mode). */
     void setSource(const QString &pathOrUrl);
@@ -78,6 +89,21 @@ public slots:
      * normally reused forever) and recovery loops without ever recovering.
      */
     void rebuildSink();
+    /**
+     * Choose which audio output this engine renders to.
+     *
+     * @param deviceId  a stored QAudioDevice::id(); empty means "system
+     *                  default" (the behaviour every engine had before).
+     * @param strict    cue/PFL mode. The sink is opened on that exact device
+     *                  or not at all — a strict engine whose device has
+     *                  vanished stays SILENT rather than falling back to the
+     *                  default, because the default is the output that goes
+     *                  to air and a cue must never reach it.
+     *
+     * Takes effect immediately: a sink already open on the wrong device is
+     * torn down and reopened mid-track.
+     */
+    void setOutputDevice(const QByteArray &deviceId, bool strict);
     void play();
     void pause();
     void stop();
@@ -154,6 +180,10 @@ private:
     void stopProcess();
     bool ensureSink();
     void teardownSink();
+    /** The device ensureSink() should use, honouring the strict cue lock. */
+    QAudioDevice resolveOutputDevice() const;
+    /** Re-open the sink when the device it should be on has changed. */
+    void reopenSinkIfDeviceChanged();
     void resetDspState();
     /** One ffprobe pass: fills m_durationMs and m_sourceIs432. */
     void probeLocalSource(const QString &filePath);
@@ -224,7 +254,12 @@ private:
     QAudioSink *m_sink = nullptr;
     QIODevice *m_io = nullptr;
     bool m_sinkIsFloat = true;
-    QByteArray m_sinkDeviceId;    // device the sink was opened on
+    int m_sinkChannels = kChannels; // 1 on mono-only output devices
+    std::vector<float> m_monoChunk; // downmix scratch for a mono sink
+    QByteArray m_sinkDeviceId;      // device the sink was opened on
+    QByteArray m_requestedDeviceId; // device asked for (empty = system default)
+    bool m_strictDevice = false;    // cue bus: that device or silence
+    bool m_deviceGoneLogged = false; // log a missing strict device once per loss
 
     // DSP (the 432 Hz retune itself runs inside the ffmpeg filter chain so
     // the tempo can be preserved; EQ and compressor run in-process)

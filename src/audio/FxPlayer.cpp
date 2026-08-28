@@ -2,9 +2,11 @@
 
 #include <QAudioOutput>
 #include <QDebug>
+#include <QMediaDevices>
 
 #include <utility>
 
+#include "AudioDeviceRouter.h"
 #include "FxEngine.h"
 
 FxPlayer::FxPlayer(QObject *parent)
@@ -65,6 +67,19 @@ FxPlayer::FxPlayer(QObject *parent)
             emit errorOccurred(QMediaPlayer::ResourceError, msg);
             return;
         }
+        // A cue player must never be handed to the passthrough path: that
+        // path renders through the QAudioOutput this player deliberately
+        // does not have, and the fallback would be a route to the default
+        // (on-air) device. Report the failure and stay silent instead.
+        if (m_deviceLocked) {
+            qWarning() << "FxPlayer: cue engine failed, cue stays silent:" << msg;
+            if (m_fxState != QMediaPlayer::StoppedState) {
+                m_fxState = QMediaPlayer::StoppedState;
+                emit playbackStateChanged(QMediaPlayer::StoppedState);
+            }
+            emit errorOccurred(QMediaPlayer::ResourceError, msg);
+            return;
+        }
         qWarning() << "FxPlayer: FX engine failed, falling back to plain playback:" << msg;
         m_fxFailedForTrack = true;
         const QMediaPlayer::PlaybackState prev = m_fxState;
@@ -74,6 +89,22 @@ FxPlayer::FxPlayer(QObject *parent)
         } else {
             emit errorOccurred(QMediaPlayer::ResourceError, msg);
         }
+    });
+
+    // The passthrough QAudioOutput is bound to the device it was given, so
+    // it has to follow the same plug/unplug events the engine's sink does.
+    // A cue-locked player has no passthrough output at all, so it is skipped.
+    QMediaDevices *devices = new QMediaDevices(this);
+    connect(devices, &QMediaDevices::audioOutputsChanged, this, [this]() {
+        if (m_deviceLocked || !m_output)
+            return;
+        bool fellBack = false;
+        const QAudioDevice device = AudioDeviceRouter::resolve(m_deviceId, &fellBack);
+        if (device.isNull() || m_output->device().id() == device.id())
+            return;
+        qInfo() << "FxPlayer: audio outputs changed, moving playback to"
+                << device.description() << (fellBack ? "(fallback)" : "");
+        m_output->setDevice(device);
     });
 }
 
@@ -159,6 +190,12 @@ bool FxPlayer::wantFxFor(const QUrl &url) const
 
 void FxPlayer::setAudioOutput(QAudioOutput *output)
 {
+    if (m_deviceLocked) {
+        // See lockToCueDevice(): the cue player has no passthrough output by
+        // design, and giving it one would open a route to the on-air device.
+        qWarning() << "FxPlayer: refusing to attach an audio output to a cue-locked player";
+        return;
+    }
     m_output = output;
     m_qt->setAudioOutput(output);
     if (output) {
@@ -276,6 +313,53 @@ bool FxPlayer::hasPreparedNext(const QUrl &url) const
 void FxPlayer::resetAudioSink()
 {
     engineCall([](FxEngine *e) { e->rebuildSink(); });
+}
+
+void FxPlayer::setOutputDeviceId(const QByteArray &deviceId)
+{
+    if (m_deviceLocked) {
+        qWarning() << "FxPlayer: output device of a cue-locked player cannot be changed here";
+        return;
+    }
+    m_deviceId = deviceId;
+
+    // Passthrough path: QAudioOutput carries the device itself.
+    if (m_output) {
+        bool fellBack = false;
+        const QAudioDevice device = AudioDeviceRouter::resolve(deviceId, &fellBack);
+        if (fellBack) {
+            qWarning() << "FxPlayer: configured output device is not connected, using"
+                       << (device.isNull() ? QStringLiteral("(none)") : device.description());
+        }
+        if (!device.isNull() && m_output->device().id() != device.id())
+            m_output->setDevice(device);
+    }
+
+    // FX engine path: its QAudioSink is opened on the same device.
+    engineCall([deviceId](FxEngine *e) { e->setOutputDevice(deviceId, false); });
+}
+
+void FxPlayer::lockToCueDevice(const QByteArray &deviceId)
+{
+    m_deviceLocked = true;
+    m_deviceId = deviceId;
+
+    // Cut the passthrough path's only route to a speaker. A QMediaPlayer
+    // without a QAudioOutput decodes and reports state but produces no
+    // sound, so even a mode switch (no ffmpeg, engine error, stream URL)
+    // cannot make this player audible anywhere but the cue sink below.
+    m_qt->setAudioOutput(nullptr);
+    if (m_qtStandby)
+        m_qtStandby->setAudioOutput(nullptr);
+    m_output = nullptr;
+
+    engineCall([deviceId](FxEngine *e) { e->setOutputDevice(deviceId, true); });
+}
+
+void FxPlayer::setCueVolume(float linearVolume)
+{
+    const float v = qBound(0.0f, linearVolume, 1.0f);
+    engineCall([v](FxEngine *e) { e->setVolume(v); });
 }
 
 void FxPlayer::setNextCrossfade(qint64 fadeMs)

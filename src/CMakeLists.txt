@@ -25,6 +25,10 @@ set(SOURCES
     audio/FxDsp.cpp
     audio/FxEngine.cpp
     audio/FxPlayer.cpp
+    # Output routing: stored device id -> QAudioDevice (on-air vs cue rules)
+    audio/AudioDeviceRouter.cpp
+    # Cue bus: pre-fade listen on a second output device
+    audio/CueBus.cpp
     audio/WaveformStore.cpp
     # Track tempo: detection from the waveform + the library's BPM column
     audio/BpmDetector.cpp
@@ -158,6 +162,8 @@ set(HEADERS
     audio/FxDsp.h
     audio/FxEngine.h
     audio/FxPlayer.h
+    audio/AudioDeviceRouter.h
+    audio/CueBus.h
     audio/LoudnessScanner.h
     audio/IntroDetector.h
     audio/IntroLibrary.h

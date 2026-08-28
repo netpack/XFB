@@ -1,5 +1,7 @@
 #include "FxEngine.h"
 
+#include "AudioDeviceRouter.h"
+
 #include <QAudioSink>
 #include <QDebug>
 #include <QFile>
@@ -67,16 +69,8 @@ FxEngine::FxEngine(QObject *parent)
     // dropped): the sink is bound to the device it was opened on, so it
     // must be rebuilt on the new default or playback wedges silently.
     QMediaDevices *devices = new QMediaDevices(this);
-    connect(devices, &QMediaDevices::audioOutputsChanged, this, [this]() {
-        const QAudioDevice def = QMediaDevices::defaultAudioOutput();
-        if (!m_sink || def.isNull() || def.id() == m_sinkDeviceId)
-            return;
-        qDebug() << "FxEngine: default audio output changed, rebuilding sink";
-        const bool wasActive = (m_state == State::Playing && m_io);
-        teardownSink();
-        if (wasActive && !ensureSink())
-            failTrack(tr("Audio output device disappeared"));
-    });
+    connect(devices, &QMediaDevices::audioOutputsChanged, this,
+            [this]() { reopenSinkIfDeviceChanged(); });
 }
 
 FxEngine::~FxEngine()
@@ -628,37 +622,120 @@ void FxEngine::adoptPreloaded()
     emit durationChanged(m_durationMs);
 }
 
-bool FxEngine::ensureSink()
+QAudioDevice FxEngine::resolveOutputDevice() const
 {
-    // A sink opened on a device that is no longer the default is stale:
-    // rebuild on the current default instead of writing into the void.
-    if (m_sink) {
-        const QAudioDevice def = QMediaDevices::defaultAudioOutput();
-        if (def.isNull() || def.id() != m_sinkDeviceId)
-            teardownSink();
+    if (m_strictDevice) {
+        // Cue bus. The named device or nothing at all — never the default,
+        // which is the output that goes to air.
+        const QAudioDevice locked = AudioDeviceRouter::resolveStrict(m_requestedDeviceId);
+        if (locked.isNull() && !m_deviceGoneLogged) {
+            const_cast<FxEngine *>(this)->m_deviceGoneLogged = true;
+            qWarning() << "FxEngine: the cue output device"
+                       << AudioDeviceRouter::describe(m_requestedDeviceId)
+                       << "is not available - staying silent rather than falling back to "
+                          "the on-air output";
+        }
+        if (!locked.isNull())
+            const_cast<FxEngine *>(this)->m_deviceGoneLogged = false;
+        return locked;
     }
 
+    bool fellBack = false;
+    const QAudioDevice device = AudioDeviceRouter::resolve(m_requestedDeviceId, &fellBack);
+    if (fellBack && !m_deviceGoneLogged) {
+        const_cast<FxEngine *>(this)->m_deviceGoneLogged = true;
+        qWarning() << "FxEngine: the configured output device"
+                   << QString::fromUtf8(m_requestedDeviceId)
+                   << "is gone - falling back to the system default"
+                   << (device.isNull() ? QStringLiteral("(none available)")
+                                       : device.description());
+    } else if (!fellBack) {
+        const_cast<FxEngine *>(this)->m_deviceGoneLogged = false;
+    }
+    return device;
+}
+
+void FxEngine::setOutputDevice(const QByteArray &deviceId, bool strict)
+{
+    if (m_requestedDeviceId == deviceId && m_strictDevice == strict)
+        return;
+    m_requestedDeviceId = deviceId;
+    m_strictDevice = strict;
+    m_deviceGoneLogged = false;
+    qInfo() << "FxEngine: output device set to"
+            << AudioDeviceRouter::describe(deviceId)
+            << (strict ? "(locked: cue bus)" : "");
+    reopenSinkIfDeviceChanged();
+}
+
+void FxEngine::reopenSinkIfDeviceChanged()
+{
+    if (!m_sink)
+        return; // the next ensureSink() picks the right device anyway
+    const QAudioDevice target = resolveOutputDevice();
+    if (!target.isNull() && target.id() == m_sinkDeviceId)
+        return;
+
+    qDebug() << "FxEngine: audio output changed, rebuilding sink on"
+             << (target.isNull() ? QStringLiteral("(nothing)") : target.description());
+    const bool wasActive = (m_state == State::Playing && m_io);
+    teardownSink();
+    if (wasActive && !ensureSink()) {
+        failTrack(m_strictDevice ? tr("The cue output device is no longer connected")
+                                 : tr("Audio output device disappeared"));
+    }
+}
+
+bool FxEngine::ensureSink()
+{
+    const QAudioDevice target = resolveOutputDevice();
+
+    // A sink opened on a device that is no longer the one we should be on is
+    // stale: rebuild it rather than writing into the void.
+    if (m_sink && (target.isNull() || target.id() != m_sinkDeviceId))
+        teardownSink();
+
     if (!m_sink) {
-        const QAudioDevice device = QMediaDevices::defaultAudioOutput();
+        const QAudioDevice device = target;
         if (device.isNull())
             return false;
 
+        // Stereo first, then mono. Once the operator can *pick* the output,
+        // mono-only devices turn up for real — a USB headset dongle, a
+        // conferencing virtual device — and refusing to open one would mean
+        // a cue ear that is silent for no reason the operator can see. The
+        // DSP chain and the broadcast tap stay stereo either way; only the
+        // last write is folded down (see writeChunkToSink).
         QAudioFormat fmt;
         fmt.setSampleRate(kSampleRate);
-        fmt.setChannelCount(kChannels);
-        fmt.setSampleFormat(QAudioFormat::Float);
-        m_sinkIsFloat = true;
-
-        if (!device.isFormatSupported(fmt)) {
-            fmt.setSampleFormat(QAudioFormat::Int16);
-            m_sinkIsFloat = false;
-            if (!device.isFormatSupported(fmt))
-                return false;
+        bool opened = false;
+        for (const int channels : {kChannels, 1}) {
+            for (const QAudioFormat::SampleFormat sampleFormat :
+                 {QAudioFormat::Float, QAudioFormat::Int16}) {
+                fmt.setChannelCount(channels);
+                fmt.setSampleFormat(sampleFormat);
+                if (!device.isFormatSupported(fmt))
+                    continue;
+                m_sinkChannels = channels;
+                m_sinkIsFloat = (sampleFormat == QAudioFormat::Float);
+                opened = true;
+                break;
+            }
+            if (opened)
+                break;
         }
+        if (!opened) {
+            qWarning() << "FxEngine: audio device" << device.description()
+                       << "supports neither stereo nor mono 48 kHz output";
+            return false;
+        }
+        if (m_sinkChannels == 1)
+            qInfo() << "FxEngine:" << device.description()
+                    << "is a mono output - the stereo mix is folded down for it";
 
         m_sink = new QAudioSink(device, fmt, this);
         m_sinkDeviceId = device.id();
-        const int bytesPerFrame = m_sinkIsFloat ? 8 : 4;
+        const int bytesPerFrame = (m_sinkIsFloat ? 4 : 2) * m_sinkChannels;
         m_sink->setBufferSize(kSampleRate * bytesPerFrame * 350 / 1000); // ~350 ms
     }
 
@@ -684,8 +761,10 @@ void FxEngine::rebuildSink()
     qDebug() << "FxEngine: rebuilding audio sink on request";
     const bool wasActive = (m_state == State::Playing && m_io);
     teardownSink();
-    if (wasActive && !ensureSink())
-        failTrack(tr("No usable audio output device for the FX engine"));
+    if (wasActive && !ensureSink()) {
+        failTrack(m_strictDevice ? tr("The cue output device is no longer connected")
+                                 : tr("No usable audio output device for the FX engine"));
+    }
 }
 
 void FxEngine::resetDspState()
@@ -887,7 +966,27 @@ void FxEngine::writeChunkToSink(const float *chunk, int frames)
         m_meterPeakR = std::max(m_meterPeakR, std::abs(chunk[i + 1]));
     }
 
-    if (m_sinkIsFloat) {
+    if (m_sinkChannels == 1) {
+        // Mono output device: fold the stereo mix down. Done here, at the
+        // very last step, so the DSP chain, the level meter and the
+        // broadcast tap all still see the untouched stereo master.
+        if (int(m_monoChunk.size()) < frames)
+            m_monoChunk.resize(frames);
+        for (int f = 0; f < frames; ++f)
+            m_monoChunk[f] = 0.5f * (chunk[f * kChannels] + chunk[f * kChannels + 1]);
+
+        if (m_sinkIsFloat) {
+            m_io->write(reinterpret_cast<const char *>(m_monoChunk.data()),
+                        static_cast<qint64>(frames) * sizeof(float));
+        } else {
+            if (int(m_chunk16.size()) < frames)
+                m_chunk16.resize(frames);
+            for (int f = 0; f < frames; ++f)
+                m_chunk16[f] = static_cast<qint16>(m_monoChunk[f] * 32767.0f);
+            m_io->write(reinterpret_cast<const char *>(m_chunk16.data()),
+                        static_cast<qint64>(frames) * sizeof(qint16));
+        }
+    } else if (m_sinkIsFloat) {
         m_io->write(reinterpret_cast<const char *>(chunk),
                     static_cast<qint64>(frames) * kChannels * sizeof(float));
     } else {

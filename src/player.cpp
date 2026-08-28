@@ -16,8 +16,10 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include "optionsdialog.h"
 #include "externaldownloader.h"
 #include "aboutus.h"
+#include "audio/AudioDeviceRouter.h"
 #include "audio/BpmDetector.h"
 #include "audio/BpmLibrary.h"
+#include "audio/CueBus.h"
 #include "audio/FxEngine.h"
 #include "audio/IntroLibrary.h"
 #include "audio/LoudnessScanner.h"
@@ -936,6 +938,11 @@ player::player(QWidget *parent) :
                 m_tailPlayer->stop();
         });
 
+        // Cue bus: its own pair of players, permanently bound to the cue
+        // device. Created before the routing settings are applied below so
+        // it never exists in an unrouted state.
+        setupCueBus();
+
         // Restore persisted FX settings (EQ / compressor / 432 Hz retune)
         applyStoredFxSettings();
 
@@ -950,6 +957,9 @@ player::player(QWidget *parent) :
         RadioPlayerOutput = new QAudioOutput(this);
         RadioPlayer = new FxPlayer(this);
         RadioPlayer->setAudioOutput(RadioPlayerOutput);
+        // Every player now exists: push the configured on-air and cue output
+        // devices into them (updateConfig() ran before they were built).
+        applyOutputDeviceSettings();
         RadioPlayerOutput->setVolume(ui->slider_rol_volume->value() / 100.0);
         connect(ui->slider_rol_volume, &QSlider::valueChanged, this, [this](int v) {
             if (RadioPlayerOutput)
@@ -1721,6 +1731,9 @@ checkDbOpen();
            // shortcuts + menu entries (the app previously had neither).
            setupAccessibleControls();
            setupPlaybackShortcuts();
+           // The cue menu entry exists only now, so give it its status tip
+           // (which is the "why cueing is off" text when there is no ear).
+           applyOutputDeviceSettings();
        } catch (const std::exception& e) {
            qWarning() << "Exception during accessibility initialization:" << e.what();
        }
@@ -1943,12 +1956,19 @@ checkDbOpen();
    // on a single press — built to be driven from a touch screen.
    {
        m_padBoard = new PadBoardWidget(this);
+       // A pad can be auditioned before it goes to air; the cue bus decides
+       // whether that is possible and says why when it is not.
+       connect(m_padBoard, &PadBoardWidget::cueRequested, this,
+               [this](const QString &path, const QString &label) {
+           cueFile(path, label);
+       });
        // A 4x6 grid of finger-sized pads insists on some 310 px of height, and
        // a QTabWidget is as tall as its tallest page whichever page is on
        // show — so without this the Pads tab alone kept the central area from
        // ever shrinking, and the library panel underneath had almost no travel
        // left to be dragged. In the scroll area the pads shrink first and
        // scroll after that.
+       m_padBoard->setOutputDeviceId(m_mainOutputDeviceId); // pads go to air
        m_padBoardPage = wrapInScrollArea(m_padBoard, this);
 
        QSettings settings(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
@@ -2526,6 +2546,17 @@ void player::updateConfig() {
                                    0.0);
     applyLoudnessSettings();
 
+    // --- Cue bus and output routing (Options -> "Cue and outputs") ---
+    // Stored as QAudioDevice::id() values; empty means "system default".
+    // Live-applied like everything else here, so changing the cue device
+    // while a show is running takes effect on the next cue.
+    m_mainOutputDeviceId = settings.value("Cue/MainOutputDevice").toByteArray();
+    m_cueOutputDeviceId = settings.value("Cue/CueOutputDevice").toByteArray();
+    m_cueSpeakAnnouncements = settings.value("Cue/SpeakAnnouncements", false).toBool();
+    m_cueCountdown = settings.value("Cue/SpokenCountdown", false).toBool();
+    m_cueVolume = qBound(0, settings.value("Cue/Volume", 80).toInt(), 100);
+    applyOutputDeviceSettings();
+
     // Auto mode tempo matching: how far the next track's BPM may sit from
     // the previous one's before it stops being a smooth crossfade.
     m_bpmMatch = settings.value("AutoModeMatchBpm", false).toBool();
@@ -3073,8 +3104,11 @@ void::player::playlistContextMenu(const QPoint& pos){
     QString resetVolumeLine = tr("Reset the volume line");
     QString removeVolumeLine = tr("Remove the volume line");
     QString autoMixThis = tr("Auto-mix the transition into this track");
+    QString cueThis = tr("Cue this track in the headphones");
 
 
+    thisMenu.addAction(cueThis);
+    thisMenu.addSeparator();
     thisMenu.addAction(remove);
     thisMenu.addAction(moveToTop);
     thisMenu.addAction(moveToBottom);
@@ -3108,6 +3142,11 @@ void::player::playlistContextMenu(const QPoint& pos){
         int rowidx = ui->playlist->selectionModel()->currentIndex().row();
         estevalor = ui->playlist->model()->data(ui->playlist->model()->index(rowidx,0)).toString();
 
+        if(selectedListItem==cueThis){
+            // estevalor holds the clicked row's text, which for the playlist
+            // is the file path itself.
+            cueFile(estevalor, QFileInfo(estevalor).fileName());
+        }
         if(selectedListItem==remove){
             delete ui->playlist->item(rowidx);
             calculate_playlist_total_time();
@@ -3169,6 +3208,18 @@ void player::musicViewContextMenu(const QPoint& pos) {
     // Playlist actions
     QAction *actAddBottom = thisMenu.addAction(tr("Add to the bottom of playlist"));
     QAction *actAddTop = thisMenu.addAction(tr("Add to the top of the playlist"));
+    // Pre-fade listen: only ever offered for a single track, because there is
+    // one pair of headphones and auditioning twelve tracks at once is not a
+    // thing. Plays on the cue device alone (Options -> Cue and outputs).
+    QAction *actCue = nullptr;
+    if (!multiSelect) {
+        actCue = thisMenu.addAction(QIcon(":/icons/ic_launcher_voicedial.png"),
+                                    tr("Cue this track in the headphones"));
+        actCue->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_C));
+        actCue->setToolTip(tr("Listen to this track on the cue output only. "
+                              "It never reaches the on-air output."));
+        thisMenu.setToolTipsVisible(true);
+    }
     thisMenu.addSeparator();
 
     // Batch edit actions (show submenu when multi-selected)
@@ -3243,7 +3294,12 @@ void player::musicViewContextMenu(const QPoint& pos) {
         return ids;
     };
 
-    if (selectedItem == actAddBottom) {
+    if (actCue && selectedItem == actCue) {
+        const QStringList paths = getSelectedPaths();
+        if (!paths.isEmpty())
+            cueFile(paths.first(), QFileInfo(paths.first()).fileName());
+
+    } else if (selectedItem == actAddBottom) {
         for (const QString &path : getSelectedPaths())
             ui->playlist->addItem(path);
         calculate_playlist_total_time();
@@ -3382,9 +3438,12 @@ void player::jinglesViewContextMenu(const QPoint& pos) {
     const QString actionAddToTop = tr("Add to the top of the playlist");
     const QString actionDeleteFromDB = tr("Delete this jingle from the database");
     const QString actionOpenAudacity = tr("Open this in Audacity");
+    const QString actionCue = tr("Cue this jingle in the headphones");
 
     thisMenu.addAction(actionAddToBottom);
     thisMenu.addAction(actionAddToTop);
+    thisMenu.addSeparator();
+    thisMenu.addAction(actionCue);
     thisMenu.addSeparator();
     thisMenu.addAction(actionDeleteFromDB);
     thisMenu.addSeparator();
@@ -3403,7 +3462,9 @@ void player::jinglesViewContextMenu(const QPoint& pos) {
 
     QString selectedActionText = selectedItem->text();
 
-    if (selectedActionText == actionAddToBottom) {
+    if (selectedActionText == actionCue) {
+        cueFile(selectedFilePath, QFileInfo(selectedFilePath).fileName());
+    } else if (selectedActionText == actionAddToBottom) {
         ui->playlist->addItem(selectedFilePath);
         calculate_playlist_total_time();
     } else if (selectedActionText == actionAddToTop) {
@@ -3438,10 +3499,14 @@ void::player::pubViewContextMenu(const QPoint& pos){
     QString addtoTopOfPlaylist = tr("Add to the top of the playlist");
     QString deleteThisFromDB = tr("Delete this pub from the database");
     QString openWithAudacity = tr("Open this in Audacity");
+    QString cueThisAdvert = tr("Cue this advert in the headphones");
 
     QSqlDatabase db = QSqlDatabase::database("xfb_connection");
     thisMenu.addAction(addToBottomOfPlaylist);
     thisMenu.addAction(addtoTopOfPlaylist);
+    thisMenu.addSeparator();
+    thisMenu.addAction(cueThisAdvert);
+    thisMenu.addSeparator();
     thisMenu.addAction(deleteThisFromDB);
     thisMenu.addAction(openWithAudacity);
 
@@ -3453,6 +3518,10 @@ void::player::pubViewContextMenu(const QPoint& pos){
         int rowidx = ui->pubView->selectionModel()->currentIndex().row();
         estevalor = ui->pubView->model()->data(ui->pubView->model()->index(rowidx,2)).toString();
 
+        if(selectedMenuItem==cueThisAdvert){
+            // estevalor is column 2 of the pub table: the file path.
+            cueFile(estevalor, QFileInfo(estevalor).fileName());
+        }
         if(selectedMenuItem==addToBottomOfPlaylist){
             qDebug()<<"Launch add this to bottom of playlist";
             ui->playlist->addItem(estevalor);
@@ -3724,9 +3793,12 @@ void player::programsViewContextMenu(const QPoint& pos) {
     const QString actionOpenAudacity = tr("Open this in Audacity");
     const QString actionResendToServer = tr("(Re)Send this program to the server");
     const QString actionCheckSent = tr("Verify that the program is in the server");
+    const QString actionCue = tr("Cue this program in the headphones");
 
     thisMenu.addAction(actionAddToBottom);
     thisMenu.addAction(actionAddToTop);
+    thisMenu.addSeparator();
+    thisMenu.addAction(actionCue);
     thisMenu.addSeparator();
     thisMenu.addAction(actionDeleteFromDB);
     thisMenu.addSeparator();
@@ -3751,7 +3823,9 @@ void player::programsViewContextMenu(const QPoint& pos) {
 
     QString selectedActionText = selectedItem->text();
 
-    if (selectedActionText == actionAddToBottom) {
+    if (selectedActionText == actionCue) {
+        cueFile(selectedFilePath, selectedFileName);
+    } else if (selectedActionText == actionAddToBottom) {
         ui->playlist->addItem(selectedFilePath);
         calculate_playlist_total_time();
     } else if (selectedActionText == actionAddToTop) {
@@ -4482,6 +4556,27 @@ void player::onPositionChanged(qint64 position)
         return;
     }
 
+    // Spoken countdown in the private ear (Options -> Cue and outputs).
+    // The wave strip shows the same numbers on screen, which is no use to an
+    // operator working by ear; these are spoken into the cue headphones only,
+    // so they never go to air. Marks, not a per-second count: rendering a
+    // spoken phrase takes a moment, and "thirty ... twenty ... ten ... five"
+    // is what a presenter actually uses to time a link.
+    if (m_cueCountdown && m_cueBus
+            && Xplayer && Xplayer->playbackState() == QMediaPlayer::PlayingState) {
+        const qint64 remaining = trackTotalDuration - position;
+        const int seconds = int(remaining / 1000);
+        static const int kMarks[] = { 30, 20, 10, 5 };
+        for (const int mark : kMarks) {
+            if (seconds == mark && m_lastSpokenCountdown != mark) {
+                m_lastSpokenCountdown = mark;
+                m_cueBus->speak(tr("%n second(s)", "spoken countdown to the end of "
+                                                   "the on-air track", mark));
+                break;
+            }
+        }
+    }
+
     int valor = (int)((position * 100) / trackTotalDuration);
 
     if(valor >= 80 && onAbout2Finish == 0){
@@ -4561,6 +4656,7 @@ void player::durationChanged(qint64 position)
     if (m_airHandle > 0)
         AirLog::instance()->setPlannedMs(m_airHandle, position);
     m_overlapSegueFired = false; // new media: re-arm the overlap segue
+    m_lastSpokenCountdown = -1;  // ... and the spoken countdown marks
     m_nextPrepared = false;      // new media: re-arm the gapless preload
 
     int segundos = position / 1000;
@@ -5169,6 +5265,14 @@ void player::applyIntroTimes(const IntroTimes &times)
     m_currentIntroLocked = times.locked;
     if (m_nowPlayingWave)
         m_nowPlayingWave->setIntro(times.introMs, times.outroMs, times.locked);
+
+    // The number a presenter talks over: say it privately, once, as the
+    // track starts. On screen the wave strip already counts it down.
+    if (m_cueCountdown && m_cueBus && times.introMs > 0
+            && Xplayer && Xplayer->playbackState() == QMediaPlayer::PlayingState
+            && Xplayer->position() < times.introMs) {
+        m_cueBus->speak(tr("Intro %1").arg(spokenDuration(times.introMs)));
+    }
 }
 
 // The on-air track's intro: shown on the strip, and measured in the
@@ -5948,6 +6052,33 @@ void player::setupPlaybackShortcuts()
         announceAccessible(introAnnouncement());
     });
     addAction(introCountdown);
+
+    playbackMenu->addSeparator();
+
+    // --- Cue bus (pre-fade listen) ---
+    // Ctrl+Shift+C and Ctrl+Shift+X were the free pair; C for cue and X for
+    // "cut it". Ctrl+Shift+ P, S, N, B, W, H, R, L, I, Up, Down, Return,
+    // Space and Ctrl+Alt+ R, Return are all already spoken for.
+    m_cueAction = playbackMenu->addAction(QIcon(":/icons/ic_launcher_voicedial.png"),
+                                          tr("&Cue the selected track (headphones)"));
+    m_cueAction->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_C));
+    m_cueAction->setShortcutContext(Qt::ApplicationShortcut);
+    m_cueAction->setStatusTip(tr("Listen to the selected track in the cue headphones only"));
+    connect(m_cueAction, &QAction::triggered, this, [this]() { cueCurrentSelection(); });
+    addAction(m_cueAction);
+
+    m_cueStopAction = playbackMenu->addAction(QIcon(":/icons/flat/Stop Sign-32.png"),
+                                              tr("Stop the c&ue"));
+    m_cueStopAction->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_X));
+    m_cueStopAction->setShortcutContext(Qt::ApplicationShortcut);
+    m_cueStopAction->setEnabled(false);
+    connect(m_cueStopAction, &QAction::triggered, this, [this]() {
+        if (m_cueBus) {
+            m_cueBus->stopCue();
+            announceAccessible(tr("Cue stopped"));
+        }
+    });
+    addAction(m_cueStopAction);
 
     // Insert before Options so File/Playlists keep their familiar positions.
     ui->menuBar->insertMenu(ui->menuXFB->menuAction(), playbackMenu);
@@ -6975,11 +7106,176 @@ void player::announceAccessible(const QString &message)
     // Always surface it visually too — the status bar is useful for everyone.
     ui->statusBar->showMessage(message, 5000);
 
+    // The private ear, when the operator asked for one. This is an *extra*
+    // channel, never the only one: the screen reader still gets the message
+    // below whether or not the cue device exists, and CueBus::speak() is a
+    // no-op unless spoken cues are switched on and a cue device is live.
+    if (m_cueBus)
+        m_cueBus->speak(message);
+
     auto *container = ServiceContainer::instance();
     if (!container)
         return;
     if (auto *manager = container->resolve<AccessibilityManager>())
         manager->announceMessage(message, AccessibilityManager::Priority::Normal);
+}
+
+// ---------------------------------------------------------------------------
+// Cue bus (pre-fade listen)
+//
+// Auditioning the next track while another one is on air needs a second
+// output device, and the whole feature stands or falls on the audition never
+// reaching the first one. That guarantee lives in CueBus/FxPlayer (see
+// CueBus.h); what lives here is the operator's side of it: the settings, the
+// menu entries, the shortcut and the on-screen indication of what is being
+// cued.
+// ---------------------------------------------------------------------------
+
+void player::setupCueBus()
+{
+    if (m_cueBus)
+        return;
+    m_cueBus = new CueBus(this);
+
+    // Permanent status-bar widget rather than a timed message: what is in the
+    // headphones has to stay visible for as long as it is playing, and a
+    // showMessage() would be wiped by the next status update.
+    m_cueIndicator = new QLabel(this);
+    m_cueIndicator->setObjectName(QStringLiteral("cueIndicator"));
+    m_cueIndicator->setAccessibleName(tr("Cue monitor"));
+    m_cueIndicator->setToolTip(tr("What is playing in the cue headphones. "
+                                  "Cue audio never reaches the on-air output."));
+    m_cueIndicator->hide();
+    ui->statusBar->addPermanentWidget(m_cueIndicator);
+
+    connect(m_cueBus, &CueBus::cueStateChanged, this,
+            [this](bool cueing, const QString &label) {
+        updateCueIndicator(cueing, label);
+    });
+    connect(m_cueBus, &CueBus::cueFailed, this, [this](const QString &reason) {
+        // Refusals are the interesting case (no second device configured),
+        // so they are spoken as well as shown.
+        announceAccessible(reason);
+        qWarning() << "Cue refused:" << reason;
+    });
+
+    updateCueIndicator(false, QString());
+}
+
+void player::applyOutputDeviceSettings()
+{
+    // On-air players. A device that has gone away falls back to the system
+    // default inside FxPlayer, which logs it — silence on air is worse than
+    // the wrong speaker.
+    FxPlayer *const onAir[] = { Xplayer, lp1_Xplayer, lp2_Xplayer,
+                                m_tailPlayer, RadioPlayer };
+    for (FxPlayer *p : onAir) {
+        if (p)
+            p->setOutputDeviceId(m_mainOutputDeviceId);
+    }
+    // The pads are on air too.
+    if (m_padBoard)
+        m_padBoard->setOutputDeviceId(m_mainOutputDeviceId);
+
+    if (m_cueBus) {
+        m_cueBus->setVolume(m_cueVolume);
+        m_cueBus->setMainDeviceId(m_mainOutputDeviceId);
+        m_cueBus->setCueDeviceId(m_cueOutputDeviceId);
+        m_cueBus->setSpeechEnabled(m_cueSpeakAnnouncements);
+    }
+
+    qInfo() << "Audio routing: on air ->"
+            << AudioDeviceRouter::describe(m_mainOutputDeviceId)
+            << "| cue ->" << AudioDeviceRouter::describe(m_cueOutputDeviceId);
+
+    if (m_cueAction) {
+        QString why;
+        const bool ready = m_cueBus && m_cueBus->isAvailable(&why);
+        m_cueAction->setEnabled(true); // still triggerable: it explains why not
+        m_cueAction->setStatusTip(ready
+            ? tr("Listen to the selected track in the cue headphones only")
+            : why);
+    }
+}
+
+void player::updateCueIndicator(bool cueing, const QString &label)
+{
+    if (!m_cueIndicator)
+        return;
+    if (cueing) {
+        const QString text = tr("CUE: %1").arg(label);
+        m_cueIndicator->setText(text);
+        // Screen readers read the accessible name, not the styled text.
+        m_cueIndicator->setAccessibleName(
+            tr("Cue monitor: %1 is playing in the cue headphones").arg(label));
+        m_cueIndicator->setStyleSheet(
+            QStringLiteral("QLabel { padding: 1px 6px; border-radius: 3px; "
+                           "background: #b8860b; color: white; font-weight: bold; }"));
+        m_cueIndicator->show();
+    } else {
+        m_cueIndicator->setText(QString());
+        m_cueIndicator->setAccessibleName(tr("Cue monitor: nothing is being cued"));
+        m_cueIndicator->hide();
+    }
+    if (m_cueStopAction)
+        m_cueStopAction->setEnabled(cueing);
+}
+
+void player::cueFile(const QString &path, const QString &label)
+{
+    if (!m_cueBus)
+        return;
+    if (path.trimmed().isEmpty()) {
+        announceAccessible(tr("There is nothing to cue"));
+        return;
+    }
+    const QUrl url = QUrl::fromLocalFile(path);
+    const bool wasCueing = m_cueBus->isCueing() && m_cueBus->currentSource() == url;
+    m_cueBus->toggleCue(url, label);
+    if (wasCueing)
+        announceAccessible(tr("Cue stopped"));
+    else if (m_cueBus->isCueing())
+        announceAccessible(tr("Cueing %1 in the headphones").arg(m_cueBus->currentLabel()));
+    // A refusal has already been announced by the cueFailed connection.
+}
+
+void player::cueCurrentSelection()
+{
+    // The playlist and the library views are the two places an operator picks
+    // a track from, so the shortcut follows the focus between them.
+    if (ui->playlist && ui->playlist->hasFocus() && ui->playlist->currentItem()) {
+        const QString path = ui->playlist->currentItem()->text();
+        cueFile(path, QFileInfo(path).fileName());
+        return;
+    }
+
+    QTableView *view = focusedLibraryView();
+    if (!view || !view->selectionModel() || !view->model()) {
+        announceAccessible(tr("Select a track in the library or the playlist first"));
+        return;
+    }
+    const QModelIndex current = view->selectionModel()->currentIndex();
+    if (!current.isValid()) {
+        announceAccessible(tr("No track is selected"));
+        return;
+    }
+
+    // The path column differs per view: musics keeps it at 7, the jingle,
+    // advert and program tables at 1. Take the first column whose value looks
+    // like an existing file rather than guessing per view.
+    QString path;
+    const int columns = view->model()->columnCount();
+    for (int col = 0; col < columns && path.isEmpty(); ++col) {
+        const QString value = view->model()->data(view->model()->index(current.row(), col))
+                                  .toString();
+        if (!value.isEmpty() && QFileInfo::exists(value))
+            path = value;
+    }
+    if (path.isEmpty()) {
+        announceAccessible(tr("No file path for the selected track"));
+        return;
+    }
+    cueFile(path, QFileInfo(path).fileName());
 }
 
 // Playback and recording state used to be signalled only by a background

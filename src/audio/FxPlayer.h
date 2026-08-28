@@ -68,6 +68,53 @@ public:
      */
     void resetAudioSink();
 
+    // --- Output routing ---
+    /**
+     * Render this player to a specific audio output.
+     *
+     * @param deviceId a stored QAudioDevice::id(), or empty for the system
+     *                 default (what every player did before this existed).
+     *
+     * Applies to both internal paths — the passthrough QAudioOutput and the
+     * FX engine's QAudioSink — so a track already playing moves output
+     * without stopping. If the device is gone, playback continues on the
+     * system default and the fallback is logged: on air, silence is worse
+     * than the wrong speaker.
+     */
+    void setOutputDeviceId(const QByteArray &deviceId);
+    QByteArray outputDeviceId() const { return m_deviceId; }
+
+    /**
+     * Turn this player into a cue (pre-fade listen) player, permanently
+     * bound to one output device.
+     *
+     * This is a one-way switch and it is the mechanism that makes a cue leak
+     * impossible rather than merely unlikely:
+     *
+     *  - the passthrough QMediaPlayer's QAudioOutput is detached and never
+     *    re-attached, so that path is physically mute — it has no output
+     *    object to render through, whatever the routing settings say;
+     *  - the FX engine's sink is opened *strictly* on @a deviceId, so if
+     *    that device disappears the cue goes silent instead of falling back
+     *    to the default (which is the on-air output);
+     *  - the engine-failure fallback that would normally hand a track to the
+     *    passthrough player is disabled.
+     *
+     * A locked player therefore has exactly one route to a speaker, and it
+     * is the cue device. Cue mode itself is one-way; calling this again
+     * only re-points the lock at a different device (Options changed).
+     */
+    void lockToCueDevice(const QByteArray &deviceId);
+    bool isCueLocked() const { return m_deviceLocked; }
+
+    /**
+     * Monitor level for a cue-locked player, 0..1. A cue player has no
+     * QAudioOutput to carry the volume, so it goes straight to the engine's
+     * sink — where it is applied after the tap, exactly as it is for the
+     * on-air player.
+     */
+    void setCueVolume(float linearVolume);
+
     void play();
     void pause();
     void stop();
@@ -173,6 +220,8 @@ private:
     bool m_preferEngine = false;     // LP decks: engine even without FX params
     bool m_pcmTap = false;           // streaming: engine even without FX params
     bool m_loudnessActive = false;   // loudness normalisation needs the engine
+    QByteArray m_deviceId;           // output device (empty = system default)
+    bool m_deviceLocked = false;     // cue player: this device or silence
     double m_loudnessGainDb = 0.0;
     bool m_limiterOn = false;
     double m_limiterCeilingDbTp = -1.0;

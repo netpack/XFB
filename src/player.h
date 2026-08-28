@@ -58,6 +58,7 @@ class IntroLibrary;
 struct IntroTimes;
 class PlaylistWaveView;
 class BpmLibrary;
+class CueBus;
 class LoudnessScanner;
 struct LoudnessMeasurement;
 class QStyledItemDelegate;
@@ -582,6 +583,32 @@ private slots:
     void storeLoudness(const LoudnessMeasurement &measurement);
     /// Library rows with no measurement, or one taken before the file changed.
     QStringList tracksNeedingLoudness(int *alreadyMeasured) const;
+
+    // --- Cue bus (pre-fade listen) ---
+    // Auditions a track on a SECOND output device while something else is on
+    // air. The bus owns its own players and is bound to the cue device only;
+    // nothing here shares an output with the on-air players. See CueBus.h for
+    // why cueing is refused outright when there is no distinct second device.
+    CueBus *m_cueBus = nullptr;
+    QLabel *m_cueIndicator = nullptr;  // permanent status-bar "CUE: ..." label
+    QAction *m_cueAction = nullptr;    // Playback menu entry (Ctrl+Shift+C)
+    QAction *m_cueStopAction = nullptr;
+    QByteArray m_mainOutputDeviceId;   // Options: on-air output (empty = default)
+    QByteArray m_cueOutputDeviceId;    // Options: the private ear
+    bool m_cueSpeakAnnouncements = false; // route XFB's own speech to the ear
+    bool m_cueCountdown = false;          // spoken outro countdown in the ear
+    int  m_cueVolume = 80;                // Options: cue monitor level, 0..100
+    int  m_lastSpokenCountdown = -1;      // last countdown mark already spoken
+    /** Creates the cue bus and its status-bar indicator (called once). */
+    void setupCueBus();
+    /** Pushes the configured output devices into every player and the bus. */
+    void applyOutputDeviceSettings();
+    /** Cue whatever is selected in the focused library view or the playlist. */
+    void cueCurrentSelection();
+    /** Start (or stop) a cue of one file, reporting refusals to the operator. */
+    void cueFile(const QString &path, const QString &label);
+    /** Keeps the status bar, the menu entry and the accessible name in step. */
+    void updateCueIndicator(bool cueing, const QString &label);
 
     // Overlap segue: when the next playlist item defines an overlap, the
     // dying tail of the current track is handed to this dedicated player

@@ -1,4 +1,5 @@
 #include "PadBoard.h"
+#include "audio/AudioDeviceRouter.h"
 #include "audioformats.h"
 
 #include "services/AirLog.h"
@@ -169,6 +170,17 @@ void PadButton::ensurePlayer()
         return;
 
     m_output = new QAudioOutput(this);
+    // Pads are on-air audio, so they follow the main output device. A
+    // configured device that is gone falls back to the system default:
+    // a silent pad in the middle of a show helps nobody.
+    if (!m_deviceId.isEmpty()) {
+        bool fellBack = false;
+        const QAudioDevice device = AudioDeviceRouter::resolve(m_deviceId, &fellBack);
+        if (fellBack)
+            qWarning() << "PadButton: the configured output device is gone, using the default";
+        if (!device.isNull())
+            m_output->setDevice(device);
+    }
     m_player = new QMediaPlayer(this);
     m_player->setAudioOutput(m_output);
 
@@ -371,6 +383,21 @@ bool PadButton::focusNeighbour(int row, int col)
     return false;
 }
 
+void PadButton::setOutputDeviceId(const QByteArray &deviceId)
+{
+    if (m_deviceId == deviceId)
+        return;
+    m_deviceId = deviceId;
+    if (!m_output)
+        return; // picked up by ensurePlayer() when the pad is first used
+    bool fellBack = false;
+    const QAudioDevice device = AudioDeviceRouter::resolve(deviceId, &fellBack);
+    if (fellBack)
+        qWarning() << "PadButton: the configured output device is gone, using the default";
+    if (!device.isNull() && m_output->device().id() != device.id())
+        m_output->setDevice(device);
+}
+
 void PadButton::contextMenuEvent(QContextMenuEvent *event)
 {
     QMenu menu(this);
@@ -382,6 +409,14 @@ void PadButton::contextMenuEvent(QContextMenuEvent *event)
                 stop();
             else
                 trigger();
+        });
+        // Pre-fade listen: check the stab is the right one without putting
+        // it to air. Handled by the player's cue bus, which plays it on the
+        // cue device alone.
+        QAction *cueAction = menu.addAction(tr("Cue in the headphones"));
+        cueAction->setToolTip(tr("Play this pad on the cue output only"));
+        connect(cueAction, &QAction::triggered, this, [this]() {
+            emit cueRequested(m_cfg.path, displayLabel());
         });
         menu.addSeparator();
     }
@@ -1158,6 +1193,8 @@ void PadBoardWidget::rebuildGrid()
                 });
                 connect(pad, &PadButton::message, this, &PadBoardWidget::setStatus);
                 connect(pad, &PadButton::focused, this, &PadBoardWidget::setRovingCell);
+                connect(pad, &PadButton::cueRequested, this, &PadBoardWidget::cueRequested);
+                pad->setOutputDeviceId(m_deviceId);
 
                 grid->addWidget(pad, row, col);
                 m_pads[bank].append(pad);
@@ -1269,6 +1306,15 @@ void PadBoardWidget::stopAll()
             pad->stop();
     }
     setStatus(tr("All pads stopped."));
+}
+
+void PadBoardWidget::setOutputDeviceId(const QByteArray &deviceId)
+{
+    m_deviceId = deviceId; // remembered for pads the grid builds later
+    for (const QVector<PadButton *> &bank : std::as_const(m_pads)) {
+        for (PadButton *pad : bank)
+            pad->setOutputDeviceId(deviceId);
+    }
 }
 
 void PadBoardWidget::setStatus(const QString &text)

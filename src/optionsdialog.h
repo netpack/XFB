@@ -9,8 +9,11 @@ class player;
 #include <QtMultimedia/QAudioInput>
 #include <QByteArray>
 #include <QColor>
+#include <QCheckBox>
 #include <QComboBox>
+#include <QLabel>
 #include <QMainWindow>
+#include <QSettings>
 #include <QObject>
 #include <QPixmap>
 #include <QPushButton>
@@ -70,6 +73,26 @@ private slots:
 
 private:
     void updateAccentButton();
+    /**
+     * Builds the "Cue and outputs" tab in C++ (no .ui edit, so no stale
+     * ui_optionsdialog.h to regenerate) and fills it from xfb.conf.
+     */
+    void buildCueTab();
+    /** Fills one output-device combo, keeping the stored id selected. */
+    void fillDeviceCombo(QComboBox *combo, const QByteArray &storedId,
+                         bool allowSystemDefault);
+    /** Writes the "Cue" settings group back. Called from saveSettings2Db(). */
+    void saveCueSettings(QSettings &settings);
+    /** Warns in the tab when the cue output would be the on-air output. */
+    void refreshCueWarning();
+
+    QComboBox *m_mainOutputCombo = nullptr;
+    QComboBox *m_cueOutputCombo = nullptr;
+    QSlider   *m_cueVolume = nullptr;
+    QLabel    *m_cueVolumeLabel = nullptr;
+    QLabel    *m_cueWarning = nullptr;
+    QCheckBox *m_cueSpeak = nullptr;
+    QCheckBox *m_cueCountdown = nullptr;
 
     Ui::optionsDialog *ui;
     QColor m_accentColor; // invalid when using the theme default
