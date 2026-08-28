@@ -269,6 +269,97 @@
               </layout>
              </item>
              <item>
+              <widget class="QCheckBox" name="checkBox_loudnessNormalize">
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Play every track at the same programme loudness (EBU R128). Each file's loudness is measured once — Database → Measure the loudness (EBU R128) of the database — and playback applies the difference as a live gain. Files are never modified and never re-encoded. Tracks that have not been measured play untouched.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="text">
+                <string>Loudness normalisation (EBU R128)</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="layout_loudnessTarget">
+               <item>
+                <widget class="QLabel" name="label_loudnessTarget">
+                 <property name="text">
+                  <string>Target loudness:</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QDoubleSpinBox" name="spin_loudnessTarget">
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The programme loudness every track is brought to. -23 LUFS is the EBU R128 broadcast reference, -16 LUFS suits streaming and most radio automation, -9 LUFS is as loud as anything should ever be asked to go.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="suffix">
+                  <string> LUFS</string>
+                 </property>
+                 <property name="decimals">
+                  <number>1</number>
+                 </property>
+                 <property name="minimum">
+                  <double>-23.000000000000000</double>
+                 </property>
+                 <property name="maximum">
+                  <double>-9.000000000000000</double>
+                 </property>
+                 <property name="singleStep">
+                  <double>0.500000000000000</double>
+                 </property>
+                 <property name="value">
+                  <double>-16.000000000000000</double>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLabel" name="label_loudnessCeiling">
+                 <property name="text">
+                  <string>True peak ceiling:</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QDoubleSpinBox" name="spin_loudnessCeiling">
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The highest inter-sample peak playback may produce. A track's gain is reduced rather than let its true peak pass this, and a limiter on the master output holds the line for anything that slips through — a mis-measured track cannot clip the transmitter.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="suffix">
+                  <string> dBTP</string>
+                 </property>
+                 <property name="decimals">
+                  <number>1</number>
+                 </property>
+                 <property name="minimum">
+                  <double>-9.000000000000000</double>
+                 </property>
+                 <property name="maximum">
+                  <double>0.000000000000000</double>
+                 </property>
+                 <property name="singleStep">
+                  <double>0.500000000000000</double>
+                 </property>
+                 <property name="value">
+                  <double>-1.000000000000000</double>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="hspacer_loudness">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </item>
+             <item>
               <widget class="QCheckBox" name="checkBox_levelMeter">
                <property name="toolTip">
                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Show a stereo LED level meter next to the volume slider, indicating the player's current left/right output level. Levels are measured by the FX playback engine.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>

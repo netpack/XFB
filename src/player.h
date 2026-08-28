@@ -55,6 +55,8 @@ class AudioFxWidget;
 class WaveformStore;
 class PlaylistWaveView;
 class BpmLibrary;
+class LoudnessScanner;
+struct LoudnessMeasurement;
 class QStyledItemDelegate;
 class NowPlayingWaveStrip;
 class LevelMeter;
@@ -510,6 +512,40 @@ private slots:
     void rememberAutoModePick(const QString &path);
     /// What it has put up lately, newest last — its no-repeat window.
     QStringList m_recentAutoPicks;
+
+    // ----------------------------------------------------------------
+    // EBU R128 loudness normalisation
+    //
+    // Every library row can carry an integrated loudness (LUFS) and a true
+    // peak (dBTP), measured once per file by LoudnessScanner. At playback
+    // the difference between the configured target and the track's own
+    // loudness becomes a gain in the FX engine's gain stage — a
+    // NON-destructive correction; the files themselves are never touched.
+    //
+    // CAREFUL: that gain is in DECIBELS. The playlist volume envelope
+    // (m_activeEnvelope / PlaylistWaveView::envelopeGainAt) is a LINEAR
+    // 0..1 multiplier that lands on XplayerOutput->setVolume(). The two
+    // ride in different places and multiply; they are never added.
+    // ----------------------------------------------------------------
+    LoudnessScanner *m_loudnessScanner = nullptr;
+    QPointer<QProgressDialog> m_loudnessProgress;
+    bool m_loudnessEnabled = false;
+    double m_loudnessTargetLufs = -16.0;   // LUFS
+    double m_loudnessCeilingDbTp = -1.0;   // dBTP
+    /// Path the current loudness gain was computed for (avoids re-querying).
+    QString m_loudnessAppliedPath;
+    /// How many tracks the last sweep found already measured and skipped.
+    int m_loudnessSkipped = 0;
+    void scanLibraryLoudness();
+    /// Look the loudness of a file up in whichever media table holds it.
+    bool loudnessForPath(const QString &path, double *lufs, double *truePeak) const;
+    /// Compute and push the playback gain for the track now being loaded.
+    void applyLoudnessForSource(const QUrl &url);
+    /// Push the enable flag, limiter and current gain into every player.
+    void applyLoudnessSettings();
+    void storeLoudness(const LoudnessMeasurement &measurement);
+    /// Library rows with no measurement, or one taken before the file changed.
+    QStringList tracksNeedingLoudness(int *alreadyMeasured) const;
 
     // Overlap segue: when the next playlist item defines an overlap, the
     // dying tail of the current track is handed to this dedicated player

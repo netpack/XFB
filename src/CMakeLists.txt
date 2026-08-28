@@ -27,6 +27,8 @@ set(SOURCES
     # Track tempo: detection from the waveform + the library's BPM column
     audio/BpmDetector.cpp
     audio/BpmLibrary.cpp
+    # EBU R128 loudness measurement (ffmpeg ebur128) for playback normalisation
+    audio/LoudnessScanner.cpp
     dialogs/AudioFxDialog.cpp
     dialogs/MobileSyncDialog.cpp
     # As-run log viewer + advertiser report
@@ -140,6 +142,7 @@ set(HEADERS
     audio/FxDsp.h
     audio/FxEngine.h
     audio/FxPlayer.h
+    audio/LoudnessScanner.h
     dialogs/AudioFxDialog.h
     dialogs/MobileSyncDialog.h
     dialogs/StationSyncDialog.h

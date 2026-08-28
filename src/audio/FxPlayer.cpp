@@ -149,7 +149,12 @@ bool FxPlayer::wantFxFor(const QUrl &url) const
     // (stuck in LoadingMedia), while the ffmpeg CLI handles them fine.
     if (isStreamUrl(url))
         return true;
-    return (m_params.anyActive() || m_preferEngine || m_pcmTap) && url.isLocalFile();
+    // Both the broadcast tap and loudness normalisation need the engine for
+    // reasons of their own — the tap because only the engine can hand over
+    // post-DSP PCM, normalisation because a positive gain cannot come from a
+    // sink volume clamped to 0..1.
+    return (m_params.anyActive() || m_preferEngine || m_pcmTap || m_loudnessActive)
+        && url.isLocalFile();
 }
 
 void FxPlayer::setAudioOutput(QAudioOutput *output)
@@ -241,7 +246,7 @@ void FxPlayer::prepareNext(const QUrl &url)
     // Decide where the preload lives from what setSource() will pick for
     // this track (m_fxFailedForTrack is per-track state, so ignore it).
     const bool nextWantsFx = fxAvailable()
-            && (m_params.anyActive() || m_preferEngine || m_pcmTap);
+            && (m_params.anyActive() || m_preferEngine || m_pcmTap || m_loudnessActive);
     if (nextWantsFx) {
         const QString path = url.toLocalFile();
         engineCall([path](FxEngine *e) { e->preloadNext(path); });
@@ -396,6 +401,50 @@ void FxPlayer::applyModeForCurrentSource()
         const qint64 pos = m_fxPos;
         switchToPassthrough(state, pos);
     }
+}
+
+void FxPlayer::setLoudnessActive(bool on)
+{
+    if (m_loudnessActive == on)
+        return;
+    m_loudnessActive = on;
+
+    if (!on) {
+        // Leave nothing behind in the engine: a later stream URL still goes
+        // through it, and it must not inherit the last track's gain.
+        engineCall([](FxEngine *e) { e->setLoudnessGainDb(0.0, true); });
+    } else {
+        const double g = m_loudnessGainDb;
+        engineCall([g](FxEngine *e) { e->setLoudnessGainDb(g, true); });
+    }
+
+    // Switching normalisation on or off changes which path a local file
+    // takes, exactly as toggling an FX parameter does.
+    const bool wantFx = wantFxFor(m_source) && !m_source.isEmpty();
+    const bool isFx = (m_mode == Mode::Fx);
+    if (wantFx == isFx)
+        return;
+
+    if (wantFx)
+        switchToFx(m_qt->playbackState(), m_qt->position());
+    else
+        switchToPassthrough(m_fxState, m_fxPos);
+}
+
+void FxPlayer::setLoudnessGainDb(double gainDb, bool immediate)
+{
+    m_loudnessGainDb = gainDb;
+    const double g = m_loudnessActive ? gainDb : 0.0;
+    engineCall([g, immediate](FxEngine *e) { e->setLoudnessGainDb(g, immediate); });
+}
+
+void FxPlayer::setLimiter(bool enabled, double ceilingDbTp)
+{
+    m_limiterOn = enabled;
+    m_limiterCeilingDbTp = ceilingDbTp;
+    engineCall([enabled, ceilingDbTp](FxEngine *e) {
+        e->setLimiter(enabled, ceilingDbTp);
+    });
 }
 
 void FxPlayer::setDjFx(double filterAmount, double echoAmount)

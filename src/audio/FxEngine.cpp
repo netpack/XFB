@@ -60,6 +60,8 @@ FxEngine::FxEngine(QObject *parent)
     m_chunk16.resize(kChunkFrames * kChannels);
     m_djFilter.setup(kSampleRate);
     m_echo.setup(kSampleRate);
+    m_loudnessGain.setup(kSampleRate);
+    m_limiter.setup(kSampleRate);
 
     // Follow audio-device changes (headphones unplugged, Bluetooth/AirPlay
     // dropped): the sink is bound to the device it was opened on, so it
@@ -268,6 +270,19 @@ void FxEngine::setVolume(float linearVolume)
     m_volume = std::clamp(linearVolume, 0.0f, 1.0f);
     if (m_sink)
         m_sink->setVolume(m_volume);
+}
+
+void FxEngine::setLoudnessGainDb(double gainDb, bool immediate)
+{
+    m_loudnessGain.setGainDb(gainDb);
+    if (immediate)
+        m_loudnessGain.snap();
+}
+
+void FxEngine::setLimiter(bool enabled, double ceilingDbTp)
+{
+    m_limiter.setCeilingDb(ceilingDbTp);
+    m_limiter.setEnabled(enabled);
 }
 
 void FxEngine::setParams(const FxParams &params)
@@ -681,6 +696,10 @@ void FxEngine::resetDspState()
     m_comp.reset();
     m_djFilter.reset();
     m_echo.reset();
+    // The loudness gain is per track, so a new track starts at its value
+    // rather than ramping up from the previous one's.
+    m_loudnessGain.snap();
+    m_limiter.reset();
     m_retuneOn = m_params.retune432;
 }
 
@@ -846,10 +865,17 @@ int FxEngine::fillChunk(float *out, int maxFrames)
 
 void FxEngine::applyFxChain(float *chunk, int frames)
 {
+    // Loudness normalisation goes FIRST so the compressor and the EQ see a
+    // level that does not jump by 10 dB between tracks; the true-peak
+    // limiter goes LAST so nothing downstream of it — including a badly
+    // measured track or an aggressive makeup gain — can reach the
+    // transmitter above the ceiling. The hard clamp stays as the backstop.
+    m_loudnessGain.process(chunk, frames);
     m_eq.process(chunk, frames);
     m_comp.process(chunk, frames);
     m_djFilter.process(chunk, frames);
     m_echo.process(chunk, frames);
+    m_limiter.process(chunk, frames);
     fxdsp::clampBuffer(chunk, frames);
 }
 

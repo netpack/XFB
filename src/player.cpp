@@ -18,6 +18,7 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include "audio/BpmDetector.h"
 #include "audio/BpmLibrary.h"
 #include "audio/FxEngine.h"
+#include "audio/LoudnessScanner.h"
 #include "audio/WaveformStore.h"
 #include "ArtworkStore.h"
 #include "PadBoard.h"
@@ -976,6 +977,12 @@ player::player(QWidget *parent) :
         connect(Xplayer, &FxPlayer::positionChanged, this, &player::onPositionChanged);
         connect(Xplayer, &FxPlayer::durationChanged, this, &player::durationChanged);
         connect(Xplayer, &FxPlayer::sourceChanged, this, &player::currentMediaChanged);
+        // Loudness normalisation: the gain for the track about to play is
+        // computed here, before any audio comes out. sourceChanged covers
+        // every route into playback (manual, auto mode, gapless handoff),
+        // which is why it is hooked here rather than at each setSource().
+        connect(Xplayer, &FxPlayer::sourceChanged,
+                this, &player::applyLoudnessForSource);
         connect(Xplayer, &FxPlayer::levels, m_levelMeter, &LevelMeter::setLevels);
         connect(Xplayer->audioOutput(), &QAudioOutput::volumeChanged, this, &player::volumeChanged);
         // The wave view ghosts the playing track behind the first playlist row
@@ -1755,6 +1762,31 @@ checkDbOpen();
        connect(analyzeBpm, &QAction::triggered, this, &player::analyzeLibraryBpm);
    }
 
+   // EBU R128 loudness. The measurement is a library sweep like the BPM one
+   // above; what it feeds is the per-track playback gain, so a quiet
+   // transfer no longer arrives many dB under the track before it. Nothing
+   // is re-encoded — the correction is applied live, at playback.
+   {
+       m_loudnessScanner = new LoudnessScanner(this);
+       connect(m_loudnessScanner, &LoudnessScanner::measured,
+               this, [this](const LoudnessMeasurement &m) { storeLoudness(m); });
+
+       QAction *scanLoudness = new QAction(QIcon(":/icons/chronometer.png"),
+                                          tr("Measure the loudness (EBU R128) of the database"), this);
+       scanLoudness->setToolTip(tr("Measure the integrated loudness and true peak of every track, "
+                                   "jingle, commercial and programme that has not been measured "
+                                   "yet, so playback can put them all on air at the same level. "
+                                   "Files are never modified. Anything whose file changed since it "
+                                   "was measured is measured again."));
+       ui->menuDatabase->addAction(scanLoudness);
+       connect(scanLoudness, &QAction::triggered, this, &player::scanLibraryLoudness);
+
+       // updateConfig() ran before the players existed (it is called at the
+       // top of this constructor), so the saved settings are pushed into
+       // them here, now that they do.
+       applyLoudnessSettings();
+   }
+
    // DJ decks: scratchable platters + performance FX
    {
        m_scratchClock.start();
@@ -2388,6 +2420,20 @@ void player::updateConfig() {
     // Auto Auto-mix: overlaps computed automatically for new playlist items
     m_autoAutoMix = settings.value("AutoAutoMix", false).toBool();
 
+    // EBU R128 loudness normalisation. Live-applied: the Options dialog's
+    // finished() signal is wired to updateConfig(), so a change to the
+    // target or the ceiling reaches the track already on air.
+    m_loudnessEnabled = settings.value("LoudnessNormalize", false).toBool();
+    m_loudnessTargetLufs = qBound(LoudnessScanner::kMinTargetLufs,
+                                  settings.value("LoudnessTargetLufs",
+                                                 LoudnessScanner::kDefaultTargetLufs).toDouble(),
+                                  LoudnessScanner::kMaxTargetLufs);
+    m_loudnessCeilingDbTp = qBound(-9.0,
+                                   settings.value("LoudnessCeilingDbTp",
+                                                  LoudnessScanner::kDefaultCeilingDbTp).toDouble(),
+                                   0.0);
+    applyLoudnessSettings();
+
     // Auto mode tempo matching: how far the next track's BPM may sit from
     // the previous one's before it stops being a smooth crossfade.
     m_bpmMatch = settings.value("AutoModeMatchBpm", false).toBool();
@@ -2793,6 +2839,46 @@ bool player::checkDbOpen() {
             qWarning() << "Failed to add the bpm column:" << addBpmColumn.lastError().text();
         else
             qInfo() << "Added the bpm column to the musics table";
+    }
+
+    // EBU R128 loudness, measured by LoudnessScanner and used by playback to
+    // put every track on air at the same programme loudness. Same shape as
+    // the bpm column above, and for the same reason — SQLite has no
+    // ADD COLUMN IF NOT EXISTS, so the presence of the column is the test,
+    // which makes this idempotent on every start for existing installs.
+    //
+    //   lufs           integrated loudness, LUFS (NULL = never measured)
+    //   true_peak      inter-sample peak, dBTP  (NULL = never measured)
+    //   loudness_mtime the file's modification time when it was measured,
+    //                  so a re-scan can skip rows whose file has not
+    //                  changed and re-do the ones that have.
+    //
+    // All four media tables carry a path, so all four get the columns: a
+    // jingle or a commercial arriving 8 dB hotter than the music is exactly
+    // the problem this feature exists to solve, and three extra REAL columns
+    // on small tables cost nothing.
+    for (const char *const table : {"musics", "jingles", "pub", "programs"}) {
+        const QSqlRecord rec = adb.record(QString::fromLatin1(table));
+        if (rec.isEmpty())
+            continue; // table absent in this database: nothing to migrate
+        struct { const char *name; const char *type; } columns[] = {
+            {"lufs", "REAL"}, {"true_peak", "REAL"}, {"loudness_mtime", "INTEGER"}
+        };
+        for (const auto &col : columns) {
+            if (rec.contains(QString::fromLatin1(col.name)))
+                continue;
+            QSqlQuery addColumn(adb);
+            const QString sql = QString("ALTER TABLE %1 ADD COLUMN %2 %3")
+                                    .arg(QString::fromLatin1(table),
+                                         QString::fromLatin1(col.name),
+                                         QString::fromLatin1(col.type));
+            if (!addColumn.exec(sql)) {
+                qWarning() << "Failed to add the" << col.name << "column to" << table
+                           << ":" << addColumn.lastError().text();
+            } else {
+                qInfo() << "Added the" << col.name << "column to the" << table << "table";
+            }
+        }
     }
 
     return true;
@@ -4889,6 +4975,345 @@ void player::analyzeLibraryBpm()
     });
 
     m_bpmLibrary->analyze(pending);
+}
+
+// ---------------------------------------------------------------------------
+// EBU R128 loudness
+//
+// Two halves that meet in the database:
+//
+//   1. A sweep (Database -> "Measure the loudness (EBU R128) of the
+//      database") runs LoudnessScanner over every row that has no
+//      measurement, or whose file has been replaced since it was measured,
+//      and stores integrated loudness / true peak / the file's mtime.
+//
+//   2. Playback reads those two numbers for the track being loaded and
+//      hands the FX engine a gain of (target - integrated) dB, reduced so
+//      the track's true peak cannot pass the ceiling.
+//
+// Nothing is re-encoded, ever. The library keeps its files exactly as they
+// are, and a re-scan costs one ffmpeg pass per file.
+//
+// The gain lands in FxDsp's GainStage, at the head of the engine's chain.
+// The playlist's volume envelope keeps riding the sink volume, where it
+// always has. They are different quantities — the gain is DECIBELS, the
+// envelope is a LINEAR 0..1 multiplier — and they multiply, so the
+// operator's fader and volume lines keep their exact meaning.
+// ---------------------------------------------------------------------------
+
+namespace
+{
+// Every media table that holds a path and can be put to air.
+const char *const kLoudnessTables[] = {"musics", "jingles", "pub", "programs"};
+
+qint64 fileMtimeSecs(const QString &path)
+{
+    const QFileInfo info(path);
+    if (!info.exists())
+        return 0;
+    return info.lastModified().toSecsSinceEpoch();
+}
+} // namespace
+
+// Rows that still need measuring: never measured, or measured against a
+// different version of the file. This is what makes the sweep resumable —
+// cancel it half way and the next run picks up where it stopped.
+QStringList player::tracksNeedingLoudness(int *alreadyMeasured) const
+{
+    QStringList pending;
+    QSet<QString> seen;
+    int skipped = 0;
+
+    QSqlDatabase db = QSqlDatabase::database("xfb_connection");
+    if (!db.isOpen()) {
+        if (alreadyMeasured)
+            *alreadyMeasured = 0;
+        return pending;
+    }
+
+    for (const char *const table : kLoudnessTables) {
+        const QSqlRecord rec = db.record(QString::fromLatin1(table));
+        if (rec.isEmpty() || !rec.contains(QStringLiteral("lufs")))
+            continue;
+
+        QSqlQuery query(db);
+        query.prepare(QString("SELECT path, lufs, loudness_mtime FROM %1")
+                          .arg(QString::fromLatin1(table)));
+        if (!query.exec()) {
+            qWarning() << "Loudness: could not list" << table
+                       << ":" << query.lastError().text();
+            continue;
+        }
+
+        while (query.next()) {
+            const QString path = query.value(0).toString();
+            if (path.isEmpty() || seen.contains(path))
+                continue;
+            seen.insert(path);
+
+            const bool measured = !query.value(1).isNull();
+            const qint64 storedMtime = query.value(2).toLongLong();
+            const qint64 currentMtime = fileMtimeSecs(path);
+
+            // A file that is gone is not worth an ffmpeg run; leave the row
+            // alone so the operator's own housekeeping decides its fate.
+            if (currentMtime == 0)
+                continue;
+
+            if (measured && storedMtime == currentMtime) {
+                ++skipped;
+                continue;
+            }
+            pending.append(path);
+        }
+    }
+
+    if (alreadyMeasured)
+        *alreadyMeasured = skipped;
+    return pending;
+}
+
+void player::storeLoudness(const LoudnessMeasurement &measurement)
+{
+    if (measurement.filePath.isEmpty())
+        return;
+
+    QSqlDatabase db = QSqlDatabase::database("xfb_connection");
+    if (!db.isOpen())
+        return;
+
+    const qint64 mtime = fileMtimeSecs(measurement.filePath);
+
+    for (const char *const table : kLoudnessTables) {
+        const QSqlRecord rec = db.record(QString::fromLatin1(table));
+        if (rec.isEmpty() || !rec.contains(QStringLiteral("lufs")))
+            continue;
+
+        QSqlQuery query(db);
+        if (measurement.valid) {
+            query.prepare(QString("UPDATE %1 SET lufs = :lufs, true_peak = :peak, "
+                                  "loudness_mtime = :mtime WHERE path = :path")
+                              .arg(QString::fromLatin1(table)));
+            query.bindValue(QStringLiteral(":lufs"), measurement.integratedLufs);
+            query.bindValue(QStringLiteral(":peak"), measurement.truePeakDbtp);
+        } else {
+            // Failed or silent: stamp the mtime only, so the row is not
+            // retried on every sweep, but leave lufs NULL so playback knows
+            // it has no usable measurement and leaves the track alone.
+            query.prepare(QString("UPDATE %1 SET loudness_mtime = :mtime "
+                                  "WHERE path = :path")
+                              .arg(QString::fromLatin1(table)));
+        }
+        query.bindValue(QStringLiteral(":mtime"), mtime);
+        query.bindValue(QStringLiteral(":path"), measurement.filePath);
+        if (!query.exec()) {
+            qWarning() << "Loudness: could not store the measurement of"
+                       << measurement.filePath << ":" << query.lastError().text();
+        }
+    }
+
+    // The track on air may be the one that was just measured.
+    if (Xplayer && Xplayer->source().isLocalFile()
+            && Xplayer->source().toLocalFile() == measurement.filePath) {
+        m_loudnessAppliedPath.clear();
+        applyLoudnessForSource(Xplayer->source());
+    }
+}
+
+// Menu action. Follows the same shape as the Opus/Ogg conversion actions
+// and the BPM sweep: a modal, cancellable progress dialog that owns the
+// signal connections, so a second run gets a clean set of its own.
+void player::scanLibraryLoudness()
+{
+    if (!m_loudnessScanner)
+        return;
+
+    if (m_loudnessScanner->busy()) {
+        ui->statusBar->showMessage(tr("A loudness scan is already running"), 5000);
+        return;
+    }
+
+    if (!LoudnessScanner::available()) {
+        QMessageBox::warning(this, tr("Measure loudness"),
+            tr("ffmpeg was not found, so loudness cannot be measured.\n\n"
+               "Install ffmpeg and try again."));
+        return;
+    }
+
+    int alreadyMeasured = 0;
+    QStringList pending = tracksNeedingLoudness(&alreadyMeasured);
+
+    if (pending.isEmpty()) {
+        const QMessageBox::StandardButton answer = QMessageBox::question(
+            this, tr("Measure loudness"),
+            tr("Everything in the database has already been measured "
+               "(%n item(s)).\n\nMeasure it all again?", nullptr, alreadyMeasured),
+            QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+        if (answer != QMessageBox::Yes)
+            return;
+
+        QSqlDatabase db = QSqlDatabase::database("xfb_connection");
+        QSet<QString> seen;
+        for (const char *const table : kLoudnessTables) {
+            const QSqlRecord rec = db.record(QString::fromLatin1(table));
+            if (rec.isEmpty() || !rec.contains(QStringLiteral("lufs")))
+                continue;
+            QSqlQuery query(db);
+            query.prepare(QString("SELECT path FROM %1").arg(QString::fromLatin1(table)));
+            if (!query.exec())
+                continue;
+            while (query.next()) {
+                const QString path = query.value(0).toString();
+                if (!path.isEmpty() && !seen.contains(path)) {
+                    seen.insert(path);
+                    pending.append(path);
+                }
+            }
+        }
+        if (pending.isEmpty())
+            return;
+        alreadyMeasured = 0;
+    }
+
+    m_loudnessSkipped = alreadyMeasured;
+
+    m_loudnessProgress = new QProgressDialog(
+        tr("Measuring the loudness of %n item(s)...", nullptr, pending.size()),
+        tr("Cancel"), 0, pending.size(), this);
+    m_loudnessProgress->setWindowModality(Qt::WindowModal);
+    m_loudnessProgress->setMinimumDuration(0);
+    connect(m_loudnessProgress, &QProgressDialog::canceled,
+            m_loudnessScanner, &LoudnessScanner::cancel);
+
+    // Both connections are scoped to the dialog, so they die with it.
+    connect(m_loudnessScanner, &LoudnessScanner::progress, m_loudnessProgress,
+            [this](int done, int total) {
+        if (m_loudnessProgress) {
+            m_loudnessProgress->setMaximum(total);
+            m_loudnessProgress->setValue(done);
+        }
+    });
+    connect(m_loudnessScanner, &LoudnessScanner::finished, m_loudnessProgress,
+            [this](int measured, int failed, bool canceled) {
+        if (m_loudnessProgress)
+            m_loudnessProgress->deleteLater();
+        ui->statusBar->showMessage(
+            canceled
+                ? tr("Loudness scan canceled — %1 item(s) measured").arg(measured)
+                : tr("Loudness: %1 item(s) measured, %2 skipped as unchanged, "
+                     "%3 could not be measured")
+                      .arg(measured).arg(m_loudnessSkipped).arg(failed),
+            8000);
+        update_music_table();
+    });
+
+    m_loudnessScanner->measure(pending);
+}
+
+// The measured numbers for a file, from whichever media table holds it.
+bool player::loudnessForPath(const QString &path, double *lufs, double *truePeak) const
+{
+    if (path.isEmpty())
+        return false;
+
+    QSqlDatabase db = QSqlDatabase::database("xfb_connection");
+    if (!db.isOpen())
+        return false;
+
+    for (const char *const table : kLoudnessTables) {
+        const QSqlRecord rec = db.record(QString::fromLatin1(table));
+        if (rec.isEmpty() || !rec.contains(QStringLiteral("lufs")))
+            continue;
+
+        QSqlQuery query(db);
+        query.prepare(QString("SELECT lufs, true_peak FROM %1 WHERE path = :path")
+                          .arg(QString::fromLatin1(table)));
+        query.bindValue(QStringLiteral(":path"), path);
+        if (!query.exec() || !query.next())
+            continue;
+        if (query.value(0).isNull())
+            continue; // row exists but was never measured
+
+        if (lufs)
+            *lufs = query.value(0).toDouble();
+        if (truePeak) {
+            // No true peak stored (an old row): claim no headroom at all,
+            // which is the safe direction — the gain gets capped, not
+            // waved through.
+            *truePeak = query.value(1).isNull() ? 0.0 : query.value(1).toDouble();
+        }
+        return true;
+    }
+
+    return false;
+}
+
+// Compute and push the playback gain for the track being loaded. A track
+// with no measurement plays at unity — never at a guess.
+void player::applyLoudnessForSource(const QUrl &url)
+{
+    if (!Xplayer)
+        return;
+
+    const QString path = url.isLocalFile() ? url.toLocalFile() : QString();
+    if (path == m_loudnessAppliedPath)
+        return;
+    m_loudnessAppliedPath = path;
+
+    if (!m_loudnessEnabled || path.isEmpty()) {
+        Xplayer->setLoudnessGainDb(0.0, true);
+        return;
+    }
+
+    double lufs = 0.0;
+    double truePeak = 0.0;
+    if (!loudnessForPath(path, &lufs, &truePeak)) {
+        Xplayer->setLoudnessGainDb(0.0, true);
+        // Measure it in the background so the next play is corrected, as
+        // long as a library sweep is not already using the process budget.
+        if (m_loudnessScanner && !m_loudnessScanner->busy()
+                && LoudnessScanner::available() && QFile::exists(path)) {
+            m_loudnessScanner->measure({path});
+        }
+        return;
+    }
+
+    const double gainDb = LoudnessScanner::normalizationGainDb(
+        lufs, truePeak, m_loudnessTargetLufs, m_loudnessCeilingDbTp);
+    Xplayer->setLoudnessGainDb(gainDb, true);
+    qDebug() << "Loudness:" << QFileInfo(path).fileName()
+             << "I =" << lufs << "LUFS, TP =" << truePeak
+             << "dBTP -> gain" << gainDb << "dB";
+}
+
+// Push the Options settings into the players. Called from updateConfig(),
+// which the Options dialog's finished() signal is wired to, so a change
+// takes effect on the track already playing.
+void player::applyLoudnessSettings()
+{
+    const bool engineAvailable = FxPlayer::fxAvailable();
+    const bool active = m_loudnessEnabled && engineAvailable;
+
+    if (m_loudnessEnabled && !engineAvailable) {
+        qWarning() << "Loudness normalisation is enabled but ffmpeg is missing; "
+                      "playback stays uncorrected";
+    }
+
+    // The limiter guards the master output whenever normalisation is on: a
+    // track measured wrong (or an operator's makeup gain) must not be able
+    // to clip what leaves the building.
+    for (FxPlayer *p : {Xplayer, m_tailPlayer, lp1_Xplayer, lp2_Xplayer}) {
+        if (!p)
+            continue;
+        p->setLimiter(active, m_loudnessCeilingDbTp);
+        p->setLoudnessActive(active);
+    }
+
+    // Recompute for whatever is on air right now.
+    if (Xplayer) {
+        m_loudnessAppliedPath.clear();
+        applyLoudnessForSource(Xplayer->source());
+    }
 }
 
 

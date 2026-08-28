@@ -122,8 +122,115 @@ private:
     double m_amount = 0.0;
 };
 
+/**
+ * Smoothly ramped broadband gain, in decibels.
+ *
+ * This is the stage EBU R128 loudness normalisation uses: the per-track
+ * offset (target LUFS minus the track's measured integrated loudness,
+ * capped so the true peak stays under the ceiling) is set here once per
+ * track and the stage ramps to it over ~50 ms so a live change never
+ * clicks.
+ *
+ * IMPORTANT — this is *decibels*. XFB's playlist volume envelope is a
+ * separate, LINEAR 0..1 multiplier that lands on the audio sink's volume;
+ * the two multiply, they are never added, and neither one moves the
+ * operator's fader.
+ */
+class GainStage
+{
+public:
+    void setup(double sampleRate);
+    /** Target gain in dB (0 = unity). Ramped, not applied instantly. */
+    void setGainDb(double db);
+    double gainDb() const { return m_targetDb; }
+    /** Jump straight to the target — used at a track change. */
+    void snap();
+    void reset();
+    bool isUnity() const { return m_targetDb == 0.0 && m_currentLin == m_targetLin; }
+    void process(float *interleaved, int frames);
+
+private:
+    double m_targetDb = 0.0;
+    double m_targetLin = 1.0;
+    double m_currentLin = 1.0;
+    double m_coef = 0.0; // one-pole smoothing coefficient
+};
+
+/**
+ * Look-ahead, true-peak aware limiter for the master output.
+ *
+ * The point of this stage is that a mis-measured (or unmeasured) track
+ * must never be able to clip the transmitter. Inter-sample peaks are
+ * estimated with a 4x polyphase oversampler, the gain needed to hold the
+ * ceiling is computed per input frame, and the signal is delayed by the
+ * look-ahead window so the gain is always already down by the time the
+ * offending sample arrives. The running minimum over the look-ahead
+ * window is what is applied, which makes the ceiling a guarantee rather
+ * than an average; release is slow enough not to pump.
+ */
+class TruePeakLimiter
+{
+public:
+    void setup(double sampleRate);
+    void setEnabled(bool on);
+    bool enabled() const { return m_enabled; }
+    /** Ceiling in dBTP (e.g. -1.0). */
+    void setCeilingDb(double dbtp);
+    double ceilingDb() const { return m_ceilingDb; }
+    void reset();
+    void process(float *interleaved, int frames);
+    /** Current gain reduction in dB (>= 0), for metering / diagnostics. */
+    double gainReductionDb() const;
+
+    /** Oversampling factor and taps per phase of the true-peak estimator. */
+    static constexpr int kOversample = 4;
+    static constexpr int kTapsPerPhase = 12;
+    /** Look-ahead, in frames at the configured sample rate. */
+    static constexpr int kLookaheadFrames = 64;
+    /**
+     * Safety margin, in dB, between the configured ceiling and what the
+     * limiter actually aims for.
+     *
+     * Any 4x true-peak estimator (this one, and ffmpeg's, and the one in
+     * every hardware limiter) reads a little under the real continuous
+     * peak, and the limiter's own gain modulation adds a little back. On a
+     * full-scale 7.9 kHz tone the two together left the output measuring
+     * 0.2 dB above a ceiling this stage believed it was holding — measured
+     * against ffmpeg's own meter, not assumed. Aiming this far under makes
+     * the stated ceiling true as an independent meter sees it.
+     */
+    static constexpr double kEstimatorMarginDb = 0.35;
+
+private:
+    double estimateTruePeak(float l, float r);
+
+    bool m_enabled = false;
+    double m_ceilingDb = -1.0;
+    double m_ceilingLin = 0.891250938;
+    double m_releaseCoef = 0.0;
+
+    // 4x polyphase interpolation kernel (windowed sinc), built in setup()
+    double m_phase[kOversample][kTapsPerPhase] = {};
+
+    // Per-channel input history feeding the oversampler
+    double m_histL[kTapsPerPhase] = {};
+    double m_histR[kTapsPerPhase] = {};
+    int m_histPos = 0;
+
+    // Look-ahead rings: the delayed signal and the gain each frame demands
+    float m_delay[kLookaheadFrames * 2] = {};
+    double m_required[kLookaheadFrames] = {};
+    int m_ringPos = 0;
+
+    double m_gain = 1.0;
+};
+
 /** Hard safety clamp to [-1, 1] applied after the FX chain. */
 void clampBuffer(float *interleaved, int frames);
+
+/** dB <-> linear helpers shared by the engine and the loudness code. */
+double dbToLinear(double db);
+double linearToDb(double lin);
 
 } // namespace fxdsp
 

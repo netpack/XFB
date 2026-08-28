@@ -102,6 +102,26 @@ public:
      */
     void setPcmTapEnabled(bool enabled);
     bool pcmTapEnabled() const { return m_pcmTap; }
+    // --- EBU R128 loudness normalisation ---
+    /**
+     * Turn loudness normalisation on for this player. While on, local
+     * files are routed through the FX engine: a *positive* normalisation
+     * gain is impossible any other way, because QAudioOutput's volume is
+     * clamped to 0..1 and a quiet transfer needs a boost, not a cut.
+     */
+    void setLoudnessActive(bool on);
+    bool loudnessActive() const { return m_loudnessActive; }
+    /**
+     * Per-track gain in dB (target LUFS minus the measured integrated
+     * loudness, already capped against the true-peak ceiling). It lands in
+     * the engine's gain stage and multiplies with the sink volume the
+     * fader and the playlist volume envelope drive — the envelope is a
+     * LINEAR 0..1 multiplier and is never mixed up with these decibels.
+     */
+    void setLoudnessGainDb(double gainDb, bool immediate = true);
+    double loudnessGainDb() const { return m_loudnessGainDb; }
+    /** Master true-peak limiter (safety net against a bad measurement). */
+    void setLimiter(bool enabled, double ceilingDbTp);
 
     // DJ performance controls — active only while the engine drives playback
     void setDjFx(double filterAmount, double echoAmount);
@@ -152,6 +172,10 @@ private:
     bool m_fxFailedForTrack = false; // engine gave up on the current track
     bool m_preferEngine = false;     // LP decks: engine even without FX params
     bool m_pcmTap = false;           // streaming: engine even without FX params
+    bool m_loudnessActive = false;   // loudness normalisation needs the engine
+    double m_loudnessGainDb = 0.0;
+    bool m_limiterOn = false;
+    double m_limiterCeilingDbTp = -1.0;
 
     QUrl m_source;
     FxParams m_params;

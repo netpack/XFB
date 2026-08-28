@@ -83,6 +83,16 @@ public slots:
     void stop();
     void seek(qint64 positionMs);
     void setVolume(float linearVolume);
+    /**
+     * EBU R128 playback gain for the current track, in dB. Applied at the
+     * head of the DSP chain (so the compressor sees a normalised level)
+     * and ramped over ~50 ms. This multiplies with — it never replaces —
+     * the sink volume the operator's fader and the playlist volume
+     * envelope drive, so the two stack and neither fights the other.
+     */
+    void setLoudnessGainDb(double gainDb, bool immediate);
+    /** True-peak limiter on the master output (safety net). */
+    void setLimiter(bool enabled, double ceilingDbTp);
     void setParams(const FxParams &params);
     /**
      * Arm or disarm the broadcast tap.
@@ -223,6 +233,8 @@ private:
     fxdsp::Compressor m_comp;
     fxdsp::DjFilter m_djFilter;
     fxdsp::Echo m_echo;
+    fxdsp::GainStage m_loudnessGain;
+    fxdsp::TruePeakLimiter m_limiter;
     bool m_retuneOn = false;
     std::vector<float> m_fifo;    // interleaved float input (non-retune path)
     std::vector<float> m_chunk;

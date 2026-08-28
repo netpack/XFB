@@ -108,6 +108,28 @@ optionsDialog::optionsDialog(QWidget *parent) :
         ui->spin_bpmTolerance->setEnabled(on);
         ui->label_bpmTolerance->setEnabled(on);
     });
+    // EBU R128 loudness normalisation. Live-applied through
+    // player::updateConfig(), which this dialog's finished() signal drives.
+    ui->checkBox_loudnessNormalize->setChecked(
+        settings.value("LoudnessNormalize", false).toBool());
+    ui->spin_loudnessTarget->setValue(
+        qBound(-23.0, settings.value("LoudnessTargetLufs", -16.0).toDouble(), -9.0));
+    ui->spin_loudnessCeiling->setValue(
+        qBound(-9.0, settings.value("LoudnessCeilingDbTp", -1.0).toDouble(), 0.0));
+    {
+        const bool on = ui->checkBox_loudnessNormalize->isChecked();
+        ui->spin_loudnessTarget->setEnabled(on);
+        ui->spin_loudnessCeiling->setEnabled(on);
+        ui->label_loudnessTarget->setEnabled(on);
+        ui->label_loudnessCeiling->setEnabled(on);
+    }
+    connect(ui->checkBox_loudnessNormalize, &QCheckBox::toggled, this, [this](bool on) {
+        ui->spin_loudnessTarget->setEnabled(on);
+        ui->spin_loudnessCeiling->setEnabled(on);
+        ui->label_loudnessTarget->setEnabled(on);
+        ui->label_loudnessCeiling->setEnabled(on);
+    });
+
     ui->checkBox_levelMeter->setChecked(settings.value("ShowLevelMeter", false).toBool());
     ui->combo_levelMeterPos->setCurrentIndex(
         settings.value("LevelMeterPlacement", "volume").toString() == "side" ? 1 : 0);
@@ -287,6 +309,9 @@ void optionsDialog::saveSettings2Db()
     settings.setValue("AutoAutoMix", ui->checkBox_autoAutoMix->isChecked());
     settings.setValue("AutoModeMatchBpm", ui->checkBox_bpmMatch->isChecked());
     settings.setValue("AutoModeBpmTolerance", ui->spin_bpmTolerance->value());
+    settings.setValue("LoudnessNormalize", ui->checkBox_loudnessNormalize->isChecked());
+    settings.setValue("LoudnessTargetLufs", ui->spin_loudnessTarget->value());
+    settings.setValue("LoudnessCeilingDbTp", ui->spin_loudnessCeiling->value());
     settings.setValue("ShowLevelMeter", ui->checkBox_levelMeter->isChecked());
     settings.setValue("LevelMeterPlacement",
                       ui->combo_levelMeterPos->currentIndex() == 1 ? "side" : "volume");
