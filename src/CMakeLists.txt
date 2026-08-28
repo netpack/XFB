@@ -31,6 +31,7 @@ set(SOURCES
     dialogs/MobileSyncDialog.cpp
     dialogs/StationSyncDialog.cpp
     dialogs/ProductionSyncDialog.cpp
+    dialogs/StreamDialog.cpp
     # Playlist sound-wave view (crossfade preparation)
     PlaylistWaveView.cpp
     # Pads tab: touch-friendly grid of instant-play pads (cart wall)
@@ -106,6 +107,9 @@ set(SOURCES
     services/MobileSyncServer.cpp
     services/StationSyncClient.cpp
     services/ProductionSyncClient.cpp
+    services/StreamEncoder.cpp
+    services/IcecastSource.cpp
+    services/StreamService.cpp
     services/UpdateCheckService.cpp
 )
 
@@ -136,6 +140,7 @@ set(HEADERS
     dialogs/MobileSyncDialog.h
     dialogs/StationSyncDialog.h
     dialogs/ProductionSyncDialog.h
+    dialogs/StreamDialog.h
     # Pads tab
     PadBoard.h
     # Service layer headers
@@ -198,6 +203,9 @@ set(HEADERS
     services/MobileSyncServer.h
     services/StationSyncClient.h
     services/ProductionSyncClient.h
+    services/StreamEncoder.h
+    services/IcecastSource.h
+    services/StreamService.h
     services/UpdateCheckService.h
 )
 

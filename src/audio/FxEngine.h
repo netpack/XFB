@@ -1,6 +1,7 @@
 #ifndef FXENGINE_H
 #define FXENGINE_H
 
+#include <QByteArray>
 #include <QObject>
 #include <QString>
 #include <QAudioFormat>
@@ -43,6 +44,13 @@ public:
     /** True when the FX engine can be used on this system. */
     static bool available();
 
+    // --- Broadcast tap ---
+    // Format of the PCM handed to observers through pcmTap(): interleaved
+    // signed 16-bit little-endian, which is exactly what an ffmpeg encoder
+    // wants on stdin (-f s16le -ar 48000 -ac 2 -i -).
+    static constexpr int kTapSampleRate = 48000;
+    static constexpr int kTapChannels = 2;
+
 public slots:
     /** Accepts a local file path or an http(s) stream URL (live mode). */
     void setSource(const QString &pathOrUrl);
@@ -76,6 +84,18 @@ public slots:
     void seek(qint64 positionMs);
     void setVolume(float linearVolume);
     void setParams(const FxParams &params);
+    /**
+     * Arm or disarm the broadcast tap.
+     *
+     * While armed, every buffer written to the audio sink is also emitted
+     * through pcmTap(). Disarmed — the normal case — the cost is a single
+     * bool test per output chunk and nothing is allocated or emitted, so
+     * playback behaves exactly as it did before the tap existed.
+     *
+     * Runs on the engine thread like every other slot here, so the flag
+     * needs no synchronisation: it is only ever read from the pump.
+     */
+    void setPcmTapEnabled(bool enabled);
     void shutdown();
 
     // --- DJ performance controls (LP decks) ---
@@ -101,6 +121,15 @@ signals:
     void playbackFinished();
     /** Fatal engine error for the current track. */
     void engineError(const QString &message);
+    /**
+     * Post-DSP master output, emitted only while the tap is armed.
+     *
+     * The samples are the ones handed to the sink: after the EQ, the
+     * compressor, the DJ filter/echo and the safety clamp, but *before*
+     * QAudioSink applies the monitor volume — what goes to air must not
+     * follow the operator's speaker fader.
+     */
+    void pcmTap(const QByteArray &pcm, int sampleRate, int channels);
 
 private slots:
     void pump();
@@ -128,14 +157,15 @@ private:
     void failTrack(const QString &message);
     void applyFxChain(float *chunk, int frames);
     void writeChunkToSink(const float *chunk, int frames);
+    void emitPcmTap(const float *chunk, int frames);
     bool enterScratchMode();
     void pumpScratch();
     void renderScratch(float *out, int frames);
     void stopFromScratch();
     qint64 scratchPosMs() const;
 
-    static constexpr int kSampleRate = 48000;
-    static constexpr int kChannels = 2;
+    static constexpr int kSampleRate = kTapSampleRate;
+    static constexpr int kChannels = kTapChannels;
     static constexpr int kChunkFrames = 2048;
     // Auto-cue: silence floor (~-50 dBFS) and the most leading silence a
     // track may have skipped before playback proceeds normally.
@@ -210,6 +240,11 @@ private:
     double m_scratchPos = 0.0;         // absolute input frame (fractional)
     double m_scratchVel = 1.0;         // rate: input frames per output frame
     double m_scratchTargetVel = 0.0;
+
+    // Broadcast tap (see setPcmTapEnabled): off by default and read only
+    // from the pump, so no synchronisation is involved.
+    bool m_tapEnabled = false;
+    std::vector<qint16> m_tapPcm;
 
     QTimer *m_pumpTimer = nullptr;
     int m_positionEmitDivider = 0;

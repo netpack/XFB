@@ -1,6 +1,7 @@
 #ifndef FXPLAYER_H
 #define FXPLAYER_H
 
+#include <QByteArray>
 #include <QMediaPlayer>
 #include <QObject>
 #include <QThread>
@@ -90,6 +91,18 @@ public:
      */
     void setPreferEngineAlways(bool on) { m_preferEngine = on; }
 
+    /**
+     * Arm the broadcast tap: post-DSP master PCM is re-emitted through
+     * pcmTap() for the stream encoder.
+     *
+     * Only the FX engine can produce the tap, so while it is armed local
+     * files are routed through the engine even with no FX enabled — the
+     * same trick the LP decks use. Disarming restores the ordinary
+     * passthrough/FX choice, mid-track and without a gap in the audio.
+     */
+    void setPcmTapEnabled(bool enabled);
+    bool pcmTapEnabled() const { return m_pcmTap; }
+
     // DJ performance controls — active only while the engine drives playback
     void setDjFx(double filterAmount, double echoAmount);
     void scratchBegin();
@@ -103,6 +116,11 @@ signals:
     void durationChanged(qint64 duration);
     /** Output peaks 0..1 for the level meter (FX-engine playback only). */
     void levels(float left, float right);
+    /**
+     * Post-DSP master PCM (interleaved s16le), emitted only while the tap
+     * is armed and the engine is the active path.
+     */
+    void pcmTap(const QByteArray &pcm, int sampleRate, int channels);
     void sourceChanged(const QUrl &media);
     void playbackStateChanged(QMediaPlayer::PlaybackState newState);
     void mediaStatusChanged(QMediaPlayer::MediaStatus status);
@@ -115,6 +133,8 @@ private:
     bool wantFxFor(const QUrl &url) const;
     void connectPassthrough(QMediaPlayer *p);
     void discardPrepared();
+    /** Re-evaluate passthrough vs engine for the current source, and switch. */
+    void applyModeForCurrentSource();
     void switchToFx(QMediaPlayer::PlaybackState resumeState, qint64 resumePos);
     void switchToPassthrough(QMediaPlayer::PlaybackState resumeState, qint64 resumePos);
 
@@ -131,6 +151,7 @@ private:
     bool m_switching = false;        // suppress signal forwarding during internal mode switches
     bool m_fxFailedForTrack = false; // engine gave up on the current track
     bool m_preferEngine = false;     // LP decks: engine even without FX params
+    bool m_pcmTap = false;           // streaming: engine even without FX params
 
     QUrl m_source;
     FxParams m_params;

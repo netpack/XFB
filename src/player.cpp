@@ -121,6 +121,8 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include "dialogs/MobileSyncDialog.h"
 #include "dialogs/ProductionSyncDialog.h"
 #include "dialogs/StationSyncDialog.h"
+#include "dialogs/StreamDialog.h"
+#include "services/StreamService.h"
 #include "services/MobileSyncServer.h"
 #include "services/ProductionSyncClient.h"
 #include "services/StationSyncClient.h"
@@ -3992,6 +3994,9 @@ void player::playNextSong(){
                 QFileInfo fileName(itemDaPlaylist);
                 QString baseName = fileName.fileName();
                 ui->txtNowPlaying->setText(baseName);
+                // Tell the stream what went to air. Does nothing unless the
+                // built-in encoder is actually streaming.
+                updateStreamNowPlaying(itemDaPlaylist);
                 // Speak the new track: without this a blind operator has no
                 // way to tell what went to air.
                 announceAccessible(tr("Now playing: %1").arg(baseName));
@@ -5252,6 +5257,31 @@ void player::setupPlaybackShortcuts()
         ui->menuXFB->addAction(stationSync);
         addAction(stationSync);
 
+        // Streaming from inside XFB. Sits with the other station-wide
+        // settings for the same reason the sync windows do: it is a property
+        // of this installation, not of the playlist on air.
+        QAction *streamAction = new QAction(
+            QIcon(":/icons/flat/Connection Sync-48.png"), tr("Stream to &Icecast..."), this);
+        streamAction->setMenuRole(QAction::NoRole);
+        connect(streamAction, &QAction::triggered, this, [this]() {
+            if (!m_streamDialog) {
+                m_streamDialog = new StreamDialog(streamService(), this);
+                m_streamDialog->setAttribute(Qt::WA_DeleteOnClose, false);
+                connect(m_streamDialog, &StreamDialog::announcementRequested,
+                        this, &player::announceAccessible);
+            }
+            m_streamDialog->show();
+            m_streamDialog->raise();
+            m_streamDialog->activateWindow();
+        });
+        ui->menuXFB->addAction(streamAction);
+        addAction(streamAction);
+
+        // An operator who asked to go on air at startup should not have to
+        // open the window first; constructing the service is what honours it.
+        if (StreamService::autoStartEnabled())
+            streamService()->start();
+
         // A backup that only copies when somebody remembers to ask is not a
         // backup, so the client is built at startup whenever it has standing
         // orders — that is what starts its timer and its first pull.
@@ -5370,6 +5400,80 @@ ProductionSyncClient *player::productionSyncClient()
                 qWarning() << "ProductionSyncClient:" << reason;
             });
     return m_productionSync;
+}
+
+// Created on demand and inert until told to start: an operator who never
+// opens the dialog gets exactly the behaviour XFB had before this existed.
+StreamService *player::streamService()
+{
+    if (m_streamService)
+        return m_streamService;
+
+    m_streamService = new StreamService(this);
+
+    // The tap lives in the main playlist player — that is what is on air.
+    // Arming it is what makes FxPlayer route through the FX engine, so it
+    // is armed only while the service is actually streaming.
+    connect(m_streamService, &StreamService::activeChanged, this, [this](bool active) {
+        if (Xplayer)
+            Xplayer->setPcmTapEnabled(active);
+        ui->statusBar->showMessage(active ? tr("Streaming: on air")
+                                          : tr("Streaming: off air"), 10000);
+        if (active) {
+            // Whatever is playing right now, so a mount that comes up
+            // mid-track still carries a title.
+            updateStreamNowPlaying(lastPlayedSong);
+        }
+    });
+
+    if (Xplayer) {
+        connect(Xplayer, &FxPlayer::pcmTap,
+                m_streamService, &StreamService::feedPcm);
+    }
+
+    connect(m_streamService, &StreamService::logMessage, this,
+            [](const QString &message) { qInfo() << "Stream:" << message; });
+
+    return m_streamService;
+}
+
+// Icecast carries the title out of band, so it has to be pushed as the track
+// changes. The library knows the real artist and song; the file name is the
+// fallback, and for a lot of stations it is all there is.
+void player::updateStreamNowPlaying(const QString &filePath)
+{
+    if (!m_streamService || !m_streamService->isActive() || filePath.isEmpty())
+        return;
+
+    QString artist;
+    QString title;
+
+    QSqlDatabase db = QSqlDatabase::database("xfb_connection");
+    if (db.isOpen()) {
+        QSqlQuery lookup(db);
+        lookup.prepare(QStringLiteral(
+            "SELECT artist, song FROM musics WHERE path = :path"));
+        lookup.bindValue(QStringLiteral(":path"), filePath);
+        if (lookup.exec() && lookup.next()) {
+            artist = lookup.value(0).toString().trimmed();
+            title = lookup.value(1).toString().trimmed();
+        }
+    }
+
+    if (title.isEmpty()) {
+        // "Artist - Title.mp3" is how most libraries on disk are named, and
+        // splitting it beats sending a file name to the listeners.
+        const QString base = QFileInfo(filePath).completeBaseName();
+        const int dash = base.indexOf(QStringLiteral(" - "));
+        if (artist.isEmpty() && dash > 0) {
+            artist = base.left(dash).trimmed();
+            title = base.mid(dash + 3).trimmed();
+        } else {
+            title = base;
+        }
+    }
+
+    m_streamService->setNowPlaying(artist, title);
 }
 
 // The sync server is created on demand and never listens until it is told to,

@@ -37,6 +37,13 @@ FxPlayer::FxPlayer(QObject *parent)
         if (m_mode == Mode::Fx)
             emit levels(l, r);
     });
+    connect(m_engine, &FxEngine::pcmTap, this,
+            [this](const QByteArray &pcm, int sampleRate, int channels) {
+        // Nothing is emitted by the engine unless the tap is armed, so this
+        // connection costs nothing while XFB is not on air.
+        if (m_mode == Mode::Fx)
+            emit pcmTap(pcm, sampleRate, channels);
+    });
     connect(m_engine, &FxEngine::playbackFinished, this, [this]() {
         if (m_mode != Mode::Fx || m_fxState == QMediaPlayer::StoppedState)
             return;
@@ -142,7 +149,7 @@ bool FxPlayer::wantFxFor(const QUrl &url) const
     // (stuck in LoadingMedia), while the ffmpeg CLI handles them fine.
     if (isStreamUrl(url))
         return true;
-    return (m_params.anyActive() || m_preferEngine) && url.isLocalFile();
+    return (m_params.anyActive() || m_preferEngine || m_pcmTap) && url.isLocalFile();
 }
 
 void FxPlayer::setAudioOutput(QAudioOutput *output)
@@ -233,7 +240,8 @@ void FxPlayer::prepareNext(const QUrl &url)
 
     // Decide where the preload lives from what setSource() will pick for
     // this track (m_fxFailedForTrack is per-track state, so ignore it).
-    const bool nextWantsFx = fxAvailable() && (m_params.anyActive() || m_preferEngine);
+    const bool nextWantsFx = fxAvailable()
+            && (m_params.anyActive() || m_preferEngine || m_pcmTap);
     if (nextWantsFx) {
         const QString path = url.toLocalFile();
         engineCall([path](FxEngine *e) { e->preloadNext(path); });
@@ -355,6 +363,25 @@ void FxPlayer::setFxParams(const FxParams &params)
     m_params = params;
     engineCall([params](FxEngine *e) { e->setParams(params); });
 
+    applyModeForCurrentSource();
+}
+
+void FxPlayer::setPcmTapEnabled(bool enabled)
+{
+    if (m_pcmTap == enabled)
+        return;
+    m_pcmTap = enabled;
+
+    engineCall([enabled](FxEngine *e) { e->setPcmTapEnabled(enabled); });
+
+    // A track already playing through the plain QMediaPlayer produces no
+    // tap, so going on air has to move it into the engine (and coming off
+    // air may hand it back) — the same live switch setFxParams performs.
+    applyModeForCurrentSource();
+}
+
+void FxPlayer::applyModeForCurrentSource()
+{
     const bool wantFx = wantFxFor(m_source) && !m_source.isEmpty();
     const bool isFx = (m_mode == Mode::Fx);
     if (wantFx == isFx)

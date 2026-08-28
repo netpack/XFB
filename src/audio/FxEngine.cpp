@@ -871,6 +871,44 @@ void FxEngine::writeChunkToSink(const float *chunk, int frames)
                     static_cast<qint64>(frames) * kChannels * sizeof(qint16));
     }
     m_producedAudio = true;
+
+    // Broadcast tap last: what goes on air is exactly what the sink got.
+    // One bool test when nobody is listening, which is the normal case.
+    if (m_tapEnabled)
+        emitPcmTap(chunk, frames);
+}
+
+void FxEngine::setPcmTapEnabled(bool enabled)
+{
+    if (m_tapEnabled == enabled)
+        return;
+    m_tapEnabled = enabled;
+    if (!enabled) {
+        m_tapPcm.clear();
+        m_tapPcm.shrink_to_fit();
+    }
+    qDebug() << "FxEngine: broadcast PCM tap" << (enabled ? "armed" : "disarmed");
+}
+
+void FxEngine::emitPcmTap(const float *chunk, int frames)
+{
+    const int samples = frames * kChannels;
+    if (samples <= 0)
+        return;
+
+    // The int16 sink path already has a conversion buffer, but it is only
+    // filled when the sink itself is int16 — convert into our own so the
+    // tap delivers the same bytes whatever the output device happens to be.
+    if (static_cast<int>(m_tapPcm.size()) < samples)
+        m_tapPcm.resize(samples);
+    for (int i = 0; i < samples; ++i) {
+        const float v = std::max(-1.0f, std::min(1.0f, chunk[i]));
+        m_tapPcm[i] = static_cast<qint16>(v * 32767.0f);
+    }
+
+    emit pcmTap(QByteArray(reinterpret_cast<const char *>(m_tapPcm.data()),
+                           static_cast<qsizetype>(samples) * qsizetype(sizeof(qint16))),
+                kTapSampleRate, kTapChannels);
 }
 
 void FxEngine::pump()

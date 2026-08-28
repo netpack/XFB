@@ -606,6 +606,16 @@ private slots:
     /// A batch of published entries arrives as several requests; the tables on
     /// screen are reloaded once when it settles, not once per request.
     bool m_peerCatalogueRefreshQueued = false;
+    // --- Streaming from inside XFB ---
+    // Taps the player's own post-DSP master output, encodes it with ffmpeg
+    // and feeds one or more Icecast mounts, pushing the on-air title as the
+    // track changes. An alternative to the external Icecast + butt buttons,
+    // which stay exactly as they were.
+    class StreamService *streamService();
+    /** Tell the stream what just went to air; cheap when not streaming. */
+    void updateStreamNowPlaying(const QString &filePath);
+    QPointer<class StreamService> m_streamService;
+    QPointer<class StreamDialog> m_streamDialog;
 
     // --- Adding library tracks to the playlist from the keyboard ---
     // The library views' only route into the playlist used to be the
