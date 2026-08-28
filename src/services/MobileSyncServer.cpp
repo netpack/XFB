@@ -1,6 +1,10 @@
 #include "MobileSyncServer.h"
 
+#include "AirLog.h"
+#include "RequestLine.h"
+
 #include <QCoreApplication>
+#include <QColor>
 #include <QCryptographicHash>
 #include <QDir>
 #include <QFile>
@@ -57,6 +61,104 @@ constexpr int kIndexTtlSeconds = 60;
 
 constexpr qint64 kChunkBytes = 64 * 1024;
 constexpr qint64 kHighWaterBytes = 512 * 1024;
+
+// --- the public listener page ---------------------------------------------
+//
+// These are what one person with a phone would never notice and what a script
+// hits in the first second. They exist so that an address on the far side of
+// a router cannot turn the station's library database into its own load test:
+// every one of them is checked before a query is prepared, not after.
+
+/** Any public route, per address, per minute. */
+constexpr int kPublicHitsPerMinute = 60;
+/** Of those, how many may be searches — the only ones that touch the library. */
+constexpr int kPublicSearchesPerMinute = 20;
+/** Requests one address may leave in an hour. Asking is not a volume sport. */
+constexpr int kPublicSubmitsPerHour = 4;
+/** The same two, over every address at once. */
+constexpr int kPublicGlobalHitsPerMinute = 600;
+constexpr int kPublicGlobalSubmitsPerHour = 120;
+/** Addresses tracked before the table is pruned. */
+constexpr int kPublicRateTableCap = 2048;
+/** Search-result handles held before the oldest set is dropped. */
+constexpr int kPublicRefCap = 4000;
+
+/** How far back "recently played" reaches, and how much of it is shown. */
+constexpr int kPublicRecentSeconds = 3600;
+constexpr int kPublicRecentMax = 40;
+/** Library hits offered for one search. */
+constexpr int kPublicSearchResults = 20;
+
+/**
+ * Sources a listener is shown. Advertisements are left out on purpose: an
+ * as-run log of who bought what airtime is the station's business and its
+ * customers', not the street's.
+ */
+bool publicVisibleSource(const QString &source)
+{
+    return source != QLatin1String("pub");
+}
+
+/** The xfb.conf every other XFB setting lives in. */
+QString xfbConfigFile()
+{
+    return QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
+           + QStringLiteral("/xfb.conf");
+}
+
+/** The two colours the public page borrows from the station's own theme. */
+struct PublicSkin {
+    QString accent = QStringLiteral("#7c7cba");
+    QString accentInk = QStringLiteral("#000000");
+    bool dark = false;
+    bool followSystem = true;
+};
+
+PublicSkin publicSkin()
+{
+    PublicSkin skin;
+
+    QSettings settings(xfbConfigFile(), QSettings::IniFormat);
+    QString theme = settings.value(QStringLiteral("Theme")).toString().trimmed().toLower();
+    if (theme.isEmpty()) {
+        theme = settings.value(QStringLiteral("DarkMode"), false).toBool()
+                    ? QStringLiteral("dark") : QStringLiteral("system");
+    }
+
+    // Same defaults ThemeManager uses, repeated rather than linked: this file
+    // is compiled into a console harness with no widgets, and one accent
+    // colour is not worth dragging QtWidgets in for.
+    QString accent = settings.value(QStringLiteral("AccentColor")).toString().trimmed();
+    if (accent.isEmpty()) {
+        if (theme == QLatin1String("midnight"))    accent = QStringLiteral("#4fc3f7");
+        else if (theme == QLatin1String("studio")) accent = QStringLiteral("#ffb300");
+        else                                       accent = QStringLiteral("#7c7cba");
+    }
+
+    // Whatever is in the settings file becomes a colour or it does not get
+    // used: this string ends up inside a stylesheet.
+    const QColor parsed(accent);
+    skin.accent = parsed.isValid() ? parsed.name(QColor::HexRgb)
+                                   : QStringLiteral("#7c7cba");
+    skin.accentInk = (parsed.isValid() && parsed.lightness() > 140)
+                         ? QStringLiteral("#000000") : QStringLiteral("#ffffff");
+
+    skin.dark = (theme == QLatin1String("dark") || theme == QLatin1String("midnight")
+                 || theme == QLatin1String("studio"));
+    skin.followSystem = (theme == QLatin1String("system") || theme.isEmpty());
+    return skin;
+}
+
+/** "3:07", or an empty string when the length is not known. */
+QString publicClock(qint64 milliseconds)
+{
+    if (milliseconds < 0)
+        return QString();
+    const qint64 total = milliseconds / 1000;
+    return QStringLiteral("%1:%2")
+        .arg(total / 60)
+        .arg(total % 60, 2, 10, QLatin1Char('0'));
+}
 
 QString reasonPhrase(int status)
 {
@@ -506,6 +608,17 @@ void MobileSyncServer::route(QTcpSocket *socket, const Request &request)
     }
     if (request.path == QLatin1String("/app.apk")) {
         handleAppDownload(socket, request);
+        return;
+    }
+
+    // The public listener page. Its own prefix, handled here — before a token
+    // is ever looked at — rather than as a hole punched in the authenticated
+    // routes below, so that nothing under /api/ can be reached through it and
+    // nothing here can reach a file. While the feature is switched off these
+    // paths 404 exactly as any unknown path does.
+    if (request.path == QLatin1String("/public")
+        || request.path.startsWith(QLatin1String("/public/"))) {
+        handlePublic(socket, request);
         return;
     }
 
@@ -1040,6 +1153,762 @@ void MobileSyncServer::handleStationHeartbeat(QTcpSocket *socket)
     }
 
     sendJson(socket, QJsonDocument(root).toJson(QJsonDocument::Compact));
+}
+
+// ------------------------------------------------- the public listener page
+//
+// Everything below this line answers to whoever can reach the machine. It is
+// written to that assumption:
+//
+//   * it opens no file and serves no bytes off disk, ever — the only binary
+//     that leaves here is artwork the player handed over in memory;
+//   * it is reached through its own path prefix, dispatched before a token is
+//     looked at, so it sits beside the authenticated routes rather than as a
+//     hole punched in them;
+//   * it answers 404 while the operator has it switched off, which is how it
+//     ships;
+//   * every string a listener typed is cleaned and capped on the way in,
+//     bound as a SQL parameter, and escaped on the way out;
+//   * nothing here can put anything on air. A request is a row in a table and
+//     a line in a window the operator looks at. That is the whole feature.
+
+void MobileSyncServer::setNowPlayingProvider(std::function<NowPlaying()> provider)
+{
+    m_nowPlayingProvider = std::move(provider);
+}
+
+QStringList MobileSyncServer::publicPageAddresses() const
+{
+    QStringList addresses;
+    if (!isListening() || !RequestLine::pageEnabled())
+        return addresses;
+
+    const QStringList hosts = hostAddresses();
+    addresses.reserve(hosts.size());
+    for (const QString &host : hosts)
+        addresses << QStringLiteral("http://%1:%2/public").arg(host).arg(m_port);
+    return addresses;
+}
+
+MobileSyncServer::NowPlaying MobileSyncServer::currentNowPlaying() const
+{
+    return m_nowPlayingProvider ? m_nowPlayingProvider() : NowPlaying();
+}
+
+QString MobileSyncServer::peerKey(QTcpSocket *socket)
+{
+    if (!socket)
+        return QStringLiteral("?");
+    QString address = socket->peerAddress().toString();
+    // An IPv4 address arriving on a dual-stack listener wears an IPv6 coat;
+    // without this the same phone would get two separate allowances.
+    if (address.startsWith(QLatin1String("::ffff:")))
+        address = address.mid(7);
+    return address.isEmpty() ? QStringLiteral("?") : address;
+}
+
+bool MobileSyncServer::publicRateAllows(const QString &peer, PublicHit hit)
+{
+    const QDateTime now = QDateTime::currentDateTime();
+
+    auto roll = [&now](PublicRate &rate) {
+        if (!rate.minute.isValid() || rate.minute.secsTo(now) >= 60) {
+            rate.minute = now;
+            rate.hits = 0;
+            rate.searches = 0;
+        }
+        if (!rate.hour.isValid() || rate.hour.secsTo(now) >= 3600) {
+            rate.hour = now;
+            rate.submits = 0;
+        }
+    };
+
+    // A flood from a thousand addresses is still a flood, so the station's
+    // own allowance is checked first and is never skipped.
+    roll(m_publicGlobal);
+    if (m_publicGlobal.hits >= kPublicGlobalHitsPerMinute)
+        return false;
+    if (hit == PublicHit::Submit
+        && m_publicGlobal.submits >= kPublicGlobalSubmitsPerHour) {
+        return false;
+    }
+
+    // Keeping one counter per address is itself an allocation a stranger
+    // controls, so the table is bounded. Stale rows go first; if they were
+    // all fresh, the lot goes and everybody starts the minute again — a
+    // moment's over-generosity, which is the safe direction to fail in while
+    // the global counter above is still holding the line.
+    if (m_publicRates.size() >= kPublicRateTableCap) {
+        for (auto it = m_publicRates.begin(); it != m_publicRates.end(); ) {
+            if (!it->minute.isValid() || it->minute.secsTo(now) >= 3600)
+                it = m_publicRates.erase(it);
+            else
+                ++it;
+        }
+        if (m_publicRates.size() >= kPublicRateTableCap)
+            m_publicRates.clear();
+    }
+
+    PublicRate &rate = m_publicRates[peer];
+    roll(rate);
+
+    if (rate.hits >= kPublicHitsPerMinute)
+        return false;
+    if (hit == PublicHit::Search && rate.searches >= kPublicSearchesPerMinute)
+        return false;
+    if (hit == PublicHit::Submit && rate.submits >= kPublicSubmitsPerHour)
+        return false;
+
+    ++rate.hits;
+    ++m_publicGlobal.hits;
+    if (hit == PublicHit::Search)
+        ++rate.searches;
+    if (hit == PublicHit::Submit) {
+        ++rate.submits;
+        ++m_publicGlobal.submits;
+    }
+    return true;
+}
+
+QString MobileSyncServer::publicRefFor(qint64 musicId)
+{
+    if (m_publicRefSalt.isEmpty()) {
+        m_publicRefSalt =
+            QByteArray::number(QRandomGenerator::system()->generate64(), 16)
+            + QByteArray::number(QRandomGenerator::system()->generate64(), 16);
+    }
+
+    // Bounded, because the map grows with every search a stranger runs. When
+    // it fills, the lot is dropped: a listener holding a stale ref is told to
+    // search again, which costs them a tap and costs the station nothing.
+    if (m_publicRefs.size() >= kPublicRefCap)
+        m_publicRefs.clear();
+
+    const QByteArray material = m_publicRefSalt + ':' + QByteArray::number(musicId);
+    const QString ref = QString::fromLatin1(
+        QCryptographicHash::hash(material, QCryptographicHash::Sha256)
+            .toHex().left(24));
+    m_publicRefs.insert(ref, musicId);
+    return ref;
+}
+
+qint64 MobileSyncServer::musicIdForPublicRef(const QString &ref) const
+{
+    // Only refs this process actually handed out resolve. A guessed or
+    // replayed one is simply not in the map, which is the same answer an
+    // unknown track id gets from /api/track.
+    return m_publicRefs.value(ref, -1);
+}
+
+void MobileSyncServer::handlePublic(QTcpSocket *socket, const Request &request)
+{
+    // Off is off. The same words an unknown path gets, so a probe cannot tell
+    // a station with this switched off from one that never had the feature.
+    if (!RequestLine::pageEnabled()) {
+        sendError(socket, 404, tr("No such endpoint."));
+        return;
+    }
+
+    const QString &path = request.path;
+    const bool isSubmit = (path == QLatin1String("/public/api/request"));
+    const bool isSearch = (path == QLatin1String("/public/api/search"));
+
+    const PublicHit hit = isSubmit ? PublicHit::Submit
+                        : isSearch ? PublicHit::Search
+                                   : PublicHit::Page;
+
+    // Checked before a query is prepared, never after: the point is to keep
+    // the station's database out of it, not to answer politely.
+    const QString peer = peerKey(socket);
+    if (!publicRateAllows(peer, hit)) {
+        sendError(socket, 429,
+                  tr("That is a lot of asking. Give it a minute and try again."));
+        return;
+    }
+
+    if (isSubmit) {
+        if (request.method != "POST") {
+            sendError(socket, 405, tr("Sending a request takes POST."));
+            return;
+        }
+        handlePublicRequest(socket, request, peer);
+        return;
+    }
+
+    if (request.method != "GET") {
+        sendError(socket, 405, tr("Only GET is supported here."));
+        return;
+    }
+
+    if (path == QLatin1String("/public") || path == QLatin1String("/public/"))
+        handlePublicPage(socket);
+    else if (path == QLatin1String("/public/api/now"))
+        handlePublicNow(socket, request);
+    else if (path == QLatin1String("/public/api/recent"))
+        handlePublicRecent(socket);
+    else if (isSearch)
+        handlePublicSearch(socket, request);
+    else
+        sendError(socket, 404, tr("No such endpoint."));
+}
+
+void MobileSyncServer::handlePublicPage(QTcpSocket *socket)
+{
+    sendPublicHtml(socket, buildPublicPage());
+}
+
+void MobileSyncServer::handlePublicNow(QTcpSocket *socket, const Request &request)
+{
+    const NowPlaying now = currentNowPlaying();
+
+    QJsonObject root;
+    root.insert(QStringLiteral("onAir"), now.onAir);
+    root.insert(QStringLiteral("artist"), now.artist);
+    root.insert(QStringLiteral("title"), now.title);
+    root.insert(QStringLiteral("positionMs"), now.positionMs);
+    root.insert(QStringLiteral("durationMs"), now.durationMs);
+    root.insert(QStringLiteral("artKey"), now.artworkKey);
+
+    // The cover is only sent when the page says it has the wrong one. A phone
+    // polling every ten seconds would otherwise pull the same picture down all
+    // evening, and a station with fifty listeners would notice.
+    if (request.query.value(QStringLiteral("art")) == QLatin1String("1")
+        && !now.artworkJpeg.isEmpty()) {
+        root.insert(QStringLiteral("art"),
+                    QStringLiteral("data:image/jpeg;base64,")
+                        + QString::fromLatin1(now.artworkJpeg.toBase64()));
+    }
+
+    sendJson(socket, QJsonDocument(root).toJson(QJsonDocument::Compact));
+}
+
+void MobileSyncServer::handlePublicRecent(QTcpSocket *socket)
+{
+    AirLog::Filter filter;
+    filter.from = QDateTime::currentDateTime().addSecs(-kPublicRecentSeconds);
+    filter.limit = kPublicRecentMax * 3;   // room to drop what is not shown
+
+    QJsonArray array;
+    const QList<AirLog::Record> records = AirLog::query(filter);
+    for (const AirLog::Record &record : records) {
+        if (array.size() >= kPublicRecentMax)
+            break;
+        if (!publicVisibleSource(record.source))
+            continue;
+        // Still open means still playing; that is the block above the list.
+        if (!record.endedAt.isValid())
+            continue;
+        if (record.artist.trimmed().isEmpty() && record.title.trimmed().isEmpty())
+            continue;
+
+        QJsonObject object;
+        // The clock time only. Not the path, not the row id, not how long it
+        // ran for, not whether Auto Mode picked it.
+        object.insert(QStringLiteral("at"),
+                      record.startedAt.toLocalTime()
+                          .toString(QStringLiteral("HH:mm")));
+        object.insert(QStringLiteral("artist"),
+                      RequestLine::clean(record.artist, 120));
+        object.insert(QStringLiteral("title"),
+                      RequestLine::clean(record.title, 120));
+        array.append(object);
+    }
+
+    QJsonObject root;
+    root.insert(QStringLiteral("tracks"), array);
+    sendJson(socket, QJsonDocument(root).toJson(QJsonDocument::Compact));
+}
+
+void MobileSyncServer::handlePublicSearch(QTcpSocket *socket, const Request &request)
+{
+    if (!RequestLine::requestsEnabled()) {
+        // No request form means no search: the library is not a public index.
+        sendError(socket, 404, tr("No such endpoint."));
+        return;
+    }
+
+    const QString text = request.query.value(QStringLiteral("q"));
+
+    QJsonArray array;
+    const QList<RequestLine::Match> matches =
+        RequestLine::search(text, kPublicSearchResults);
+    for (const RequestLine::Match &match : matches) {
+        QJsonObject object;
+        // An opaque handle, an artist and a title. No path, no library id, no
+        // duration, no file size — nothing that says where a file is, or that
+        // there is a file at all.
+        object.insert(QStringLiteral("ref"), publicRefFor(match.musicId));
+        object.insert(QStringLiteral("artist"), match.artist);
+        object.insert(QStringLiteral("title"), match.title);
+        array.append(object);
+    }
+
+    QJsonObject root;
+    root.insert(QStringLiteral("results"), array);
+    sendJson(socket, QJsonDocument(root).toJson(QJsonDocument::Compact));
+}
+
+void MobileSyncServer::handlePublicRequest(QTcpSocket *socket,
+                                           const Request &request,
+                                           const QString &peer)
+{
+    if (!RequestLine::requestsEnabled()) {
+        sendError(socket, 404, tr("No such endpoint."));
+        return;
+    }
+
+    // A body that is not JSON, or is JSON that is not an object, is simply a
+    // malformed request; there is nothing to guess at.
+    QJsonParseError parseError;
+    const QJsonDocument document = QJsonDocument::fromJson(request.body, &parseError);
+    if (parseError.error != QJsonParseError::NoError || !document.isObject()) {
+        sendError(socket, 400, tr("That request could not be read."));
+        return;
+    }
+    const QJsonObject body = document.object();
+
+    const qint64 musicId =
+        musicIdForPublicRef(body.value(QStringLiteral("ref")).toString());
+    if (musicId <= 0) {
+        sendError(socket, 400, tr("Choose a track from the search results first."));
+        return;
+    }
+
+    // A backstop the per-address limits cannot provide: a slow drip from many
+    // addresses would otherwise fill the operator's tray overnight.
+    if (RequestLine::pendingCount() >= RequestLine::maxPending()) {
+        sendError(socket, 503,
+                  tr("The studio has plenty to be going on with just now. "
+                     "Try again later."));
+        return;
+    }
+
+    RequestLine::Entry entry;
+    entry.musicId = musicId;
+    // The only two strings a stranger contributes. Cleaned and capped here,
+    // bound as parameters by submit(), and escaped by whatever displays them.
+    // Neither is ever read back as a path, a command or an instruction by
+    // anything in XFB — they are shown to a person, and that is all.
+    entry.requester =
+        RequestLine::clean(body.value(QStringLiteral("name")).toString(),
+                           RequestLine::kMaxNameChars);
+    entry.dedication =
+        RequestLine::clean(body.value(QStringLiteral("note")).toString(),
+                           RequestLine::kMaxNoteChars);
+    entry.fromAddress = peer;
+    entry.receivedAt = QDateTime::currentDateTime();
+
+    if (!RequestLine::submit(entry)) {
+        sendError(socket, 400, tr("XFB could not take that request."));
+        return;
+    }
+
+    // Deliberately no queueing, no promise of when it will play, and no
+    // acknowledgement beyond the fact that the studio now has it.
+    QJsonObject root;
+    root.insert(QStringLiteral("ok"), true);
+    root.insert(QStringLiteral("message"),
+                tr("Passed to the studio. They decide what goes on."));
+    sendJson(socket, QJsonDocument(root).toJson(QJsonDocument::Compact));
+
+    emit deviceActivity(tr("A listener"), tr("asked for a track"));
+}
+
+void MobileSyncServer::sendPublicHtml(QTcpSocket *socket, const QString &page,
+                                      int status)
+{
+    const QByteArray encoded = page.toUtf8();
+
+    QByteArray response;
+    response += "HTTP/1.1 " + QByteArray::number(status) + ' '
+                + reasonPhrase(status).toUtf8() + "\r\n";
+    response += "Content-Type: text/html; charset=utf-8\r\n";
+    response += "Content-Length: " + QByteArray::number(encoded.size()) + "\r\n";
+    response += "Cache-Control: no-store\r\n";
+    // The page is entirely its own: its stylesheet and its script are inline,
+    // its only image is a data: URI this server wrote, and it talks to nobody
+    // but the origin it came from. Saying so in a header means the browser
+    // enforces it even if a later edit here forgets to.
+    response += "Content-Security-Policy: default-src 'none'; "
+                "img-src data:; style-src 'unsafe-inline'; "
+                "script-src 'unsafe-inline'; connect-src 'self'; "
+                "form-action 'none'; base-uri 'none'; frame-ancestors 'none'\r\n";
+    response += "X-Content-Type-Options: nosniff\r\n";
+    response += "Referrer-Policy: no-referrer\r\n";
+    response += "Connection: close\r\n\r\n";
+    response += encoded;
+
+    socket->write(response);
+    socket->disconnectFromHost();
+}
+
+QString MobileSyncServer::buildPublicPage() const
+{
+    const PublicSkin skin = publicSkin();
+
+    QString station = RequestLine::stationName();
+    if (station.isEmpty())
+        station = QSysInfo::machineHostName();
+    if (station.isEmpty())
+        station = tr("This station");
+
+    const NowPlaying now = currentNowPlaying();
+
+    // --- what is on now, rendered here rather than left to the script, so
+    //     the page still says something with JavaScript turned off ---------
+    QString title  = now.title.trimmed();
+    QString artist = now.artist.trimmed();
+    if (!now.onAir || (title.isEmpty() && artist.isEmpty())) {
+        title = tr("Nothing on air just now");
+        artist.clear();
+    }
+
+    int percent = 0;
+    if (now.onAir && now.durationMs > 0 && now.positionMs >= 0)
+        percent = int(qBound<qint64>(0, now.positionMs * 100 / now.durationMs, qint64(100)));
+
+    QString cover;
+    if (!now.artworkJpeg.isEmpty()) {
+        cover = QStringLiteral(
+                    "<img id=\"art\" alt=\"\" src=\"data:image/jpeg;base64,%1\">")
+                    .arg(QString::fromLatin1(now.artworkJpeg.toBase64()));
+    } else {
+        // No src attribute at all rather than an empty one: an empty src is a
+        // request for the page itself in some browsers.
+        cover = QStringLiteral("<img id=\"art\" alt=\"\" hidden>"
+                               "<span id=\"artfall\" class=\"fallback\">&#9834;</span>");
+    }
+
+    // The last hour, with the same filtering the JSON route applies.
+    QString recent;
+    {
+        AirLog::Filter filter;
+        filter.from = QDateTime::currentDateTime().addSecs(-kPublicRecentSeconds);
+        filter.limit = kPublicRecentMax * 3;
+        int shown = 0;
+        const QList<AirLog::Record> records = AirLog::query(filter);
+        for (const AirLog::Record &record : records) {
+            if (shown >= kPublicRecentMax)
+                break;
+            if (!publicVisibleSource(record.source) || !record.endedAt.isValid())
+                continue;
+            const QString rowArtist = RequestLine::clean(record.artist, 120);
+            const QString rowTitle  = RequestLine::clean(record.title, 120);
+            if (rowArtist.isEmpty() && rowTitle.isEmpty())
+                continue;
+            recent += QStringLiteral(
+                          "<li><span class=\"t\">%1</span>"
+                          "<span class=\"s\"><b>%2</b><i>%3</i></span></li>")
+                          .arg(record.startedAt.toLocalTime()
+                                   .toString(QStringLiteral("HH:mm")).toHtmlEscaped(),
+                               rowTitle.toHtmlEscaped(),
+                               rowArtist.toHtmlEscaped());
+            ++shown;
+        }
+        if (shown == 0) {
+            recent = QStringLiteral("<li class=\"empty\">%1</li>")
+                         .arg(tr("Nothing logged in the last hour.").toHtmlEscaped());
+        }
+    }
+
+    QString requestSection;
+    if (RequestLine::requestsEnabled()) {
+        requestSection = QStringLiteral(
+            "<section class=\"card ask\">"
+            "<h2>@@ASK@@</h2>"
+            "<noscript><p class=\"note\">@@NOSCRIPT@@</p></noscript>"
+            "<label for=\"q\">@@FIND@@</label>"
+            "<input id=\"q\" type=\"search\" maxlength=\"@@MAXQ@@\" autocomplete=\"off\" "
+            "placeholder=\"@@FINDHINT@@\">"
+            "<ul id=\"results\" class=\"results\"></ul>"
+            "<p id=\"chosen\" class=\"chosen\" hidden></p>"
+            "<label for=\"who\">@@WHO@@</label>"
+            "<input id=\"who\" type=\"text\" maxlength=\"@@MAXNAME@@\" autocomplete=\"off\">"
+            "<label for=\"note\">@@NOTE@@</label>"
+            "<input id=\"note\" type=\"text\" maxlength=\"@@MAXNOTE@@\" autocomplete=\"off\">"
+            "<button id=\"send\" type=\"button\" disabled>@@SEND@@</button>"
+            "<p id=\"say\" class=\"say\" role=\"status\" aria-live=\"polite\"></p>"
+            "<p class=\"note\">@@ASKNOTE@@</p>"
+            "</section>");
+    }
+
+    // Substituted by token rather than by QString::arg(): the stylesheet and
+    // the script are full of per-cent signs, and arg() would happily read one
+    // of them as a placeholder.
+    QString page = QStringLiteral(
+        "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
+        "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
+        "<title>@@STATION@@</title><style>"
+        ":root{color-scheme:@@SCHEME@@;--bg:#f2f3f7;--card:#ffffff;--ink:#242830;"
+        "--dim:#6a7080;--line:#c9cdd6;--accent:@@ACCENT@@;--accentink:@@ACCENTINK@@}"
+        "@@DARKBLOCK@@"
+        "*{box-sizing:border-box}"
+        "body{margin:0;padding:1.25rem 1rem 3rem;background:var(--bg);color:var(--ink);"
+        "font:16px/1.55 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,"
+        "Helvetica,Arial,sans-serif;max-width:34rem;margin-inline:auto}"
+        "h1{font-size:1.35rem;margin:0;letter-spacing:-.02em}"
+        "h2{font-size:.78rem;text-transform:uppercase;letter-spacing:.11em;"
+        "color:var(--dim);margin:0 0 .75rem;font-weight:700}"
+        "header{margin-bottom:1.25rem}"
+        "header p{margin:.15rem 0 0;color:var(--dim);font-size:.95rem}"
+        ".card{background:var(--card);border:1px solid var(--line);border-radius:12px;"
+        "padding:1rem;margin-bottom:1rem}"
+        ".now{display:flex;gap:1rem;align-items:center}"
+        ".cover{width:88px;height:88px;flex:0 0 88px;border-radius:8px;overflow:hidden;"
+        "background:var(--bg);border:1px solid var(--line);display:flex;"
+        "align-items:center;justify-content:center}"
+        ".cover img{width:100%;height:100%;object-fit:cover;display:block}"
+        ".fallback{font-size:2rem;color:var(--dim);line-height:1}"
+        ".meta{min-width:0;flex:1}"
+        ".meta .lbl{font-size:.72rem;text-transform:uppercase;letter-spacing:.11em;"
+        "color:var(--accent);font-weight:700;margin:0}"
+        ".meta .ttl{margin:.15rem 0 0;font-size:1.1rem;font-weight:650;"
+        "overflow-wrap:anywhere}"
+        ".meta .art{margin:.1rem 0 0;color:var(--dim);overflow-wrap:anywhere}"
+        ".bar{height:5px;border-radius:3px;background:var(--line);margin-top:.7rem;"
+        "overflow:hidden}"
+        ".bar span{display:block;height:100%;background:var(--accent);width:0}"
+        ".times{display:flex;justify-content:space-between;margin:.3rem 0 0;"
+        "font-size:.8rem;color:var(--dim);font-variant-numeric:tabular-nums}"
+        "ol.recent{list-style:none;margin:0;padding:0}"
+        "ol.recent li{display:flex;gap:.75rem;padding:.42rem 0;"
+        "border-top:1px solid var(--line)}"
+        "ol.recent li:first-child{border-top:0}"
+        "ol.recent .t{color:var(--dim);font-size:.85rem;flex:0 0 3rem;"
+        "font-variant-numeric:tabular-nums;padding-top:.1rem}"
+        "ol.recent .s{min-width:0}"
+        "ol.recent b{display:block;font-weight:600;overflow-wrap:anywhere}"
+        "ol.recent i{display:block;font-style:normal;color:var(--dim);"
+        "font-size:.88rem;overflow-wrap:anywhere}"
+        "ol.recent .empty{color:var(--dim)}"
+        "label{display:block;font-size:.8rem;color:var(--dim);margin:.85rem 0 .25rem}"
+        "input{width:100%;padding:.6rem .7rem;border:1px solid var(--line);"
+        "border-radius:8px;background:var(--bg);color:var(--ink);font-size:1rem}"
+        "input:focus-visible,button:focus-visible{outline:2px solid var(--accent);"
+        "outline-offset:2px}"
+        ".results{list-style:none;margin:.5rem 0 0;padding:0;max-height:15rem;"
+        "overflow-y:auto}"
+        ".results li{border-top:1px solid var(--line)}"
+        ".results li:first-child{border-top:0}"
+        ".results button{display:block;width:100%;text-align:left;background:none;"
+        "border:0;padding:.5rem .2rem;color:var(--ink);font:inherit;cursor:pointer;"
+        "border-radius:6px}"
+        ".results button:hover{background:var(--bg)}"
+        ".results b{display:block;font-weight:600;overflow-wrap:anywhere}"
+        ".results i{display:block;font-style:normal;color:var(--dim);"
+        "font-size:.88rem;overflow-wrap:anywhere}"
+        ".chosen{margin:.6rem 0 0;padding:.5rem .65rem;border-radius:8px;"
+        "background:var(--bg);border:1px solid var(--accent);overflow-wrap:anywhere}"
+        "button#send{margin-top:1rem;width:100%;padding:.75rem;border:0;"
+        "border-radius:8px;background:var(--accent);color:var(--accentink);"
+        "font-size:1rem;font-weight:650;cursor:pointer}"
+        "button#send[disabled]{opacity:.45;cursor:default}"
+        ".say{margin:.7rem 0 0;min-height:1.2rem;font-size:.92rem}"
+        ".say.bad{color:#c0392b}"
+        ".note{color:var(--dim);font-size:.85rem;margin:.9rem 0 0}"
+        "footer{color:var(--dim);font-size:.8rem;text-align:center;margin-top:1.5rem}"
+        "</style></head><body>"
+        "<header><h1>@@STATION@@</h1>@@TAGLINE@@</header>"
+        "<section class=\"card now\">"
+        "<div class=\"cover\">@@COVER@@</div>"
+        "<div class=\"meta\">"
+        "<p class=\"lbl\">@@ONAIR@@</p>"
+        "<p class=\"ttl\" id=\"np-title\">@@TITLE@@</p>"
+        "<p class=\"art\" id=\"np-artist\">@@ARTIST@@</p>"
+        "<div class=\"bar\"><span id=\"np-fill\" style=\"width:@@PCT@@%\"></span></div>"
+        "<p class=\"times\"><span id=\"np-pos\">@@POS@@</span>"
+        "<span id=\"np-dur\">@@DUR@@</span></p>"
+        "</div></section>"
+        "<section class=\"card\"><h2>@@LASTHOUR@@</h2>"
+        "<ol class=\"recent\" id=\"recent\">@@RECENT@@</ol></section>"
+        "@@ASKSECTION@@"
+        "<footer>@@FOOTER@@</footer>"
+        "<script>@@SCRIPT@@</script>"
+        "</body></html>");
+
+    const QString darkVars = QStringLiteral(
+        "--bg:#101215;--card:#181b20;--ink:#e8ecef;--dim:#98a2ac;--line:#2b3037");
+    QString darkBlock;
+    if (skin.followSystem) {
+        darkBlock = QStringLiteral("@media(prefers-color-scheme:dark){:root{%1}}")
+                        .arg(darkVars);
+    } else if (skin.dark) {
+        darkBlock = QStringLiteral(":root{%1}").arg(darkVars);
+    }
+
+    QString tagline;
+    const QString taglineText = RequestLine::tagline();
+    if (!taglineText.isEmpty())
+        tagline = QStringLiteral("<p>%1</p>").arg(taglineText.toHtmlEscaped());
+
+    // The script writes only through textContent, so nothing it is handed can
+    // become markup however it is spelt.
+    QString script = QStringLiteral(
+        "(function(){"
+        "var artKey=@@JSARTKEY@@;"
+        "var pos=@@JSPOS@@,dur=@@JSDUR@@,live=@@JSLIVE@@,last=Date.now();"
+        "var $=function(i){return document.getElementById(i)};"
+        "function clock(ms){if(ms<0||isNaN(ms))return '';"
+        "var s=Math.floor(ms/1000);var m=Math.floor(s/60);s=s-m*60;"
+        "return m+':'+(s<10?'0':'')+s}"
+        "function paint(){var f=$('np-fill');"
+        "if(dur>0){var p=Math.max(0,Math.min(100,pos*100/dur));"
+        "f.style.width=p.toFixed(1)+'%';$('np-dur').textContent=clock(dur)}"
+        "else{f.style.width='0%';$('np-dur').textContent=''}"
+        "$('np-pos').textContent=live?clock(pos):''}"
+        "setInterval(function(){if(live){var t=Date.now();pos+=t-last;last=t;"
+        "if(dur>0&&pos>dur)pos=dur;paint()}},1000);"
+        "function now(withArt){"
+        "fetch('/public/api/now'+(withArt?'?art=1':''),{cache:'no-store'})"
+        ".then(function(r){return r.ok?r.json():null}).then(function(d){if(!d)return;"
+        "live=!!d.onAir;pos=d.positionMs>0?d.positionMs:0;dur=d.durationMs||-1;"
+        "last=Date.now();"
+        "$('np-title').textContent=(d.onAir&&(d.title||d.artist))?(d.title||''):@@JSNONE@@;"
+        "$('np-artist').textContent=d.onAir?(d.artist||''):'';"
+        "var im=$('art'),fb=$('artfall');"
+        "if(d.art){im.src=d.art;im.hidden=false;if(fb)fb.hidden=true}"
+        "else if(withArt&&!d.artKey){im.hidden=true;im.removeAttribute('src');"
+        "if(fb)fb.hidden=false}"
+        "if(d.artKey!==artKey){artKey=d.artKey;now(true);return}"
+        "paint()}).catch(function(){})}"
+        "function recent(){fetch('/public/api/recent',{cache:'no-store'})"
+        ".then(function(r){return r.ok?r.json():null}).then(function(d){"
+        "if(!d||!d.tracks)return;var ol=$('recent');ol.textContent='';"
+        "if(!d.tracks.length){var e=document.createElement('li');"
+        "e.className='empty';e.textContent=@@JSNOLOG@@;ol.appendChild(e);return}"
+        "d.tracks.forEach(function(t){var li=document.createElement('li');"
+        "var a=document.createElement('span');a.className='t';a.textContent=t.at||'';"
+        "var s=document.createElement('span');s.className='s';"
+        "var b=document.createElement('b');b.textContent=t.title||'';"
+        "var i=document.createElement('i');i.textContent=t.artist||'';"
+        "s.appendChild(b);s.appendChild(i);li.appendChild(a);li.appendChild(s);"
+        "ol.appendChild(li)})}).catch(function(){})}"
+        "setInterval(function(){now(false)},10000);setInterval(recent,60000);"
+        "now(true);"
+        "var qEl=$('q');if(!qEl)return;"
+        "var ref=null,timer=null;"
+        "function say(msg,bad){var s=$('say');s.textContent=msg;"
+        "s.className=bad?'say bad':'say'}"
+        "function results(list){var ul=$('results');ul.textContent='';"
+        "list.forEach(function(r){var li=document.createElement('li');"
+        "var btn=document.createElement('button');btn.type='button';"
+        "var b=document.createElement('b');b.textContent=r.title||'';"
+        "var i=document.createElement('i');i.textContent=r.artist||'';"
+        "btn.appendChild(b);btn.appendChild(i);"
+        "btn.addEventListener('click',function(){ref=r.ref;"
+        "var c=$('chosen');"
+        "c.textContent=@@JSASKING@@+' '+(r.title||'')+(r.artist?(' \\u2014 '+r.artist):'');"
+        "c.hidden=false;$('send').disabled=false;ul.textContent='';"
+        "qEl.value='';say('',false)});"
+        "li.appendChild(btn);ul.appendChild(li)})}"
+        "qEl.addEventListener('input',function(){clearTimeout(timer);"
+        "var v=qEl.value.trim();if(v.length<2){$('results').textContent='';return}"
+        "timer=setTimeout(function(){"
+        "fetch('/public/api/search?q='+encodeURIComponent(v),{cache:'no-store'})"
+        ".then(function(r){if(r.status===429){say(@@JSBUSY@@,true);return null}"
+        "return r.ok?r.json():null}).then(function(d){"
+        "if(d&&d.results)results(d.results)}).catch(function(){})},400)});"
+        "$('send').addEventListener('click',function(){if(!ref)return;"
+        "$('send').disabled=true;"
+        "fetch('/public/api/request',{method:'POST',cache:'no-store',"
+        "headers:{'Content-Type':'application/json'},"
+        "body:JSON.stringify({ref:ref,name:$('who').value,note:$('note').value})})"
+        ".then(function(r){return r.json().then(function(d){return {ok:r.ok,d:d}})})"
+        ".then(function(x){if(x.ok){say(x.d.message||'',false);ref=null;"
+        "$('chosen').hidden=true;$('who').value='';$('note').value=''}"
+        "else{say((x.d&&x.d.error)||'',true);$('send').disabled=false}})"
+        ".catch(function(){say(@@JSBUSY@@,true);$('send').disabled=false})});"
+        "})();");
+
+    // Every string the script carries is emitted as an escaped JS literal, so
+    // a station name with a quote in it cannot end the string it sits in and
+    // a title containing "</script>" cannot end the script.
+    auto jsString = [](const QString &text) {
+        QString out = QStringLiteral("\"");
+        for (const QChar character : text) {
+            const ushort code = character.unicode();
+            if (code < 0x20 || code > 0x7e || character == QLatin1Char('"')
+                || character == QLatin1Char('\\') || character == QLatin1Char('<')
+                || character == QLatin1Char('>') || character == QLatin1Char('&')
+                || character == QLatin1Char('/')) {
+                out += QStringLiteral("\\u%1")
+                           .arg(code, 4, 16, QLatin1Char('0'));
+            } else {
+                out += character;
+            }
+        }
+        return out + QStringLiteral("\"");
+    };
+
+    const QString busy =
+        tr("That is a lot of asking. Give it a minute and try again.");
+
+    struct Fill { const char *token; QString value; };
+    const Fill scriptFills[] = {
+        { "@@JSARTKEY@@", jsString(now.artworkKey) },
+        { "@@JSPOS@@",    QString::number(now.onAir && now.positionMs > 0
+                                              ? now.positionMs : 0) },
+        { "@@JSDUR@@",    QString::number(now.durationMs > 0 ? now.durationMs : -1) },
+        { "@@JSLIVE@@",   now.onAir ? QStringLiteral("true") : QStringLiteral("false") },
+        { "@@JSNONE@@",   jsString(tr("Nothing on air just now")) },
+        { "@@JSNOLOG@@",  jsString(tr("Nothing logged in the last hour.")) },
+        { "@@JSASKING@@", jsString(tr("Asking for:")) },
+        { "@@JSBUSY@@",   jsString(busy) },
+    };
+    for (const Fill &fill : scriptFills)
+        script.replace(QLatin1String(fill.token), fill.value);
+
+    // Order matters. The template's own tokens go first, and the ones whose
+    // values come from data — the library, the as-run log, the operator's own
+    // settings — go last, so that nothing substituted in can be scanned for a
+    // token again. (Nothing a listener submits reaches this page at all: what
+    // they type is shown only in the operator's window, in plain-text widgets.)
+    const Fill fills[] = {
+        // 1. the request section, before the tokens that live inside it
+        { "@@ASKSECTION@@", requestSection },
+        // 2. the template's own text and numbers
+        { "@@SCHEME@@",     skin.followSystem
+                                ? QStringLiteral("light dark")
+                                : (skin.dark ? QStringLiteral("dark")
+                                             : QStringLiteral("light")) },
+        { "@@ACCENT@@",     skin.accent },
+        { "@@ACCENTINK@@",  skin.accentInk },
+        { "@@DARKBLOCK@@",  darkBlock },
+        { "@@ONAIR@@",      tr("On air now").toHtmlEscaped() },
+        { "@@PCT@@",        QString::number(percent) },
+        { "@@POS@@",        now.onAir ? publicClock(now.positionMs) : QString() },
+        { "@@DUR@@",        now.onAir ? publicClock(now.durationMs) : QString() },
+        { "@@LASTHOUR@@",   tr("Played in the last hour").toHtmlEscaped() },
+        { "@@ASK@@",        tr("Ask for a track").toHtmlEscaped() },
+        { "@@NOSCRIPT@@",   tr("Searching the library needs JavaScript. What is on "
+                               "air and what has just played are above, and they "
+                               "are the whole of this page without it.").toHtmlEscaped() },
+        { "@@FIND@@",       tr("Search for a title or an artist").toHtmlEscaped() },
+        { "@@FINDHINT@@",   tr("Start typing...").toHtmlEscaped() },
+        { "@@WHO@@",        tr("Your name (optional)").toHtmlEscaped() },
+        { "@@NOTE@@",       tr("A dedication (optional)").toHtmlEscaped() },
+        { "@@MAXQ@@",       QString::number(RequestLine::kMaxQueryChars) },
+        { "@@MAXNAME@@",    QString::number(RequestLine::kMaxNameChars) },
+        { "@@MAXNOTE@@",    QString::number(RequestLine::kMaxNoteChars) },
+        { "@@SEND@@",       tr("Send it to the studio").toHtmlEscaped() },
+        { "@@ASKNOTE@@",    tr("The studio decides what goes on air. A request is "
+                               "an ask, not a queue, and nothing here puts anything "
+                               "on by itself.").toHtmlEscaped() },
+        { "@@FOOTER@@",     tr("Served by XFB on this station's own network.")
+                                .toHtmlEscaped() },
+        // 3. everything whose value came from somewhere else
+        { "@@TAGLINE@@",    tagline },
+        { "@@COVER@@",      cover },
+        { "@@SCRIPT@@",     script },
+        { "@@STATION@@",    station.toHtmlEscaped() },
+        { "@@RECENT@@",     recent },
+        { "@@TITLE@@",      title.toHtmlEscaped() },
+        { "@@ARTIST@@",     artist.toHtmlEscaped() },
+    };
+    for (const Fill &fill : fills)
+        page.replace(QLatin1String(fill.token), fill.value);
+
+    return page;
 }
 
 // ----------------------------------------------------------- track index

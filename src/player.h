@@ -68,6 +68,8 @@ class NowPlayingArtPanel;
 class PadBoardWidget;
 
 #include "services/TorrentTypes.h"
+// For MobileSyncServer::NowPlaying, the struct publicNowPlaying() returns.
+#include "services/MobileSyncServer.h"
 #include "audio/FxPlayer.h"
 
 namespace Ui {
@@ -719,6 +721,18 @@ private slots:
     void showAirAlert(const QString &title, const QString &message, bool critical);
     QPointer<class DeadAirWatchdog> m_deadAirWatchdog;
     QPointer<class DeadAirDialog> m_deadAirDialog;
+
+    // --- The public now-playing page and its request line ---
+    // A page served to whoever can reach this machine, off until the operator
+    // switches it on in the window below. What it may say about the air comes
+    // from publicNowPlaying() and from nowhere else — deliberately not from
+    // stationHeartbeatState(), which carries the file path.
+    MobileSyncServer::NowPlaying publicNowPlaying();
+    QPointer<class RequestTrayDialog> m_requestTrayDialog;
+    /// The on-air cover, re-encoded small, held so the poll costs nothing.
+    QString    m_publicArtPath;
+    QByteArray m_publicArtJpeg;
+    QString    m_publicArtKey;
     QPointer<class QMessageBox> m_airAlertBox;
     /// Samples the transport for the watchdog once a second.
     QTimer *m_deadAirFeedTimer = nullptr;

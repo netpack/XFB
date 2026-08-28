@@ -82,6 +82,7 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include <QVBoxLayout>
 #include <QSpacerItem>
 #include <QPushButton>
+#include <QBuffer>
 #include <QPixmap>
 #include <QtCore>
 #include <QtGlobal>
@@ -122,6 +123,7 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include "dialogs/AccessibilityPreferencesDialog.h"
 #include "dialogs/AirLogDialog.h"
 #include "dialogs/DeadAirDialog.h"
+#include "dialogs/RequestTrayDialog.h"
 #include "services/DeadAirWatchdog.h"
 #include "dialogs/MobileSyncDialog.h"
 #include "dialogs/ProductionSyncDialog.h"
@@ -132,6 +134,7 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include "services/RotationRules.h"
 #include "dialogs/RotationDialog.h"
 #include "services/MobileSyncServer.h"
+#include "services/RequestLine.h"
 #include "services/ProductionSyncClient.h"
 #include "services/StationSyncClient.h"
 #include "dialogs/AccessibilityTutorialDialog.h"
@@ -3009,6 +3012,17 @@ bool player::checkDbOpen() {
             }
         }
     }
+
+    // Listener requests, left by whoever can reach the public now-playing
+    // page. Created here for the same reason as the tables above: an install
+    // that predates the feature gets it on its next launch, and nothing a
+    // listener does can ever be the thing that creates it.
+    //
+    // Nothing in this table is ever acted on by itself. It is read by the
+    // request tray and by nothing else; putting a request on air is something
+    // the operator does with the mouse.
+    RequestLine::ensureSchema(adb);
+    RequestLine::purgeHandled();
 
     return true;
 }
@@ -6157,6 +6171,41 @@ void player::setupPlaybackShortcuts()
         ui->menuXFB->addAction(rotation);
         addAction(rotation);
 
+        // Listener requests, and the switch that puts the public page on the
+        // network at all. Same shelf as the rest: it is a property of this
+        // installation, not of what is on air now. Opening the window is the
+        // only way to turn the page on, and it ships off.
+        QAction *requests = new QAction(tr("Listener &Requests..."), this);
+        requests->setMenuRole(QAction::NoRole);
+        requests->setStatusTip(tr("The public now-playing page, and what "
+                                  "listeners have asked for"));
+        connect(requests, &QAction::triggered, this, [this]() {
+            if (!m_requestTrayDialog) {
+                m_requestTrayDialog = new RequestTrayDialog(mobileSyncServer(), this);
+                m_requestTrayDialog->setAttribute(Qt::WA_DeleteOnClose, false);
+                connect(m_requestTrayDialog, &RequestTrayDialog::announcementRequested,
+                        this, &player::announceAccessible);
+                // The one route from a listener's request to the air, and it
+                // runs through the operator pressing a button in that window.
+                connect(m_requestTrayDialog, &RequestTrayDialog::addToPlaylistRequested,
+                        this, [this](const QString &path) {
+                            if (path.isEmpty() || !ui || !ui->playlist)
+                                return;
+                            ui->playlist->addItem(path);
+                            calculate_playlist_total_time();
+                            ui->statusBar->showMessage(
+                                tr("Requested track added to the running order: %1")
+                                    .arg(QFileInfo(path).completeBaseName()), 8000);
+                        });
+            }
+            m_requestTrayDialog->show();
+            m_requestTrayDialog->raise();
+            m_requestTrayDialog->activateWindow();
+            announceAccessible(tr("Listener requests opened"));
+        });
+        ui->menuXFB->addAction(requests);
+        addAction(requests);
+
         // A backup that only copies when somebody remembers to ask is not a
         // backup, so the client is built at startup whenever it has standing
         // orders — that is what starts its timer and its first pull.
@@ -6531,6 +6580,81 @@ QJsonObject player::stationHeartbeatState() const
     return state;
 }
 
+// Everything the public listener page is told, and nothing else. There is no
+// path here, no playlist depth, no Auto Mode flag and no watchdog state —
+// compare stationHeartbeatState() above, which has all four and is only ever
+// answered to a paired backup.
+MobileSyncServer::NowPlaying player::publicNowPlaying()
+{
+    MobileSyncServer::NowPlaying now;
+
+    now.onAir = Xplayer
+        && Xplayer->playbackState() == QMediaPlayer::PlayingState
+        && !lastPlayedSong.isEmpty();
+    if (!now.onAir)
+        return now;
+
+    now.positionMs = Xplayer->position();
+    now.durationMs = Xplayer->duration();
+
+    QSqlDatabase db = QSqlDatabase::database("xfb_connection");
+    if (db.isOpen()) {
+        QSqlQuery lookup(db);
+        lookup.prepare(QStringLiteral(
+            "SELECT artist, song FROM musics WHERE path = :path"));
+        lookup.bindValue(QStringLiteral(":path"), lastPlayedSong);
+        if (lookup.exec() && lookup.next()) {
+            now.artist = lookup.value(0).toString().trimmed();
+            now.title  = lookup.value(1).toString().trimmed();
+        }
+    }
+    if (now.title.isEmpty()) {
+        // "Artist - Title.mp3" is how most libraries on disk are named, and
+        // splitting it beats putting a file name in front of listeners.
+        const QString base = QFileInfo(lastPlayedSong).completeBaseName();
+        const int dash = base.indexOf(QStringLiteral(" - "));
+        if (now.artist.isEmpty() && dash > 0) {
+            now.artist = base.left(dash).trimmed();
+            now.title  = base.mid(dash + 3).trimmed();
+        } else {
+            now.title = base;
+        }
+    }
+
+    // The cover, re-encoded small. The page never opens a file, so the only
+    // way a picture reaches it is as bytes handed over here — and these are a
+    // fresh JPEG made from the decoded image, not a copy of anything on disk.
+    // Encoded once per track and then held, because this runs on every poll.
+    if (m_publicArtPath != lastPlayedSong) {
+        m_publicArtPath = lastPlayedSong;
+        m_publicArtJpeg.clear();
+        m_publicArtKey.clear();
+
+        if (m_artStore) {
+            const ArtworkData *art = m_artStore->fetch(lastPlayedSong);
+            if (art && art->ready()) {
+                const QImage image = art->pixmap.toImage().scaled(
+                    220, 220, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+                QBuffer buffer(&m_publicArtJpeg);
+                if (buffer.open(QIODevice::WriteOnly)
+                    && image.save(&buffer, "JPEG", 72)) {
+                    buffer.close();
+                    m_publicArtKey = QString::fromLatin1(
+                        QCryptographicHash::hash(m_publicArtJpeg,
+                                                 QCryptographicHash::Sha256)
+                            .toHex().left(16));
+                } else {
+                    m_publicArtJpeg.clear();
+                }
+            }
+        }
+    }
+    now.artworkJpeg = m_publicArtJpeg;
+    now.artworkKey  = m_publicArtKey;
+
+    return now;
+}
+
 // Created on demand and inert until told to start: an operator who never
 // opens the dialog gets exactly the behaviour XFB had before this existed.
 StreamService *player::streamService()
@@ -6619,6 +6743,13 @@ MobileSyncServer *player::mobileSyncServer()
     // no business reaching into it.
     m_mobileSyncServer->setStationStateProvider(
         [this]() { return stationHeartbeatState(); });
+
+    // What the public page is allowed to say. A provider of its own rather
+    // than a slice of the heartbeat above: the heartbeat carries the file
+    // path, and the whole point of keeping these apart is that a field added
+    // there can never quietly turn up on a page served to the street.
+    m_mobileSyncServer->setNowPlayingProvider(
+        [this]() { return publicNowPlaying(); });
 
     // Only the player can read the playlist that is loaded right now, and that
     // is the one an operator most often wants to carry out of the studio.

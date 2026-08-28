@@ -39,6 +39,8 @@ set(SOURCES
     # Rotation editor + the "why did it pick this?" view
     dialogs/RotationDialog.cpp
     dialogs/DeadAirDialog.cpp
+    # Listener requests + the switch that puts the public page on the network
+    dialogs/RequestTrayDialog.cpp
     dialogs/StationSyncDialog.cpp
     dialogs/ProductionSyncDialog.cpp
     dialogs/StreamDialog.cpp
@@ -69,6 +71,8 @@ set(SOURCES
     # Rotation rules: separation, categories, dayparts, seasonal windows
     services/RotationRules.cpp
     services/DeadAirWatchdog.cpp
+    # The public now-playing page's request line (table, settings, search)
+    services/RequestLine.cpp
     # Basic accessibility (working components)
     services/AccessibilityManager.cpp
     services/AccessibilitySettingsService.cpp
@@ -162,6 +166,7 @@ set(HEADERS
     dialogs/AirLogDialog.h
     dialogs/RotationDialog.h
     dialogs/DeadAirDialog.h
+    dialogs/RequestTrayDialog.h
     # Pads tab
     PadBoard.h
     # Service layer headers
@@ -179,6 +184,7 @@ set(HEADERS
     services/AirLog.h
     services/RotationRules.h
     services/DeadAirWatchdog.h
+    services/RequestLine.h
     services/AccessibilityManager.h
     services/AccessibilitySettingsService.h
     services/BrailleDisplayService.h

@@ -106,6 +106,29 @@ public:
         QDateTime resolvedAt;///< invalid while it is still going on
     };
 
+    /**
+     * Everything the public listener page is allowed to know about the air.
+     *
+     * Deliberately not the station heartbeat: that carries the file path, the
+     * playlist depth and whether Auto Mode is running, none of which is any
+     * of a listener's business. This is the whole of what leaves the building,
+     * and it is a separate provider precisely so that adding a field to the
+     * heartbeat can never quietly publish it to the street.
+     *
+     * The artwork arrives already decoded, scaled and re-encoded by the
+     * player. No public route ever opens a file, so the only way a cover can
+     * reach the page is as bytes somebody upstream deliberately handed over.
+     */
+    struct NowPlaying {
+        bool    onAir = false;
+        QString artist;
+        QString title;
+        qint64  positionMs = -1;
+        qint64  durationMs = -1;
+        QByteArray artworkJpeg;  ///< small, already scaled; may be empty
+        QString    artworkKey;   ///< changes whenever artworkJpeg does
+    };
+
     /** One file the backup station has to end up holding a copy of. */
     struct MirrorFile {
         QString id;
@@ -288,6 +311,19 @@ public:
      */
     void setStationStateProvider(std::function<QJsonObject()> provider);
 
+    /**
+     * Where the public page gets what is on air. Same arrangement again, and
+     * for the same reason: only the player knows, and the server has no
+     * business reaching into it.
+     *
+     * Without a provider the page still serves; it simply says nothing is
+     * playing, which is honest rather than wrong.
+     */
+    void setNowPlayingProvider(std::function<NowPlaying()> provider);
+
+    /** "http://192.168.1.20:8642/public", or empty when it is switched off. */
+    QStringList publicPageAddresses() const;
+
     QStringList syncSet() const { return m_syncSet; }
     /** Adds paths, ignoring duplicates. Returns how many were actually new. */
     int addToSyncSet(const QStringList &paths);
@@ -344,6 +380,46 @@ private:
     /** The backup's view of whether this station is still making sound. */
     void handleStationHeartbeat(QTcpSocket *socket);
 
+    // --- the public listener page -----------------------------------------
+    //
+    // Its own prefix, dispatched before authenticate() is ever reached, so
+    // these routes are outside the token-protected world rather than an
+    // exception carved out of it. None of them opens a file, and none of them
+    // can reach the playlist. While the feature is off they answer 404 with
+    // the same words an unknown path gets.
+
+    /** How hard one address is leaning on the public routes. */
+    enum class PublicHit { Page, Search, Submit };
+
+    void handlePublic(QTcpSocket *socket, const Request &request);
+    void handlePublicPage(QTcpSocket *socket);
+    void handlePublicNow(QTcpSocket *socket, const Request &request);
+    void handlePublicRecent(QTcpSocket *socket);
+    void handlePublicSearch(QTcpSocket *socket, const Request &request);
+    void handlePublicRequest(QTcpSocket *socket, const Request &request,
+                             const QString &peer);
+
+    /** The whole page, server-rendered so it reads with JavaScript off. */
+    QString buildPublicPage() const;
+    /** The current NowPlaying, or an empty one when no provider is installed. */
+    NowPlaying currentNowPlaying() const;
+
+    /**
+     * The opaque handle a search result travels under. It is a hash of the
+     * library row id and a salt made fresh at every launch, so it names
+     * nothing outside this process and survives no restart. It is not an
+     * address: no public route serves bytes, so there is nothing it could
+     * fetch even if it were guessed.
+     */
+    QString publicRefFor(qint64 musicId);
+    qint64  musicIdForPublicRef(const QString &ref) const;
+
+    /** False when this address, or the station as a whole, has had enough. */
+    bool publicRateAllows(const QString &peer, PublicHit hit);
+
+    /** The address a request came from, as the rate limiter keys on it. */
+    static QString peerKey(QTcpSocket *socket);
+
     // production computers (another XFB that prepares what this one plays)
     void handleProductionHello(QTcpSocket *socket);
     void handleProductionHave(QTcpSocket *socket, const Request &request);
@@ -369,6 +445,13 @@ private:
     // responses
     void sendJson(QTcpSocket *socket, const QByteArray &json, int status = 200);
     void sendError(QTcpSocket *socket, int status, const QString &message);
+    /**
+     * An HTML page with the headers a page served to strangers wants: no
+     * store, no sniffing, no referrer, and a content policy that permits the
+     * page's own inline style and script and nothing else at all — no remote
+     * font, no CDN, no image from anywhere but a data: URI this server wrote.
+     */
+    void sendPublicHtml(QTcpSocket *socket, const QString &page, int status = 200);
     void sendFile(QTcpSocket *socket, const QString &path, const Request &request);
 
     // auth
@@ -424,6 +507,31 @@ private:
 
     /// Absolute paths marked on the desktop, in the order they were added.
     QStringList m_syncSet;
+
+    // --- the public listener page ------------------------------------------
+
+    std::function<NowPlaying()> m_nowPlayingProvider;
+
+    /// One address's recent behaviour on the public routes. Fixed windows
+    /// rather than a token bucket: the numbers here are "a person with a
+    /// phone", not "a client with a burst allowance", and a counter that
+    /// resets on the minute is something an operator can reason about.
+    struct PublicRate {
+        QDateTime minute;
+        int hits = 0;
+        int searches = 0;
+        QDateTime hour;
+        int submits = 0;
+    };
+    QHash<QString, PublicRate> m_publicRates;
+    /// The same again over every address at once, so a botnet of ones and
+    /// twos still cannot make the station's database the bottleneck.
+    PublicRate m_publicGlobal;
+
+    /// ref -> musics.rowid, for search results this process has handed out.
+    QHash<QString, qint64> m_publicRefs;
+    /// Made fresh at every launch, so a ref means nothing to the next one.
+    QByteArray m_publicRefSalt;
 };
 
 #endif // MOBILESYNCSERVER_H
