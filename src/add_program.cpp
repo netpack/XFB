@@ -20,6 +20,7 @@
 #include <QDebug>
 #include <QMessageBox>
 #include "add_program.h"
+#include "audioformats.h"
 #include "ui_add_program.h"
 
 
@@ -81,7 +82,9 @@ void add_program::on_pushButton_3_clicked()
 {
     //browse for file
 
-    QString file = QFileDialog::getOpenFileName(this,tr("Select file"));
+    QString file = QFileDialog::getOpenFileName(
+        this, tr("Select file"), QString(),
+        AudioFormats::fileDialogFilterString());
     ui->txt_selected_file->setText(file);
 
 }

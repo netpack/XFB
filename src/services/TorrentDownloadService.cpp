@@ -1,4 +1,5 @@
 #include "TorrentDownloadService.h"
+#include "../audioformats.h"
 #include "ErrorHandler.h"
 #include "Logger.h"
 #include <QCoreApplication>
@@ -522,17 +523,13 @@ void TorrentDownloadService::checkForCompletedFiles(const QString &downloadId)
 
 QStringList TorrentDownloadService::findAudioFiles(const QString &directory)
 {
-    QStringList audioFiles;
-    QStringList exts = {"*.mp3", "*.flac", "*.wav", "*.ogg", "*.m4a", "*.aac", "*.wma", "*.opus"};
-    QDirIterator it(directory, exts, QDir::Files, QDirIterator::Subdirectories);
-    while (it.hasNext()) audioFiles << it.next();
-    return audioFiles;
+    // Same list, same walk, same loop protection as the library importer.
+    return AudioFormats::findAudioFiles(directory);
 }
 
 bool TorrentDownloadService::isAudioFile(const QString &filePath)
 {
-    static const QStringList exts = {".mp3",".flac",".wav",".ogg",".m4a",".aac",".wma",".opus"};
-    return exts.contains("." + QFileInfo(filePath).suffix().toLower());
+    return AudioFormats::isAudioFile(filePath);
 }
 
 // ── Persistence — save/load/resume downloads across app restarts ─────────

@@ -17,6 +17,8 @@ set(SOURCES
     QrCode.cpp
     # Shared track-duration probe (exiftool with ffmpeg fallback)
     mediaduration.cpp
+    # One definition of "an audio file XFB will import" (extensions, folder walk)
+    audioformats.cpp
     # Spotify / Apple Music track listings for the downloader
     streamingcatalog.cpp
     # Audio FX engine (EQ / compressor / 432 Hz)
@@ -149,6 +151,7 @@ set(HEADERS
     commonFunctions.h
     QrCode.h
     mediaduration.h
+    audioformats.h
     streamingcatalog.h
     # Audio FX engine headers
     audio/FxParams.h

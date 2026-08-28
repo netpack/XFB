@@ -16,6 +16,7 @@
 
     */
 #include "add_music_single.h"
+#include "audioformats.h"
 #include "mediaduration.h"
 #include "ui_add_music_single.h"
 #include "addgenre.h"
@@ -96,9 +97,9 @@ add_music_single::~add_music_single()
 void add_music_single::on_toolButton_clicked()
 {
 
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"),
-                                                     "",
-                                                     tr("Files (*.*)"));
+    QString fileName = QFileDialog::getOpenFileName(
+        this, tr("Open File"), QString(),
+        AudioFormats::fileDialogFilterString());
     if(fileName!="")
     ui->txt_file->setText(fileName);
 

@@ -1,4 +1,5 @@
 #include "MusicRepository.h"
+#include "../audioformats.h"
 #include <QSqlQuery>
 #include <QSqlError>
 #include <QVariant>
@@ -489,14 +490,11 @@ int MusicRepository::importFromDirectory(const QString& directoryPath, bool recu
     
     QStringList extensions = supportedExtensions.isEmpty() ? getDefaultSupportedExtensions() : supportedExtensions;
     
-    // Get all audio files
+    // Get all audio files. Shared walk: case-insensitive, symlink-aware and
+    // loop-guarded, so this agrees with the folder importer.
     QStringList audioFiles;
-    QDirIterator::IteratorFlags flags = recursive ? QDirIterator::Subdirectories : QDirIterator::NoIteratorFlags;
-    QDirIterator it(directoryPath, flags);
-    
-    while (it.hasNext()) {
-        QString filePath = it.next();
-        if (it.fileInfo().isFile() && isSupportedAudioFile(filePath, extensions)) {
+    for (const QString &filePath : AudioFormats::findAudioFiles(directoryPath, recursive)) {
+        if (isSupportedAudioFile(filePath, extensions)) {
             audioFiles.append(filePath);
         }
     }
@@ -801,7 +799,7 @@ bool MusicRepository::isSupportedAudioFile(const QString& filePath, const QStrin
 
 QStringList MusicRepository::getDefaultSupportedExtensions()
 {
-    return QStringList() << "mp3" << "wav" << "flac" << "ogg" << "m4a" << "aac" << "wma";
+    return AudioFormats::suffixes();
 }
 
 QString MusicRepository::sanitizePath(const QString& path)

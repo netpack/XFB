@@ -5,6 +5,7 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 */
 
 #include "player.h"
+#include "audioformats.h"
 #include "ui_player.h"
 #include "add_music_single.h"
 #include "add_full_dir.h"
@@ -3037,10 +3038,8 @@ void player::on_actionOpen_triggered()
     // Same set the library importer accepts (add_full_dir), so anything that
     // can be added to the database can also be dropped straight into the
     // running order — Opus in particular is what the downloader produces.
-    dialog.setNameFilters({
-        tr("Audio Files (*.mp3 *.ogg *.oga *.opus *.flac *.wav *.m4a *.aac *.wma)"),
-        tr("All Files (*)")
-    });
+    // One shared list now, so the two can no longer drift apart.
+    dialog.setNameFilters(AudioFormats::fileDialogFilters());
     dialog.setViewMode(QFileDialog::Detail);
     QStringList fileNames;
     if(dialog.exec())
@@ -6758,8 +6757,13 @@ MobileSyncServer *player::mobileSyncServer()
         if (!ui || !ui->playlist)
             return tracks;
 
-        QSqlQuery lookup(QSqlDatabase::database());
-        const bool haveDb = lookup.prepare(
+        // The library lives on the named connection. This used to ask for the
+        // default one, which XFB never opens, so every lookup failed silently
+        // and the phone was handed file base names instead of artist, song and
+        // duration for every track in the live playlist.
+        QSqlDatabase db = QSqlDatabase::database(QStringLiteral("xfb_connection"));
+        QSqlQuery lookup(db);
+        const bool haveDb = db.isOpen() && lookup.prepare(
             QStringLiteral("SELECT artist, song, time FROM musics WHERE path = :path"));
 
         const int count = ui->playlist->count();
@@ -8388,10 +8392,10 @@ void player::server_check_and_schedule_new_programs(){
 
 
             qDebug()<<"Looking for programs...";
-            QDirIterator fit(dir,QStringList()<< "*.mp3"<<"*.mp4"<<"*.ogg"<<"*.wav"<<"*.flac",QDir::Files,QDirIterator::Subdirectories);
-            while (fit.hasNext()){
-
-                QString file = fit.next();
+            // Was a hand-written mp3/mp4/ogg/wav/flac list, so a programme
+            // delivered as Opus, m4a, aac or wma was never scheduled.
+            const QStringList programFiles = AudioFormats::findAudioFiles(dir);
+            for (const QString &file : programFiles){
 
                 qDebug()<<"Found: "<<file;
 
@@ -8576,6 +8580,10 @@ void player::server_check_and_schedule_new_programs(){
 
 
 
+    // NOTE: the block below is commented out and has been since long before
+    // this change, so it imports nothing today. If it is ever revived it must
+    // use AudioFormats::findAudioFiles() like the programme scan above — the
+    // mp3/mp4/ogg/wav/flac list it still carries misses Opus, m4a, aac and wma.
     qDebug()<<"Looking for musics in the subdirectories of Music Path... [BUG FIX :: NOT LOOKING BECAUSE IT HAS TO BE MOOVED TO ANOTHER THREAD FIST]";
 /*
 
@@ -8732,6 +8740,10 @@ void player::server_check_and_schedule_new_programs(){
 
 
 
+    // NOTE: the block below is commented out and has been since long before
+    // this change, so it imports nothing today. If it is ever revived it must
+    // use AudioFormats::findAudioFiles() like the programme scan above — the
+    // mp3/mp4/ogg/wav/flac list it still carries misses Opus, m4a, aac and wma.
     qDebug()<<"Looking for musics on the root folder... [BUG FIX :: NOT LOOKING BECAUSE IT HAS TO BE MOOVED TO ANOTHER THREAD FIST]";
     /*
     QDirIterator rfmit(MusicPath,QStringList()<< "*.mp3"<<"*.mp4"<<"*.ogg"<<"*.wav"<<"*.flac",QDir::Files);

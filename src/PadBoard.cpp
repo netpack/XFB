@@ -1,4 +1,5 @@
 #include "PadBoard.h"
+#include "audioformats.h"
 
 #include "services/AirLog.h"
 
@@ -768,7 +769,7 @@ void PadEditDialog::pickFile()
                               : QFileInfo(m_path->text()).absolutePath();
     const QString file = QFileDialog::getOpenFileName(
         this, tr("Choose a sound for this pad"), start,
-        tr("Audio files (*.mp3 *.wav *.ogg *.opus *.flac *.m4a *.aac *.wma *.aiff);;All files (*)"));
+        AudioFormats::fileDialogFilterString());
     if (file.isEmpty())
         return;
     m_path->setText(file);

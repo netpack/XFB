@@ -1,9 +1,12 @@
 #include "add_full_dir.h"
+#include "audioformats.h"
 #include "mediaduration.h"
 #include "ui_add_full_dir.h"
 #include "addgenre.h"
+#include <QApplication>
 #include <QDirIterator>
 #include <QFileDialog>
+#include <QFileInfo>
 #include <QDebug>
 #include <QSql>
 #include <QSqlQuery>
@@ -68,34 +71,50 @@ void add_full_dir::on_f_bt_browse_clicked()
 void add_full_dir::on_f_bt_add_clicked()
 {
 
-    QString dir = ui->txt_path->text();
+    QString dir = ui->txt_path->text().trimmed();
 
     if(dir.isEmpty())
     {
+        // Used to fall through and scan "" — a scan of nothing that still
+        // ended with "All done! Have a nice day!".
         QMessageBox::information(this,tr("Path?"),tr("Please select a folder to add."));
+        return;
     }
 
-    QDirIterator it(dir, QStringList() << "*.mp3" << "*.wav" << "*.ogg" << "*.flac" << "*.aac" << "*.m4a" << "*.wma" << "*.opus", QDir::Files, QDirIterator::Subdirectories);
-    while (it.hasNext()) {
+    if(!QFileInfo(dir).isDir())
+    {
+        QMessageBox::information(this,tr("Path?"),
+                                 tr("That folder does not exist: %1").arg(dir));
+        return;
+    }
 
-        QString filewpath = it.next();
+    // One list, one walk: every extension XFB accepts, matched case-insensitively,
+    // descending into subfolders and through symlinked folders (loop-guarded).
+    const QStringList found = AudioFormats::findAudioFiles(dir);
+    qDebug() << "Scanning" << dir << "found" << found.size() << "audio files";
+
+    int added = 0;
+    int skipped = 0;
+
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+
+    for (const QString &filewpath : found) {
+
         qDebug() << "Adding track: " << filewpath;
 
-        QString nomeficheiro = QDir(dir).relativeFilePath(filewpath);
+        // The name only. This used to be the path relative to the folder being
+        // imported, so anything in a subfolder was filed under an artist called
+        // "Rock/Best of" — and the split below never saw a clean file name.
+        QString nomeficheiro = QFileInfo(filewpath).fileName();
 
-        //nomeficheiro.replace("_"," ");
+        QString fileArtist;
+        QString fileSong;
+        AudioFormats::splitArtistAndSong(nomeficheiro, &fileArtist, &fileSong);
 
         QString txtArtist = ui->txt_artistName->text();
-        QString artist;
-        QStringList divide_nome = nomeficheiro.split( "-" );
-        if(!txtArtist.isEmpty()){
-            artist = txtArtist;
-        } else {
-            artist = divide_nome.value(0).replace("_"," ").replace(".mp3","").replace(".mp4","").replace(".ogg","").replace(".wav","").replace(".flac","").trimmed();
+        QString artist = txtArtist.isEmpty() ? fileArtist : txtArtist;
 
-        }
-
-        QString song = divide_nome.value(1).replace("_"," ").replace(".mp3","").replace(".mp4","").replace(".ogg","").replace(".wav","").replace(".flac","").trimmed();
+        QString song = fileSong;
         if(song.isEmpty()){
             song="-";
         }
@@ -126,6 +145,10 @@ void add_full_dir::on_f_bt_add_clicked()
      }
      qDebug()<<"dbhasmusic value is: "<<dbhasmusic;
 
+     if(dbhasmusic!=0){
+         ++skipped;
+     }
+
      if(dbhasmusic==0){
          //add to db
 
@@ -148,6 +171,7 @@ void add_full_dir::on_f_bt_add_clicked()
 
          if(sql.exec())
          {
+             ++added;
              qDebug() << "last sql: " << sql.lastQuery();
          } else {
            //  QMessageBox::critical(this,tr("Error"),sql.lastError().text());
@@ -159,8 +183,23 @@ void add_full_dir::on_f_bt_add_clicked()
 
 }
 
+   QApplication::restoreOverrideCursor();
 
-   QMessageBox::information(this,tr("Add directory"),tr("All done! Have a nice day!"));
+   // Saying what happened beats "All done!": an operator who points this at a
+   // folder of Opus files now sees whether they went in.
+   if (found.isEmpty()) {
+       QMessageBox::information(
+           this, tr("Add directory"),
+           tr("No audio files were found in %1.\n\n"
+              "XFB imports: %2")
+               .arg(dir, AudioFormats::suffixes().join(QStringLiteral(", "))));
+   } else {
+       QMessageBox::information(
+           this, tr("Add directory"),
+           tr("All done! Have a nice day!\n\n"
+              "Found %1 audio file(s), added %2, already in the library %3.")
+               .arg(found.size()).arg(added).arg(skipped));
+   }
    this->hide();
 
 }

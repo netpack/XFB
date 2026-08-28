@@ -1,4 +1,5 @@
 #include "DeadAirWatchdog.h"
+#include "../audioformats.h"
 
 #include "AirLog.h"
 
@@ -431,10 +432,8 @@ qint64 DeadAirWatchdog::uptimeSeconds() const
 
 QStringList DeadAirWatchdog::audioSuffixes()
 {
-    return {QStringLiteral("mp3"),  QStringLiteral("ogg"),  QStringLiteral("oga"),
-            QStringLiteral("opus"), QStringLiteral("flac"), QStringLiteral("wav"),
-            QStringLiteral("m4a"),  QStringLiteral("aac"),  QStringLiteral("aiff"),
-            QStringLiteral("aif"),  QStringLiteral("wma")};
+    // One list for the whole application; this used to keep its own copy.
+    return AudioFormats::suffixes();
 }
 
 QStringList DeadAirWatchdog::tracksFromPlaylistFile(const QString &path)
@@ -469,18 +468,10 @@ QStringList DeadAirWatchdog::tracksFromFolder(const QString &folder)
     if (folder.trimmed().isEmpty())
         return tracks;
 
-    QStringList filters;
-    const QStringList suffixes = audioSuffixes();
-    filters.reserve(suffixes.size());
-    for (const QString &suffix : suffixes)
-        filters << QStringLiteral("*.") + suffix;
-
-    QDir dir(folder);
-    const QFileInfoList entries =
-        dir.entryInfoList(filters, QDir::Files | QDir::Readable, QDir::Name);
-    tracks.reserve(entries.size());
-    for (const QFileInfo &info : entries)
-        tracks << info.absoluteFilePath();
+    // Recursive now, and through symlinked folders: an evergreen folder that
+    // is organised into subfolders used to look empty, and the watchdog then
+    // had nothing to put on air.
+    tracks = AudioFormats::findAudioFiles(folder);
     return tracks;
 }
 

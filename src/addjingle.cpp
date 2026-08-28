@@ -16,6 +16,7 @@
 
     */
 #include "addjingle.h"
+#include "audioformats.h"
 #include "ui_addjingle.h"
 #include <QFileDialog>
 #include <QMessageBox>
@@ -56,9 +57,9 @@ addJingle::~addJingle()
 
 void addJingle::on_toolButton_clicked()
 {
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"),
-                                                     "",
-                                                     tr("Files (*.*)"));
+    QString fileName = QFileDialog::getOpenFileName(
+        this, tr("Open File"), QString(),
+        AudioFormats::fileDialogFilterString());
     if(fileName!="")
     ui->txt_file->setText(fileName);
 

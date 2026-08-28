@@ -20,6 +20,7 @@
 #include <QDebug>
 #include <QMessageBox>
 #include "add_pub.h"
+#include "audioformats.h"
 #include "ui_add_pub.h"
 
 add_pub::add_pub(QWidget *parent) :
@@ -93,7 +94,9 @@ void add_pub::on_pushButton_3_clicked()
 {
     //browse for file
 
-    QString file = QFileDialog::getOpenFileName(this,tr("Select file"));
+    QString file = QFileDialog::getOpenFileName(
+        this, tr("Select file"), QString(),
+        AudioFormats::fileDialogFilterString());
     ui->txt_selected_file->setText(file);
 
 }

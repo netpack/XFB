@@ -1,6 +1,7 @@
 #include "PlayerUIController.h"
 #include "MainController.h"
 #include "../player.h"
+#include "../audioformats.h"
 #include <QStatusBar>
 #include <QMessageBox>
 #include <QFileDialog>
@@ -181,7 +182,7 @@ void PlayerUIController::onImportMusicRequested()
         m_playerWindow,
         tr("Select Music Files"),
         QStandardPaths::writableLocation(QStandardPaths::MusicLocation),
-        tr("Audio Files (*.mp3 *.ogg *.wav *.flac *.m4a)")
+        AudioFormats::fileDialogFilterString()
     );
 
     if (!filePaths.isEmpty()) {
