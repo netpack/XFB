@@ -29,6 +29,9 @@ set(SOURCES
     audio/BpmLibrary.cpp
     # EBU R128 loudness measurement (ffmpeg ebur128) for playback normalisation
     audio/LoudnessScanner.cpp
+    # Intro (ramp) / outro detection from the waveform + the library columns
+    audio/IntroDetector.cpp
+    audio/IntroLibrary.cpp
     dialogs/AudioFxDialog.cpp
     dialogs/MobileSyncDialog.cpp
     # As-run log viewer + advertiser report
@@ -145,6 +148,8 @@ set(HEADERS
     audio/FxEngine.h
     audio/FxPlayer.h
     audio/LoudnessScanner.h
+    audio/IntroDetector.h
+    audio/IntroLibrary.h
     dialogs/AudioFxDialog.h
     dialogs/MobileSyncDialog.h
     dialogs/StationSyncDialog.h

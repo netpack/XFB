@@ -203,8 +203,29 @@ public:
     void setEnvelope(const QVector<QPointF> &points);
     void setPlayhead(qint64 positionMs);
 
+    /**
+     * The intro (ramp) and outro of the track on air, as measured by
+     * IntroDetector and kept in the musics table.
+     *
+     * `introMs` is the position of the vocal entry from t = 0; `outroMs`
+     * is the LENGTH of the run-out at the end. Pass -1 for either when it
+     * has not been measured — the strip then simply draws nothing rather
+     * than marking the start of the track as "the vocal". `locked` says
+     * the value was set by hand, which the marker shows.
+     */
+    void setIntro(qint64 introMs, qint64 outroMs, bool locked);
+    qint64 introMs() const { return m_introMs; }
+    qint64 outroMs() const { return m_outroMs; }
+
 signals:
     void envelopeEdited(const QVector<QPointF> &points);
+    /** The operator dragged the intro marker: this is the corrected value,
+     *  in ms from the start of the track, and it should be stored as a
+     *  hand-set one so a later sweep cannot overwrite it. */
+    void introEdited(qint64 introMs);
+    /** "Measure this again" from the strip's context menu: drop the
+     *  hand-set flag and let the detector have another go. */
+    void introResetRequested();
 
 protected:
     void paintEvent(QPaintEvent *event) override;
@@ -218,11 +239,22 @@ protected:
 private:
     QRect waveRect() const;
     qint64 durationMs() const;
+    /** x of the intro marker, or -1 when there is nothing to draw. */
+    int introMarkerX(const QRect &waveRect, qint64 durationMs) const;
+    /** "INTRO 0:14", plus the live countdown while the ramp is running. */
+    QString introBadgeText(qint64 durationMs) const;
 
     WaveformStore *m_store = nullptr;
     QString m_path;
     QVector<QPointF> m_env;
     qint64 m_positionMs = 0;
+
+    // Intro / outro of the track on air. -1 = not measured.
+    qint64 m_introMs = -1;
+    qint64 m_outroMs = -1;
+    bool m_introLocked = false;
+    bool m_introDragging = false;
+    bool m_introHover = false;
 
     int m_dragNode = -1;
     int m_hoverNode = -1;

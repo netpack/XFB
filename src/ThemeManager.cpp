@@ -13,6 +13,12 @@ namespace
 // its own light/dark-dependent accents, e.g. the Play button green).
 bool s_currentIsDark = false;
 
+// Accent and item-view background of the theme applied last, so custom
+// painting (the wave strips) can ask for them without re-reading xfb.conf
+// on every paintEvent. Invalid until apply() has run.
+QColor s_currentAccent;
+QColor s_currentBase;
+
 QString configFilePath()
 {
     return QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
@@ -382,6 +388,8 @@ void ThemeManager::apply(QApplication *app)
     const QString id = configuredTheme();
     const Spec spec = resolveSpec(id, configuredAccent());
     s_currentIsDark = spec.dark;
+    s_currentAccent = spec.accent;
+    s_currentBase = spec.base;
 
     QPalette palette;
     palette.setColor(QPalette::Window, spec.window);
@@ -417,4 +425,32 @@ void ThemeManager::apply(QApplication *app)
 bool ThemeManager::currentIsDark()
 {
     return s_currentIsDark;
+}
+
+QColor ThemeManager::currentAccent()
+{
+    if (!s_currentAccent.isValid()) {
+        // apply() has not run yet (early construction, or a test harness
+        // driving a widget on its own): resolve it the slow way, once.
+        const Spec spec = resolveSpec(configuredTheme(), configuredAccent());
+        s_currentAccent = spec.accent;
+        s_currentBase = spec.base;
+    }
+    return s_currentAccent;
+}
+
+QColor ThemeManager::contrastingInk(const QColor &wanted)
+{
+    if (!s_currentBase.isValid())
+        currentAccent(); // fills both
+
+    // Lightness distance from the surface the color will be drawn on. The
+    // studio theme's amber over near-black is fine; the same amber over the
+    // light theme's white is not, so it gets darkened until it reads. The
+    // loop is bounded and cheap — this runs once per paint, not per pixel.
+    QColor ink = wanted;
+    const int surface = s_currentBase.lightness();
+    for (int guard = 0; guard < 8 && qAbs(ink.lightness() - surface) < 90; ++guard)
+        ink = (surface > 127) ? ink.darker(125) : ink.lighter(125);
+    return ink;
 }

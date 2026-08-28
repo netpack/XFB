@@ -54,6 +54,8 @@ class UpdateCheckService;
 class DonationNotice;
 class AudioFxWidget;
 class WaveformStore;
+class IntroLibrary;
+struct IntroTimes;
 class PlaylistWaveView;
 class BpmLibrary;
 class LoudnessScanner;
@@ -513,6 +515,37 @@ private slots:
     void rememberAutoModePick(const QString &path);
     /// What it has put up lately, newest last — its no-repeat window.
     QStringList m_recentAutoPicks;
+
+    // ----------------------------------------------------------------
+    // Intro (ramp) and outro times
+    //
+    // The intro is the number a presenter works to: how long they can talk
+    // over the top of a record before the vocal arrives. It is measured
+    // from the same 20 ms waveform buckets the wave view and the auto-mix
+    // already use (audio/IntroDetector.h), stored on the musics table, and
+    // shown — with a live countdown — on the now-playing wave strip.
+    //
+    // It is a LEVEL heuristic and it is wrong on some records, so the
+    // marker is draggable and a corrected value is locked against being
+    // overwritten by a later sweep. See IntroDetector's header comment for
+    // exactly what it cannot do.
+    // ----------------------------------------------------------------
+    IntroLibrary *m_introLibrary = nullptr;
+    QPointer<QProgressDialog> m_introProgress;
+    /// Library sweep: measure the intro/outro of everything unmeasured.
+    void analyzeLibraryIntro();
+    /// Look the on-air track up, push it into the strip, measure if needed.
+    void refreshIntroForCurrentTrack();
+    /// Push one set of times into the strip and cache them for the speech.
+    void applyIntroTimes(const IntroTimes &times);
+    /// Spoken form: the ramp, or the time left of it while it is running.
+    QString introAnnouncement() const;
+    /// What the strip is currently showing (-1 = nothing measured).
+    qint64 m_currentIntroMs = -1;
+    qint64 m_currentOutroMs = -1;
+    bool m_currentIntroLocked = false;
+    /// Track whose intro has already been spoken, so it is said once.
+    QString m_introAnnouncedPath;
 
     // ----------------------------------------------------------------
     // EBU R128 loudness normalisation

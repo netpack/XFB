@@ -50,6 +50,22 @@ public:
     /** Default accent color of a theme (for the options dialog preview). */
     static QColor themeAccent(const QString &id);
 
+    /**
+     * The accent color actually in force: the override when one is set,
+     * otherwise the current theme's own. Cached by apply(), so a widget
+     * may call it from paintEvent() without touching xfb.conf; before
+     * apply() has run it resolves from the settings once.
+     *
+     * Custom painting should take its highlight colors from here (or from
+     * QPalette::Highlight, which apply() fills from the same value) rather
+     * than hardcoding one, or it goes illegible in midnight and studio.
+     */
+    static QColor currentAccent();
+
+    /** A color that reads over the current theme's item-view background,
+     *  derived from `base` — for markers and overlays on custom widgets. */
+    static QColor contrastingInk(const QColor &wanted);
+
 private:
     struct Spec;
     static Spec resolveSpec(const QString &id, const QColor &accentOverride);

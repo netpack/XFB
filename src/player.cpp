@@ -18,6 +18,7 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include "audio/BpmDetector.h"
 #include "audio/BpmLibrary.h"
 #include "audio/FxEngine.h"
+#include "audio/IntroLibrary.h"
 #include "audio/LoudnessScanner.h"
 #include "audio/WaveformStore.h"
 #include "ArtworkStore.h"
@@ -566,6 +567,10 @@ player::player(QWidget *parent) :
         // Tempo comes out of the same decode the waveforms do, so the BPM
         // library shares the store rather than reading the files again.
         m_bpmLibrary = new BpmLibrary(m_waveStore, this);
+        // Intro/outro times come off the very same decode, for the same
+        // reason: nothing here reads an audio file that WaveformStore has
+        // not already been asked for.
+        m_introLibrary = new IntroLibrary(m_waveStore, this);
         m_waveView = new PlaylistWaveView(ui->playlist, m_waveStore, this);
         m_waveView->setNowPlayingProvider([this]() {
             return (Xplayer && Xplayer->source().isLocalFile())
@@ -612,6 +617,9 @@ player::player(QWidget *parent) :
             const int autoMixThr =
                 qBound(1, waveSettings.value("AutoMixThresholdPercent", 5).toInt(), 50);
             PlaylistWaveView::setAutoMixThresholdPercent(autoMixThr);
+            // The intro detector trims the quiet edges with the same rule,
+            // so it has to see the same number.
+            m_introLibrary->setThresholdPercent(autoMixThr);
             if (!waveSettings.contains("AutoMixThresholdPercent"))
                 waveSettings.setValue("AutoMixThresholdPercent", autoMixThr);
 
@@ -687,6 +695,59 @@ player::player(QWidget *parent) :
             // applies it on the next tick
             m_activeEnvelope = points;
             m_activeEnvelopePath = m_nowPlayingWave->track();
+        });
+
+        // The operator dragged the intro marker: that value is theirs from
+        // now on. It is written with the lock set, so neither the lazy
+        // measurement nor a library sweep can put the detector's guess back.
+        connect(m_nowPlayingWave, &NowPlayingWaveStrip::introEdited,
+                this, [this](qint64 introMs) {
+            const QString path = m_nowPlayingWave->track();
+            m_currentIntroMs = introMs;
+            m_currentIntroLocked = true;
+            if (!m_introLibrary || path.isEmpty())
+                return;
+            if (m_introLibrary->setIntroByHand(path, introMs)) {
+                announceAccessible(tr("Intro set to %1")
+                                       .arg(spokenDuration(introMs)));
+            } else {
+                // A file dropped straight into the playlist is not in the
+                // musics table, so there is no row to store it on. Say so
+                // rather than letting the marker lie about being saved.
+                ui->statusBar->showMessage(
+                    tr("This track is not in the database, so its intro "
+                       "cannot be saved"), 6000);
+            }
+        });
+
+        connect(m_nowPlayingWave, &NowPlayingWaveStrip::introResetRequested,
+                this, [this]() {
+            const QString path = m_nowPlayingWave->track();
+            if (!m_introLibrary || path.isEmpty())
+                return;
+            m_introLibrary->clearLock(path);
+            m_currentIntroMs = -1;
+            m_currentOutroMs = -1;
+            m_currentIntroLocked = false;
+            m_introAnnouncedPath.clear();
+            m_nowPlayingWave->setIntro(-1, -1, false);
+            // The row now looks exactly like one that was never measured,
+            // so the ordinary lazy path picks it straight back up.
+            refreshIntroForCurrentTrack();
+        });
+
+        // A measurement that lands while the track is on air (the lazy
+        // analysis of a track nobody had played before) updates the strip
+        // and is spoken, since the operator was told there was no number.
+        connect(m_introLibrary, &IntroLibrary::introMeasured, this,
+                [this](const QString &path, const IntroTimes &times) {
+            if (!m_nowPlayingWave || path != m_nowPlayingWave->track())
+                return;
+            applyIntroTimes(times);
+            if (times.introMs >= 0 && m_introAnnouncedPath != path) {
+                m_introAnnouncedPath = path;
+                announceAccessible(introAnnouncement());
+            }
         });
 
         connect(m_waveViewToggle, &QToolButton::toggled,
@@ -998,6 +1059,10 @@ player::player(QWidget *parent) :
                 m_nowPlayingWave->setTrack(local ? url.toLocalFile() : QString());
                 m_nowPlayingWave->setVisible(local && m_waveView
                                              && m_waveView->isActive());
+                // Lazy measurement: the intro of a track is worked out the
+                // first time it goes to air, so an operator never has to
+                // run the library sweep to get the feature at all.
+                refreshIntroForCurrentTrack();
             }
             if (m_artPanel)
                 m_artPanel->setTrack(url.isLocalFile() ? url.toLocalFile()
@@ -1764,6 +1829,23 @@ checkDbOpen();
                                  "database."));
        ui->menuDatabase->addAction(analyzeBpm);
        connect(analyzeBpm, &QAction::triggered, this, &player::analyzeLibraryBpm);
+   }
+
+   // Intro / outro times. A third sweep of the same shape as the two around
+   // it, off the same waveform decode as the BPM one — what it feeds is the
+   // countdown on the now-playing strip and the spoken ramp, so a presenter
+   // knows exactly when to stop talking.
+   {
+       QAction *analyzeIntro = new QAction(QIcon(":/icons/chronometer.png"),
+                                           tr("Measure the intro and outro times of the database"), this);
+       analyzeIntro->setToolTip(tr("Work out, for every music track that has not been measured "
+                                   "yet, how long its intro runs before the vocal and how long "
+                                   "its run-out is. This is a level heuristic, not vocal "
+                                   "detection: correct anything it gets wrong by dragging the "
+                                   "marker on the now-playing wave strip, and your value is "
+                                   "kept the next time this runs."));
+       ui->menuDatabase->addAction(analyzeIntro);
+       connect(analyzeIntro, &QAction::triggered, this, &player::analyzeLibraryIntro);
    }
 
    // EBU R128 loudness. The measurement is a library sweep like the BPM one
@@ -2881,6 +2963,40 @@ bool player::checkDbOpen() {
                            << ":" << addColumn.lastError().text();
             } else {
                 qInfo() << "Added the" << col.name << "column to the" << table << "table";
+            }
+        }
+    }
+
+    // Intro (ramp) and outro times, measured by IntroDetector off the
+    // waveform and used by the now-playing strip and the announcements.
+    // Same idempotent shape as the two blocks above.
+    //
+    //   intro_ms      position of the vocal entry, ms from the start of the
+    //                 file (NULL = never measured)
+    //   outro_ms      LENGTH of the run-out at the end, ms (NULL = ditto)
+    //   intro_locked  1 when the operator dragged the marker themselves, in
+    //                 which case no sweep may overwrite intro_ms again
+    //
+    // musics only, unlike the loudness columns: an intro is a number you
+    // talk over, and nobody talks over a jingle or a commercial.
+    {
+        const QSqlRecord rec = adb.record(QStringLiteral("musics"));
+        struct { const char *name; const char *type; } introColumns[] = {
+            {"intro_ms", "INTEGER"}, {"outro_ms", "INTEGER"},
+            {"intro_locked", "INTEGER DEFAULT 0"}
+        };
+        for (const auto &col : introColumns) {
+            if (rec.isEmpty() || rec.contains(QString::fromLatin1(col.name)))
+                continue;
+            QSqlQuery addColumn(adb);
+            const QString sql = QString("ALTER TABLE musics ADD COLUMN %1 %2")
+                                    .arg(QString::fromLatin1(col.name),
+                                         QString::fromLatin1(col.type));
+            if (!addColumn.exec(sql)) {
+                qWarning() << "Failed to add the" << col.name
+                           << "column to musics:" << addColumn.lastError().text();
+            } else {
+                qInfo() << "Added the" << col.name << "column to the musics table";
             }
         }
     }
@@ -4103,8 +4219,22 @@ void player::playNextSong(){
                 // built-in encoder is actually streaming.
                 updateStreamNowPlaying(itemDaPlaylist);
                 // Speak the new track: without this a blind operator has no
-                // way to tell what went to air.
-                announceAccessible(tr("Now playing: %1").arg(baseName));
+                // way to tell what went to air. The intro rides along in the
+                // SAME utterance rather than following it — the announcement
+                // queue delivers one message per timer tick, and a screen
+                // reader given two in quick succession drops the first.
+                // sourceChanged has already run refreshIntroForCurrentTrack()
+                // by now; when the track has never been measured the number
+                // arrives later and is spoken then, by the introMeasured
+                // handler.
+                QString nowPlayingSpeech = tr("Now playing: %1").arg(baseName);
+                if (m_currentIntroMs > 0 && m_nowPlayingWave
+                        && m_nowPlayingWave->track() == itemDaPlaylist) {
+                    nowPlayingSpeech = tr("%1. Intro %2")
+                        .arg(nowPlayingSpeech, spokenDuration(m_currentIntroMs));
+                    m_introAnnouncedPath = itemDaPlaylist;
+                }
+                announceAccessible(nowPlayingSpeech);
 
                 QDateTime now = QDateTime::currentDateTime();
                 QString text = now.toString("yyyy-MM-dd || hh:mm:ss ||");
@@ -4992,6 +5122,150 @@ void player::analyzeLibraryBpm()
 }
 
 // ---------------------------------------------------------------------------
+// Intro (ramp) and outro times
+//
+// Three ways a track gets its numbers:
+//
+//   1. lazily, the first time it goes to air (refreshIntroForCurrentTrack
+//      below, off the sourceChanged handler),
+//   2. in bulk, from Database -> "Measure the intro and outro times of the
+//      database" (analyzeLibraryIntro), or
+//   3. by hand, by dragging the marker on the now-playing wave strip —
+//      which locks the row so neither of the other two can undo it.
+//
+// The measurement itself is IntroDetector's, over the 20 ms peak buckets
+// WaveformStore extracts; see that header for what the heuristic can and
+// cannot do. Nothing here decodes anything the wave view has not already
+// paid for.
+// ---------------------------------------------------------------------------
+
+// Push one set of times into the strip and remember them for the speech.
+void player::applyIntroTimes(const IntroTimes &times)
+{
+    m_currentIntroMs = times.introMs;
+    m_currentOutroMs = times.outroMs;
+    m_currentIntroLocked = times.locked;
+    if (m_nowPlayingWave)
+        m_nowPlayingWave->setIntro(times.introMs, times.outroMs, times.locked);
+}
+
+// The on-air track's intro: shown on the strip, and measured in the
+// background when the library has never seen it.
+void player::refreshIntroForCurrentTrack()
+{
+    if (!m_introLibrary || !m_nowPlayingWave)
+        return;
+
+    const QString path = m_nowPlayingWave->track();
+    if (path.isEmpty()) {
+        applyIntroTimes(IntroTimes{});
+        m_introAnnouncedPath.clear();
+        return;
+    }
+
+    const IntroTimes times = m_introLibrary->timesFor(path);
+    applyIntroTimes(times);
+
+    // Not in the library, or never measured: ask for it. analyzeQuietly()
+    // is a no-op on a row that already has a number or is locked, so this
+    // costs nothing on the tracks that matter most (the ones played often).
+    if (times.known && times.introMs < 0)
+        m_introLibrary->analyzeQuietly(path);
+}
+
+// Spoken form of the intro. Two shapes, because the useful number changes
+// while the track runs: before the vocal it is the time LEFT of the ramp,
+// after it there is nothing left to talk over.
+QString player::introAnnouncement() const
+{
+    if (m_nowPlayingWave && m_nowPlayingWave->track().isEmpty())
+        return tr("Nothing is playing");
+    if (m_currentIntroMs < 0)
+        return tr("The intro of this track has not been measured");
+    if (m_currentIntroMs == 0)
+        return tr("No intro: this track starts straight in");
+
+    const qint64 position = Xplayer ? Xplayer->position() : 0;
+    if (position < m_currentIntroMs) {
+        return tr("%1 of intro left, of %2")
+            .arg(spokenDuration(m_currentIntroMs - position),
+                 spokenDuration(m_currentIntroMs));
+    }
+    return m_currentIntroLocked
+        ? tr("Intro %1, set by hand, already passed")
+              .arg(spokenDuration(m_currentIntroMs))
+        : tr("Intro %1, already passed").arg(spokenDuration(m_currentIntroMs));
+}
+
+// Measure the intro of every library track that has never been analysed.
+// Sibling of analyzeLibraryBpm() above and scanLibraryLoudness() below: a
+// modal, cancellable progress dialog that owns the signal connections, so
+// a second run gets a clean set of its own.
+void player::analyzeLibraryIntro()
+{
+    if (!m_introLibrary)
+        return;
+    if (m_introLibrary->busy()) {
+        ui->statusBar->showMessage(tr("Intro analysis is already running"), 5000);
+        return;
+    }
+
+    QStringList pending = m_introLibrary->tracksMissingIntro();
+    bool forced = false;
+    if (pending.isEmpty()) {
+        const QMessageBox::StandardButton answer = QMessageBox::question(
+            this, tr("Measure intros"),
+            tr("Every track in the database already has an intro time.\n\n"
+               "Measure them all again? Anything you corrected by hand is "
+               "kept — only the values XFB worked out itself are replaced."),
+            QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+        if (answer != QMessageBox::Yes)
+            return;
+
+        pending = m_introLibrary->allTracks();
+        if (pending.isEmpty())
+            return;
+        forced = true;
+    }
+
+    m_introProgress = new QProgressDialog(
+        tr("Measuring the intro of %n track(s)...", nullptr, pending.size()),
+        tr("Cancel"), 0, pending.size(), this);
+    m_introProgress->setWindowModality(Qt::WindowModal);
+    m_introProgress->setMinimumDuration(0);
+    connect(m_introProgress, &QProgressDialog::canceled,
+            m_introLibrary, &IntroLibrary::cancel);
+
+    // Both connections are scoped to the dialog, so they die with it.
+    connect(m_introLibrary, &IntroLibrary::progress, m_introProgress,
+            [this](int done, int total) {
+        if (m_introProgress) {
+            m_introProgress->setMaximum(total);
+            m_introProgress->setValue(done);
+        }
+    });
+    connect(m_introLibrary, &IntroLibrary::finished, m_introProgress,
+            [this, forced](int measured, int skipped, bool canceled) {
+        if (m_introProgress)
+            m_introProgress->deleteLater();
+        ui->statusBar->showMessage(
+            canceled
+                ? tr("Intro analysis canceled - %1 track(s) measured").arg(measured)
+                : (forced
+                       ? tr("Intros: %1 track(s) measured, %2 left alone "
+                            "(set by hand, silent or unreadable)")
+                             .arg(measured).arg(skipped)
+                       : tr("Intros: %1 track(s) measured, %2 could not be measured")
+                             .arg(measured).arg(skipped)),
+            8000);
+        // The track on air may have been one of them.
+        refreshIntroForCurrentTrack();
+    });
+
+    m_introLibrary->analyze(pending);
+}
+
+// ---------------------------------------------------------------------------
 // EBU R128 loudness
 //
 // Two halves that meet in the database:
@@ -5637,6 +5911,21 @@ void player::setupPlaybackShortcuts()
         announceAccessible(remainingTimeAnnouncement());
     });
     addAction(timeRemaining);
+
+    // The presenter's other clock: how long they can still talk before the
+    // vocal. The countdown is on screen on the wave strip, which is no use
+    // at all to an operator working by ear, so it gets a key of its own.
+    // Ctrl+Shift+I was the free one — L, P, S, N, B, W, H, R, A, T, Space,
+    // Up, Down, Left, Right and Return are all already spoken for.
+    QAction *introCountdown = playbackMenu->addAction(QIcon(":/icons/player-time.png"),
+                                                      tr("Announce the &intro countdown"));
+    introCountdown->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_I));
+    introCountdown->setShortcutContext(Qt::ApplicationShortcut);
+    introCountdown->setStatusTip(tr("Say how much of the intro is left before the vocal"));
+    connect(introCountdown, &QAction::triggered, this, [this]() {
+        announceAccessible(introAnnouncement());
+    });
+    addAction(introCountdown);
 
     // Insert before Options so File/Playlists keep their familiar positions.
     ui->menuBar->insertMenu(ui->menuXFB->menuAction(), playbackMenu);

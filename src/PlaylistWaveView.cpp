@@ -1,6 +1,8 @@
 #include "PlaylistWaveView.h"
 
+#include "ThemeManager.h"
 #include "audio/FxPlayer.h"
+#include "audio/IntroDetector.h"
 #include "audio/WaveformStore.h"
 
 #include <QAudioOutput>
@@ -29,24 +31,10 @@ constexpr int kPreviewLeadMs = 6000;   // audition starts this long before the s
 constexpr int kPreviewTailMs = 4000;   // and keeps playing this long into the next track
 constexpr double kPreviewVolume = 0.85;
 
-// Auto-mix silence scanning: a moment counts as "loud" only as part of a
-// run of kSustainPeaks consecutive peaks at/above the threshold, so a
-// click in an otherwise faded tail doesn't count as the song still going.
-constexpr int kSustainPeaks = 3; // 3 × 20 ms
-// Tracks whose loudest peak sits below this (≈ -30 dBFS) are all quiet.
-constexpr int kMinLoudPeak = 8;
-
-// Threshold in peak units (0..255) for one track, relative to its own max
-// peak so differently mastered tracks trim comparably; -1 = all quiet.
-int autoMixThreshold(const WaveformData &data, int thresholdPercent)
-{
-    int maxPeak = 0;
-    for (quint8 p : data.peaks)
-        maxPeak = qMax(maxPeak, int(p));
-    if (maxPeak < kMinLoudPeak)
-        return -1;
-    return qMax(1, maxPeak * thresholdPercent / 100);
-}
+// Auto-mix silence scanning (the quiet-edge rule, the sustain run and the
+// per-track threshold) lives in audio/IntroDetector.h now: the intro
+// detector is built on exactly the same buckets and the same definition of
+// "loud", and two copies of that definition would drift apart.
 
 QString formatDuration(qint64 ms)
 {
@@ -58,6 +46,18 @@ QString formatDuration(qint64 ms)
     return QStringLiteral("%1:%2").arg(secs / 60)
         .arg(secs % 60, 2, 10, QLatin1Char('0'));
 }
+
+// A countdown reaches 0:00 exactly when the moment arrives, so it rounds
+// UP: with 200 ms to run it still reads 0:01, and it only turns 0:00 on
+// the marker itself. formatDuration() truncates, which would show 0:00 for
+// a whole second before the vocal.
+QString formatCountdown(qint64 ms)
+{
+    return formatDuration(((qMax<qint64>(0, ms) + 999) / 1000) * 1000);
+}
+
+// How close to the intro marker a press has to land to grab it.
+constexpr int kIntroGrabPx = 4;
 
 // Volume-line coordinate mapping over the full-track waveform rect
 double envNodeX(const QRect &waveRect, qint64 durationMs, double ms)
@@ -267,38 +267,17 @@ double PlaylistWaveView::envelopeGainAt(const QVector<QPointF> &points, qint64 p
     return points.last().y();
 }
 
+// Both are now thin forwards to IntroDetector, which owns the quiet-edge
+// rule. The signatures stay here because auto-mix, playback and the
+// playlist strips all call them through PlaylistWaveView.
 qint64 PlaylistWaveView::quietHeadMs(const WaveformData &data, int thresholdPercent)
 {
-    const int threshold = autoMixThreshold(data, thresholdPercent);
-    if (threshold < 0)
-        return data.durationMs;
-    int run = 0;
-    for (int i = 0; i < data.peaks.size(); ++i) {
-        run = data.peaks[i] >= threshold ? run + 1 : 0;
-        if (run >= kSustainPeaks)
-            return qint64(i - kSustainPeaks + 1) * WaveformStore::MsPerPeak;
-    }
-    return data.durationMs;
+    return IntroDetector::quietHeadMs(data, thresholdPercent);
 }
 
 qint64 PlaylistWaveView::quietTailMs(const WaveformData &data, int thresholdPercent)
 {
-    const int threshold = autoMixThreshold(data, thresholdPercent);
-    if (threshold < 0)
-        return data.durationMs;
-    int run = 0;
-    for (int i = data.peaks.size() - 1; i >= 0; --i) {
-        run = data.peaks[i] >= threshold ? run + 1 : 0;
-        if (run >= kSustainPeaks) {
-            // Scanning backwards, so this is the last sustained-loud run in
-            // the track and it ends just before peak index i + kSustainPeaks.
-            // Any rounding remainder past the peak buffer is quiet too.
-            const qint64 loudEndMs =
-                qint64(i + kSustainPeaks) * WaveformStore::MsPerPeak;
-            return qMax(qint64(0), data.durationMs - loudEndMs);
-        }
-    }
-    return data.durationMs;
+    return IntroDetector::quietTailMs(data, thresholdPercent);
 }
 
 PlaylistWaveView::PlaylistWaveView(QListWidget *list, WaveformStore *store, QObject *parent)
@@ -1213,6 +1192,14 @@ void NowPlayingWaveStrip::setTrack(const QString &filePath)
     m_path = filePath;
     m_env.clear(); // the player pushes the track's envelope right after
     m_positionMs = 0;
+    // Unmeasured until the player looks the new track up: showing the
+    // previous track's ramp over this one's waveform would be worse than
+    // showing nothing at all.
+    m_introMs = -1;
+    m_outroMs = -1;
+    m_introLocked = false;
+    m_introDragging = false;
+    m_introHover = false;
     m_dragNode = -1;
     m_hoverNode = -1;
     m_segFirst = -1;
@@ -1236,6 +1223,52 @@ void NowPlayingWaveStrip::setPlayhead(qint64 positionMs)
     m_positionMs = positionMs;
     if (isVisible())
         update();
+}
+
+void NowPlayingWaveStrip::setIntro(qint64 introMs, qint64 outroMs, bool locked)
+{
+    // Never fight the operator: while the marker is under the mouse, an
+    // arriving measurement (the lazy analysis finishing) is ignored.
+    if (m_introDragging)
+        return;
+    if (m_introMs == introMs && m_outroMs == outroMs && m_introLocked == locked)
+        return;
+    m_introMs = introMs;
+    m_outroMs = outroMs;
+    m_introLocked = locked;
+    setToolTip(m_introMs < 0
+        ? QString()
+        : (locked ? tr("Intro %1, set by hand. Drag the marker to change it; "
+                       "right-click to measure it again.")
+                        .arg(formatDuration(m_introMs))
+                  : tr("Intro %1, measured from the waveform. Drag the marker "
+                       "to correct it.").arg(formatDuration(m_introMs))));
+    update();
+}
+
+int NowPlayingWaveStrip::introMarkerX(const QRect &waveRect, qint64 duration) const
+{
+    if (m_introMs < 0 || duration <= 0)
+        return -1;
+    return waveRect.left()
+           + int(double(waveRect.width()) * double(qBound<qint64>(0, m_introMs, duration))
+                 / double(duration));
+}
+
+QString NowPlayingWaveStrip::introBadgeText(qint64 duration) const
+{
+    Q_UNUSED(duration);
+    if (m_introMs < 0)
+        return QString();
+    const QString ramp = formatDuration(m_introMs);
+    // Before the vocal, the number that matters is how long is LEFT of the
+    // ramp; the ramp's own length stays on show so the operator can see
+    // what the countdown is counting down from.
+    if (m_positionMs < m_introMs) {
+        return tr("INTRO %1 \u00b7 %2", "intro length, then the live countdown")
+            .arg(ramp, formatCountdown(m_introMs - m_positionMs));
+    }
+    return tr("INTRO %1").arg(ramp);
 }
 
 QRect NowPlayingWaveStrip::waveRect() const
@@ -1277,12 +1310,27 @@ void NowPlayingWaveStrip::paintEvent(QPaintEvent *)
         : QString();
     const int timeW = timeText.isEmpty() ? 0
         : painter.fontMetrics().horizontalAdvance(timeText) + 8;
+
+    // The intro badge sits between the title and the clock, in the theme's
+    // accent so it reads in all four themes (and is darkened or lightened
+    // against the strip's own background when the accent is too close to
+    // it — a light theme with a pale custom accent, for instance).
+    const QString introText = ready ? introBadgeText(data->durationMs) : QString();
+    const int introW = introText.isEmpty() ? 0
+        : painter.fontMetrics().horizontalAdvance(introText) + 12;
+    const QColor introInk = ThemeManager::contrastingInk(ThemeManager::currentAccent());
+
     painter.setPen(pal.text().color());
-    painter.drawText(textR.adjusted(0, 0, -timeW, 0),
+    painter.drawText(textR.adjusted(0, 0, -(timeW + introW), 0),
                      Qt::AlignVCenter | Qt::AlignLeft,
                      painter.fontMetrics().elidedText(
                          tr("Now playing: %1").arg(QFileInfo(m_path).fileName()),
-                         Qt::ElideMiddle, textR.width() - timeW));
+                         Qt::ElideMiddle, textR.width() - timeW - introW));
+    if (!introText.isEmpty()) {
+        painter.setPen(introInk);
+        painter.drawText(textR.adjusted(0, 0, -timeW, 0),
+                         Qt::AlignVCenter | Qt::AlignRight, introText);
+    }
     if (!timeText.isEmpty()) {
         painter.setPen(subtleText);
         painter.drawText(textR, Qt::AlignVCenter | Qt::AlignRight, timeText);
@@ -1291,6 +1339,39 @@ void NowPlayingWaveStrip::paintEvent(QPaintEvent *)
     const QRect r = waveRect();
     if (ready) {
         paintWaveform(&painter, r, *data, 0, data->durationMs, QColor(96, 158, 214));
+
+        // Run-out first, and faint: it is context, not a control. Dashed so
+        // it can never be mistaken for the intro marker or the playhead.
+        if (m_outroMs > 0 && m_outroMs < data->durationMs) {
+            const int outroX = r.left()
+                + int(double(r.width()) * double(data->durationMs - m_outroMs)
+                      / double(data->durationMs));
+            QColor faint = introInk;
+            faint.setAlpha(110);
+            QPen dashed(faint, 1, Qt::DashLine);
+            painter.setPen(dashed);
+            painter.drawLine(outroX, r.top(), outroX, r.bottom());
+        }
+
+        // The intro marker: a full-height line with a grab handle on top.
+        // Filled handle = set by hand, hollow = measured by the detector,
+        // so the operator can see at a glance which values are trusted.
+        const int introX = introMarkerX(r, data->durationMs);
+        if (introX >= 0) {
+            const bool hot = m_introDragging || m_introHover;
+            painter.setPen(QPen(introInk, hot ? 2 : 1));
+            painter.drawLine(introX, r.top(), introX, r.bottom());
+            QPolygonF handle;
+            handle << QPointF(introX - 4.5, r.top())
+                   << QPointF(introX + 4.5, r.top())
+                   << QPointF(introX, r.top() + 6.0);
+            painter.setRenderHint(QPainter::Antialiasing, true);
+            painter.setBrush(m_introLocked ? QBrush(introInk) : QBrush(pal.base()));
+            painter.drawPolygon(handle);
+            painter.setBrush(Qt::NoBrush);
+            painter.setRenderHint(QPainter::Antialiasing, false);
+        }
+
         paintEnvelope(&painter, r, data->durationMs, m_env,
                       m_dragNode >= 0 ? m_dragNode : m_hoverNode,
                       pal.text().color());
@@ -1318,15 +1399,31 @@ void NowPlayingWaveStrip::mousePressEvent(QMouseEvent *event)
     const qint64 dur = durationMs();
     const QRect r = waveRect();
     const QPoint pos = event->position().toPoint();
-    if (dur <= 0 || m_env.isEmpty() || !r.contains(pos))
+    if (dur <= 0 || !r.contains(pos))
         return;
 
-    const int idx = envelopeNodeHit(m_env, r, dur, pos);
+    // Priority is smallest target first: an envelope node (5 px box), then
+    // the intro marker (a 4 px column), then the envelope line (4 px in y
+    // but the full width of the strip, so it would otherwise swallow every
+    // attempt to grab the marker where the two cross).
+    const int idx = m_env.isEmpty() ? -1 : envelopeNodeHit(m_env, r, dur, pos);
     if (idx >= 0) {
         m_dragNode = idx;
         update();
         return;
     }
+
+    const int introX = introMarkerX(r, dur);
+    if (introX >= 0 && qAbs(pos.x() - introX) <= kIntroGrabPx) {
+        m_introDragging = true;
+        m_introHover = true;
+        setCursor(Qt::SizeHorCursor);
+        update();
+        return;
+    }
+
+    if (m_env.isEmpty())
+        return;
     const SegmentHit seg = envelopeSegmentAt(m_env, r, dur, pos);
     if (seg.first >= 0) {
         m_segFirst = seg.first;
@@ -1344,6 +1441,21 @@ void NowPlayingWaveStrip::mouseMoveEvent(QMouseEvent *event)
     const QRect r = waveRect();
     const QPoint pos = event->position().toPoint();
 
+    if (m_introDragging && (event->buttons() & Qt::LeftButton)) {
+        if (dur > 0) {
+            const qint64 ms = qint64(double(pos.x() - r.left())
+                                     / qMax(1, r.width()) * double(dur));
+            m_introMs = qBound<qint64>(0, ms, dur);
+            // A hand-set value the moment it is dragged: the marker is
+            // drawn filled straight away, so the operator sees that this
+            // one is now theirs and will survive the next sweep.
+            m_introLocked = true;
+            QToolTip::showText(event->globalPosition().toPoint(),
+                               tr("Intro %1").arg(formatDuration(m_introMs)), this);
+            update();
+        }
+        return; // introEdited() is emitted on release, not once per pixel
+    }
     if (m_dragNode >= 0 && (event->buttons() & Qt::LeftButton)) {
         if (dur > 0 && m_dragNode < m_env.size()) {
             double ms = double(pos.x() - r.left()) / qMax(1, r.width()) * dur;
@@ -1383,31 +1495,41 @@ void NowPlayingWaveStrip::mouseMoveEvent(QMouseEvent *event)
 
     // Hover feedback
     const int oldHover = m_hoverNode;
+    const bool oldIntroHover = m_introHover;
     m_hoverNode = -1;
+    m_introHover = false;
     if (dur > 0 && r.contains(pos)) {
-        if (!m_env.isEmpty()) {
-            const int idx = envelopeNodeHit(m_env, r, dur, pos);
-            if (idx >= 0) {
-                m_hoverNode = idx;
-                setCursor(Qt::PointingHandCursor);
-            } else if (envelopeSegmentAt(m_env, r, dur, pos).first >= 0) {
-                setCursor(Qt::SizeVerCursor);
-            } else {
-                setCursor(Qt::CrossCursor);
-            }
+        const int idx = m_env.isEmpty() ? -1 : envelopeNodeHit(m_env, r, dur, pos);
+        const int introX = introMarkerX(r, dur);
+        if (idx >= 0) {
+            m_hoverNode = idx;
+            setCursor(Qt::PointingHandCursor);
+        } else if (introX >= 0 && qAbs(pos.x() - introX) <= kIntroGrabPx) {
+            m_introHover = true;
+            setCursor(Qt::SizeHorCursor);
+        } else if (!m_env.isEmpty()
+                   && envelopeSegmentAt(m_env, r, dur, pos).first >= 0) {
+            setCursor(Qt::SizeVerCursor);
         } else {
             setCursor(Qt::CrossCursor); // double-click adds a volume line
         }
     } else {
         unsetCursor();
     }
-    if (oldHover != m_hoverNode)
+    if (oldHover != m_hoverNode || oldIntroHover != m_introHover)
         update();
 }
 
 void NowPlayingWaveStrip::mouseReleaseEvent(QMouseEvent *event)
 {
     Q_UNUSED(event);
+    if (m_introDragging) {
+        m_introDragging = false;
+        unsetCursor();
+        // One write per drag, at the end: the handler on the other side
+        // stores it in the database and marks it hand-set.
+        emit introEdited(m_introMs);
+    }
     m_dragNode = -1;
     m_segFirst = -1;
     m_segLast = -1;
@@ -1423,6 +1545,12 @@ void NowPlayingWaveStrip::mouseDoubleClickEvent(QMouseEvent *event)
     const QRect r = waveRect();
     const QPoint pos = event->position().toPoint();
     if (dur <= 0 || !r.contains(pos))
+        return;
+
+    // On the intro marker a double-click is two grabs, not a request for a
+    // volume node under the marker where it could never be grabbed again.
+    const int markerX = introMarkerX(r, dur);
+    if (markerX >= 0 && qAbs(pos.x() - markerX) <= kIntroGrabPx)
         return;
 
     if (!m_env.isEmpty()) {
@@ -1474,9 +1602,22 @@ void NowPlayingWaveStrip::contextMenuEvent(QContextMenuEvent *event)
         resetAction = menu.addAction(tr("Reset the volume line"));
         removeAction = menu.addAction(tr("Remove the volume line"));
     }
+
+    // The only way back from a hand-set intro. Offered when there is no
+    // measurement either, because that is exactly when an operator wants
+    // to ask for one.
+    menu.addSeparator();
+    QAction *introAction = menu.addAction(
+        m_introLocked ? tr("Measure the intro again (discard my value)")
+                      : tr("Measure the intro of this track"));
+
     QAction *chosen = menu.exec(event->globalPos());
     if (!chosen)
         return;
+    if (chosen == introAction) {
+        emit introResetRequested();
+        return;
+    }
     if (chosen == addAction || chosen == resetAction)
         m_env = {QPointF(0.0, 1.0)}; // flat 0 dB line
     else if (chosen == removeAction)
@@ -1489,6 +1630,7 @@ void NowPlayingWaveStrip::leaveEvent(QEvent *event)
 {
     Q_UNUSED(event);
     m_hoverNode = -1;
+    m_introHover = false;
     unsetCursor();
     update();
 }
