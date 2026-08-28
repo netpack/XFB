@@ -643,6 +643,8 @@ private slots:
     qint64  m_airPosition = 0;   ///< last position reported for that row
     QString m_airEndReason;      ///< empty means the track simply ran out
     QPointer<class AirLogDialog> m_airLogDialog;
+    /** The rotation editor and the "why did it pick that?" view. */
+    QPointer<class RotationDialog> m_rotationDialog;
     /** Closes the open as-run row, if any. playedMs < 0: use m_airPosition. */
     void closeAirLogEntry(const QString &reason, qint64 playedMs = -1);
     

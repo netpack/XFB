@@ -129,6 +129,8 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include "dialogs/StreamDialog.h"
 #include "services/StreamService.h"
 #include "services/AirLog.h"
+#include "services/RotationRules.h"
+#include "dialogs/RotationDialog.h"
 #include "services/MobileSyncServer.h"
 #include "services/ProductionSyncClient.h"
 #include "services/StationSyncClient.h"
@@ -2914,6 +2916,13 @@ bool player::checkDbOpen() {
     // The as-run log. Created here rather than in a migration so an
     // install that predates it gets the table on its next launch.
     AirLog::ensureSchema(adb);
+
+    // Per-track rotation rules (category, daypart, date window, weight).
+    // Same reasoning as the as-run log above: created here rather than in a
+    // migration so an install that predates the feature gets the table on its
+    // next launch. A track with no row here simply runs on the station's
+    // defaults, so an existing library needs no conversion at all.
+    RotationRules::ensureSchema(adb);
 
     // Tempo column, added to libraries created before BPM existed. NULL
     // means "never analysed", 0 means "analysed, no steady tempo" — see
@@ -6108,6 +6117,46 @@ void player::setupPlaybackShortcuts()
         ui->menuXFB->addAction(airLog);
         addAction(airLog);
 
+        // Rotation rules. Next to the as-run log on purpose: the log is where
+        // an operator notices the same artist coming round too often, and this
+        // is where they do something about it.
+        QAction *rotation = new QAction(tr("&Rotation Rules..."), this);
+        rotation->setMenuRole(QAction::NoRole);
+        // Ctrl+Shift+R is already the remaining-time toggle, so this takes the
+        // Alt variant rather than quietly stealing a binding the operator has.
+        rotation->setShortcut(QKeySequence(Qt::CTRL | Qt::ALT | Qt::Key_R));
+        rotation->setShortcutContext(Qt::ApplicationShortcut);
+        rotation->setStatusTip(tr("Artist and title separation, categories, "
+                                  "dayparts and seasonal dates"));
+        connect(rotation, &QAction::triggered, this, [this]() {
+            // Whatever is highlighted in the music table is what the operator
+            // means to program, so it arrives selected.
+            QList<qint64> preselected;
+            if (ui->musicView && ui->musicView->selectionModel()) {
+                const QModelIndexList rows =
+                    ui->musicView->selectionModel()->selectedRows(0);
+                for (const QModelIndex &index : rows) {
+                    const qint64 id = index.data().toLongLong();
+                    if (id > 0 && !preselected.contains(id))
+                        preselected.append(id);
+                }
+            }
+            if (!m_rotationDialog) {
+                m_rotationDialog = new RotationDialog(this, preselected);
+                m_rotationDialog->setAttribute(Qt::WA_DeleteOnClose, false);
+                connect(m_rotationDialog, &RotationDialog::announcementRequested,
+                        this, &player::announceAccessible);
+            } else {
+                m_rotationDialog->preselect(preselected);
+            }
+            m_rotationDialog->show();
+            m_rotationDialog->raise();
+            m_rotationDialog->activateWindow();
+            announceAccessible(tr("Rotation rules opened"));
+        });
+        ui->menuXFB->addAction(rotation);
+        addAction(rotation);
+
         // A backup that only copies when somebody remembers to ask is not a
         // backup, so the client is built at startup whenever it has standing
         // orders — that is what starts its timer and its first pull.
@@ -7654,39 +7703,63 @@ checkDbOpen();
         }
     }
 
+    // What Auto Mode refuses to play again. Remembering only the track just
+    // played is not enough: whenever the pool it draws from is narrow — an
+    // hour's programmed genre, or the handful of tracks that happen to have a
+    // measured BPM — two or three titles ping-pong for hours. The window never
+    // covers more than half the library, so a small one cannot exclude
+    // everything it has. This does not depend on which pass is running, so it
+    // is worked out once.
+    const int windowSize = qMin(m_autoModeNoRepeat, qMax(0, libraryCount / 2));
+    QStringList excluded;
+    for (int i = qMax(0, m_recentAutoPicks.size() - windowSize);
+         i < m_recentAutoPicks.size(); ++i) {
+        const QString &recent = m_recentAutoPicks.at(i);
+        if (!recent.isEmpty() && !excluded.contains(recent))
+            excluded << recent;
+    }
+    // These two are the immediate neighbours and are excluded whatever the
+    // window is. An empty one is left out rather than bound: binding an empty
+    // QString binds SQL NULL, "path <> NULL" is NULL rather than true, and
+    // that is why Auto Mode could never pick its first track from a cold start
+    // until it had already played something.
+    for (const QString &neighbour : {lastPlayedSong, referenceTrack}) {
+        if (!neighbour.isEmpty() && !excluded.contains(neighbour))
+            excluded << neighbour;
+    }
+
     const bool haveGenre = !currentGenre.isEmpty();
     const int lastPass = haveGenre ? 2 : 1; // no genre: pass 1 is already the wide one
+    const int passCount = lastPass + 1;
+
+    QStringList passNames;
     for (int pass = 0; pass <= lastPass; ++pass) {
         const bool matchBpm = (pass == 0 && referenceBpm > 0.0);
+        const bool matchGenre = (pass < 2 && haveGenre);
+        if (matchBpm && matchGenre)
+            passNames << tr("tempo-matched, genre %1").arg(currentGenre);
+        else if (matchBpm)
+            passNames << tr("tempo-matched");
+        else if (matchGenre)
+            passNames << tr("genre %1").arg(currentGenre);
+        else
+            passNames << tr("whole library");
+    }
+
+    const RotationRules::Settings rotationSettings = RotationRules::settings();
+
+    // One pass's worth of candidates. Identical SQL to the three-pass chooser
+    // that was here before, except that it brings back a sample rather than a
+    // single row: the rotation rules need something to choose between, and a
+    // random sample of the pool is still a fair draw from it.
+    auto candidatesForPass = [&](int pass) -> QList<RotationRules::Candidate> {
+        QList<RotationRules::Candidate> out;
+        const bool matchBpm = (pass == 0 && referenceBpm > 0.0);
         if (pass == 0 && !matchBpm)
-            continue; // nothing measured to match against
+            return out;             // nothing measured to match against
         const bool matchGenre = (pass < 2 && haveGenre);
 
-        // What Auto Mode refuses to play again. Remembering only the track
-        // just played is not enough: whenever the pool it draws from is
-        // narrow — an hour's programmed genre, or the handful of tracks that
-        // happen to have a measured BPM — two or three titles ping-pong for
-        // hours. The window never covers more than half the library, so a
-        // small one cannot exclude everything it has.
-        const int windowSize = qMin(m_autoModeNoRepeat, qMax(0, libraryCount / 2));
-        QStringList excluded;
-        for (int i = qMax(0, m_recentAutoPicks.size() - windowSize);
-             i < m_recentAutoPicks.size(); ++i) {
-            const QString &recent = m_recentAutoPicks.at(i);
-            if (!recent.isEmpty() && !excluded.contains(recent))
-                excluded << recent;
-        }
-        // These two are the immediate neighbours and are excluded whatever the
-        // window is. An empty one is left out rather than bound: binding an
-        // empty QString binds SQL NULL, "path <> NULL" is NULL rather than
-        // true, and that is why Auto Mode could never pick its first track
-        // from a cold start until it had already played something.
-        for (const QString &neighbour : {lastPlayedSong, referenceTrack}) {
-            if (!neighbour.isEmpty() && !excluded.contains(neighbour))
-                excluded << neighbour;
-        }
-
-        QString sql = QStringLiteral("select path from musics where 1 = 1");
+        QString sql = QStringLiteral("select id, path, artist, song from musics where 1 = 1");
         if (!excluded.isEmpty()) {
             QStringList placeholders;
             for (int i = 0; i < excluded.size(); ++i)
@@ -7704,7 +7777,7 @@ checkDbOpen();
                                   " and min(abs(bpm - :ref), abs(bpm - :refDouble),"
                                   " abs(bpm - :refHalf)) <= :tolerance");
         }
-        sql += QStringLiteral(" order by random() limit 1");
+        sql += QStringLiteral(" order by random() limit :limit");
 
         QSqlQuery query(db);
         query.prepare(sql);
@@ -7718,54 +7791,63 @@ checkDbOpen();
             query.bindValue(QStringLiteral(":refHalf"), referenceBpm / 2.0);
             query.bindValue(QStringLiteral(":tolerance"), m_bpmTolerance);
         }
+        query.bindValue(QStringLiteral(":limit"), rotationSettings.candidateLimit);
 
         if (!query.exec()) {
             qDebug() << "SQL ERROR: " << query.lastError();
             qDebug() << "SQL was: " << query.lastQuery();
-            return false;
+            return out;
         }
-
-        if (!query.next()) {
+        while (query.next()) {
+            RotationRules::Candidate c;
+            c.musicId = query.value(0).toLongLong();
+            c.path    = query.value(1).toString();
+            c.artist  = query.value(2).toString();
+            c.title   = query.value(3).toString();
+            if (!c.path.isEmpty())
+                out.append(c);
+        }
+        if (out.isEmpty()) {
             if (matchBpm) {
                 qDebug() << "autoMode found nothing within" << m_bpmTolerance
                          << "BPM of" << referenceBpm << "— widening the search";
-                continue;
-            }
-            if (matchGenre) {
+            } else if (matchGenre) {
                 qDebug() << "autoMode found nothing in this hour's genre"
                          << currentGenre << "— falling back to the whole library";
-                continue;
             }
-            // Last resort: a library too small to offer anything *but* what
-            // was just played would otherwise leave the station silent, which
-            // is the one thing Auto Mode exists to prevent. Repeating is
-            // better than dead air.
-            if (!excluded.isEmpty()) {
-                QSqlQuery again(db);
-                if (again.exec(QStringLiteral("select path from musics"
-                                              " order by random() limit 1"))
-                    && again.next()) {
-                    const QString onlyChoice = again.value(0).toString();
-                    qDebug() << "autoMode has nothing it has not played recently;"
-                             << "repeating" << onlyChoice << "rather than going silent";
-                    ui->playlist->addItem(onlyChoice);
-                    rememberAutoModePick(onlyChoice);
-                    return true;
-                }
-            }
-            qDebug() << "autoMode found no track to add (empty library)";
-            return false;
         }
+        return out;
+    };
 
-        const QString path = query.value(0).toString();
+    // Rotation: artist and title separation, dayparts, date windows and the
+    // category weights, relaxed one rule at a time when the pool cannot
+    // satisfy them all. Nothing in here can return "no track" for a library
+    // that has one — only an empty pool can, and that is handled below.
+    const RotationRules::Selection selection =
+        RotationRules::instance()->select(candidatesForPass, passCount, passNames,
+                                          now);
+    if (selection.ok) {
+        const QString path = selection.track.path;
         ui->playlist->addItem(path);
         rememberAutoModePick(path);
-        if (matchBpm) {
-            qDebug() << "autoMode tempo-matched chooser adding:" << path
-                     << "at" << m_bpmLibrary->bpmFor(path) << "BPM, following"
-                     << referenceBpm << "BPM";
+
+        const RotationRules::Decision &d = selection.decision;
+        if (!d.rulesActive) {
+            qDebug() << "autoMode (rotation off) adding:" << path
+                     << "from the" << d.passName << "pass";
+        } else if (d.relaxedRules.isEmpty()) {
+            qDebug() << "autoMode adding:" << path << "—" << d.passName
+                     << "pass," << d.survivors << "of" << d.poolSize
+                     << "candidates passed every rotation rule; category"
+                     << d.category << "weight" << d.weight;
         } else {
-            qDebug() << "autoMode random music chooser adding:" << path;
+            // A rule that keeps having to be relaxed is a rule that is wrong
+            // for this library, and the only way anybody finds that out is by
+            // seeing it said plainly.
+            qWarning() << "autoMode adding:" << path << "—" << d.passName
+                       << "pass, but had to relax:"
+                       << d.relaxedRules.join(QStringLiteral(", "))
+                       << "(" << d.survivors << "of" << d.poolSize << "candidates)";
         }
 
         // Keep the chain going: the track just queued is the reference for
@@ -7774,6 +7856,28 @@ checkDbOpen();
             m_bpmLibrary->analyzeQuietly(path);
         return true;
     }
+
+    // Every pass came back empty, which means the exclusion list has eaten the
+    // library rather than that a rotation rule bit. Last resort: a library too
+    // small to offer anything *but* what was just played would otherwise leave
+    // the station silent, which is the one thing Auto Mode exists to prevent.
+    // Repeating is better than dead air.
+    if (!excluded.isEmpty()) {
+        QSqlQuery again(db);
+        if (again.exec(QStringLiteral("select path from musics"
+                                      " order by random() limit 1"))
+            && again.next()) {
+            const QString onlyChoice = again.value(0).toString();
+            qDebug() << "autoMode has nothing it has not played recently;"
+                     << "repeating" << onlyChoice << "rather than going silent";
+            ui->playlist->addItem(onlyChoice);
+            rememberAutoModePick(onlyChoice);
+            if (m_bpmMatch && m_bpmLibrary)
+                m_bpmLibrary->analyzeQuietly(onlyChoice);
+            return true;
+        }
+    }
+    qDebug() << "autoMode found no track to add (empty library)";
     return false;
 }
 

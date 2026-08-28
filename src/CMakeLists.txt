@@ -36,6 +36,8 @@ set(SOURCES
     dialogs/MobileSyncDialog.cpp
     # As-run log viewer + advertiser report
     dialogs/AirLogDialog.cpp
+    # Rotation editor + the "why did it pick this?" view
+    dialogs/RotationDialog.cpp
     dialogs/DeadAirDialog.cpp
     dialogs/StationSyncDialog.cpp
     dialogs/ProductionSyncDialog.cpp
@@ -64,6 +66,8 @@ set(SOURCES
     services/MusicCache.cpp
     # As-run log: one row per item that actually went to air
     services/AirLog.cpp
+    # Rotation rules: separation, categories, dayparts, seasonal windows
+    services/RotationRules.cpp
     services/DeadAirWatchdog.cpp
     # Basic accessibility (working components)
     services/AccessibilityManager.cpp
@@ -156,6 +160,7 @@ set(HEADERS
     dialogs/ProductionSyncDialog.h
     dialogs/StreamDialog.h
     dialogs/AirLogDialog.h
+    dialogs/RotationDialog.h
     dialogs/DeadAirDialog.h
     # Pads tab
     PadBoard.h
@@ -172,6 +177,7 @@ set(HEADERS
     services/DatabaseOptimizer.h
     services/MusicCache.h
     services/AirLog.h
+    services/RotationRules.h
     services/DeadAirWatchdog.h
     services/AccessibilityManager.h
     services/AccessibilitySettingsService.h
