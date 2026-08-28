@@ -120,6 +120,8 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include "services/BrailleDisplayService.h"
 #include "dialogs/AccessibilityPreferencesDialog.h"
 #include "dialogs/AirLogDialog.h"
+#include "dialogs/DeadAirDialog.h"
+#include "services/DeadAirWatchdog.h"
 #include "dialogs/MobileSyncDialog.h"
 #include "dialogs/ProductionSyncDialog.h"
 #include "dialogs/StationSyncDialog.h"
@@ -265,6 +267,8 @@ player::player(QWidget *parent) :
         qCritical() << "Main thread:" << QApplication::instance()->thread();
         throw std::runtime_error("Player must be created in main thread");
     }
+
+    m_processUptime.start();
 
     qDebug()<<"\nStarting XFB :: Developed by Frédéric Bogaerts @ Netpack - Online Solutions! www.netpack.pt";
 
@@ -3827,6 +3831,11 @@ void player::getDurationForFile(const QString& filePath, std::function<void(cons
 void player::on_btPlay_clicked(){
     qDebug()<<"Play button clicked";
 
+    // Whatever the operator stopped, they have restarted: the watchdog is
+    // allowed to care about silence again.
+    if (m_deadAirWatchdog)
+        m_deadAirWatchdog->noteOperatorPlay();
+
     if(PlayMode=="stopped"){
         // Auto Mode exists so the station never goes silent, so starting it on
         // an empty running order has to put a track up rather than refuse. Do
@@ -4227,6 +4236,11 @@ void player::playNextSong(){
 void player::on_btStop_clicked()
 {
     closeAirLogEntry(QStringLiteral("stopped"));
+
+    // Silence the operator asked for is not dead air. Without this the
+    // watchdog would rescue a station that was deliberately taken down.
+    if (m_deadAirWatchdog)
+        m_deadAirWatchdog->noteOperatorStop();
 
     m_manualAdvancing = true;  // Prevent playbackStateChanged from triggering playNextMedia
 
@@ -5757,6 +5771,32 @@ void player::setupPlaybackShortcuts()
         // open the window first; constructing the service is what honours it.
         if (StreamService::autoStartEnabled())
             streamService()->start();
+
+        // The dead-air watchdog. Same shelf as the rest: a property of this
+        // installation, not of what is on air right now.
+        QAction *deadAir = new QAction(tr("&Dead-Air Watchdog..."), this);
+        deadAir->setMenuRole(QAction::NoRole);
+        deadAir->setStatusTip(tr("What to do when the station goes quiet"));
+        connect(deadAir, &QAction::triggered, this, [this]() {
+            if (!m_deadAirDialog) {
+                m_deadAirDialog = new DeadAirDialog(deadAirWatchdog(), this);
+                m_deadAirDialog->setAttribute(Qt::WA_DeleteOnClose, false);
+                connect(m_deadAirDialog, &DeadAirDialog::announcementRequested,
+                        this, &player::announceAccessible);
+            }
+            m_deadAirDialog->show();
+            m_deadAirDialog->raise();
+            m_deadAirDialog->activateWindow();
+        });
+        ui->menuXFB->addAction(deadAir);
+        addAction(deadAir);
+
+        // Constructing it is what arms it, so an operator who turned it on
+        // does not have to open the window every morning. Reading the setting
+        // rather than building the object unconditionally is what keeps the
+        // "off by default" promise literal: with it off, no timer runs.
+        if (DeadAirWatchdog::loadConfig().enabled)
+            deadAirWatchdog();
         // The as-run log. In the XFB menu with the other station-wide things:
         // it is a property of the installation, not of what is on air now.
         QAction *airLog = new QAction(tr("As-Run &Log..."), this);
@@ -5873,6 +5913,31 @@ StationSyncClient *player::stationSyncClient()
                 ui->statusBar->showMessage(tr("Station backup: %1").arg(reason), 10000);
                 qWarning() << "StationSyncClient:" << reason;
             });
+
+    // The backup side of the dead-air story. The studio publishes a
+    // heartbeat; this machine listens, and when the studio has been dark or
+    // unreachable for the configured period it says so as loudly as a desktop
+    // application can. It stops there on purpose — see monitorTakeOver() for
+    // the manual flow that actually puts a machine on air, which stays a
+    // decision a person makes.
+    connect(m_stationSync, &StationSyncClient::studioWentDark, this,
+            [this](const QString &reason) {
+                qCritical() << "STUDIO DARK:" << reason;
+                ui->statusBar->showMessage(tr("STUDIO DARK — %1").arg(reason), 0);
+                announceAccessible(tr("Studio dark. %1").arg(reason));
+                showAirAlert(tr("The studio is dark"),
+                             tr("%1\n\nThis machine is the backup. Nothing has "
+                                "been put on air automatically — check the "
+                                "studio, and use Take Over when you have "
+                                "decided to.").arg(reason),
+                             true);
+            });
+    connect(m_stationSync, &StationSyncClient::studioCameBack, this,
+            [this](const QString &detail) {
+                qInfo() << "Studio back:" << detail;
+                ui->statusBar->showMessage(detail, 15000);
+                announceAccessible(detail);
+            });
     return m_stationSync;
 }
 
@@ -5897,6 +5962,235 @@ ProductionSyncClient *player::productionSyncClient()
                 qWarning() << "ProductionSyncClient:" << reason;
             });
     return m_productionSync;
+}
+
+// ---------------------------------------------------------------- dead air
+
+// Off by default, and this is the one place that decision is worth arguing.
+// A watchdog that starts rescuing a station nobody has configured a fallback
+// for would interrupt a working installation the first time somebody paused
+// playback to answer the phone, and would start unrelated audio on a machine
+// whose operator never asked for any. The failure it guards against is rare
+// and catastrophic; the false positive is common and immediate. So it stays
+// off until the operator has been through the dialog, seen the threshold, and
+// pointed it at material they are willing to hear go out.
+DeadAirWatchdog *player::deadAirWatchdog()
+{
+    if (m_deadAirWatchdog)
+        return m_deadAirWatchdog;
+
+    m_deadAirWatchdog = new DeadAirWatchdog(this);
+
+    // The level meter's own feed: post-DSP master peaks, the same numbers the
+    // LEDs draw. Emitted only while the FX engine is the active path, which
+    // the watchdog knows and accounts for.
+    if (Xplayer) {
+        connect(Xplayer, &FxPlayer::levels,
+                m_deadAirWatchdog, &DeadAirWatchdog::noteLevels);
+    }
+
+    // Everything else the watchdog needs is a poll of the transport, once a
+    // second, on the main thread — cheap, and it cannot perturb the playback
+    // state machine the way hooking playbackStateChanged would.
+    m_deadAirFeedTimer = new QTimer(this);
+    m_deadAirFeedTimer->setInterval(1000);
+    connect(m_deadAirFeedTimer, &QTimer::timeout, this, [this]() {
+        if (!m_deadAirWatchdog || !Xplayer)
+            return;
+        const bool playing =
+            Xplayer->playbackState() == QMediaPlayer::PlayingState;
+        const bool haveProgramme = ui->playlist->count() > 0
+                                   || !Xplayer->source().isEmpty()
+                                   || PlayMode == "Playing_Segue"
+                                   || autoMode == 1;
+        m_deadAirWatchdog->noteTransport(playing, Xplayer->position(),
+                                         haveProgramme,
+                                         Xplayer->fxEngineActive());
+    });
+    m_deadAirFeedTimer->start();
+
+    connect(m_deadAirWatchdog, &DeadAirWatchdog::tripped, this,
+            [this](DeadAirWatchdog::Reason reason, const QString &detail) {
+        Q_UNUSED(reason)
+        QString what;
+        const bool ok = startDeadAirFallback(&what);
+        m_deadAirWatchdog->noteFallbackStarted(ok, what);
+
+        // A paired phone cannot be called — the sync server is pull-only — so
+        // the incident is published where one can find it.
+        // mobileSyncServer() only constructs the object; it does not open a
+        // port. Recording the incident now means it is already there if the
+        // operator starts the sync server later in the same outage.
+        if (m_deadAirWatchdog->config().notifyPhone) {
+            mobileSyncServer()->postIncident(
+                QStringLiteral("deadair"),
+                QStringLiteral("trip"),
+                ok ? tr("%1 — fallback started: %2").arg(detail, what)
+                   : tr("%1 — FALLBACK FAILED: %2").arg(detail, what));
+        }
+    });
+
+    connect(m_deadAirWatchdog, &DeadAirWatchdog::recovered, this,
+            [this](const QString &detail) {
+        if (m_mobileSyncServer)
+            m_mobileSyncServer->resolveIncident(QStringLiteral("deadair"), detail);
+    });
+
+    // One line per event in xfb.log, next to xfb.conf, plus the status bar.
+    connect(m_deadAirWatchdog, &DeadAirWatchdog::logMessage, this,
+            [this](const QString &message) {
+        qWarning().noquote() << "Dead air:" << message;
+        ui->statusBar->showMessage(message, 20000);
+        announceAccessible(message);
+    });
+
+    connect(m_deadAirWatchdog, &DeadAirWatchdog::alert, this,
+            &player::showAirAlert);
+
+    return m_deadAirWatchdog;
+}
+
+// The rescue itself. The running order is a QListWidget of absolute paths and
+// playNextSong() consumes row 0, so putting the fallback on air is a matter of
+// inserting it at the top and asking for the next song — no new playback path,
+// nothing for the m_manualAdvancing state machine to trip over.
+bool player::startDeadAirFallback(QString *what)
+{
+    const DeadAirWatchdog::Config config =
+        m_deadAirWatchdog ? m_deadAirWatchdog->config()
+                          : DeadAirWatchdog::loadConfig();
+
+    QStringList tracks = DeadAirWatchdog::resolveFallbackTracks(config);
+
+    QString source;
+    if (!tracks.isEmpty()) {
+        source = !config.fallbackPlaylist.isEmpty()
+                     && !DeadAirWatchdog::tracksFromPlaylistFile(
+                            config.fallbackPlaylist).isEmpty()
+                     ? QFileInfo(config.fallbackPlaylist).fileName()
+                     : config.fallbackFolder;
+    } else if (autoMode == 1) {
+        // No fallback configured, but Auto Mode can pick from the library —
+        // which beats silence by a distance.
+        const int before = ui->playlist->count();
+        autoModeGetMoreSongs();
+        if (ui->playlist->count() > before) {
+            if (what)
+                *what = tr("Auto Mode picked %1 track(s) from the library")
+                            .arg(ui->playlist->count() - before);
+            PlayMode = "Playing_Segue";
+            playNextSong();
+            return true;
+        }
+    }
+
+    if (tracks.isEmpty()) {
+        if (what)
+            *what = tr("no fallback playlist or folder is configured, and "
+                       "nothing else could be found to play");
+        return false;
+    }
+
+    // In at the top, in order, so row 0 is the first fallback track.
+    for (int i = tracks.size() - 1; i >= 0; --i)
+        ui->playlist->insertItem(0, tracks.at(i));
+    calculate_playlist_total_time();
+
+    // A stalled engine has to be let go of before anything else will come out
+    // of it — the same release the per-track stall recovery does.
+    m_manualAdvancing = true;
+    Xplayer->stop();
+    Xplayer->setSource(QUrl());
+    Xplayer->resetAudioSink();
+    m_manualAdvancing = false;
+
+    // playNextSong() refuses to replay what it thinks is already on, and
+    // after an outage that memory is exactly wrong.
+    lastPlayedSong.clear();
+    PlayMode = "Playing_Segue";
+    if (darkMode)
+        ui->btPlay->setStyleSheet(kPlayingGreenDarkStyle);
+    else
+        ui->btPlay->setStyleSheet(kPlayingGreenLightStyle);
+    ui->btPlay->setText(tr("Play and Segue"));
+
+    playNextSong();
+
+    const bool started = Xplayer->playbackState() == QMediaPlayer::PlayingState;
+    if (what) {
+        *what = started
+            ? tr("%n track(s) from %1", "", tracks.size())
+                  .arg(source.isEmpty() ? tr("the fallback material") : source)
+            : tr("queued %n track(s) but the player did not start", "",
+                 tracks.size());
+    }
+    return started;
+}
+
+// Modeless on purpose: a modal box would stop the event loop that is trying to
+// get the station back on air. Only one is kept up at a time — an outage that
+// lasts an hour must not bury the screen in windows.
+void player::showAirAlert(const QString &title, const QString &message,
+                          bool critical)
+{
+    if (m_airAlertBox) {
+        m_airAlertBox->setText(message);
+        m_airAlertBox->setWindowTitle(title);
+        m_airAlertBox->raise();
+        return;
+    }
+
+    auto *box = new QMessageBox(critical ? QMessageBox::Critical
+                                         : QMessageBox::Information,
+                                title, message, QMessageBox::Ok, this);
+    box->setAttribute(Qt::WA_DeleteOnClose, true);
+    box->setModal(false);
+    box->setWindowModality(Qt::NonModal);
+    m_airAlertBox = box;
+    box->show();
+    box->raise();
+    box->activateWindow();
+}
+
+// What a backup station is told when it asks whether this one is still on air.
+QJsonObject player::stationHeartbeatState() const
+{
+    QJsonObject state;
+
+    const bool playing = Xplayer
+        && Xplayer->playbackState() == QMediaPlayer::PlayingState;
+
+    QString word = playing ? QStringLiteral("playing") : QStringLiteral("silent");
+    if (!playing && ui->playlist->count() == 0 && PlayMode == "stopped")
+        word = QStringLiteral("off");
+
+    if (m_deadAirWatchdog) {
+        switch (m_deadAirWatchdog->airState()) {
+        case DeadAirWatchdog::AirState::Off:      word = QStringLiteral("off"); break;
+        case DeadAirWatchdog::AirState::Playing:  word = QStringLiteral("playing"); break;
+        case DeadAirWatchdog::AirState::Silent:   word = QStringLiteral("silent"); break;
+        case DeadAirWatchdog::AirState::Stalled:  word = QStringLiteral("stalled"); break;
+        case DeadAirWatchdog::AirState::Fallback: word = QStringLiteral("fallback"); break;
+        }
+        state.insert(QStringLiteral("watchdog"), true);
+        state.insert(QStringLiteral("watchdogEnabled"),
+                     m_deadAirWatchdog->config().enabled);
+        state.insert(QStringLiteral("levelDb"), m_deadAirWatchdog->lastLevelDb());
+    } else {
+        state.insert(QStringLiteral("watchdog"), false);
+    }
+
+    state.insert(QStringLiteral("state"), word);
+    state.insert(QStringLiteral("track"), QFileInfo(lastPlayedSong).fileName());
+    state.insert(QStringLiteral("path"), lastPlayedSong);
+    state.insert(QStringLiteral("positionMs"), Xplayer ? Xplayer->position() : -1);
+    state.insert(QStringLiteral("durationMs"), Xplayer ? Xplayer->duration() : -1);
+    state.insert(QStringLiteral("playlistCount"), ui->playlist->count());
+    state.insert(QStringLiteral("autoMode"), autoMode == 1);
+    state.insert(QStringLiteral("playMode"), PlayMode);
+    state.insert(QStringLiteral("uptime"),
+                 m_processUptime.isValid() ? m_processUptime.elapsed() / 1000 : 0);
+    return state;
 }
 
 // Created on demand and inert until told to start: an operator who never
@@ -5981,6 +6275,12 @@ MobileSyncServer *player::mobileSyncServer()
         return m_mobileSyncServer;
 
     m_mobileSyncServer = new MobileSyncServer(this);
+
+    // The heartbeat a backup station polls. Same arrangement as the playlist
+    // provider below: only the player knows what is on air, and the server has
+    // no business reaching into it.
+    m_mobileSyncServer->setStationStateProvider(
+        [this]() { return stationHeartbeatState(); });
 
     // Only the player can read the playlist that is loaded right now, and that
     // is the one an operator most often wants to carry out of the studio.

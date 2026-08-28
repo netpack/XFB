@@ -108,10 +108,15 @@ StationSyncClient::StationSyncClient(QObject *parent)
     m_autoTimer->setSingleShot(false);
     connect(m_autoTimer, &QTimer::timeout, this, &StationSyncClient::sync);
 
+    m_monitorTimer = new QTimer(this);
+    m_monitorTimer->setSingleShot(false);
+    connect(m_monitorTimer, &QTimer::timeout, this, &StationSyncClient::pollHeartbeat);
+
     load();
 
     if (m_autoSyncMinutes > 0)
         m_autoTimer->start(m_autoSyncMinutes * 60 * 1000);
+    restartMonitor();
 }
 
 StationSyncClient::~StationSyncClient() = default;
@@ -134,6 +139,11 @@ void StationSyncClient::load()
     m_peerName = settings.value(QStringLiteral("PeerName")).toString();
     m_autoSyncMinutes = settings.value(QStringLiteral("AutoSyncMinutes"), 0).toInt();
     m_syncOnStart = settings.value(QStringLiteral("SyncOnStart"), false).toBool();
+    m_monitorSeconds = settings.value(QStringLiteral("MonitorSeconds"), 0).toInt();
+    m_darkAfterSeconds = settings.value(QStringLiteral("DarkAfterSeconds"), 90).toInt();
+    if (m_monitorSeconds > 0)
+        m_monitorSeconds = qBound(5, m_monitorSeconds, 3600);
+    m_darkAfterSeconds = qBound(15, m_darkAfterSeconds, 86400);
     m_lastSync = settings.value(QStringLiteral("LastSync")).toDateTime();
     m_lastResult = settings.value(QStringLiteral("LastResult")).toString();
     for (const QString &category : kMediaTables) {
@@ -155,6 +165,8 @@ void StationSyncClient::save()
     settings.setValue(QStringLiteral("PeerName"), m_peerName);
     settings.setValue(QStringLiteral("AutoSyncMinutes"), m_autoSyncMinutes);
     settings.setValue(QStringLiteral("SyncOnStart"), m_syncOnStart);
+    settings.setValue(QStringLiteral("MonitorSeconds"), m_monitorSeconds);
+    settings.setValue(QStringLiteral("DarkAfterSeconds"), m_darkAfterSeconds);
     settings.setValue(QStringLiteral("LastSync"), m_lastSync);
     settings.setValue(QStringLiteral("LastResult"), m_lastResult);
     for (auto it = m_roots.constBegin(); it != m_roots.constEnd(); ++it)
@@ -170,6 +182,7 @@ void StationSyncClient::setPeer(const QString &host, quint16 port)
     m_host = host.trimmed();
     m_port = port ? port : MobileSyncServer::defaultPort();
     save();
+    restartMonitor();
 }
 
 void StationSyncClient::forgetPeer()
@@ -177,6 +190,7 @@ void StationSyncClient::forgetPeer()
     m_token.clear();
     m_peerName.clear();
     save();
+    restartMonitor();
 }
 
 void StationSyncClient::setAutoSyncMinutes(int minutes)
@@ -193,6 +207,123 @@ void StationSyncClient::setSyncOnStart(bool on)
 {
     m_syncOnStart = on;
     save();
+}
+
+// -------------------------------------------------------- watching the studio
+
+void StationSyncClient::setMonitorSeconds(int seconds)
+{
+    m_monitorSeconds = seconds > 0 ? qBound(5, seconds, 3600) : 0;
+    save();
+    restartMonitor();
+}
+
+void StationSyncClient::setDarkAfterSeconds(int seconds)
+{
+    m_darkAfterSeconds = qBound(15, seconds, 86400);
+    save();
+}
+
+void StationSyncClient::restartMonitor()
+{
+    if (m_monitorSeconds > 0 && paired() && !m_host.isEmpty()) {
+        // Start the clock now rather than at zero: a backup that has just
+        // been launched has not yet failed to hear anything.
+        if (!m_lastGoodHeartbeat.isValid())
+            m_lastGoodHeartbeat = QDateTime::currentDateTime();
+        m_monitorTimer->start(m_monitorSeconds * 1000);
+        pollHeartbeat();
+    } else {
+        m_monitorTimer->stop();
+        if (m_studioDark) {
+            m_studioDark = false;
+            emit studioCameBack(tr("Studio monitoring turned off."));
+        }
+        m_studioState.clear();
+    }
+}
+
+void StationSyncClient::pollHeartbeat()
+{
+    if (!paired() || m_host.isEmpty())
+        return;
+    if (m_heartbeatReply)   // the previous poll is still out; do not stack them
+        return;
+
+    QNetworkReply *reply = get(QStringLiteral("/api/station/heartbeat"));
+    m_heartbeatReply = reply;
+
+    // A studio that has crashed hard answers nothing at all, so a poll that
+    // never returns must not be the thing that keeps the alarm quiet.
+    QTimer::singleShot(qMin(10, qMax(3, m_monitorSeconds)) * 1000, reply,
+                       [reply]() { if (reply->isRunning()) reply->abort(); });
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        reply->deleteLater();
+        if (m_heartbeatReply == reply)
+            m_heartbeatReply = nullptr;
+
+        if (reply->error() != QNetworkReply::NoError) {
+            applyHeartbeat(false, QJsonObject(), reply->errorString());
+            return;
+        }
+        const QJsonDocument document = QJsonDocument::fromJson(reply->readAll());
+        if (!document.isObject()) {
+            applyHeartbeat(false, QJsonObject(),
+                           tr("the station answered something unreadable"));
+            return;
+        }
+        applyHeartbeat(true, document.object(), QString());
+    });
+}
+
+void StationSyncClient::applyHeartbeat(bool reachable, const QJsonObject &state,
+                                       const QString &error)
+{
+    const QDateTime now = QDateTime::currentDateTime();
+
+    QString reason;
+    bool healthy = false;
+
+    if (!reachable) {
+        m_studioState = tr("unreachable");
+        reason = tr("the studio machine is not answering (%1)").arg(error);
+    } else {
+        emit heartbeat(state);
+        const QString word = state.value(QStringLiteral("state")).toString();
+        m_studioState = word;
+        // "fallback" is the studio's own watchdog holding it up: the station
+        // is on air, so this is not darkness — but it is worth seeing, which
+        // is what the incident fields in the heartbeat are for.
+        healthy = (word == QLatin1String("playing")
+                   || word == QLatin1String("fallback"));
+        if (!healthy) {
+            reason = tr("the studio reports \"%1\"")
+                         .arg(word.isEmpty() ? tr("nothing") : word);
+        }
+    }
+
+    if (healthy) {
+        m_lastGoodHeartbeat = now;
+        if (m_studioDark) {
+            m_studioDark = false;
+            emit studioCameBack(tr("The studio is making sound again (%1).")
+                                    .arg(m_studioState));
+        }
+        return;
+    }
+
+    if (!m_lastGoodHeartbeat.isValid())
+        m_lastGoodHeartbeat = now;
+
+    const qint64 darkFor = m_lastGoodHeartbeat.secsTo(now);
+    if (!m_studioDark && darkFor >= m_darkAfterSeconds) {
+        m_studioDark = true;
+        emit studioWentDark(tr("No sound from %1 for %2 seconds — %3.")
+                                .arg(m_peerName.isEmpty() ? m_host : m_peerName)
+                                .arg(darkFor)
+                                .arg(reason));
+    }
 }
 
 QString StationSyncClient::localRoot(const QString &category) const
@@ -328,6 +459,7 @@ void StationSyncClient::pairWith(const QString &host, quint16 port, const QStrin
         m_token = token;
         m_peerName = m_host;
         save();
+        restartMonitor();   // there is now a station worth listening to
         emit pairingSucceeded(m_peerName);
     });
 }

@@ -77,6 +77,10 @@ private:
     QCheckBox    *m_syncOnStart = nullptr;
     QSpinBox     *m_autoMinutes = nullptr;
     QLabel       *m_lastSync = nullptr;
+    // Watching the studio's heartbeat from the machine standing by.
+    QSpinBox     *m_monitorSeconds = nullptr;
+    QSpinBox     *m_darkAfterSeconds = nullptr;
+    QLabel       *m_studioStatus = nullptr;
 
     QTimer       *m_refreshTimer = nullptr;
 };

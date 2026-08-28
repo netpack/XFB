@@ -88,6 +88,24 @@ public:
         PeerRole role = PeerRole::Mobile;
     };
 
+    /**
+     * Something that went wrong on air, held for a paired device to collect.
+     *
+     * This server is pull-only by construction — it cannot open a connection
+     * to a phone, and inventing a push service (a cloud relay, a registered
+     * FCM sender, an account) would drag half a product into an application
+     * that currently needs no account at all. So an incident is *published*
+     * here and the companion app picks it up the next time it looks, which
+     * for a phone on the studio wifi is a matter of seconds.
+     */
+    struct Incident {
+        QDateTime when;
+        QString   kind;      ///< "deadair"
+        QString   reason;    ///< "silence" | "stall" | "stopped"
+        QString   detail;    ///< the human sentence
+        QDateTime resolvedAt;///< invalid while it is still going on
+    };
+
     /** One file the backup station has to end up holding a copy of. */
     struct MirrorFile {
         QString id;
@@ -246,6 +264,30 @@ public:
      */
     QString companionDropDirectory() const;
 
+    // --- incidents and the heartbeat ---------------------------------------
+
+    /**
+     * Publishes an incident on GET /api/incidents, where any paired device
+     * can see it. Returns nothing and costs nothing when nobody is listening:
+     * the point is that the record is already there when somebody looks.
+     */
+    void postIncident(const QString &kind, const QString &reason,
+                      const QString &detail);
+
+    /** Closes the newest open incident of @p kind. */
+    void resolveIncident(const QString &kind, const QString &detail);
+
+    QVector<Incident> incidents() const { return m_incidents; }
+
+    /**
+     * Where GET /api/station/heartbeat gets its answer.
+     *
+     * Only the player knows what is on air, and the server has no business
+     * reaching into it, so the player installs a provider here — the same
+     * shape as setLivePlaylistProvider() above.
+     */
+    void setStationStateProvider(std::function<QJsonObject()> provider);
+
     QStringList syncSet() const { return m_syncSet; }
     /** Adds paths, ignoring duplicates. Returns how many were actually new. */
     int addToSyncSet(const QStringList &paths);
@@ -298,6 +340,9 @@ private:
     void handlePlaylists(QTcpSocket *socket);
     void handlePlaylist(QTcpSocket *socket, const Request &request);
     void handleTrack(QTcpSocket *socket, const Request &request);
+    void handleIncidents(QTcpSocket *socket, const Request &request);
+    /** The backup's view of whether this station is still making sound. */
+    void handleStationHeartbeat(QTcpSocket *socket);
 
     // production computers (another XFB that prepares what this one plays)
     void handleProductionHello(QTcpSocket *socket);
@@ -367,7 +412,15 @@ private:
     QDateTime m_stationIndexBuiltAt;
 
     std::function<QVector<Track>()> m_livePlaylistProvider;
+    std::function<QJsonObject()> m_stationStateProvider;
     QString m_playlistsDir;
+
+    /// Recent incidents, newest last, capped: a station that fails all night
+    /// must not fill memory with its own bad news.
+    QVector<Incident> m_incidents;
+    static constexpr int kMaxIncidents = 50;
+    /// When this server object was made, for the heartbeat's uptime.
+    QDateTime m_startedAt;
 
     /// Absolute paths marked on the desktop, in the order they were added.
     QStringList m_syncSet;

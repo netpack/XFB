@@ -160,6 +160,35 @@ StationSyncDialog::StationSyncDialog(MobileSyncServer *server,
     m_lastSync->setWordWrap(true);
     backupLayout->addWidget(m_lastSync);
 
+    // --- watching the studio ------------------------------------------------
+    // A mirror of the station's music is not a backup if nobody notices the
+    // studio has gone quiet. This machine polls the station's heartbeat and
+    // says so, loudly, on this screen. It stops there: putting a machine on
+    // air stays a decision a person makes, with the Take Over button.
+    auto *watchRow = new QHBoxLayout;
+    watchRow->addWidget(new QLabel(tr("Check the studio every"), backupBox));
+    m_monitorSeconds = new QSpinBox(backupBox);
+    m_monitorSeconds->setRange(0, 3600);
+    m_monitorSeconds->setSuffix(tr(" seconds"));
+    m_monitorSeconds->setSpecialValueText(tr("never"));
+    m_monitorSeconds->setValue(m_client ? m_client->monitorSeconds() : 0);
+    m_monitorSeconds->setAccessibleName(tr("How often to check the studio"));
+    watchRow->addWidget(m_monitorSeconds);
+    watchRow->addWidget(new QLabel(tr("and warn after"), backupBox));
+    m_darkAfterSeconds = new QSpinBox(backupBox);
+    m_darkAfterSeconds->setRange(15, 86400);
+    m_darkAfterSeconds->setSuffix(tr(" seconds"));
+    m_darkAfterSeconds->setValue(m_client ? m_client->darkAfterSeconds() : 90);
+    m_darkAfterSeconds->setAccessibleName(
+        tr("How long the studio may be dark before the alarm"));
+    watchRow->addWidget(m_darkAfterSeconds);
+    watchRow->addStretch();
+    backupLayout->addLayout(watchRow);
+
+    m_studioStatus = new QLabel(backupBox);
+    m_studioStatus->setWordWrap(true);
+    backupLayout->addWidget(m_studioStatus);
+
     auto *warning = new QLabel(
         tr("A sync makes this machine's catalogue match the station's: entries "
            "this machine has that the station does not are removed from the "
@@ -216,6 +245,16 @@ StationSyncDialog::StationSyncDialog(MobileSyncServer *server,
     connect(m_syncOnStart, &QCheckBox::toggled, this, [this](bool on) {
         if (m_client)
             m_client->setSyncOnStart(on);
+    });
+    connect(m_monitorSeconds, &QSpinBox::valueChanged, this, [this](int seconds) {
+        if (m_client)
+            m_client->setMonitorSeconds(seconds);
+        updateBackupSide();
+    });
+    connect(m_darkAfterSeconds, &QSpinBox::valueChanged, this, [this](int seconds) {
+        if (m_client)
+            m_client->setDarkAfterSeconds(seconds);
+        updateBackupSide();
     });
     connect(m_autoMinutes, &QSpinBox::valueChanged, this, [this](int minutes) {
         if (m_client)
@@ -399,6 +438,27 @@ void StationSyncDialog::updateBackupSide()
         ? tr("Last sync: %1 — %2").arg(last.toString(Qt::TextDate),
                                        m_client->lastResult())
         : tr("This machine has never synced."));
+
+    if (m_client->monitorSeconds() <= 0) {
+        m_studioStatus->setText(tr("Not watching the studio."));
+        m_studioStatus->setStyleSheet(QString());
+    } else if (m_client->studioIsDark()) {
+        m_studioStatus->setText(
+            tr("THE STUDIO IS DARK. Nothing has been put on air automatically "
+               "— that is still yours to decide."));
+        m_studioStatus->setStyleSheet(QStringLiteral("color: red; font-weight: bold;"));
+    } else {
+        const QDateTime good = m_client->lastGoodHeartbeat();
+        m_studioStatus->setText(
+            tr("Studio: %1%2")
+                .arg(m_client->studioState().isEmpty() ? tr("not heard from yet")
+                                                       : m_client->studioState(),
+                     good.isValid()
+                         ? tr(" — last making sound at %1")
+                               .arg(good.toString(QStringLiteral("hh:mm:ss")))
+                         : QString()));
+        m_studioStatus->setStyleSheet(QString());
+    }
 }
 
 void StationSyncDialog::refresh()

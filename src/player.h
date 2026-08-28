@@ -43,6 +43,7 @@ class QSplitter;
 class QScrollArea;
 class QSpacerItem;
 class QMovie;
+class QJsonObject;
 
 // Project forward declarations
 class TorNetworkService;
@@ -578,6 +579,9 @@ private slots:
 
     // LP deck scratching state (index 0 = deck 1, 1 = deck 2)
     QElapsedTimer m_scratchClock;
+    /// Started in the constructor: how long this XFB has been up, which is
+    /// what a backup station's heartbeat asks for.
+    QElapsedTimer m_processUptime;
     bool m_lpScratching[2] = {false, false};
     double m_lpLastAngleDeg[2] = {0.0, 0.0};
     qint64 m_lpLastMoveMs[2] = {0, 0};
@@ -663,6 +667,26 @@ private slots:
     void updateStreamNowPlaying(const QString &filePath);
     QPointer<class StreamService> m_streamService;
     QPointer<class StreamDialog> m_streamDialog;
+
+    // --- Dead air ---
+    // Watches the master level and the transport, and puts evergreen material
+    // on when the station goes quiet. Created at startup only when the
+    // operator has turned it on — a watchdog nobody asked for is a timer
+    // nobody asked for.
+    class DeadAirWatchdog *deadAirWatchdog();
+    /** Queues the configured fallback material and starts it playing.
+     *  @param what receives a description of what went on, or why nothing did.
+     *  @return true when audio was actually started. */
+    bool startDeadAirFallback(QString *what);
+    /** Everything GET /api/station/heartbeat reports about this machine. */
+    QJsonObject stationHeartbeatState() const;
+    /** The alert an operator cannot miss, without blocking the event loop. */
+    void showAirAlert(const QString &title, const QString &message, bool critical);
+    QPointer<class DeadAirWatchdog> m_deadAirWatchdog;
+    QPointer<class DeadAirDialog> m_deadAirDialog;
+    QPointer<class QMessageBox> m_airAlertBox;
+    /// Samples the transport for the watchdog once a second.
+    QTimer *m_deadAirFeedTimer = nullptr;
 
     // --- Adding library tracks to the playlist from the keyboard ---
     // The library views' only route into the playlist used to be the

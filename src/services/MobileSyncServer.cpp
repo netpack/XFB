@@ -104,6 +104,7 @@ MobileSyncServer::MobileSyncServer(QObject *parent)
 
     QSettings settings;
     m_playlistsDir = settings.value(QStringLiteral("MobileSync/PlaylistsPath")).toString();
+    m_startedAt = QDateTime::currentDateTime();
 }
 
 MobileSyncServer::~MobileSyncServer()
@@ -558,7 +559,12 @@ void MobileSyncServer::route(QTcpSocket *socket, const Request &request)
             sendError(socket, 403, tr("This device is not paired as a backup station."));
             return;
         }
-        if (request.path == QLatin1String("/api/station/manifest")) {
+        if (request.path == QLatin1String("/api/station/heartbeat")) {
+            // Polled every few seconds by a machine standing by, so it is
+            // deliberately not announced through deviceActivity(): the
+            // operator's activity list would be nothing else.
+            handleStationHeartbeat(socket);
+        } else if (request.path == QLatin1String("/api/station/manifest")) {
             emit deviceActivity(device, tr("read the station manifest"));
             handleStationManifest(socket);
         } else if (request.path == QLatin1String("/api/station/file")) {
@@ -582,6 +588,10 @@ void MobileSyncServer::route(QTcpSocket *socket, const Request &request)
         handlePlaylist(socket, request);
     } else if (request.path == QLatin1String("/api/track")) {
         handleTrack(socket, request);
+    } else if (request.path == QLatin1String("/api/incidents")) {
+        // Every paired role may read this. The server cannot call a phone, so
+        // this is where "the station went dark" is left for one to find.
+        handleIncidents(socket, request);
     } else {
         sendError(socket, 404, tr("No such endpoint."));
     }
@@ -926,6 +936,110 @@ void MobileSyncServer::handleTrack(QTcpSocket *socket, const Request &request)
     }
 
     sendFile(socket, path, request);
+}
+
+// --------------------------------------------------------------- incidents
+
+void MobileSyncServer::postIncident(const QString &kind, const QString &reason,
+                                    const QString &detail)
+{
+    Incident incident;
+    incident.when = QDateTime::currentDateTime();
+    incident.kind = kind;
+    incident.reason = reason;
+    incident.detail = detail;
+    m_incidents.append(incident);
+    while (m_incidents.size() > kMaxIncidents)
+        m_incidents.removeFirst();
+}
+
+void MobileSyncServer::resolveIncident(const QString &kind, const QString &detail)
+{
+    for (int i = m_incidents.size() - 1; i >= 0; --i) {
+        if (m_incidents[i].kind != kind || m_incidents[i].resolvedAt.isValid())
+            continue;
+        m_incidents[i].resolvedAt = QDateTime::currentDateTime();
+        if (!detail.isEmpty())
+            m_incidents[i].detail += QStringLiteral(" — ") + detail;
+        return;
+    }
+}
+
+void MobileSyncServer::setStationStateProvider(std::function<QJsonObject()> provider)
+{
+    m_stationStateProvider = std::move(provider);
+}
+
+// Any paired device may read this: a phone that cannot be told the station is
+// dark is not much of a companion, and an incident says nothing about the
+// library it would not already be allowed to see.
+void MobileSyncServer::handleIncidents(QTcpSocket *socket, const Request &request)
+{
+    bool ok = false;
+    const int since = request.query.value(QStringLiteral("since")).toInt(&ok);
+
+    QJsonArray array;
+    for (const Incident &incident : m_incidents) {
+        if (ok && since > 0 && incident.when.toSecsSinceEpoch() <= since)
+            continue;
+        QJsonObject object;
+        object.insert(QStringLiteral("at"),
+                      incident.when.toString(Qt::ISODate));
+        object.insert(QStringLiteral("epoch"), incident.when.toSecsSinceEpoch());
+        object.insert(QStringLiteral("kind"), incident.kind);
+        object.insert(QStringLiteral("reason"), incident.reason);
+        object.insert(QStringLiteral("detail"), incident.detail);
+        object.insert(QStringLiteral("open"), !incident.resolvedAt.isValid());
+        if (incident.resolvedAt.isValid()) {
+            object.insert(QStringLiteral("resolvedAt"),
+                          incident.resolvedAt.toString(Qt::ISODate));
+        }
+        array.append(object);
+    }
+
+    QJsonObject root;
+    root.insert(QStringLiteral("station"), QSysInfo::machineHostName());
+    root.insert(QStringLiteral("now"),
+                QDateTime::currentDateTime().toString(Qt::ISODate));
+    root.insert(QStringLiteral("incidents"), array);
+    sendJson(socket, QJsonDocument(root).toJson(QJsonDocument::Compact));
+}
+
+// The backup's whole view of whether this station is still making sound. Kept
+// deliberately small and free of file access: a machine standing by asks for
+// it every few seconds, forever.
+void MobileSyncServer::handleStationHeartbeat(QTcpSocket *socket)
+{
+    QJsonObject root = m_stationStateProvider ? m_stationStateProvider()
+                                              : QJsonObject();
+
+    if (!root.contains(QStringLiteral("state"))) {
+        // No provider installed (a headless or half-built XFB): say so
+        // honestly rather than claiming the station is fine.
+        root.insert(QStringLiteral("state"), QStringLiteral("unknown"));
+    }
+    root.insert(QStringLiteral("station"), QSysInfo::machineHostName());
+    root.insert(QStringLiteral("protocol"), protocolVersion());
+    root.insert(QStringLiteral("now"),
+                QDateTime::currentDateTime().toString(Qt::ISODate));
+    if (m_startedAt.isValid()) {
+        root.insert(QStringLiteral("serverUptime"),
+                    m_startedAt.secsTo(QDateTime::currentDateTime()));
+    }
+
+    int openIncidents = 0;
+    for (const Incident &incident : m_incidents) {
+        if (!incident.resolvedAt.isValid())
+            ++openIncidents;
+    }
+    root.insert(QStringLiteral("openIncidents"), openIncidents);
+    if (!m_incidents.isEmpty()) {
+        root.insert(QStringLiteral("lastIncident"), m_incidents.last().detail);
+        root.insert(QStringLiteral("lastIncidentAt"),
+                    m_incidents.last().when.toString(Qt::ISODate));
+    }
+
+    sendJson(socket, QJsonDocument(root).toJson(QJsonDocument::Compact));
 }
 
 // ----------------------------------------------------------- track index

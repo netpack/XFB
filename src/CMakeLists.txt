@@ -33,6 +33,7 @@ set(SOURCES
     dialogs/MobileSyncDialog.cpp
     # As-run log viewer + advertiser report
     dialogs/AirLogDialog.cpp
+    dialogs/DeadAirDialog.cpp
     dialogs/StationSyncDialog.cpp
     dialogs/ProductionSyncDialog.cpp
     dialogs/StreamDialog.cpp
@@ -60,6 +61,7 @@ set(SOURCES
     services/MusicCache.cpp
     # As-run log: one row per item that actually went to air
     services/AirLog.cpp
+    services/DeadAirWatchdog.cpp
     # Basic accessibility (working components)
     services/AccessibilityManager.cpp
     services/AccessibilitySettingsService.cpp
@@ -149,6 +151,7 @@ set(HEADERS
     dialogs/ProductionSyncDialog.h
     dialogs/StreamDialog.h
     dialogs/AirLogDialog.h
+    dialogs/DeadAirDialog.h
     # Pads tab
     PadBoard.h
     # Service layer headers
@@ -164,6 +167,7 @@ set(HEADERS
     services/DatabaseOptimizer.h
     services/MusicCache.h
     services/AirLog.h
+    services/DeadAirWatchdog.h
     services/AccessibilityManager.h
     services/AccessibilitySettingsService.h
     services/BrailleDisplayService.h

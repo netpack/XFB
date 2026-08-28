@@ -86,6 +86,32 @@ public:
     QDateTime lastSync() const { return m_lastSync; }
     QString lastResult() const { return m_lastResult; }
 
+    // --- watching the studio -------------------------------------------------
+
+    /**
+     * A mirror of last week's music is not a backup if nobody notices that
+     * the studio has gone quiet. This polls the station's own heartbeat and
+     * raises the alarm on the machine standing by.
+     *
+     * It never touches this machine's transport. Deciding to go on air is a
+     * human decision with a human's judgement behind it — see
+     * player::monitorTakeOver() for the manual flow this stops short of.
+     */
+    int monitorSeconds() const { return m_monitorSeconds; }
+    /** 0 turns the heartbeat off entirely. */
+    void setMonitorSeconds(int seconds);
+
+    /** How long the studio may be dark or unreachable before the alarm. */
+    int darkAfterSeconds() const { return m_darkAfterSeconds; }
+    void setDarkAfterSeconds(int seconds);
+
+    /** True while the alarm is standing. */
+    bool studioIsDark() const { return m_studioDark; }
+    /** The last word the studio used about itself, or why it could not. */
+    QString studioState() const { return m_studioState; }
+    /** When a heartbeat last said the studio was making sound. */
+    QDateTime lastGoodHeartbeat() const { return m_lastGoodHeartbeat; }
+
     bool busy() const { return m_busy; }
     Stage stage() const { return m_stage; }
 
@@ -116,6 +142,17 @@ signals:
     void finished(const QString &summary);
     void failed(const QString &reason);
 
+    /** Every answered heartbeat, for a status display. */
+    void heartbeat(const QJsonObject &state);
+    /**
+     * The studio has been dark or unreachable for longer than the configured
+     * period. Loud, actionable, and on this machine only — nothing switches
+     * itself on air on the strength of it.
+     */
+    void studioWentDark(const QString &reason);
+    /** ...and it came back. */
+    void studioCameBack(const QString &detail);
+
 private:
     /** One file this machine still has to fetch. */
     struct FileJob {
@@ -143,12 +180,19 @@ private:
     void completeSync();
     void abortSync(const QString &reason);
 
+    void pollHeartbeat();
+    void applyHeartbeat(bool reachable, const QJsonObject &state,
+                        const QString &error);
+    void restartMonitor();
+
     void setBusy(bool busy);
     void setStage(Stage stage, const QString &description);
     void reportProgress(const QString &message = QString());
 
     QNetworkAccessManager *m_net = nullptr;
     QTimer *m_autoTimer = nullptr;
+    QTimer *m_monitorTimer = nullptr;
+    QNetworkReply *m_heartbeatReply = nullptr;
 
     QString m_host;
     quint16 m_port = 0;
@@ -156,6 +200,14 @@ private:
     QString m_peerName;
     int m_autoSyncMinutes = 0;
     bool m_syncOnStart = false;
+
+    // watching the studio
+    int  m_monitorSeconds = 0;      ///< 0: not watching
+    int  m_darkAfterSeconds = 90;
+    bool m_studioDark = false;
+    QString m_studioState;
+    QDateTime m_lastGoodHeartbeat;
+
     QDateTime m_lastSync;
     QString m_lastResult;
     QHash<QString, QString> m_roots;   ///< category -> folder override
