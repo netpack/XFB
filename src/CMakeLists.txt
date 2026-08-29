@@ -38,6 +38,9 @@ set(SOURCES
     # Intro (ramp) / outro detection from the waveform + the library columns
     audio/IntroDetector.cpp
     audio/IntroLibrary.cpp
+    # Voice tracking: the take's recorder and the ducking it writes
+    audio/VoiceRecorder.cpp
+    audio/VoiceDuck.cpp
     dialogs/AudioFxDialog.cpp
     dialogs/MobileSyncDialog.cpp
     # As-run log viewer + advertiser report
@@ -50,6 +53,8 @@ set(SOURCES
     dialogs/StationSyncDialog.cpp
     dialogs/ProductionSyncDialog.cpp
     dialogs/StreamDialog.cpp
+    # Voice track: record the link over a join, XFB writes the ducking
+    dialogs/VoiceTrackDialog.cpp
     # Playlist sound-wave view (crossfade preparation)
     PlaylistWaveView.cpp
     # Pads tab: touch-friendly grid of instant-play pads (cart wall)
@@ -167,6 +172,8 @@ set(HEADERS
     audio/LoudnessScanner.h
     audio/IntroDetector.h
     audio/IntroLibrary.h
+    audio/VoiceRecorder.h
+    audio/VoiceDuck.h
     dialogs/AudioFxDialog.h
     dialogs/MobileSyncDialog.h
     dialogs/StationSyncDialog.h
@@ -176,6 +183,7 @@ set(HEADERS
     dialogs/RotationDialog.h
     dialogs/DeadAirDialog.h
     dialogs/RequestTrayDialog.h
+    dialogs/VoiceTrackDialog.h
     # Pads tab
     PadBoard.h
     # Service layer headers

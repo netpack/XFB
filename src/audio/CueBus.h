@@ -73,6 +73,10 @@ public:
     bool isAvailable(QString *why = nullptr) const;
 
     bool isCueing() const;
+    /** How far into the cued file playback has reached; -1 when idle. Polled
+     *  by the voice-track dialog, which has to switch monitor sources at an
+     *  exact moment on the timeline. */
+    qint64 cuePosition() const;
     QString currentLabel() const { return m_label; }
     QUrl currentSource() const { return m_source; }
 
@@ -82,6 +86,15 @@ public:
 public slots:
     /** Start auditioning @a file privately. False (with cueFailed) on refusal. */
     bool cue(const QUrl &file, const QString &label);
+    /**
+     * Cue @a file starting @a startMs into it, rather than from the top.
+     *
+     * Voice tracking needs this: what the presenter has to hear while they
+     * record is the last twenty seconds of the outgoing song, not its
+     * beginning. Same refusal rules as cue() — this is still pre-fade
+     * listen, and it still will not run onto the on-air output.
+     */
+    bool cueFrom(const QUrl &file, const QString &label, qint64 startMs);
     /** Cue @a file, or stop if that same file is already being cued. */
     void toggleCue(const QUrl &file, const QString &label);
     void stopCue();

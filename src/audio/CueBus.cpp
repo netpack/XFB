@@ -177,6 +177,23 @@ bool CueBus::cue(const QUrl &file, const QString &label)
     return true;
 }
 
+bool CueBus::cueFrom(const QUrl &file, const QString &label, qint64 startMs)
+{
+    if (!cue(file, label))
+        return false;
+    // Seek after play(), the order the transition audition in
+    // PlaylistWaveView uses: a seek issued while the engine is still stopped
+    // is only remembered, and the decoder then spawns twice.
+    if (startMs > 0)
+        m_player->setPosition(startMs);
+    return true;
+}
+
+qint64 CueBus::cuePosition() const
+{
+    return isCueing() ? m_player->position() : -1;
+}
+
 void CueBus::toggleCue(const QUrl &file, const QString &label)
 {
     if (isCueing() && file == m_source) {

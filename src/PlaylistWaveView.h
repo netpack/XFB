@@ -47,6 +47,17 @@ public:
     /** Item data role: volume line (envelope), encoded as "ms:gain;..." */
     static constexpr int VolumeEnvelopeRole = Qt::UserRole + 102;
 
+    /** Item data role: true when this row is a recorded voice track (a
+     *  presenter's link) rather than a music item.
+     *
+     *  It changes nothing about how the row is stored — a voice track is an
+     *  ordinary playlist item with an ordinary overlap — but the segue needs
+     *  to know: a link must not be linearly faded out under the song that
+     *  follows it the way one song is faded under the next. See
+     *  player::startOverlapSegue(). Saved as voicetrack="1" in playlist XML;
+     *  an older XFB ignores the attribute and plays the link as a track. */
+    static constexpr int VoiceTrackRole = Qt::UserRole + 104;
+
     /** Longest overlap the transition strip supports — how early the next
      *  track can be dragged to start before the previous one ends. It is
      *  user-configurable (MaxOverlapSeconds in xfb.conf): tracks with a

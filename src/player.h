@@ -638,6 +638,36 @@ private slots:
     QVector<QPointF> m_activeEnvelope;
     QString m_activeEnvelopePath;
     bool m_envelopeApplied = false;
+    /** The item now on Xplayer is a recorded voice track (a presenter's
+     *  link), not music. Set from PlaylistWaveView::VoiceTrackRole when the
+     *  track starts; read by startOverlapSegue(). */
+    bool m_activeIsVoiceTrack = false;
+
+    // --- Voice tracking -----------------------------------------------------
+    //
+    // A segue normally fades the outgoing track linearly to nothing over the
+    // overlap, and that is right for one song running under the next. It is
+    // wrong at both edges of a voice track: fading the song out linearly
+    // under the link throws away the ducking the operator just generated (and
+    // possibly edited by hand), and fading the LINK out under the incoming
+    // song chops the presenter off mid-word.
+    //
+    // So when either side of a segue is a voice track, the tail player is
+    // driven by the outgoing item's own volume line instead of by m_tailFade,
+    // and it plays out to its natural end. Nothing else about the segue
+    // changes, and a join with no voice track in it behaves exactly as before.
+    QVector<QPointF> m_tailEnvelope;
+    bool m_tailEnvelopeActive = false;
+    float m_tailBaseVolume = 1.0f;
+    void onTailPositionChanged(qint64 positionMs);
+    /**
+     * Record a link over the join above playlist row @a joinRow (so between
+     * rows joinRow-1 and joinRow), then insert it as a track of its own.
+     */
+    void openVoiceTrackDialog(int joinRow);
+    /** The row whose join a voice track would go into, or -1 with the reason
+     *  announced. Row 0 has no join above it that XFB can duck. */
+    int voiceTrackTargetRow();
 
     // LP deck scratching state (index 0 = deck 1, 1 = deck 2)
     QElapsedTimer m_scratchClock;

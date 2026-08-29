@@ -24,6 +24,8 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include "audio/IntroLibrary.h"
 #include "audio/LoudnessScanner.h"
 #include "audio/WaveformStore.h"
+#include "audio/VoiceDuck.h"
+#include "audio/VoiceRecorder.h"
 #include "ArtworkStore.h"
 #include "PadBoard.h"
 #include "PlaylistWaveView.h"
@@ -132,6 +134,7 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include "dialogs/ProductionSyncDialog.h"
 #include "dialogs/StationSyncDialog.h"
 #include "dialogs/StreamDialog.h"
+#include "dialogs/VoiceTrackDialog.h"
 #include "services/StreamService.h"
 #include "services/AirLog.h"
 #include "services/RotationRules.h"
@@ -936,6 +939,15 @@ player::player(QWidget *parent) :
         connect(m_tailFade, &QVariantAnimation::finished, this, [this]() {
             if (m_tailPlayer)
                 m_tailPlayer->stop();
+        });
+        // Voice-track segues drive the tail from the outgoing item's volume
+        // line instead of the linear fade above (see m_tailEnvelope).
+        connect(m_tailPlayer, &FxPlayer::positionChanged,
+                this, &player::onTailPositionChanged);
+        connect(m_tailPlayer, &FxPlayer::mediaStatusChanged, this,
+                [this](QMediaPlayer::MediaStatus status) {
+            if (m_tailEnvelopeActive && status == QMediaPlayer::EndOfMedia)
+                stopTailPlayer();
         });
 
         // Cue bus: its own pair of players, permanently bound to the cue
@@ -3136,6 +3148,13 @@ void::player::playlistContextMenu(const QPoint& pos){
     autoMixAction->setToolTip(tr("Compute this track's crossfade overlap from the sound "
                                  "waves: it will start where the previous track goes quiet."));
 
+    QString voiceTrackHere = tr("Voice track over the join above this track...");
+    QAction *voiceAction = thisMenu.addAction(voiceTrackHere);
+    voiceAction->setToolTip(tr("Record your link across this join. XFB writes the "
+                               "ducking onto both songs as an ordinary volume line "
+                               "you can then edit by hand."));
+    voiceAction->setEnabled(menuRow >= 1);
+
     QAction* selectedItem = thisMenu.exec(globalPos);
     if(selectedItem){
         QString selectedListItem = selectedItem->text();
@@ -3188,6 +3207,9 @@ void::player::playlistContextMenu(const QPoint& pos){
             if (m_waveViewToggle && !m_waveViewToggle->isChecked())
                 m_waveViewToggle->setChecked(true);
             startAutoMix({rowidx});
+        }
+        if(selectedListItem==voiceTrackHere){
+            openVoiceTrackDialog(rowidx);
         }
 
 
@@ -4292,6 +4314,10 @@ void player::playNextSong(){
                 m_activeEnvelope = PlaylistWaveView::parseEnvelope(
                     firstItem->data(PlaylistWaveView::VolumeEnvelopeRole).toString());
                 m_activeEnvelopePath = itemDaPlaylist;
+                // A recorded link is played out, never faded under what
+                // follows it: startOverlapSegue() needs to know which this is.
+                m_activeIsVoiceTrack =
+                    firstItem->data(PlaylistWaveView::VoiceTrackRole).toBool();
                 if (m_nowPlayingWave)
                     m_nowPlayingWave->setEnvelope(m_activeEnvelope);
 
@@ -5077,9 +5103,32 @@ void player::startOverlapSegue(qint64 fadeMs)
     // no tail-player spin-up, sample-continuous. The tail player remains
     // the fallback for plain playback or when no preload is armed.
     QUrl nextUrl;
-    if (ui->playlist->count() > 0)
+    bool nextIsVoiceTrack = false;
+    if (ui->playlist->count() > 0) {
         nextUrl = QUrl::fromLocalFile(ui->playlist->item(0)->text());
-    const bool engineMix = Xplayer->fxEngineActive() && !nextUrl.isEmpty()
+        nextIsVoiceTrack =
+            ui->playlist->item(0)->data(PlaylistWaveView::VoiceTrackRole).toBool();
+    }
+
+    // Voice tracking: a link is not a song, and neither edge of it wants the
+    // linear crossfade. Going INTO a link, the song underneath must follow the
+    // ducking that was generated (and possibly hand-edited) for it rather than
+    // sliding to nothing; coming OUT of one, the link itself has to be heard
+    // to its last word rather than faded under the incoming song. Both are the
+    // same rule: drive the tail from the outgoing item's own volume line and
+    // let it play out.
+    //
+    // m_activeIsVoiceTrack is trusted only when it still describes the track
+    // that is actually ending — the same path guard onPositionChanged() uses
+    // on m_activeEnvelope. A track started outside playNextSong() (the
+    // library, a deck, a jingle) leaves both stale, and a stale flag here
+    // would silently kill the crossfade on an ordinary join.
+    const bool outgoingIsVoiceTrack =
+        m_activeIsVoiceTrack && endingSource.toLocalFile() == m_activeEnvelopePath;
+    const bool voiceSegue = nextIsVoiceTrack || outgoingIsVoiceTrack;
+
+    const bool engineMix = !voiceSegue && Xplayer->fxEngineActive()
+                           && !nextUrl.isEmpty()
                            && Xplayer->hasPreparedNext(nextUrl);
 
     if (engineMix) {
@@ -5097,12 +5146,27 @@ void player::startOverlapSegue(qint64 fadeMs)
         // seek), which opened an audible hole at the start of the crossfade.
         m_tailPlayer->setPosition(endingPos);
         m_tailPlayer->play();
-        m_tailFade->setStartValue(double(startVolume));
-        m_tailFade->setEndValue(0.0);
-        // Absolute sanity bound, not the UI window: saved playlists may
-        // carry overlaps larger than the current "Max overlap" setting
-        m_tailFade->setDuration(int(qBound(qint64(200), fadeMs, qint64(600000))));
-        m_tailFade->start();
+
+        if (voiceSegue) {
+            m_tailEnvelope = (endingSource.toLocalFile() == m_activeEnvelopePath)
+                ? m_activeEnvelope : QVector<QPointF>();
+            m_tailEnvelopeActive = true;
+            m_tailBaseVolume = ui->sliderVolume
+                ? float(ui->sliderVolume->value() / 100.0) : startVolume;
+            m_tailOutput->setVolume(m_tailBaseVolume
+                * float(PlaylistWaveView::envelopeGainAt(m_tailEnvelope, endingPos)));
+            qDebug() << "Voice track segue: the tail follows its own volume line"
+                     << (m_tailEnvelope.isEmpty() ? "(flat)" : "")
+                     << "instead of fading out over" << fadeMs << "ms";
+        } else {
+            m_tailEnvelopeActive = false;
+            m_tailFade->setStartValue(double(startVolume));
+            m_tailFade->setEndValue(0.0);
+            // Absolute sanity bound, not the UI window: saved playlists may
+            // carry overlaps larger than the current "Max overlap" setting
+            m_tailFade->setDuration(int(qBound(qint64(200), fadeMs, qint64(600000))));
+            m_tailFade->start();
+        }
     }
 
     // From the state machine's point of view this is just a manual advance;
@@ -5124,8 +5188,150 @@ void player::stopTailPlayer()
 {
     if (m_tailFade && m_tailFade->state() == QAbstractAnimation::Running)
         m_tailFade->stop();
+    m_tailEnvelopeActive = false;
+    m_tailEnvelope.clear();
     if (m_tailPlayer)
         m_tailPlayer->stop();
+}
+
+void player::onTailPositionChanged(qint64 positionMs)
+{
+    // Only while a voice-track segue is running: every other segue leaves the
+    // tail to m_tailFade, and two things writing the same volume would fight.
+    if (!m_tailEnvelopeActive || !m_tailOutput)
+        return;
+    m_tailOutput->setVolume(m_tailBaseVolume
+        * float(PlaylistWaveView::envelopeGainAt(m_tailEnvelope, positionMs)));
+}
+
+// ---------------------------------------------------------------------------
+// Voice tracking
+//
+// The presenter's link between two songs, recorded over the join and inserted
+// as a track of its own. Everything it leaves behind is ordinary: a file, a
+// playlist item, an overlap and two volume lines. The only new thing in the
+// playlist is the VoiceTrackRole marker, which exists so the segue knows not
+// to fade a link the way it fades a song (see startOverlapSegue()).
+// ---------------------------------------------------------------------------
+
+int player::voiceTrackTargetRow()
+{
+    if (ui->playlist->count() < 2) {
+        const QString why = tr("A voice track sits between two tracks. Put at "
+                               "least two in the playlist first.");
+        announceAccessible(why);
+        QMessageBox::information(this, tr("Voice track"), why);
+        return -1;
+    }
+
+    int row = ui->playlist->currentRow();
+    if (row < 1) {
+        // The join above row 0 is with whatever is already on air, and that
+        // track's playlist item is gone — there is nothing left to write a
+        // volume line onto, so the ducking could only be half done. Offer the
+        // first join XFB can actually prepare instead of half-doing it.
+        row = 1;
+        ui->playlist->setCurrentRow(row);
+        announceAccessible(tr("The first join XFB can prepare is the one above "
+                              "track 2; moved there."));
+    }
+    return row;
+}
+
+void player::openVoiceTrackDialog(int joinRow)
+{
+    if (joinRow < 1 || joinRow >= ui->playlist->count())
+        return;
+    if (!m_waveStore) {
+        QMessageBox::information(this, tr("Voice track"),
+                                 tr("The sound-wave store is not available, so "
+                                    "XFB cannot analyse the join."));
+        return;
+    }
+
+    QListWidgetItem *prevItem = ui->playlist->item(joinRow - 1);
+    QListWidgetItem *nextItem = ui->playlist->item(joinRow);
+    if (!prevItem || !nextItem)
+        return;
+
+    const QString prevPath = prevItem->text();
+    const QString nextPath = nextItem->text();
+    const qint64 joinOverlap =
+        nextItem->data(PlaylistWaveView::OverlapRole).toLongLong();
+
+    announceAccessible(tr("Voice track over the join between %1 and %2.")
+                           .arg(QFileInfo(prevPath).fileName(),
+                                QFileInfo(nextPath).fileName()));
+
+    VoiceTrackDialog dlg(prevPath, nextPath, joinOverlap, m_waveStore, m_cueBus, this);
+    connect(&dlg, &VoiceTrackDialog::announcementRequested,
+            this, &player::announceAccessible);
+    if (dlg.exec() != QDialog::Accepted) {
+        announceAccessible(tr("Voice track discarded."));
+        return;
+    }
+
+    const VoiceTrackDialog::Result r = dlg.result();
+    if (r.takePath.isEmpty())
+        return;
+
+    // The dialog is modal but playback is not: auto mode and the segue both
+    // consume row 0 while it is open, so the item pointers taken above may be
+    // dangling by now. Re-find the join by path; if it has gone to air in the
+    // meantime, say so rather than inserting the link somewhere else.
+    int row = -1;
+    for (int i = 1; i < ui->playlist->count(); ++i) {
+        if (ui->playlist->item(i)->text() == nextPath
+                && ui->playlist->item(i - 1)->text() == prevPath) {
+            row = i;
+            break;
+        }
+    }
+    if (row < 0) {
+        const QString why = tr("That join has already gone to air, so the link "
+                               "was not inserted. The recording is kept at %1.")
+                                .arg(r.takePath);
+        announceAccessible(why);
+        QMessageBox::information(this, tr("Voice track"), why);
+        return;
+    }
+    prevItem = ui->playlist->item(row - 1);
+    nextItem = ui->playlist->item(row);
+
+    auto *voice = new QListWidgetItem(r.takePath);
+    voice->setData(PlaylistWaveView::OverlapRole, r.leadMs);
+    voice->setData(PlaylistWaveView::VoiceTrackRole, true);
+    ui->playlist->insertItem(row, voice);
+
+    // The incoming song keeps starting where it always did — its overlap is
+    // now measured against the link rather than against the outgoing song.
+    nextItem->setData(PlaylistWaveView::OverlapRole, r.nextOverlapMs);
+
+    // The ducking. Ordinary volume lines, editable in the wave view and saved
+    // with the playlist like any other.
+    if (!r.prevEnvelope.isEmpty())
+        prevItem->setData(PlaylistWaveView::VolumeEnvelopeRole, r.prevEnvelope);
+    if (!r.nextEnvelope.isEmpty())
+        nextItem->setData(PlaylistWaveView::VolumeEnvelopeRole, r.nextEnvelope);
+
+    calculate_playlist_total_time();
+    if (m_waveViewToggle && !m_waveViewToggle->isChecked())
+        m_waveViewToggle->setChecked(true); // the duck is inspected there
+    if (m_waveView)
+        m_waveView->refresh();
+    ui->playlist->setCurrentItem(voice);
+
+    const bool ducked = !r.prevEnvelope.isEmpty() || !r.nextEnvelope.isEmpty();
+    announceAccessible(ducked
+        ? tr("Voice track added at position %1, starting %2 seconds before %3 "
+             "ends. The ducking was written onto both songs.")
+              .arg(row + 1)
+              .arg(r.leadMs / 1000.0, 0, 'f', 1)
+              .arg(QFileInfo(prevPath).fileName())
+        : tr("Voice track added at position %1. No ducking was written — no "
+             "speech was found in the take.").arg(row + 1));
+    qInfo() << "Voice track inserted at row" << row << r.takePath
+            << "lead" << r.leadMs << "ms, next overlap" << r.nextOverlapMs << "ms";
 }
 
 void player::setPlaylistWaveView(bool on)
@@ -6066,6 +6272,23 @@ void player::setupPlaybackShortcuts()
     m_cueAction->setStatusTip(tr("Listen to the selected track in the cue headphones only"));
     connect(m_cueAction, &QAction::triggered, this, [this]() { cueCurrentSelection(); });
     addAction(m_cueAction);
+
+    // --- Voice tracking ---
+    // Ctrl+Shift+V: V for voice, and the last obvious free letter. Ctrl+Shift+
+    // P, S, N, B, W, H, R, L, I, C, X, Up, Down, Return, Space and Ctrl+Alt+ R,
+    // Return are all already spoken for.
+    QAction *voiceTrack = playbackMenu->addAction(QIcon(":/icons/ic_launcher_voicedial.png"),
+                                                  tr("&Voice track over this join..."));
+    voiceTrack->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_V));
+    voiceTrack->setShortcutContext(Qt::ApplicationShortcut);
+    voiceTrack->setStatusTip(tr("Record your link over the join above the selected "
+                                "playlist track; XFB writes the ducking"));
+    connect(voiceTrack, &QAction::triggered, this, [this]() {
+        const int row = voiceTrackTargetRow();
+        if (row >= 1)
+            openVoiceTrackDialog(row);
+    });
+    addAction(voiceTrack);
 
     m_cueStopAction = playbackMenu->addAction(QIcon(":/icons/flat/Stop Sign-32.png"),
                                               tr("Stop the c&ue"));
@@ -9938,11 +10161,18 @@ void player::on_actionSave_Playlist_triggered()
                    ui->playlist->item(i)->data(PlaylistWaveView::OverlapRole).toLongLong();
                const QString volumeLine = ui->playlist->item(i)
                    ->data(PlaylistWaveView::VolumeEnvelopeRole).toString();
+               // A recorded link is marked so it comes back as one; the
+               // attribute is additive, so an older XFB reading this file
+               // simply plays the link as an ordinary track.
+               const bool isVoiceTrack = ui->playlist->item(i)
+                   ->data(PlaylistWaveView::VoiceTrackRole).toBool();
                xmlWriter.writeStartElement("track");
                if (overlapMs > 0)
                    xmlWriter.writeAttribute("overlap", QString::number(overlapMs));
                if (!volumeLine.isEmpty())
                    xmlWriter.writeAttribute("volenv", volumeLine);
+               if (isVoiceTrack)
+                   xmlWriter.writeAttribute("voicetrack", QStringLiteral("1"));
                xmlWriter.writeCharacters(txtItem);
                xmlWriter.writeEndElement();
             }
@@ -10015,11 +10245,19 @@ void player::on_actionLoad_Playlist_triggered()
                             qint64(600000));
                         const QString volumeLine =
                             Rxml.attributes().value(QStringLiteral("volenv")).toString();
+                        // Absent in every playlist written before voice
+                        // tracking existed, which is exactly what we want:
+                        // those rows load as the music items they are.
+                        const bool isVoiceTrack =
+                            Rxml.attributes().value(QStringLiteral("voicetrack"))
+                                == QLatin1String("1");
                         QString track = Rxml.readElementText();
                         qDebug()<<"Rxml.readElementText(): "<<track;
                         auto *item = new QListWidgetItem(track);
                         if (overlapMs > 0)
                             item->setData(PlaylistWaveView::OverlapRole, overlapMs);
+                        if (isVoiceTrack)
+                            item->setData(PlaylistWaveView::VoiceTrackRole, true);
                         if (!volumeLine.isEmpty()) {
                             // Re-encode through the parser to sanitize the input
                             const QVector<QPointF> env =
