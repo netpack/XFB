@@ -102,6 +102,16 @@ class LibraryStore(context: Context) {
     private fun writeManifest(name: String, tracks: List<SavedTrack>, madeHere: Boolean) {
         playlistDir.mkdirs()
 
+        // A manifest is the only record that a file in tracks/ is music, and a
+        // playlist name is not unique across stations: two desks both offer
+        // "Marked for this phone", so the second one's download overwrites the
+        // first one's manifest and would take the first station's tracks off
+        // this phone's library with it, audio and all. Everything a write could
+        // drop goes into the ledger first.
+        if (name != DOWNLOADS) {
+            remember(loadManifest(name)?.tracks.orEmpty() + tracks)
+        }
+
         val array = JSONArray()
         tracks.forEach { track ->
             array.put(
@@ -130,6 +140,33 @@ class LibraryStore(context: Context) {
         File(playlistDir, manifestName(name)).writeText(manifest.toString())
     }
 
+    /**
+     * Adds tracks to this phone's ledger of everything it has downloaded.
+     *
+     * Keyed by id and never truncated by a playlist write, so a track outlives
+     * the playlist it arrived in — including that playlist being replaced by
+     * another station's playlist of the same name. Entries whose audio has gone
+     * are dropped on the way past: the ledger says what is on this phone now,
+     * not what once was.
+     */
+    private fun remember(tracks: List<SavedTrack>) {
+        val before = loadManifest(DOWNLOADS)?.tracks.orEmpty()
+
+        val known = LinkedHashMap<String, SavedTrack>()
+        for (track in before + tracks) {
+            if (track.id.isEmpty() || !track.file.exists()) continue
+            // The later entry wins: it carries whatever a station said about
+            // the track most recently.
+            known[track.id] = track
+        }
+
+        // Rewriting this after every track of a 300-track download would be a
+        // lot of flash for no change, so it only moves when it moves.
+        if (known.size == before.size && before.all { known.containsKey(it.id) }) return
+
+        writeManifest(DOWNLOADS, known.values.toList(), madeHere = false)
+    }
+
     fun manifestExists(playlistName: String): Boolean = manifestFile(playlistName).exists()
 
     fun manifestFile(playlistName: String): File =
@@ -141,7 +178,7 @@ class LibraryStore(context: Context) {
         return files.mapNotNull { file ->
             runCatching { JSONObject(file.readText()).optString("name") }
                 .getOrNull()
-                ?.takeIf { it.isNotEmpty() && it != ALL_TRACKS }
+                ?.takeIf { it.isNotEmpty() && it != ALL_TRACKS && it != DOWNLOADS }
         }.sorted()
     }
 
@@ -196,6 +233,12 @@ class LibraryStore(context: Context) {
                 if (path.isEmpty()) continue
                 val audio = File(path)
                 if (!audio.exists()) continue
+                // The station's byte count is what a complete copy weighs. A
+                // manifest is written while a download is still running, so a
+                // shorter file here is a track still arriving, and it must not
+                // show up as music until the rest of it does.
+                val bytes = item.optLong("bytes")
+                if (bytes > 0 && audio.length() != bytes) continue
 
                 val id = item.optString("id")
                 if (id.isEmpty() || byId.containsKey(id)) continue
@@ -205,7 +248,7 @@ class LibraryStore(context: Context) {
                     artist = item.optString("artist"),
                     song = item.optString("song"),
                     duration = item.optString("duration"),
-                    bytes = item.optLong("bytes"),
+                    bytes = bytes,
                     // Overlaps belong to a playlist, not to the track itself.
                     overlapMs = 0,
                     overlapPinned = false,
@@ -231,8 +274,15 @@ class LibraryStore(context: Context) {
             val json = runCatching { JSONObject(file.readText()) }.getOrNull() ?: continue
             val array = json.optJSONArray("tracks") ?: continue
             for (index in 0 until array.length()) {
-                val path = array.optJSONObject(index)?.optString("file").orEmpty()
-                if (path.isNotEmpty() && File(path).exists()) return true
+                val item = array.optJSONObject(index) ?: continue
+                val path = item.optString("file")
+                if (path.isEmpty()) continue
+                val audio = File(path)
+                val bytes = item.optLong("bytes")
+                // Complete files only, on the same reading as downloadedTracks:
+                // a phone holding nothing but a half-finished download has
+                // nothing to open the player for.
+                if (audio.exists() && (bytes <= 0 || audio.length() == bytes)) return true
             }
         }
         return false
@@ -273,6 +323,14 @@ class LibraryStore(context: Context) {
          * not one the operator made, so it stays out of the playlists list.
          */
         const val ALL_TRACKS = "__all__"
+
+        /**
+         * The reserved name for the ledger of every track downloaded onto this
+         * phone. Held in the same shape as a playlist so [downloadedTracks]
+         * reads it with everything else, and kept out of the playlists list for
+         * the same reason as [ALL_TRACKS].
+         */
+        const val DOWNLOADS = "__downloads__"
     }
 
     /** A playlist name is arbitrary text; a file name is not. */

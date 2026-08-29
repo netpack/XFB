@@ -2,6 +2,7 @@ package pt.netpack.xfb.companion
 
 import android.content.Intent
 import android.os.Bundle
+import android.os.SystemClock
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -16,8 +17,11 @@ import android.view.animation.AnimationUtils
 import android.widget.Button
 import com.google.android.material.appbar.MaterialToolbar
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * One playlist: what is in it, and getting it onto the phone.
@@ -169,47 +173,65 @@ class PlaylistActivity : AppCompatActivity() {
         downloadJob = lifecycleScope.launch {
             var failed = 0
             var firstError: String? = null
+            var savedAt = 0L
 
-            for ((index, track) in tracks.withIndex()) {
-                summaryLabel.text = getString(
-                    R.string.download_progress, index + 1, tracks.size, track.label
-                )
+            try {
+                for ((index, track) in tracks.withIndex()) {
+                    summaryLabel.text = getString(
+                        R.string.download_progress, index + 1, tracks.size, track.label
+                    )
 
-                var lastPercent = -1
-                val result = runCatching {
-                    SyncClient.downloadTrack(
-                        station, track, library.trackFile(track)
-                    ) { downloaded, total ->
-                        // This runs on the download thread. Touching the
-                        // adapter directly from here throws, and because the
-                        // whole call sits inside runCatching that surfaced as
-                        // a mysteriously truncated file rather than as a crash.
-                        val percent =
-                            if (total > 0) ((downloaded * 100) / total).toInt() else 0
-                        if (percent != lastPercent) {
-                            lastPercent = percent
-                            runOnUiThread { adapter.updateProgress(track.id, downloaded, total) }
+                    var lastPercent = -1
+                    val result = runCatching {
+                        SyncClient.downloadTrack(
+                            station, track, library.trackFile(track)
+                        ) { downloaded, total ->
+                            // This runs on the download thread. Touching the
+                            // adapter directly from here throws, and because the
+                            // whole call sits inside runCatching that surfaced as
+                            // a mysteriously truncated file rather than as a crash.
+                            val percent =
+                                if (total > 0) ((downloaded * 100) / total).toInt() else 0
+                            if (percent != lastPercent) {
+                                lastPercent = percent
+                                runOnUiThread { adapter.updateProgress(track.id, downloaded, total) }
+                            }
+                        }
+                    }
+
+                    // Cancellation is the operator stopping the run, not a failure.
+                    result.exceptionOrNull()?.let { if (it is CancellationException) throw it }
+
+                    if (result.isFailure) {
+                        failed++
+                        adapter.markFailed(track.id)
+                        val error = result.exceptionOrNull()
+                        if (firstError == null) firstError = error?.message
+                        Log.w(TAG, "Download failed for ${track.label}", error)
+                    } else {
+                        adapter.markComplete(track.id)
+
+                        // Written as the tracks land, not once at the end. The
+                        // manifest is the only thing that knows a file in tracks/
+                        // is music: written only on a clean finish, a run that was
+                        // stopped -- or a screen the operator walked away from, or
+                        // an app the system reclaimed -- left every byte it had
+                        // downloaded on the phone and unaccounted for. Throttled,
+                        // because a 300-track set would otherwise rewrite a growing
+                        // manifest 300 times.
+                        val now = SystemClock.elapsedRealtime()
+                        if (now - savedAt >= SAVE_INTERVAL_MS) {
+                            savedAt = now
+                            saveProgress()
                         }
                     }
                 }
-
-                // Cancellation is the operator stopping the run, not a failure.
-                result.exceptionOrNull()?.let { if (it is CancellationException) throw it }
-
-                if (result.isFailure) {
-                    failed++
-                    adapter.markFailed(track.id)
-                    val error = result.exceptionOrNull()
-                    if (firstError == null) firstError = error?.message
-                    Log.w(TAG, "Download failed for ${track.label}", error)
-                } else {
-                    adapter.markComplete(track.id)
-                }
+            } finally {
+                // Cancellation is an exit like any other and must not cost the
+                // tracks that did arrive; NonCancellable because a cancelled
+                // coroutine cannot otherwise reach the disk.
+                withContext(NonCancellable) { saveProgress() }
             }
-
-            // The manifest is what phase 03 will read, so it is written once
-            // everything that could arrive has arrived.
-            library.saveManifest(playlistName(), tracks)
 
             downloadButton.setText(R.string.download_start)
             playButton.isEnabled = tracks.any { library.isComplete(it) }
@@ -223,6 +245,15 @@ class PlaylistActivity : AppCompatActivity() {
                 else -> getString(R.string.download_partial, tracks.size - failed, tracks.size)
             }
         }
+    }
+
+    /**
+     * Records what is on the phone so far. Off the main thread: this runs
+     * between tracks of a long download, where a growing manifest written in
+     * front of the list would be felt as a stutter.
+     */
+    private suspend fun saveProgress() = withContext(Dispatchers.IO) {
+        library.saveManifest(playlistName(), tracks)
     }
 
     private fun cancelDownload() {
@@ -245,6 +276,9 @@ class PlaylistActivity : AppCompatActivity() {
         const val EXTRA_NAME = "name"
         const val EXTRA_TITLE = "title"
         private const val TAG = "XfbDownload"
+
+        /** Shortest gap between two manifest writes during a download. */
+        private const val SAVE_INTERVAL_MS = 5_000L
     }
 }
 
