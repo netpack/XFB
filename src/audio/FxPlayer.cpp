@@ -184,8 +184,7 @@ bool FxPlayer::wantFxFor(const QUrl &url) const
     // reasons of their own — the tap because only the engine can hand over
     // post-DSP PCM, normalisation because a positive gain cannot come from a
     // sink volume clamped to 0..1.
-    return (m_params.anyActive() || m_preferEngine || m_pcmTap || m_loudnessActive)
-        && url.isLocalFile();
+    return engineForced() && url.isLocalFile();
 }
 
 void FxPlayer::setAudioOutput(QAudioOutput *output)
@@ -283,7 +282,7 @@ void FxPlayer::prepareNext(const QUrl &url)
     // Decide where the preload lives from what setSource() will pick for
     // this track (m_fxFailedForTrack is per-track state, so ignore it).
     const bool nextWantsFx = fxAvailable()
-            && (m_params.anyActive() || m_preferEngine || m_pcmTap || m_loudnessActive);
+            && engineForced();
     if (nextWantsFx) {
         const QString path = url.toLocalFile();
         engineCall([path](FxEngine *e) { e->preloadNext(path); });

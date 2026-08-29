@@ -198,6 +198,14 @@ private:
 
     template <typename F> void engineCall(F &&f);
     bool wantFxFor(const QUrl &url) const;
+    /**
+     * The reasons a local file must go through the FX engine rather than the
+     * passthrough player, in one place. wantFxFor() and prepareNext() both
+     * ask, so a new reason can never be added to one and forgotten in the
+     * other — which would preload into the wrong player and lose the handoff.
+     */
+    bool engineForced() const
+    { return m_params.anyActive() || m_preferEngine || m_pcmTap || m_loudnessActive; }
     void connectPassthrough(QMediaPlayer *p);
     void discardPrepared();
     /** Re-evaluate passthrough vs engine for the current source, and switch. */
