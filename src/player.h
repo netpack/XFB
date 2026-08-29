@@ -660,7 +660,12 @@ private slots:
     QVector<QPointF> m_tailEnvelope;
     bool m_tailEnvelopeActive = false;
     float m_tailBaseVolume = 1.0f;
+    /// Where m_tailFade has got to, 1 down to 0. Held rather than written
+    /// straight to the output so the fade and the outgoing track's own volume
+    /// line can both be applied — they multiply, they do not replace.
+    double m_tailFadeFactor = 1.0;
     void onTailPositionChanged(qint64 positionMs);
+    void applyTailVolume(qint64 positionMs);
     /**
      * Record a link over the join above playlist row @a joinRow (so between
      * rows joinRow-1 and joinRow), then insert it as a track of its own.

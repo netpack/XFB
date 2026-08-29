@@ -935,15 +935,17 @@ player::player(QWidget *parent) :
         m_tailPlayer->setAudioOutput(m_tailOutput);
         m_tailFade = new QVariantAnimation(this);
         connect(m_tailFade, &QVariantAnimation::valueChanged, this, [this](const QVariant &v) {
-            if (m_tailOutput)
-                m_tailOutput->setVolume(v.toFloat());
+            m_tailFadeFactor = v.toDouble();
+            applyTailVolume(m_tailPlayer ? m_tailPlayer->position() : 0);
         });
         connect(m_tailFade, &QVariantAnimation::finished, this, [this]() {
             if (m_tailPlayer)
                 m_tailPlayer->stop();
         });
-        // Voice-track segues drive the tail from the outgoing item's volume
-        // line instead of the linear fade above (see m_tailEnvelope).
+        // The tail's volume is the fade above TIMES the outgoing track's own
+        // volume line, so a line the operator drew is still heard as the track
+        // leaves. A voice-track segue sets the fade aside entirely and lets the
+        // line alone carry it (see m_tailEnvelope).
         connect(m_tailPlayer, &FxPlayer::positionChanged,
                 this, &player::onTailPositionChanged);
         connect(m_tailPlayer, &FxPlayer::mediaStatusChanged, this,
@@ -5182,7 +5184,20 @@ void player::startOverlapSegue(qint64 fadeMs)
         m_activeIsVoiceTrack && endingSource.toLocalFile() == m_activeEnvelopePath;
     const bool voiceSegue = nextIsVoiceTrack || outgoingIsVoiceTrack;
 
-    const bool engineMix = !voiceSegue && Xplayer->fxEngineActive()
+    // A volume line drawn on the outgoing track has to survive the segue. The
+    // engine's internal crossfade fades the outgoing decoder per sample and
+    // knows nothing about the line, so a track carrying one goes out through
+    // the tail player instead, where the line and the fade can be multiplied
+    // together. Sample-continuous mixing is the better join and it is still
+    // what an ordinary track gets; correctness wins only where the operator
+    // actually asked for something.
+    const QVector<QPointF> endingEnvelope =
+        (endingSource.toLocalFile() == m_activeEnvelopePath) ? m_activeEnvelope
+                                                             : QVector<QPointF>();
+    const bool endingHasVolumeLine = endingEnvelope.size() > 1;
+
+    const bool engineMix = !voiceSegue && !endingHasVolumeLine
+                           && Xplayer->fxEngineActive()
                            && !nextUrl.isEmpty()
                            && Xplayer->hasPreparedNext(nextUrl);
 
@@ -5191,6 +5206,7 @@ void player::startOverlapSegue(qint64 fadeMs)
     } else if (m_tailPlayer && endingSource.isLocalFile()) {
         if (m_tailFade->state() == QAbstractAnimation::Running)
             m_tailFade->stop();
+        m_tailFadeFactor = 1.0;
         const float startVolume = XplayerOutput ? XplayerOutput->volume() : 1.0f;
         m_tailOutput->setVolume(startVolume);
         if (m_tailPlayer->source() != endingSource) // normally preloaded earlier
@@ -5203,19 +5219,22 @@ void player::startOverlapSegue(qint64 fadeMs)
         m_tailPlayer->play();
 
         if (voiceSegue) {
-            m_tailEnvelope = (endingSource.toLocalFile() == m_activeEnvelopePath)
-                ? m_activeEnvelope : QVector<QPointF>();
+            m_tailEnvelope = endingEnvelope;
             m_tailEnvelopeActive = true;
             m_tailBaseVolume = ui->sliderVolume
                 ? float(ui->sliderVolume->value() / 100.0) : startVolume;
-            m_tailOutput->setVolume(m_tailBaseVolume
-                * float(PlaylistWaveView::envelopeGainAt(m_tailEnvelope, endingPos)));
+            applyTailVolume(endingPos);
             qDebug() << "Voice track segue: the tail follows its own volume line"
                      << (m_tailEnvelope.isEmpty() ? "(flat)" : "")
                      << "instead of fading out over" << fadeMs << "ms";
         } else {
-            m_tailEnvelopeActive = false;
-            m_tailFade->setStartValue(double(startVolume));
+            // An ordinary segue still fades — but if the outgoing track has a
+            // volume line, the fade rides on top of it rather than replacing
+            // it, so the shape the operator drew is what leaves the station.
+            m_tailEnvelope = endingEnvelope;
+            m_tailEnvelopeActive = endingHasVolumeLine;
+            m_tailBaseVolume = startVolume;
+            m_tailFade->setStartValue(1.0);
             m_tailFade->setEndValue(0.0);
             // Absolute sanity bound, not the UI window: saved playlists may
             // carry overlaps larger than the current "Max overlap" setting
@@ -5245,18 +5264,33 @@ void player::stopTailPlayer()
         m_tailFade->stop();
     m_tailEnvelopeActive = false;
     m_tailEnvelope.clear();
+    m_tailFadeFactor = 1.0;
     if (m_tailPlayer)
         m_tailPlayer->stop();
 }
 
 void player::onTailPositionChanged(qint64 positionMs)
 {
-    // Only while a voice-track segue is running: every other segue leaves the
-    // tail to m_tailFade, and two things writing the same volume would fight.
-    if (!m_tailEnvelopeActive || !m_tailOutput)
+    // Only worth recomputing while a volume line is in play; without one the
+    // fade animation already writes every value the tail needs.
+    if (!m_tailEnvelopeActive)
         return;
-    m_tailOutput->setVolume(m_tailBaseVolume
-        * float(PlaylistWaveView::envelopeGainAt(m_tailEnvelope, positionMs)));
+    applyTailVolume(positionMs);
+}
+
+// The one place the tail's volume is decided, so the fade and the outgoing
+// track's own volume line can never end up fighting over it: they multiply.
+// A voice-track segue runs no fade, so its factor stays at 1 and the line
+// alone carries the track out; an ordinary segue with no line has no envelope
+// to apply and is the plain fade it always was.
+void player::applyTailVolume(qint64 positionMs)
+{
+    if (!m_tailOutput)
+        return;
+    const double shape = m_tailEnvelopeActive
+        ? PlaylistWaveView::envelopeGainAt(m_tailEnvelope, positionMs)
+        : 1.0;
+    m_tailOutput->setVolume(float(qBound(0.0, m_tailBaseVolume * shape * m_tailFadeFactor, 1.0)));
 }
 
 // ---------------------------------------------------------------------------
