@@ -17,6 +17,7 @@
 #include <QPixmap>
 #include <QPointF>
 #include <QPointer>
+#include <QSet>
 #include <QProcess>
 #include <QVariantAnimation>
 #include <QVector>
@@ -704,6 +705,25 @@ private slots:
     QPointer<class AirLogDialog> m_airLogDialog;
     /** The rotation editor and the "why did it pick that?" view. */
     QPointer<class RotationDialog> m_rotationDialog;
+
+    // --- the hour clock -----------------------------------------------
+    // The format as radio writes it: an ordered, timed hour of sweeps, ad
+    // breaks, jingles and hard-timed items, assigned to weekday and hour.
+    // Entirely off until HourClock/Enabled is set, at which point the current
+    // sweep's genre stands in for the hourgenre row and the fixed items are
+    // queued when they come due. See services/HourClock.h.
+    QPointer<class HourClockDialog> m_hourClockDialog;
+    /** Fires the hour's hard-timed items. Only created when the feature is on. */
+    QTimer *m_hourClockTimer = nullptr;
+    /** "date/hour/slot" keys already put on air this hour, so a 20-second
+     *  tick inside a 60-second window cannot queue the news three times. */
+    QSet<QString> m_hourClockFired;
+    void setupHourClock();
+    void hourClockTick();
+    /** The genre the clock wants filled now, or empty for "use the hour grid".
+     *  Split out so autoModeGetMoreSongs() stays one readable function and so
+     *  the fallback is impossible to miss. */
+    QString hourClockGenreNow() const;
     /** Closes the open as-run row, if any. playedMs < 0: use m_airPosition. */
     void closeAirLogEntry(const QString &reason, qint64 playedMs = -1);
     

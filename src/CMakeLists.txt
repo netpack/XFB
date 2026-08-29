@@ -47,6 +47,8 @@ set(SOURCES
     dialogs/AirLogDialog.cpp
     # Rotation editor + the "why did it pick this?" view
     dialogs/RotationDialog.cpp
+    # Hour clock editor: the wheel, its accessible text twin, the week grid
+    dialogs/HourClockDialog.cpp
     dialogs/DeadAirDialog.cpp
     # Listener requests + the switch that puts the public page on the network
     dialogs/RequestTrayDialog.cpp
@@ -81,6 +83,8 @@ set(SOURCES
     services/AirLog.cpp
     # Rotation rules: separation, categories, dayparts, seasonal windows
     services/RotationRules.cpp
+    # The hour clock: the format as an ordered, timed hour of slots
+    services/HourClock.cpp
     services/DeadAirWatchdog.cpp
     # The public now-playing page's request line (table, settings, search)
     services/RequestLine.cpp
@@ -116,6 +120,8 @@ set(SOURCES
     ui/ProgressIndicatorWidget.cpp
     # Corner "support XFB" notice (replaces the old startup donation dialog)
     ui/DonationNotice.cpp
+    # The hour drawn as a clock face (the picture half of the clock editor)
+    ui/HourClockWheel.cpp
     # Models
     models/MusicListModel.cpp
     # Enhanced Dialogs
@@ -181,6 +187,7 @@ set(HEADERS
     dialogs/StreamDialog.h
     dialogs/AirLogDialog.h
     dialogs/RotationDialog.h
+    dialogs/HourClockDialog.h
     dialogs/DeadAirDialog.h
     dialogs/RequestTrayDialog.h
     dialogs/VoiceTrackDialog.h
@@ -200,6 +207,7 @@ set(HEADERS
     services/MusicCache.h
     services/AirLog.h
     services/RotationRules.h
+    services/HourClock.h
     services/DeadAirWatchdog.h
     services/RequestLine.h
     services/AccessibilityManager.h
@@ -228,6 +236,7 @@ set(HEADERS
     # UI Components
     ui/ProgressIndicatorWidget.h
     ui/DonationNotice.h
+    ui/HourClockWheel.h
     # Models
     models/MusicListModel.h
     # Enhanced Dialogs

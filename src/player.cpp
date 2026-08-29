@@ -139,6 +139,8 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include "services/AirLog.h"
 #include "services/RotationRules.h"
 #include "dialogs/RotationDialog.h"
+#include "services/HourClock.h"
+#include "dialogs/HourClockDialog.h"
 #include "services/MobileSyncServer.h"
 #include "services/RequestLine.h"
 #include "services/ProductionSyncClient.h"
@@ -1291,6 +1293,10 @@ checkDbOpen();
     // As-run log: close whatever a crash left hanging and drop anything past
     // the retention window, before the first track of this session opens a row.
     AirLog::instance()->start();
+
+    // The hour clock's fixed-item timer. Does nothing at all unless the
+    // station has switched the feature on in the Hour Clocks window.
+    setupHourClock();
 
     /*Populate jingles table with an editable table field on double-click*/
     if (dbAvailable) {
@@ -2970,6 +2976,13 @@ bool player::checkDbOpen() {
     // next launch. A track with no row here simply runs on the station's
     // defaults, so an existing library needs no conversion at all.
     RotationRules::ensureSchema(adb);
+
+    // The hour clock: named clocks, their slots, and the weekday/hour they are
+    // assigned to. Same reasoning again — created here rather than in a
+    // migration so an install that predates the feature gets the tables on its
+    // next launch. Three empty tables are all a station that never opens the
+    // feature ever has: nothing reads them until HourClock/Enabled is set.
+    HourClock::ensureSchema(adb);
 
     // Tempo column, added to libraries created before BPM existed. NULL
     // means "never analysed", 0 means "analysed, no steady tempo" — see
@@ -6524,6 +6537,41 @@ void player::setupPlaybackShortcuts()
         ui->menuXFB->addAction(rotation);
         addAction(rotation);
 
+        // The hour clock. It sits next to the rotation rules because the two
+        // answer neighbouring questions: rotation says *which* record, the
+        // clock says *what kind of thing* goes there and *when*.
+        QAction *hourClock = new QAction(tr("Hour &Clocks..."), this);
+        hourClock->setMenuRole(QAction::NoRole);
+        // Ctrl+Shift+K: the C, L and H of "clock" are all taken already.
+        hourClock->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_K));
+        hourClock->setShortcutContext(Qt::ApplicationShortcut);
+        hourClock->setStatusTip(tr("Programme the hour as a clock: sweeps, ad "
+                                   "breaks, jingles and fixed-time items"));
+        connect(hourClock, &QAction::triggered, this, [this]() {
+            if (!m_hourClockDialog) {
+                m_hourClockDialog = new HourClockDialog(this);
+                m_hourClockDialog->setAttribute(Qt::WA_DeleteOnClose, false);
+                connect(m_hourClockDialog, &HourClockDialog::announcementRequested,
+                        this, &player::announceAccessible);
+                // A clock or a setting changed: forget what has already fired
+                // this hour, so an item the operator has just moved is not
+                // held back by a key recorded against its old time.
+                connect(m_hourClockDialog, &HourClockDialog::clocksChanged,
+                        this, [this]() {
+                            m_hourClockFired.clear();
+                            setupHourClock();
+                        });
+            } else {
+                m_hourClockDialog->reload();
+            }
+            m_hourClockDialog->show();
+            m_hourClockDialog->raise();
+            m_hourClockDialog->activateWindow();
+            announceAccessible(tr("Hour clocks opened"));
+        });
+        ui->menuXFB->addAction(hourClock);
+        addAction(hourClock);
+
         // Listener requests, and the switch that puts the public page on the
         // network at all. Same shelf as the rest: it is a property of this
         // installation, not of what is on air now. Opening the window is the
@@ -8330,6 +8378,21 @@ checkDbOpen();
     }
 
 
+    // The hour clock, when the station has switched it on, says what kind of
+    // music *this moment* of the hour wants — the sweep the clock is in, or
+    // the next one due. It stands in for the hourgenre row and changes nothing
+    // else: an empty answer (feature off, no clock on this hour, a sweep with
+    // no genre of its own) leaves currentGenre exactly as the hour grid set
+    // it, which is the old behaviour to the letter. A genre only ever narrows
+    // passes 0 and 1 below; pass 2 is the whole library, so a clock can no
+    // more empty the candidate pool than an hourgenre row can.
+    const QString clockGenre = hourClockGenreNow();
+    if (!clockGenre.isEmpty()) {
+        qDebug() << "autoMode: the hour clock asks for" << clockGenre
+                 << "in place of the hour grid's" << currentGenre;
+        currentGenre = clockGenre;
+    }
+
     // Tempo of the track the new one will follow. When it has never been
     // measured, the pick falls back to plain random and the measurement is
     // started in the background, so the following pick can use it.
@@ -8533,6 +8596,126 @@ checkDbOpen();
     }
     qDebug() << "autoMode found no track to add (empty library)";
     return false;
+}
+
+// ---------------------------------------------------------------------------
+// The hour clock
+//
+// Two jobs, and only two. hourClockGenreNow() tells Auto Mode what kind of
+// music the clock wants filled at this second of the hour, and hourClockTick()
+// puts the hour's hard-timed items — the news, the ad break at :20 — into the
+// running order when they come due. Everything else about a clock is editing,
+// and editing lives in HourClockDialog.
+//
+// Both are inert until HourClock/Enabled is set. That is deliberate: a station
+// that never opens the feature must behave byte for byte as it did before, and
+// the only way to be sure of that is for the new code to return early.
+// ---------------------------------------------------------------------------
+
+QString player::hourClockGenreNow() const
+{
+    const HourClock::Settings settings = HourClock::settings();
+    if (!settings.enabled)
+        return QString();
+    const QDateTime now = QDateTime::currentDateTime();
+    const int second = now.time().minute() * 60 + now.time().second();
+    return HourClock::genreForMoment(now.date().dayOfWeek(), now.time().hour(),
+                                     second);
+}
+
+void player::setupHourClock()
+{
+    const HourClock::Settings settings = HourClock::settings();
+    if (!settings.enabled || !settings.fireHardTimed) {
+        if (m_hourClockTimer)
+            m_hourClockTimer->stop();
+        return;
+    }
+    if (!m_hourClockTimer) {
+        // Twenty seconds, against a firing window of sixty: an item is checked
+        // three times inside its window, so one missed tick (a busy segue, a
+        // dialog holding the event loop) still puts the news on air.
+        m_hourClockTimer = new QTimer(this);
+        m_hourClockTimer->setInterval(20000);
+        connect(m_hourClockTimer, &QTimer::timeout, this, &player::hourClockTick);
+    }
+    if (!m_hourClockTimer->isActive())
+        m_hourClockTimer->start();
+    qInfo() << "Hour clock: following the programmed clocks; fixed items will "
+               "be queued within" << settings.fireWindowSeconds << "s of their time";
+}
+
+void player::hourClockTick()
+{
+    const HourClock::Settings settings = HourClock::settings();
+    if (!settings.enabled || !settings.fireHardTimed)
+        return;
+    // Only while XFB is driving. With the operator at the desk, nothing should
+    // be pushing items into the running order behind their back.
+    if (autoMode != 1)
+        return;
+    if (!ui || !ui->playlist)
+        return;
+
+    const QDateTime now = QDateTime::currentDateTime();
+    const int day    = now.date().dayOfWeek();
+    const int hour   = now.time().hour();
+    const int second = now.time().minute() * 60 + now.time().second();
+
+    const qint64 clockId = HourClock::clockIdFor(day, hour);
+    if (clockId <= 0)
+        return;
+    const HourClock::Clock clock = HourClock::loadClock(clockId);
+    if (clock.items.isEmpty())
+        return;
+    const HourClock::Timeline timeline = HourClock::resolve(clock);
+
+    for (const HourClock::ResolvedSlot &r : timeline.items) {
+        // Music sweeps are filled by Auto Mode, not fired: there is no one
+        // file that *is* a sweep.
+        if (!r.slot.hardTimed || r.slot.isMusic())
+            continue;
+        if (second < r.start || second >= r.start + settings.fireWindowSeconds)
+            continue;
+
+        const QString key = QStringLiteral("%1/%2/%3")
+                                .arg(now.date().toString(Qt::ISODate))
+                                .arg(hour)
+                                .arg(r.slot.position);
+        if (m_hourClockFired.contains(key))
+            continue;
+        m_hourClockFired.insert(key);
+
+        const QString path = HourClock::mediaPathFor(r.slot);
+        const QString what = r.slot.label.isEmpty()
+                                 ? HourClock::typeLabel(r.slot.type)
+                                 : r.slot.label;
+        if (path.isEmpty()) {
+            // A programmed item with nothing behind it is worth saying out
+            // loud once, and worth not retrying every twenty seconds.
+            qWarning() << "Hour clock:" << what << "is due at"
+                       << HourClock::formatOffset(r.start)
+                       << "but nothing in the" << HourClock::mediaTable(r.slot.type)
+                       << "table matches" << r.slot.reference;
+            announceAccessible(tr("%1 is due now but there is no audio for it.")
+                                   .arg(what));
+            continue;
+        }
+
+        // Next, not last: a fixed item that lands after the four tracks Auto
+        // Mode has already queued is not a fixed item at all.
+        ui->playlist->insertItem(0, path);
+        calculate_playlist_total_time();
+        qInfo() << "Hour clock: queued" << what << "for" << path;
+        announceAccessible(tr("%1 is due at %2 past the hour and is next in "
+                              "the running order.")
+                               .arg(what, HourClock::formatOffset(r.start)));
+    }
+
+    // The key set only ever grows within a day. Bound it rather than let a
+    // station left running for a month accumulate.
+    if (m_hourClockFired.size() > 512)
+        m_hourClockFired.clear();
 }
 
 void player::on_actionAdd_a_single_song_triggered()
