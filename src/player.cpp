@@ -2984,6 +2984,42 @@ bool player::checkDbOpen() {
     // feature ever has: nothing reads them until HourClock/Enabled is set.
     HourClock::ensureSchema(adb);
 
+    // musics.id is a plain INTEGER, not a primary key, and every importer in
+    // XFB inserts with an explicit NULL for it — so tracks added through the
+    // application have no id at all, while the rows that came with the shipped
+    // database do. Anything that identifies a track by id (the rotation
+    // editor's per-track rules, for one) simply cannot see the imported half
+    // of a library. SQLite cannot promote a column to a primary key in place,
+    // so instead: give the id-less rows their rowid, and keep new inserts
+    // filled by a trigger. The rowid is only taken when nothing else already
+    // claims that number, and the fallback sits above every id in use, so no
+    // two tracks can end up sharing one.
+    {
+        QSqlQuery idFix(adb);
+        idFix.exec(QStringLiteral(
+            "UPDATE musics SET id = rowid WHERE id IS NULL"
+            " AND rowid NOT IN (SELECT id FROM musics WHERE id IS NOT NULL)"));
+        const int claimed = idFix.numRowsAffected();
+        idFix.exec(QStringLiteral(
+            "UPDATE musics SET id = (SELECT COALESCE(MAX(id), 0) FROM musics) + rowid"
+            " WHERE id IS NULL"));
+        const int shifted = idFix.numRowsAffected();
+        if (claimed > 0 || shifted > 0)
+            qInfo() << "musics: gave an id to" << (claimed + shifted)
+                    << "track(s) that had none";
+        if (!idFix.exec(QStringLiteral(
+                "CREATE TRIGGER IF NOT EXISTS musics_fill_id"
+                " AFTER INSERT ON musics WHEN NEW.id IS NULL BEGIN"
+                "  UPDATE musics SET id = CASE"
+                "    WHEN NOT EXISTS (SELECT 1 FROM musics WHERE id = NEW.rowid)"
+                "      THEN NEW.rowid"
+                "    ELSE (SELECT COALESCE(MAX(id), 0) + 1 FROM musics) END"
+                "  WHERE rowid = NEW.rowid; END"))) {
+            qWarning() << "musics: could not install the id trigger:"
+                       << idFix.lastError().text();
+        }
+    }
+
     // Tempo column, added to libraries created before BPM existed. NULL
     // means "never analysed", 0 means "analysed, no steady tempo" — see
     // BpmLibrary. SQLite has no ADD COLUMN IF NOT EXISTS, so the presence
