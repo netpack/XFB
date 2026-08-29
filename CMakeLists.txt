@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(XFB VERSION 3.1421 LANGUAGES CXX)
+project(XFB VERSION 3.1422 LANGUAGES CXX)
 
 # Windows version resources take four 16-bit integers, which an XFB version
 # does not fit: 1415926535 alone overflows a 16-bit field. An XFB version is a

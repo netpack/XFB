@@ -30,8 +30,8 @@ android {
         targetSdk = 34
         // The update check compares versionCode; versionName is what the
         // desktop's pairing page and the app's own update prompt show.
-        versionCode = 2
-        versionName = "1.0"
+        versionCode = 3
+        versionName = "1.1"
 
         ndk {
             // The two ABIs any current phone actually is. AGP passes APP_ABI to
