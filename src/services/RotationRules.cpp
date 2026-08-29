@@ -467,9 +467,12 @@ RotationRules::History RotationRules::recentHistory(const Settings &s,
         // and the advertisements have nothing to do with this at all.
         qry.prepare(QStringLiteral(
             "SELECT artist, title, started_at FROM airlog"
-            " WHERE source = 'musics' AND started_at >= :cutoff"
-            " ORDER BY started_at ASC"));
-        qry.bindValue(QStringLiteral(":cutoff"), AirLog::formatTimestamp(cutoff));
+            " WHERE source = 'musics' AND started_epoch >= :cutoff"
+            " ORDER BY started_epoch ASC"));
+        // Seconds since the epoch, not the ISO text: the text carries a local
+        // UTC offset and compares wrongly across a clock change, which is
+        // exactly when a separation window must not quietly widen or narrow.
+        qry.bindValue(QStringLiteral(":cutoff"), cutoff.toSecsSinceEpoch());
         if (qry.exec()) {
             history.fromAirLog = true;
             history.usable = true;

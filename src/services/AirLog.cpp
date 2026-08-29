@@ -95,6 +95,34 @@ bool AirLog::ensureSchema(QSqlDatabase db)
         qWarning() << "AirLog: could not create airlog_started:" << qry.lastError().text();
         return false;
     }
+
+    // started_at is ISO 8601 carrying the local UTC offset, which reads well
+    // and compares badly: "…T01:30:00+01:00" sorts after "…T01:15:00+00:00"
+    // as text although it happened fifteen minutes EARLIER. One hour of every
+    // year — the one the clocks go back — a range filter therefore returns the
+    // wrong rows, and it is the advertiser report that bills from them. So the
+    // instant is also kept as seconds since the epoch, which is monotonic
+    // through any clock change, and every range and ordering uses that.
+    if (!db.record(QStringLiteral("airlog")).contains(QStringLiteral("started_epoch"))) {
+        if (!qry.exec(QLatin1String("ALTER TABLE airlog ADD COLUMN started_epoch INTEGER"))) {
+            qWarning() << "AirLog: could not add started_epoch:" << qry.lastError().text();
+            return false;
+        }
+    }
+    // SQLite parses the offset itself, so existing rows convert exactly.
+    if (!qry.exec(QLatin1String("UPDATE airlog SET started_epoch = "
+                                "CAST(strftime('%s', started_at) AS INTEGER) "
+                                "WHERE started_epoch IS NULL AND started_at IS NOT NULL"))) {
+        qWarning() << "AirLog: could not backfill started_epoch:" << qry.lastError().text();
+    } else if (qry.numRowsAffected() > 0) {
+        qInfo() << "AirLog: dated" << qry.numRowsAffected() << "existing entries";
+    }
+    if (!qry.exec(QLatin1String("CREATE INDEX IF NOT EXISTS airlog_started_epoch "
+                                "ON airlog(started_epoch)"))) {
+        qWarning() << "AirLog: could not create airlog_started_epoch:"
+                   << qry.lastError().text();
+        return false;
+    }
     return true;
 }
 
@@ -356,11 +384,12 @@ void AirLog::flush()
         case Op::Open: {
             QSqlQuery insert(db);
             insert.prepare(QStringLiteral(
-                "INSERT INTO airlog (started_at, source, source_id, artist, title, "
-                "path, planned_ms, played_ms, operator_mode) "
-                "VALUES (:started, :source, :sourceId, :artist, :title, :path, "
-                ":planned, 0, :mode)"));
+                "INSERT INTO airlog (started_at, started_epoch, source, source_id, "
+                "artist, title, path, planned_ms, played_ms, operator_mode) "
+                "VALUES (:started, :startedEpoch, :source, :sourceId, :artist, :title, "
+                ":path, :planned, 0, :mode)"));
             insert.bindValue(QStringLiteral(":started"), formatTimestamp(op.stamp));
+            insert.bindValue(QStringLiteral(":startedEpoch"), op.stamp.toSecsSinceEpoch());
             insert.bindValue(QStringLiteral(":source"), op.entry.source);
             insert.bindValue(QStringLiteral(":sourceId"),
                              op.entry.sourceId >= 0 ? QVariant(op.entry.sourceId)
@@ -502,9 +531,9 @@ QList<AirLog::Record> AirLog::query(const Filter &filter)
     QString sql = QLatin1String(kSelectColumns);
     QStringList where;
     if (filter.from.isValid())
-        where << QStringLiteral("started_at >= :from");
+        where << QStringLiteral("started_epoch >= :from");
     if (filter.to.isValid())
-        where << QStringLiteral("started_at <= :to");
+        where << QStringLiteral("started_epoch <= :to");
     if (!filter.source.isEmpty())
         where << QStringLiteral("source = :source");
     if (!filter.text.isEmpty())
@@ -512,16 +541,16 @@ QList<AirLog::Record> AirLog::query(const Filter &filter)
                                 "LIKE :textB OR IFNULL(path,'') LIKE :textC)");
     if (!where.isEmpty())
         sql += QStringLiteral(" WHERE ") + where.join(QStringLiteral(" AND "));
-    sql += QStringLiteral(" ORDER BY started_at DESC, id DESC");
+    sql += QStringLiteral(" ORDER BY started_epoch DESC, id DESC");
     if (filter.limit > 0)
         sql += QStringLiteral(" LIMIT :limit");
 
     QSqlQuery qry(db);
     qry.prepare(sql);
     if (filter.from.isValid())
-        qry.bindValue(QStringLiteral(":from"), formatTimestamp(filter.from));
+        qry.bindValue(QStringLiteral(":from"), filter.from.toSecsSinceEpoch());
     if (filter.to.isValid())
-        qry.bindValue(QStringLiteral(":to"), formatTimestamp(filter.to));
+        qry.bindValue(QStringLiteral(":to"), filter.to.toSecsSinceEpoch());
     if (!filter.source.isEmpty())
         qry.bindValue(QStringLiteral(":source"), filter.source);
     if (!filter.text.isEmpty()) {
@@ -569,19 +598,19 @@ QList<AirLog::Record> AirLog::advertiserReport(qint64 pubId, const QDateTime &fr
     QString sql = QLatin1String(kSelectColumns)
                   + QStringLiteral(" WHERE source = 'pub' AND source_id = :id");
     if (from.isValid())
-        sql += QStringLiteral(" AND started_at >= :from");
+        sql += QStringLiteral(" AND started_epoch >= :from");
     if (to.isValid())
-        sql += QStringLiteral(" AND started_at <= :to");
+        sql += QStringLiteral(" AND started_epoch <= :to");
     // Oldest first: an invoice reads down the month, not up it.
-    sql += QStringLiteral(" ORDER BY started_at ASC, id ASC");
+    sql += QStringLiteral(" ORDER BY started_epoch ASC, id ASC");
 
     QSqlQuery qry(db);
     qry.prepare(sql);
     qry.bindValue(QStringLiteral(":id"), pubId);
     if (from.isValid())
-        qry.bindValue(QStringLiteral(":from"), formatTimestamp(from));
+        qry.bindValue(QStringLiteral(":from"), from.toSecsSinceEpoch());
     if (to.isValid())
-        qry.bindValue(QStringLiteral(":to"), formatTimestamp(to));
+        qry.bindValue(QStringLiteral(":to"), to.toSecsSinceEpoch());
     if (!qry.exec()) {
         qWarning() << "AirLog: advertiser report failed:" << qry.lastError().text();
         return out;
@@ -624,8 +653,8 @@ int AirLog::prune()
 
     const QDateTime cutoff = QDateTime::currentDateTime().addDays(-days);
     QSqlQuery qry(db);
-    qry.prepare(QStringLiteral("DELETE FROM airlog WHERE started_at < :cutoff"));
-    qry.bindValue(QStringLiteral(":cutoff"), formatTimestamp(cutoff));
+    qry.prepare(QStringLiteral("DELETE FROM airlog WHERE started_epoch < :cutoff"));
+    qry.bindValue(QStringLiteral(":cutoff"), cutoff.toSecsSinceEpoch());
     if (!qry.exec()) {
         qWarning() << "AirLog: prune failed:" << qry.lastError().text();
         return 0;
