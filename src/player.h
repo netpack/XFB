@@ -157,8 +157,8 @@ private slots:
     void pubViewContextMenu(const QPoint&);
     void programsViewContextMenu(const QPoint&);
     void torrentsViewContextMenu(const QPoint&);
-    void dropEvent(QDropEvent *);
-    void dragEnterEvent(QDragEnterEvent *);
+    void dropEvent(QDropEvent *) override;
+    void dragEnterEvent(QDragEnterEvent *) override;
     void on_musicView_pressed(const QModelIndex &index);
     void on_jinglesView_pressed(const QModelIndex &index);
     void on_pubView_pressed(const QModelIndex &index);
