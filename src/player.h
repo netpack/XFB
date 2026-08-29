@@ -224,6 +224,7 @@ private slots:
     void on_bt_apply_multi_selection_clicked();
     void on_actionConvert_all_musics_in_the_database_to_mp3_triggered();
     void on_actionConvert_all_musics_in_the_database_to_ogg_triggered();
+    void on_actionConvert_all_musics_in_the_database_to_opus_triggered();
     void on_bt_start_streaming_clicked();
     void on_horizontalSlider_lps_vol_sliderMoved(int position);
     void on_bt_center_lps_vol_clicked();

@@ -14158,6 +14158,317 @@ void player::on_actionConvert_all_musics_in_the_database_to_ogg_triggered()
 
     QMessageBox::information(this, "Conversion Summary", summaryMessage);
 }
+void player::on_actionConvert_all_musics_in_the_database_to_opus_triggered()
+{
+    QSqlDatabase db = QSqlDatabase::database("xfb_connection"); // Or pass it in
+    if (!db.isOpen()) {
+        qWarning() << "Database connection 'xfb_connection' is not open!";
+        QMessageBox::critical(this, "Database Error", "Database connection is not open.");
+        return;
+    }
+
+    // --- Check for FFMPEG executable ---
+    QString ffmpegPath = FxEngine::ffmpegExecutable();
+    if (ffmpegPath.isEmpty()) {
+        qWarning() << "'ffmpeg' command not found in system PATH.";
+        QMessageBox::critical(this, "Missing Dependency",
+                              "The 'ffmpeg' command is required for audio conversion "
+                              "but was not found in the system's PATH.\n\nPlease install ffmpeg and ensure it's accessible.");
+        return;
+    }
+    qInfo() << "Found ffmpeg executable at:" << ffmpegPath;
+    // --- End FFMPEG check ---
+
+    // --- Check that this ffmpeg was built with libopus ---
+    // Unlike MP3 and Vorbis, plenty of ffmpeg builds ship without an Opus
+    // encoder. Finding that out now costs one process; finding it out inside
+    // the loop costs one failed track per record in the database.
+    {
+        QProcess encoderProbe;
+        encoderProbe.start(ffmpegPath, {"-hide_banner", "-encoders"});
+        encoderProbe.waitForFinished(15000);
+        const QString encoders = QString::fromUtf8(encoderProbe.readAllStandardOutput());
+        if (!encoders.contains(" libopus ")) {
+            qWarning() << "ffmpeg at" << ffmpegPath << "has no libopus encoder.";
+            QMessageBox::critical(this, "Missing Encoder",
+                                  "This ffmpeg build has no Opus encoder (libopus), so the tracks "
+                                  "cannot be converted to .opus.\n\nInstall an ffmpeg built with "
+                                  "libopus, or convert to ogg instead.");
+            return;
+        }
+    }
+    // --- End encoder check ---
+
+    // --- Confirmation ---
+    QMessageBox::StandardButton confirm = QMessageBox::question(this, "Confirm Full Conversion",
+                                     "Convert ALL tracks in the database to Opus (128kbps VBR)?\n\n"
+                                     "Original files will be replaced with the Opus version.\n"
+                                     "This action cannot be undone and may take a very long time!\n\n"
+                                     "Note: Only the audio stream will be kept.\n"
+                                     "Tracks that are already .opus are left untouched.",
+                                     QMessageBox::Yes | QMessageBox::No);
+
+    if (confirm == QMessageBox::No) {
+        return;
+    }
+
+    // --- Setup Loading Indicator & Progress Dialog ---
+    QMovie loadingMovie(":/images/loading.gif");
+    if(!loadingMovie.isValid()){
+         qWarning() << "Loading GIF not valid:" << ":/images/loading.gif";
+         ui->txt_loading->setText("Processing..."); // Fallback text
+         ui->txt_loading->show();
+    } else {
+        ui->txt_loading->setMovie(&loadingMovie);
+        ui->txt_loading->setScaledContents(true);
+        ui->txt_loading->show();
+        loadingMovie.start();
+    }
+    qApp->processEvents(); // Allow UI to update
+
+    QProgressDialog progressDialog("Converting all tracks to Opus...", "Cancel", 0, 0, this);
+    progressDialog.setWindowModality(Qt::WindowModal);
+    progressDialog.setValue(0);
+    progressDialog.show();
+    qApp->processEvents();
+    // --- End Setup ---
+
+    // --- Prepare Database Queries (outside loop) ---
+    QSqlQuery querySelect(db);
+    QSqlQuery queryUpdate(db);
+    QSqlQuery queryCount(db); // For counting total records
+
+    // Prepare UPDATE statement
+    if (!queryUpdate.prepare("UPDATE musics SET path = :new_path WHERE path = :old_path")) {
+        qWarning() << "Failed to prepare database UPDATE statement:" << queryUpdate.lastError();
+        QMessageBox::critical(this, "Database Error", "Failed to prepare database query for updating paths.");
+        loadingMovie.stop();
+        ui->txt_loading->hide();
+        progressDialog.cancel();
+        return;
+    }
+
+    // Count total files for progress bar
+    int totalFiles = 0;
+    if (queryCount.exec("SELECT COUNT(*) FROM musics")) {
+        if (queryCount.next()) {
+            totalFiles = queryCount.value(0).toInt();
+            progressDialog.setMaximum(totalFiles);
+        }
+    } else {
+        qWarning() << "Failed to count records:" << queryCount.lastError();
+        progressDialog.setMaximum(100); // Set an arbitrary max
+    }
+    qApp->processEvents();
+
+
+    // Select only the path
+    QString selectStr = "SELECT path FROM musics";
+    if (!querySelect.exec(selectStr)) {
+        qWarning() << "Failed to SELECT paths from musics:" << querySelect.lastError();
+        QMessageBox::critical(this, "Database Error", "Failed to query the musics table for paths.");
+        loadingMovie.stop();
+        ui->txt_loading->hide();
+        progressDialog.cancel();
+        return;
+    }
+
+    // --- Get Temporary Directory ---
+    QString tempDirPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+    if (tempDirPath.isEmpty()) {
+         qWarning() << "Could not find a writable temporary location.";
+         QMessageBox::critical(this, "File System Error", "Cannot find a suitable temporary directory for conversion.");
+         loadingMovie.stop();
+         ui->txt_loading->hide();
+         progressDialog.cancel();
+         return;
+    }
+    QDir tempDir(tempDirPath);
+    qInfo() << "Using temporary directory:" << tempDirPath;
+
+
+    // --- Process Files ---
+    int processedCount = 0;
+    int successCount = 0;
+    int failCount = 0;
+    int skippedCount = 0; // Already .opus — nothing to do, and re-encoding would only lose quality
+    bool cancelled = false;
+
+    while (querySelect.next() && !cancelled) {
+        processedCount++;
+        progressDialog.setValue(processedCount);
+        qApp->processEvents(); // Keep UI responsive and check for Cancel button
+
+        if (progressDialog.wasCanceled()) {
+            qInfo() << "User cancelled the operation.";
+            cancelled = true;
+            break;
+        }
+
+        QString originalPath = querySelect.value(0).toString();
+        QFileInfo originalFileInfo(originalPath);
+
+        progressDialog.setLabelText(QString("Converting [%1/%2]:\n%3")
+                                        .arg(processedCount)
+                                        .arg(totalFiles > 0 ? totalFiles : processedCount) // Show total if known
+                                        .arg(originalFileInfo.fileName()));
+        qApp->processEvents();
+
+        qInfo().noquote() << "Processing [" << processedCount << "/" << (totalFiles > 0 ? QString::number(totalFiles): "?") << "]:" << originalPath;
+
+        if (!originalFileInfo.exists() || !originalFileInfo.isFile()) {
+            qWarning() << "Original file does not exist or is not a file:" << originalPath;
+            failCount++;
+            continue; // Skip to next file
+        }
+
+        // Already Opus: transcoding it again would throw away quality for nothing.
+        if (originalFileInfo.suffix().compare("opus", Qt::CaseInsensitive) == 0) {
+            qInfo() << "Already Opus, leaving untouched:" << originalPath;
+            skippedCount++;
+            continue;
+        }
+
+        // --- Prepare Paths ---
+        // completeBaseName() keeps everything up to the LAST dot, so a title
+        // such as "Artist - Song feat. Bob.mp3" does not lose its tail.
+        QString baseName = originalFileInfo.completeBaseName();
+        QString originalDir = originalFileInfo.absolutePath(); // Directory of original file
+        QString tempOpusPath = tempDir.filePath(baseName + ".opus"); // Full path for temporary Opus
+        QString finalOpusPath = QDir(originalDir).filePath(baseName + ".opus"); // Final path for Opus in original dir
+
+        // A different file already sitting on the destination name would be
+        // silently destroyed by the rename below, so refuse this record.
+        if (QFile::exists(finalOpusPath)) {
+            qWarning() << "Destination already exists, refusing to overwrite:" << finalOpusPath;
+            failCount++;
+            continue;
+        }
+
+        // --- Run FFMPEG ---
+        QProcess ffmpegProcess;
+        QStringList ffmpegArgs;
+        // Args for Opus. "-vn" matters here: an attached cover image is a video
+        // stream, and libopus in an Ogg container cannot carry it, so leaving it
+        // mapped makes ffmpeg fail outright.
+        ffmpegArgs << "-y"                       // Never stop on an "overwrite?" prompt (there is no stdin)
+                   << "-i" << originalPath       // Input file
+                   << "-vn"                      // No video output (drops cover art)
+                   << "-c:a" << "libopus"        // Audio codec: libopus
+                   << "-b:a" << "128k"           // Target bitrate (VBR by default)
+                   << tempOpusPath;              // Output file path
+
+        qDebug() << "Running command:" << ffmpegPath << ffmpegArgs;
+
+        ffmpegProcess.start(ffmpegPath, ffmpegArgs);
+
+        // Wait for ffmpeg (e.g., 10 min timeout)
+        if (!ffmpegProcess.waitForFinished(600000)) {
+            qWarning() << "ffmpeg process timed out for:" << originalPath << ffmpegProcess.errorString();
+            ffmpegProcess.kill();
+            ffmpegProcess.waitForFinished(1000);
+            QFile::remove(tempOpusPath); // Clean up incomplete temp file
+            failCount++;
+            continue;
+        }
+
+        // Check ffmpeg result
+        if (ffmpegProcess.exitStatus() != QProcess::NormalExit || ffmpegProcess.exitCode() != 0) {
+            qWarning() << "ffmpeg process failed for:" << originalPath
+                       << "Exit code:" << ffmpegProcess.exitCode()
+                       << "Exit status:" << ffmpegProcess.exitStatus();
+            QString errorOutput = QString::fromLocal8Bit(ffmpegProcess.readAllStandardError());
+            qWarning() << "ffmpeg Standard Error:\n" << errorOutput;
+            QFile::remove(tempOpusPath); // Clean up potentially failed temp file
+            failCount++;
+            continue;
+        }
+
+        // Check if temp Opus exists and has size
+        QFileInfo tempOpusInfo(tempOpusPath);
+        if (!tempOpusInfo.exists() || tempOpusInfo.size() == 0) {
+            qWarning() << "ffmpeg finished successfully but the output Opus file is missing or empty:" << tempOpusPath;
+            QFile::remove(tempOpusPath);
+            failCount++;
+            continue;
+        }
+
+        qInfo() << "ffmpeg conversion successful for:" << originalPath << " -> " << tempOpusPath;
+
+        // --- Delete Original File ---
+        qInfo() << "Attempting to delete original file:" << originalPath;
+        if (!QFile::remove(originalPath)) {
+            qWarning() << "Failed to delete original file:" << originalPath << ". Skipping move and database update.";
+            QFile::remove(tempOpusPath); // Don't leave the conversion behind in temp
+            failCount++;
+            continue; // Skip rest of steps for this file
+        }
+        qInfo() << "Original file deleted successfully.";
+
+        // --- Move Temporary Opus to Final Location ---
+        qInfo() << "Attempting to move" << tempOpusPath << "to" << finalOpusPath;
+        if (!QFile::rename(tempOpusPath, finalOpusPath)) {
+            qWarning() << "Failed to move temporary Opus" << tempOpusPath << "to" << finalOpusPath << ". The original file was deleted! Opus remains in temp folder.";
+            QMessageBox::warning(this, "Move Failed",
+                                 QString("Failed to move the converted Opus file to its final destination:\n%1\n\n"
+                                         "The original file was deleted, but the Opus file remains in the temporary folder:\n%2\n\n"
+                                         "Please move it manually and check the database record.")
+                                     .arg(finalOpusPath).arg(tempOpusPath));
+            failCount++;
+            continue; // Cannot update DB path if move failed
+        }
+        qInfo() << "Opus file moved successfully to:" << finalOpusPath;
+
+        // --- Update Database ---
+        qInfo() << "Updating database: set path =" << finalOpusPath << "where path =" << originalPath;
+        queryUpdate.bindValue(":new_path", finalOpusPath);
+        queryUpdate.bindValue(":old_path", originalPath);
+
+        if (!queryUpdate.exec()) {
+            qWarning() << "Failed to update database path for:" << originalPath << "->" << finalOpusPath;
+            qWarning() << "DB Error:" << queryUpdate.lastError().text();
+            qWarning() << "Last Query (Bound values might not show):" << queryUpdate.lastQuery();
+            QMessageBox::warning(this, "Database Update Failed",
+                                 QString("The file was successfully converted and moved to:\n%1\n\n"
+                                         "However, updating the database record failed:\n%2\n\n"
+                                         "Please check the database manually.")
+                                     .arg(finalOpusPath).arg(queryUpdate.lastError().text()));
+            failCount++; // Count as failure since DB update is critical
+        } else {
+            qInfo() << "Database path updated successfully.";
+            successCount++;
+        }
+
+    } // End while loop
+
+    // --- Final Cleanup & Summary ---
+    loadingMovie.stop();
+    ui->txt_loading->hide();
+    progressDialog.cancel(); // Close progress dialog
+
+    update_music_table(); // Update the table view once after all operations
+
+    QString summaryMessage;
+    if (cancelled) {
+        summaryMessage = QString("Operation Cancelled.\n\nProcessed: %1\nSuccessfully Converted to Opus: %2\nAlready Opus (skipped): %3\nFailed/Skipped: %4")
+                             .arg(processedCount - 1)
+                             .arg(successCount)
+                             .arg(skippedCount)
+                             .arg(failCount);
+    } else {
+        summaryMessage = QString("Opus Conversion Complete.\n\nTotal Records: %1\nSuccessfully Converted: %2\nAlready Opus (skipped): %3\nFailed/Skipped: %4")
+                             .arg(totalFiles) // Use the count obtained earlier
+                             .arg(successCount)
+                             .arg(skippedCount)
+                             .arg(failCount);
+    }
+
+    qInfo() << "-------------------------------------";
+    qInfo() << summaryMessage.replace("\n\n", " | "); // Log summary concisely
+    qInfo() << "-------------------------------------";
+
+    QMessageBox::information(this, "Conversion Summary", summaryMessage);
+}
 void player::on_bt_start_streaming_clicked()
 {
     qDebug()<<"Starting the streaming!";
