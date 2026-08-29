@@ -39,7 +39,6 @@ SOURCES += \
     optionsdialog.cpp \
     aboutus.cpp \
     add_program.cpp \
-    audioinput.cpp \
     config.cpp \
     externaldownloader.cpp \
     commonFunctions.cpp \
@@ -72,14 +71,11 @@ SOURCES += \
     ui/ProgressIndicatorWidget.cpp \
     ui/DonationNotice.cpp \
     models/MusicListModel.cpp \
-    dialogs/EnhancedAddMusicSingleDialog.cpp \
-    dialogs/EnhancedAddDirectoryDialog.cpp \
     dialogs/AccessibilityPreferencesDialog.cpp \
     dialogs/AccessibilityTutorialDialog.cpp \
     repositories/MusicRepository.cpp \
     repositories/GenreRepository.cpp \
     repositories/PlaylistRepository.cpp \
-    repositories/DatabaseMigrator.cpp \
     services/TorNetworkService.cpp \
     services/TorrentSearchService.cpp \
     services/TorrentDownloadService.cpp \
@@ -115,7 +111,6 @@ HEADERS += \
     optionsdialog.h \
     aboutus.h \
     add_program.h \
-    audioinput.h \
     config.h \
     externaldownloader.h \
     commonFunctions.h \
@@ -149,14 +144,11 @@ HEADERS += \
     ui/ProgressIndicatorWidget.h \
     ui/DonationNotice.h \
     models/MusicListModel.h \
-    dialogs/EnhancedAddMusicSingleDialog.h \
-    dialogs/EnhancedAddDirectoryDialog.h \
     dialogs/AccessibilityPreferencesDialog.h \
     dialogs/AccessibilityTutorialDialog.h \
     repositories/MusicRepository.h \
     repositories/GenreRepository.h \
     repositories/PlaylistRepository.h \
-    repositories/DatabaseMigrator.h \
     services/TorNetworkService.h \
     services/TorrentSearchService.h \
     services/TorrentDownloadService.h \

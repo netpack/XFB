@@ -10,7 +10,6 @@ set(SOURCES
     optionsdialog.cpp
     aboutus.cpp
     add_program.cpp
-    audioinput.cpp
     config.cpp
     externaldownloader.cpp
     commonFunctions.cpp
@@ -125,15 +124,12 @@ set(SOURCES
     # Models
     models/MusicListModel.cpp
     # Enhanced Dialogs
-    dialogs/EnhancedAddMusicSingleDialog.cpp
-    dialogs/EnhancedAddDirectoryDialog.cpp
     dialogs/AccessibilityPreferencesDialog.cpp
     dialogs/AccessibilityTutorialDialog.cpp
     # Repository layer
     repositories/MusicRepository.cpp
     repositories/GenreRepository.cpp
     repositories/PlaylistRepository.cpp
-    repositories/DatabaseMigrator.cpp
     # Torrent services (required by player.cpp)
     services/TorNetworkService.cpp
     services/TorrentSearchService.cpp
@@ -160,7 +156,6 @@ set(HEADERS
     optionsdialog.h
     aboutus.h
     add_program.h
-    audioinput.h
     config.h
     externaldownloader.h
     commonFunctions.h
@@ -240,15 +235,12 @@ set(HEADERS
     # Models
     models/MusicListModel.h
     # Enhanced Dialogs
-    dialogs/EnhancedAddMusicSingleDialog.h
-    dialogs/EnhancedAddDirectoryDialog.h
     dialogs/AccessibilityPreferencesDialog.h
     dialogs/AccessibilityTutorialDialog.h
     # Repository layer
     repositories/MusicRepository.h
     repositories/GenreRepository.h
     repositories/PlaylistRepository.h
-    repositories/DatabaseMigrator.h
     # Torrent service headers
     services/TorNetworkService.h
     services/TorrentSearchService.h
