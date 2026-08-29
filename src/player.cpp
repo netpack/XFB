@@ -3250,7 +3250,13 @@ void player::musicViewContextMenu(const QPoint& pos) {
     if (!multiSelect) {
         actCue = thisMenu.addAction(QIcon(":/icons/ic_launcher_voicedial.png"),
                                     tr("Cue this track in the headphones"));
-        actCue->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_C));
+        // The key is named in the label rather than set as a shortcut on this
+        // action: the Playback menu already owns Ctrl+Shift+C application-wide,
+        // and a second action carrying the same sequence makes Qt call it
+        // ambiguous while this menu is open — at which point NEITHER fires.
+        actCue->setText(tr("Cue this track in the headphones\t%1")
+                            .arg(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_C)
+                                     .toString(QKeySequence::NativeText)));
         actCue->setToolTip(tr("Listen to this track on the cue output only. "
                               "It never reaches the on-air output."));
         thisMenu.setToolTipsVisible(true);
