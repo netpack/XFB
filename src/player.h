@@ -432,7 +432,6 @@ private slots:
     QMovie *movie = nullptr;
     QMovie *movie2 = nullptr;
     bool Disable_Volume = false;
-    bool normalization_soft = false;
     bool fullScreen = false;
     bool lp_1_paused = false;
     bool lp_2_paused = false;

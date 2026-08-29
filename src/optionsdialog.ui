@@ -79,16 +79,6 @@
               </widget>
              </item>
              <item>
-              <widget class="QCheckBox" name="checkBox_Normalize_Soft">
-               <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This will boost the volume of the output softly for low and medium sounds. Will not boost when the volume of the track is already high.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-               <property name="text">
-                <string>Enable Soft Live Sound Normalization (experimental)</string>
-               </property>
-              </widget>
-             </item>
-             <item>
               <widget class="QCheckBox" name="checkBox_fullScreen">
                <property name="text">
                 <string>Start in FullScreen</string>

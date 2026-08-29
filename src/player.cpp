@@ -2519,7 +2519,6 @@ void player::updateConfig() {
     // Read boolean values directly
     fullScreen = settings.value("FullScreen", false).toBool();
     disableSeekBar = settings.value("Disable_Seek_Bar", false).toBool();
-    normalization_soft = settings.value("Normalize_Soft", false).toBool();
     Disable_Volume = settings.value("Disable_Volume", false).toBool();
     // Re-apply the configured theme (palette + stylesheet) so options-dialog
     // changes take effect live; darkMode reflects the resolved theme.
@@ -2627,7 +2626,6 @@ void player::updateConfig() {
     }
 
     // Log other settings
-    qDebug() << "Normalization Soft setting:" << normalization_soft;
     qDebug() << "Role setting:" << Role;
     if (Role == "Server") {
         qDebug("XFB Role: Server mode actions can be taken now.");

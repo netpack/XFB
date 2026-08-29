@@ -100,7 +100,6 @@ private:
     bool m_languageChanged = false; // set on save; a restart is needed to apply
     QString txt_selected_db;
     QString disableSeekBar;
-    QString Normalize_Soft;
     QString Disable_Volume;
     QString Enable_Networking;
     QString Server_URL;

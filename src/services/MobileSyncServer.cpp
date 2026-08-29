@@ -2321,7 +2321,6 @@ QStringList MobileSyncServer::mirroredSettingKeys()
     // Everything machine-specific is left out on purpose: folders, ports,
     // credentials and window geometry all belong to the machine XFB runs on.
     return {
-        QStringLiteral("Normalize_Soft"),
         QStringLiteral("Disable_Seek_Bar"),
         QStringLiteral("Disable_Volume"),
         QStringLiteral("AutoAutoMix"),

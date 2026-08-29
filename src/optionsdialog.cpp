@@ -82,7 +82,6 @@ optionsDialog::optionsDialog(QWidget *parent) :
     // General Checkboxes
     ui->checkBox_disableSeekBar->setChecked(settings.value("Disable_Seek_Bar", false).toBool());
     ui->checkBox_disableVolume->setChecked(settings.value("Disable_Volume", false).toBool());
-    ui->checkBox_Normalize_Soft->setChecked(settings.value("Normalize_Soft", false).toBool());
     ui->checkBox_fullScreen->setChecked(settings.value("FullScreen", false).toBool());
 
     // Theme + accent color (ThemeManager owns the ids and defaults)
@@ -476,7 +475,6 @@ void optionsDialog::saveSettings2Db()
     // --- Use settings.setValue() to save ---
     settings.setValue("Database", ui->txt_selected_db->text()); // Assuming display only, save it back if needed
     settings.setValue("Disable_Seek_Bar", ui->checkBox_disableSeekBar->isChecked());
-    settings.setValue("Normalize_Soft", ui->checkBox_Normalize_Soft->isChecked());
     settings.setValue("Disable_Volume", ui->checkBox_disableVolume->isChecked());
     settings.setValue("FullScreen", ui->checkBox_fullScreen->isChecked());
     settings.setValue("Theme", ui->combo_theme->currentData().toString());
