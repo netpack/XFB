@@ -266,6 +266,109 @@ static QString resolveExecutable(const QString &name)
     return QString();
 }
 
+// Ogg/Opus files carry their cover art as a METADATA_BLOCK_PICTURE Vorbis
+// comment — a base64-encoded FLAC picture block — and not as a stream of their
+// own. ffmpeg's ogg demuxer hands that comment back as a synthetic MJPEG
+// "video" stream, so a plain "-map 0 -c copy" tagging pass tries to re-mux it
+// as real video and the ogg/opus muxer refuses with "Unsupported codec id in
+// stream 1", leaving the download untagged. Read the picture back out and
+// rebuild the block so the tagging pass can write the cover as a comment
+// again. Returns the base64 block ready for a METADATA_BLOCK_PICTURE tag, or
+// an empty array — with *whyNot* set only when the file does have a cover we
+// failed to rebuild, so the caller can tell "no cover" from "cover lost".
+static QByteArray extractCoverPictureBlock(const QString &ffmpegPath,
+                                           const QString &filePath,
+                                           QString *whyNot)
+{
+    auto fail = [&](const QString &reason) {
+        if (whyNot) *whyNot = reason;
+        return QByteArray();
+    };
+
+    // ffprobe normally sits next to ffmpeg, which we already resolved past the
+    // missing GUI PATH.
+    QString ffprobePath = resolveExecutable("ffprobe");
+    if (ffprobePath.isEmpty() && !ffmpegPath.isEmpty()) {
+        const QString sibling = QFileInfo(ffmpegPath).absolutePath() + "/ffprobe";
+        if (QFileInfo(sibling).isExecutable()) ffprobePath = sibling;
+    }
+    if (ffprobePath.isEmpty()) return fail("ffprobe was not found");
+
+    QProcess probe;
+    probe.start(ffprobePath, {"-v", "error", "-select_streams", "v:0",
+                              "-show_entries", "stream=codec_name,width,height",
+                              "-of", "default=noprint_wrappers=1", filePath});
+    if (!probe.waitForStarted(8000) || !probe.waitForFinished(20000) ||
+        probe.exitStatus() != QProcess::NormalExit) {
+        return fail("ffprobe could not read the file");
+    }
+
+    QString codec;
+    int width = 0, height = 0;
+    const QStringList probeLines =
+        QString::fromUtf8(probe.readAllStandardOutput()).split('\n', Qt::SkipEmptyParts);
+    for (const QString &line : probeLines) {
+        const int eq = line.indexOf('=');
+        if (eq < 0) continue;
+        const QString key = line.left(eq).trimmed();
+        const QString value = line.mid(eq + 1).trimmed();
+        if (key == "codec_name") codec = value;
+        else if (key == "width")  width = value.toInt();
+        else if (key == "height") height = value.toInt();
+    }
+
+    // No picture at all: nothing to carry over, and nothing went wrong.
+    if (codec.isEmpty()) return QByteArray();
+
+    QByteArray mime;
+    QString pictureExt;
+    if (codec == "mjpeg") { mime = "image/jpeg"; pictureExt = "jpg"; }
+    else if (codec == "png") { mime = "image/png"; pictureExt = "png"; }
+    else return fail("unsupported cover image format \"" + codec + "\"");
+
+    // Copy the picture out untouched (no re-encode) so the bytes we put back
+    // are the ones yt-dlp embedded.
+    const QString picturePath = filePath + ".cover." + pictureExt;
+    QProcess extract;
+    extract.setProcessChannelMode(QProcess::MergedChannels);
+    extract.start(ffmpegPath, {"-y", "-v", "error", "-i", filePath,
+                               "-map", "0:v:0", "-frames:v", "1", "-c", "copy",
+                               picturePath});
+    const bool extracted = extract.waitForStarted(8000) && extract.waitForFinished(30000) &&
+                           extract.exitStatus() == QProcess::NormalExit && extract.exitCode() == 0;
+    QFile pictureFile(picturePath);
+    if (!extracted || !pictureFile.open(QIODevice::ReadOnly)) {
+        QFile::remove(picturePath);
+        return fail("the cover image could not be extracted");
+    }
+    const QByteArray imageData = pictureFile.readAll();
+    pictureFile.close();
+    QFile::remove(picturePath);
+    if (imageData.isEmpty()) return fail("the extracted cover image was empty");
+
+    // FLAC picture block (as referenced by the Vorbis comment spec): all
+    // fields big-endian, with length-prefixed MIME type and description.
+    QByteArray block;
+    auto appendBE32 = [&block](quint32 value) {
+        block.append(char((value >> 24) & 0xFF));
+        block.append(char((value >> 16) & 0xFF));
+        block.append(char((value >> 8) & 0xFF));
+        block.append(char(value & 0xFF));
+    };
+    appendBE32(3);                      // picture type: front cover
+    appendBE32(quint32(mime.size()));
+    block.append(mime);
+    appendBE32(0);                      // empty description
+    appendBE32(quint32(width));
+    appendBE32(quint32(height));
+    appendBE32(24);                     // colour depth in bits per pixel
+    appendBE32(0);                      // 0 = not a palette-indexed image
+    appendBE32(quint32(imageData.size()));
+    block.append(imageData);
+
+    return block.toBase64();
+}
+
 // Locate the yt-dlp executable. Prefer the self-updating binary XFB installs in
 // ~/.local/bin (it stays current via "yt-dlp -U"); then fall back to PATH and,
 // on macOS/Windows, to common install locations / filename variants. Shared by
@@ -927,8 +1030,50 @@ DownloadResult processDownloadTask(
     // (no re-encode) to write Vorbis comments / ID3 tags, then swap the file in.
     if (embedMetadata && !ffmpegPath.isEmpty() && (!yartist.isEmpty() || !ysong.isEmpty())) {
         const QString taggedTmp = finalFilepath + ".tagging." + fileInfo.suffix();
+        const QString suffix = fileInfo.suffix().toLower();
+        // MP3 and M4A hold their cover art as a real (attached-picture) stream
+        // and re-mux it happily, so only the Ogg family needs the picture
+        // moved back into a Vorbis comment.
+        const bool oggFamily = (suffix == "opus" || suffix == "ogg" || suffix == "oga");
+
+        QByteArray coverBlock;
+        QString coverIssue;
+        if (oggFamily) {
+            coverBlock = extractCoverPictureBlock(ffmpegPath, finalFilepath, &coverIssue);
+        }
+
+        // The picture block is far too big for a command line once the cover is
+        // a few hundred KB, so hand it to ffmpeg in a metadata file instead.
+        QString metaFile;
+        if (!coverBlock.isEmpty()) {
+            metaFile = finalFilepath + ".tagging.ffmeta";
+            QFile meta(metaFile);
+            if (meta.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+                QByteArray escaped = coverBlock;
+                escaped.replace('=', "\\=");   // '=' is a separator in ffmetadata
+                meta.write(";FFMETADATA1\n");
+                meta.write("METADATA_BLOCK_PICTURE=");
+                meta.write(escaped);
+                meta.write("\n");
+                meta.close();
+            } else {
+                metaFile.clear();
+                coverIssue = "a temporary metadata file could not be written";
+            }
+        }
+
         QStringList tagArgs;
-        tagArgs << "-y" << "-i" << finalFilepath << "-map" << "0" << "-c" << "copy";
+        tagArgs << "-y" << "-i" << finalFilepath;
+        if (!metaFile.isEmpty()) tagArgs << "-f" << "ffmetadata" << "-i" << metaFile;
+        // Take only the audio when a cover has to travel as a comment: mapping
+        // the demuxer's synthetic picture stream is exactly what the ogg/opus
+        // muxer rejects.
+        if (oggFamily && (!coverBlock.isEmpty() || !coverIssue.isEmpty()))
+            tagArgs << "-map" << "0:a";
+        else
+            tagArgs << "-map" << "0";
+        tagArgs << "-c" << "copy";
+        if (!metaFile.isEmpty()) tagArgs << "-map_metadata" << "1";
         if (!yartist.isEmpty()) tagArgs << "-metadata" << ("artist=" + yartist);
         if (!ysong.isEmpty())   tagArgs << "-metadata" << ("title=" + ysong);
         if (!g1.isEmpty() && g1 != "Genre")  tagArgs << "-metadata" << ("genre=" + g1);
@@ -942,19 +1087,36 @@ DownloadResult processDownloadTask(
         QProcess tagProc;
         tagProc.setProcessChannelMode(QProcess::MergedChannels);
         tagProc.start(ffmpegPath, tagArgs);
-        if (tagProc.waitForStarted(8000) && tagProc.waitForFinished(60000) &&
-            tagProc.exitStatus() == QProcess::NormalExit && tagProc.exitCode() == 0 &&
-            QFileInfo(taggedTmp).size() > 0) {
+        const bool tagged = tagProc.waitForStarted(8000) && tagProc.waitForFinished(60000) &&
+                            tagProc.exitStatus() == QProcess::NormalExit && tagProc.exitCode() == 0 &&
+                            QFileInfo(taggedTmp).size() > 0;
+        const QString tagProcOutput = QString::fromUtf8(tagProc.readAll()).trimmed();
+        if (!metaFile.isEmpty()) QFile::remove(metaFile);
+
+        if (tagged) {
             // Replace the original with the tagged version.
             if (QFile::remove(finalFilepath) && QFile::rename(taggedTmp, finalFilepath)) {
-                appendOutput("Embedded metadata into the downloaded file.");
+                if (!coverBlock.isEmpty())
+                    appendOutput("Embedded metadata into the downloaded file (cover art kept).");
+                else if (!coverIssue.isEmpty())
+                    appendOutput("Embedded metadata into the downloaded file, but the embedded "
+                                 "cover art was dropped: " + coverIssue + ".");
+                else
+                    appendOutput("Embedded metadata into the downloaded file.");
             } else {
                 QFile::remove(taggedTmp); // keep original if swap failed
                 appendOutput("Note: could not replace file with the tagged version; keeping original.");
             }
         } else {
             QFile::remove(taggedTmp);
-            appendOutput("Note: embedding metadata failed; the file was kept untagged.");
+            QString why = "Note: embedding metadata failed; the file was kept untagged.";
+            if (oggFamily && (!coverBlock.isEmpty() || !coverIssue.isEmpty())) {
+                why += " The embedded cover art is the likely cause — an ." + suffix +
+                       " file cannot hold it as a stream. Turning off \"Embed thumbnail\" in "
+                       "Options → Downloads (yt-dlp) will let the tags through.";
+            }
+            appendOutput(why);
+            if (!tagProcOutput.isEmpty()) appendOutput("ffmpeg said: " + tagProcOutput);
         }
     }
 
