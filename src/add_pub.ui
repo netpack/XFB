@@ -381,9 +381,6 @@
     </property>
    </widget>
    <widget class="QDateEdit" name="dateEdit">
-    <property name="enabled">
-     <bool>false</bool>
-    </property>
     <property name="geometry">
      <rect>
       <x>110</x>
@@ -391,6 +388,12 @@
       <width>110</width>
       <height>27</height>
      </rect>
+    </property>
+    <property name="locale">
+     <locale language="English" country="UnitedStates"/>
+    </property>
+    <property name="displayFormat">
+     <string>dd/MM/yyyy</string>
     </property>
    </widget>
    <widget class="QLabel" name="label_8">
@@ -420,9 +423,6 @@
     </property>
    </widget>
    <widget class="QDateEdit" name="dateEdit_2">
-    <property name="enabled">
-     <bool>false</bool>
-    </property>
     <property name="geometry">
      <rect>
       <x>250</x>
@@ -430,6 +430,12 @@
       <width>110</width>
       <height>27</height>
      </rect>
+    </property>
+    <property name="locale">
+     <locale language="English" country="UnitedStates"/>
+    </property>
+    <property name="displayFormat">
+     <string>dd/MM/yyyy</string>
     </property>
    </widget>
    <widget class="QLabel" name="label_10">
@@ -446,9 +452,6 @@
     </property>
    </widget>
    <widget class="QTimeEdit" name="timeEdit_2">
-    <property name="enabled">
-     <bool>false</bool>
-    </property>
     <property name="geometry">
      <rect>
       <x>110</x>
@@ -457,11 +460,14 @@
       <height>27</height>
      </rect>
     </property>
+    <property name="locale">
+     <locale language="English" country="UnitedStates"/>
+    </property>
+    <property name="displayFormat">
+     <string>hh:mm</string>
+    </property>
    </widget>
    <widget class="QPushButton" name="pushButton_7">
-    <property name="enabled">
-     <bool>false</bool>
-    </property>
     <property name="geometry">
      <rect>
       <x>240</x>

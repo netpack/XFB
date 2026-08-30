@@ -43,7 +43,15 @@ private slots:
 
     void on_pushButton_5_clicked();
 
+    // "Date interval and time": every day at a given time, between two
+    // dates. Writes a type-3 scheduler row (see run_scheduler()).
+    void on_pushButton_7_clicked();
+
 private:
+    // Adds one line to the schedule list, tagged with the rowid of the
+    // scheduler row it stands for so it can be deleted again exactly.
+    void addScheduleLine(const QString &text, const QVariant &schedulerRowId);
+
     Ui::add_pub *ui;
     QString pub_id;
 

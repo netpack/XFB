@@ -1230,11 +1230,18 @@ player::player(QWidget *parent) :
     timer->start(1000);
     showTime();
 
-    if(Role=="Server"){
+    // The scheduler runs whatever role this machine is in. It only ever reads
+    // this installation's own scheduler table and queues into this
+    // installation's own running order — there is nothing server-side about
+    // it. Gating it on Role meant that on a default install (Role is Client)
+    // every schedule an operator wrote in Add a publicity / Add a program was
+    // silently never checked, which is not something the dialog that wrote
+    // them gives any hint of.
+    QTimer *schedulerTimer = new QTimer(this);
+    connect(schedulerTimer, &QTimer::timeout, this, &player::run_scheduler);
+    schedulerTimer->start(60000);
 
-        QTimer *schedulerTimer = new QTimer(this);
-        connect(schedulerTimer, &QTimer::timeout, this, &player::run_scheduler);
-        schedulerTimer->start(60000);
+    if(Role=="Server"){
 
         run_server_scheduler(); //run at startup
 
@@ -9982,8 +9989,14 @@ void player::run_scheduler(){
 
 
 
+// Type 3 rows whose interval has run out. Collected here and acted on after
+// the loop rather than inside it, because the loop is walking the same table.
+// The rowid rides along as the last column so a row can be named exactly;
+// columns 0..14 keep the positions the two older types read them from.
+QList<QPair<QVariant, QString>> expiredIntervals; // rowid, advert id ("" = programme)
+
 QSqlQuery sched_qry(db);
-sched_qry.prepare("select * from scheduler");
+sched_qry.prepare("select *, rowid from scheduler");
 if(sched_qry.exec()){
     while(sched_qry.next()){
         QString tipo = sched_qry.value(6).toString();
@@ -10166,6 +10179,96 @@ if(sched_qry.exec()){
 
         }
 
+        /*
+         * 3 = an event to be played every day at a specific hour/min, between
+         *     two dates, both included. A campaign: "this advert, at ten past
+         *     eight, for the fortnight it is paid for".
+         *
+         * The six start_/end_ columns have been in the scheduler table since
+         * it was written; until now nothing filled them and nothing read them.
+         */
+        if(tipo=="3"){
+
+            const QDate today = QDate::currentDate();
+            const QDate from(sched_qry.value(8).toInt(),
+                             sched_qry.value(9).toInt(),
+                             sched_qry.value(10).toInt());
+            const QDate to(sched_qry.value(11).toInt(),
+                           sched_qry.value(12).toInt(),
+                           sched_qry.value(13).toInt());
+
+            const QString schId = sched_qry.value(0).toString();
+            const QString is_program = sched_qry.value(14).toString();
+
+            if(!from.isValid() || !to.isValid()){
+                qWarning() << "Scheduler: a date interval rule has no usable dates"
+                           << "and was ignored (id" << schId << ")";
+            } else if(today > to){
+
+                // The campaign is over. Same ending as a one-off: the rule
+                // goes, and an advert with no rules left goes with it.
+                expiredIntervals.append(qMakePair(sched_qry.value(15),
+                                                  is_program=="1" ? QString() : schId));
+
+            } else if(today >= from){
+
+                const QTime nowTime = QTime::currentTime();
+                if((nowTime.hour()==sched_qry.value(4).toInt())
+                   && (nowTime.minute()==sched_qry.value(5).toInt())){
+
+                    qDebug() << "Scheduled event now fired (type 3)!";
+
+                    QSqlQuery getPath(db);
+                    if(is_program=="1"){
+                        getPath.prepare("SELECT path FROM programs WHERE id=?");
+                    } else {
+                        getPath.prepare("SELECT path FROM pub WHERE id=?");
+                    }
+                    getPath.addBindValue(schId);
+
+                    if(getPath.exec()){
+                        while(getPath.next()){
+                            QString pubPath = getPath.value(0).toString();
+                            ui->playlist->insertItem(0,pubPath);
+                            qDebug()<<"Scheduled event added to the top of the playlist: "<<pubPath;
+                        }
+                    }
+                }
+            }
+
+        }
+
+    }
+}
+
+// The campaigns that ran out, cleared now the walk over the table is done.
+for(const QPair<QVariant, QString> &expired : std::as_const(expiredIntervals)){
+
+    QSqlQuery del_qry(db);
+    del_qry.prepare("DELETE FROM scheduler WHERE rowid = ?");
+    del_qry.addBindValue(expired.first);
+    if(!del_qry.exec()){
+        qWarning() << "Scheduler: could not remove a finished date interval:"
+                   << del_qry.lastError().text();
+        continue;
+    }
+    qInfo() << "Scheduler: a date interval has run its course and was removed.";
+
+    if(expired.second.isEmpty())
+        continue;   // a programme: XFB never deletes those by itself
+
+    QSqlQuery left_qry(db);
+    left_qry.prepare("SELECT count(id) FROM scheduler WHERE id=?");
+    left_qry.addBindValue(expired.second);
+    if(left_qry.exec() && left_qry.next() && left_qry.value(0).toInt()==0){
+        QSqlQuery drop_qry(db);
+        drop_qry.prepare("DELETE FROM pub WHERE id=?");
+        drop_qry.addBindValue(expired.second);
+        if(drop_qry.exec()){
+            qInfo() << "Scheduler: advert" << expired.second
+                    << "has no schedules left and was removed.";
+            update_music_table();
+        }
     }
 }
 
