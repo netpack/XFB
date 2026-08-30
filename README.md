@@ -14,8 +14,7 @@
 
 XFB is an open-source radio automation software developed by [Frédéric Bogaerts](https://www.researchgate.net/profile/Frederic-Bogaerts) — PhD researcher at the [University of Coimbra](https://www.uc.pt), CISUC / Department of Informatics Engineering, and founder of [Netpack Online Solutions](https://www.netpack.pt).
 
-Its accessibility work is carried out in the context of that research. If you use XFB
-in academic work, please cite it via [`CITATION.cff`](CITATION.cff).
+If you use XFB in academic work, please cite it via [`CITATION.cff`](CITATION.cff).
 
 ## Features
 
