@@ -653,11 +653,18 @@ HourClock::Clock HourClock::exampleClock(const QString &name)
         clock.items.append(s);
     };
 
+    // The ident and the jingle are hard-timed, not floating. Floating is for
+    // slots that have no length of their own — the sweeps below, which absorb
+    // whatever is left until the next anchor. A floating ident is never put to
+    // air at all (hourClockTick only fires hard-timed, non-sweep slots), so an
+    // example that shipped one taught the operator a trap rather than the
+    // feature. The arithmetic is unchanged either way: every slot here already
+    // starts where the one before it ends.
     add(SlotType::News,       tr("News"),          QString(),   0,    180,  true);
-    add(SlotType::StationId,  tr("Station ID"),    QString(),   180,  10,   false);
+    add(SlotType::StationId,  tr("Station ID"),    QString(),   180,  10,   true);
     add(SlotType::MusicSweep, tr("Morning sweep"), QString(),   190,  1010, false);
     add(SlotType::AdBreak,    tr("Ad break"),      QString(),   1200, 120,  true);
-    add(SlotType::Jingle,     tr("Jingle"),        QString(),   1320, 15,   false);
+    add(SlotType::Jingle,     tr("Jingle"),        QString(),   1320, 15,   true);
     add(SlotType::MusicSweep, tr("Second sweep"),  QString(),   1335, 1465, false);
     add(SlotType::AdBreak,    tr("Ad break"),      QString(),   2800, 120,  true);
     add(SlotType::MusicSweep, tr("Run to the hour"), QString(), 2920, 680,  false);
