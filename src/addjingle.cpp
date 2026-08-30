@@ -81,7 +81,7 @@ void addJingle::on_pushButton_clicked()
     QSqlDatabase db = QSqlDatabase::database("xfb_connection");
     QSqlQuery sql(db);
 
-    sql.prepare("insert into jingles values(:jname,:jpath)");
+    sql.prepare("insert into jingles (name,path) values(:jname,:jpath)");
     sql.bindValue(":jname",jname);
     sql.bindValue(":jpath",jpath);
 

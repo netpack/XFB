@@ -1,6 +1,13 @@
 #include "player.h"
 #include "ThemeManager.h"
 
+#ifdef XFB_HAS_DARWIN_MIC_PERMISSION
+#include <QtPlugin>
+// Statically linked (see src/CMakeLists.txt), so it has to be imported by hand:
+// nothing scans a plugin directory for this one.
+Q_IMPORT_PLUGIN(QDarwinMicrophonePermissionPlugin)
+#endif
+
 #include <QApplication>
 #include <QCoreApplication>
 #include <QFileInfo>

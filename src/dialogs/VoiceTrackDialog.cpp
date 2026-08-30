@@ -1,4 +1,5 @@
 #include "VoiceTrackDialog.h"
+#include "../commonFunctions.h"
 
 #include "../LevelMeter.h"
 #include "../PlaylistWaveView.h"
@@ -903,6 +904,13 @@ void VoiceTrackDialog::toggleRecord()
                                 "are kept in, so there is nowhere to record to."));
         return;
     }
+
+    // macOS will hand back silence rather than refuse outright if nobody has
+    // agreed to the microphone being used, so ask before opening the input.
+    // An operator who has not been asked yet gets the system's question here,
+    // and the take starts from the answer instead of from this click.
+    if (!ensureMicrophoneAccess(this, [this]() { toggleRecord(); }))
+        return;
 
     QString error;
     if (!m_recorder->start(m_deviceBox->currentText(), path, &error)) {

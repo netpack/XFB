@@ -305,6 +305,20 @@ target_link_libraries(XFB
     Qt6::Network
 )
 
+# macOS asks for microphone access through a plugin that Qt ships STATICALLY —
+# there is no .dylib to find at run time, so it has to be linked in. Without it
+# Qt logs "Could not find permission plugin for QMicrophonePermission" and every
+# request is refused, however correct Info.plist is: recording a programme and
+# voice-tracking a link both fail with no way for the operator to say yes.
+if(APPLE AND TARGET Qt6::QDarwinMicrophonePermissionPlugin)
+    target_link_libraries(XFB Qt6::QDarwinMicrophonePermissionPlugin)
+    target_compile_definitions(XFB PRIVATE XFB_HAS_DARWIN_MIC_PERMISSION)
+    message(STATUS "Linking the macOS microphone permission plugin")
+elseif(APPLE)
+    message(WARNING "Qt6::QDarwinMicrophonePermissionPlugin not found - "
+                    "XFB will not be able to ask for microphone access")
+endif()
+
 # WebEngine / QuickWidgets are optional (not available on e.g. Windows ARM64).
 # Link them only when the Qt build provides them. The app does not reference
 # their APIs, so their absence does not affect functionality.

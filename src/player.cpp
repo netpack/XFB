@@ -5,6 +5,7 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 */
 
 #include "player.h"
+#include "commonFunctions.h"
 #include "audioformats.h"
 #include "ui_player.h"
 #include "add_music_single.h"
@@ -10690,6 +10691,13 @@ void player::on_bt_rec_clicked()
 {
 
  if(recMode == 0){
+    // Same reason as the voice-track dialog: without the operator's agreement
+    // macOS hands back silence rather than refusing, and the programme would
+    // be lost before anyone noticed. This sits before recMode changes so the
+    // answer can re-enter here and start the recording properly.
+    if (!ensureMicrophoneAccess(this, [this]() { on_bt_rec_clicked(); }))
+        return;
+
     recMode = 1;
     ui->bt_rec->hide();
     updateConfig();
