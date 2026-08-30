@@ -42,14 +42,15 @@ externaldownloader::externaldownloader(QWidget *parent) :
     // looks. Kept in code rather than the .ui so it stays translatable and the
     // generated header can't go stale.
     ui->txt_videoLink->setPlaceholderText(
-        tr("YouTube, SoundCloud, Spotify or Apple Music link"));
+        tr("YouTube, SoundCloud, Bandcamp, Spotify or Apple Music link"));
     ui->bt_youtube_getIt->setToolTip(
-        tr("Download one track: a YouTube or SoundCloud link, or a Spotify / Apple "
-           "Music track (fetched from YouTube, since neither service serves its "
-           "own audio)"));
+        tr("Download one track: a YouTube, SoundCloud or Bandcamp link, or a Spotify "
+           "/ Apple Music track (fetched from YouTube, since neither service serves "
+           "its own audio)"));
     ui->bt_youtube_getPlaylist->setToolTip(
         tr("Download every track of a YouTube playlist (link containing \"list=\"), "
-           "a SoundCloud set, or a Spotify / Apple Music album or playlist"));
+           "a SoundCloud set, a Bandcamp album, or a Spotify / Apple Music album or "
+           "playlist"));
 
     // When a link is pasted (or typed), automatically scrape the video's
     // title/artist after a short debounce and pre-fill the fields.
@@ -368,6 +369,12 @@ DownloadResult processDownloadTask(
         }
 
         db.setDatabaseName(dbCreds.databaseName);
+        // This connection writes while the UI thread is reading. WAL keeps the
+        // reader out of the way; the timeout covers the other writers (a sync
+        // running, or the next track of the same playlist) so a busy moment
+        // waits instead of losing the track that was just downloaded.
+        if (dbCreds.driver == QLatin1String("QSQLITE"))
+            db.setConnectOptions(QStringLiteral("QSQLITE_BUSY_TIMEOUT=15000"));
         if (!dbCreds.hostName.isEmpty()) db.setHostName(dbCreds.hostName);
         if (!dbCreds.userName.isEmpty()) db.setUserName(dbCreds.userName);
         if (!dbCreds.password.isEmpty()) db.setPassword(dbCreds.password);
@@ -1055,6 +1062,37 @@ static bool isSoundCloudSetUrl(const QString &url)
            url.contains("/sets/", Qt::CaseInsensitive);
 }
 
+// A Bandcamp page: the site itself or, as is usual, an artist's/label's
+// subdomain (n5md.bandcamp.com). Artists who put their page on their own
+// domain look like any other site from the URL alone, so those links take the
+// ordinary path — yt-dlp still recognises them when it fetches them.
+static bool isBandcampUrl(const QString &url)
+{
+    const QString host = QUrl(url).host().toLower();
+    return host == QLatin1String("bandcamp.com")
+           || host.endsWith(QLatin1String(".bandcamp.com"));
+}
+
+// A Bandcamp album, e.g. https://n5md.bandcamp.com/album/light-as-a-feather
+// (one song lives under /track/ instead).
+static bool isBandcampAlbumUrl(const QString &url)
+{
+    return isBandcampUrl(url)
+           && QUrl(url).path().startsWith(QLatin1String("/album/"));
+}
+
+// Everything after the "?" in a Bandcamp link is tracking picked up on the way
+// from wherever it was shared (fbclid, sfnsn, from=...). A Bandcamp page is
+// named by its path alone, so dropping the rest keeps the console log readable
+// and makes the same album pasted from two places the same link.
+static QString stripBandcampTracking(const QString &url)
+{
+    QUrl u(url);
+    u.setQuery(QString());
+    u.setFragment(QString());
+    return u.toString();
+}
+
 // How much of an endless YouTube Mix is worth downloading when the user asks
 // for one anyway. Radios have no last track, so this is the stop.
 static const int kMixEntryLimit = 25;
@@ -1082,9 +1120,13 @@ static QString youTubeListId(const QString &url)
 // else. Mixes are the exception: YouTube refuses to serve an RD id as a
 // playlist page ("This playlist type is unviewable"), so those keep the URL
 // they arrived on and are capped by the caller instead. Links carrying no list
-// id are returned untouched.
+// id are returned untouched, save for a Bandcamp album, which is reduced to
+// the album page itself.
 static QString normalizePlaylistUrl(const QString &url)
 {
+    if (isBandcampUrl(url))
+        return stripBandcampTracking(url);
+
     const QString listId = youTubeListId(url);
     if (listId.isEmpty() || isYouTubeMixId(listId))
         return url;
@@ -1104,17 +1146,30 @@ static QString youTubeVideoOnlyUrl(const QString &url)
 
 // Reduce a pasted link to the one track it names, for a single download.
 // A YouTube watch link keeps only its video id, which drops the playlist, the
-// radio flag and the tracking parameters that ride along with a shared link.
-// Everything else — youtu.be, SoundCloud, Spotify, Apple Music — is handed over
-// as pasted, since their parameters are part of the address.
+// radio flag and the tracking parameters that ride along with a shared link; a
+// Bandcamp link keeps only its path, for the same reason. Everything else —
+// youtu.be, SoundCloud, Spotify, Apple Music — is handed over as pasted, since
+// their parameters are part of the address.
 static QString normalizeSingleUrl(const QString &url)
 {
     const QString trimmed = url.trimmed();
     if (StreamingCatalog::serviceOf(trimmed) != StreamingCatalog::Service::None)
         return trimmed;
 
+    if (isBandcampUrl(trimmed))
+        return stripBandcampTracking(trimmed);
+
     const QString videoOnly = youTubeVideoOnlyUrl(trimmed);
     return videoOnly.isEmpty() ? trimmed : videoOnly;
+}
+
+// A link that names a whole album or playlist rather than one track: a YouTube
+// playlist, a SoundCloud set, a Bandcamp album, or a Spotify / Apple Music
+// collection. Decided from the URL shape alone, no network access.
+static bool isCollectionLink(const QString &url)
+{
+    return url.contains(QLatin1String("list=")) || isSoundCloudSetUrl(url)
+           || isBandcampAlbumUrl(url) || StreamingCatalog::isCollectionUrl(url);
 }
 
 // Aggregate result for downloading every entry of a playlist.
@@ -1234,21 +1289,28 @@ PlaylistResult processPlaylistDownloadTask(
         // collide with text in titles.
         //
         // YouTube playlists are enumerated with "--flat-playlist" (cheap: one
-        // index request, titles included). SoundCloud sets can NOT use the flat
-        // index — its flat entries carry no title/uploader (both "NA") and some
-        // are bare api-v2.soundcloud.com URLs. Without --flat-playlist yt-dlp
-        // fetches each track's metadata (~1s per track, still no media download
-        // since --print implies --simulate), which yields real titles and
-        // canonical permalinks.
-        const bool soundcloudSet = isSoundCloudSetUrl(playlistUrl);
+        // index request, titles included). SoundCloud sets and Bandcamp albums
+        // can NOT use the flat index: SoundCloud's flat entries carry no
+        // title/uploader (both "NA") and some are bare api-v2.soundcloud.com
+        // URLs, while Bandcamp's carry the song title but no artist at all,
+        // which would file a whole album under "Unknown Artist". Without
+        // --flat-playlist yt-dlp fetches each track's metadata (~1s per track,
+        // still no media download since --print implies --simulate), which
+        // yields real titles, artists and canonical permalinks.
+        const bool bandcampAlbum = isBandcampAlbumUrl(playlistUrl);
+        const bool fullMetadata = isSoundCloudSetUrl(playlistUrl) || bandcampAlbum;
         const QChar US(0x1f);
-        appendOutput(soundcloudSet ? "Fetching SoundCloud set entries (with metadata)..."
-                                   : "Fetching playlist entries...");
+        if (bandcampAlbum)
+            appendOutput("Fetching Bandcamp album entries (with metadata)...");
+        else if (fullMetadata)
+            appendOutput("Fetching SoundCloud set entries (with metadata)...");
+        else
+            appendOutput("Fetching playlist entries...");
         QStringList entryLines;
         {
             QProcess listProc;
             QStringList listArgs;
-            if (!soundcloudSet) listArgs << "--flat-playlist";
+            if (!fullMetadata) listArgs << "--flat-playlist";
             // Reading only the first N entries of an endless YouTube Mix keeps
             // the index request from walking a thousand-track radio.
             if (maxEntries > 0)
@@ -1257,7 +1319,8 @@ PlaylistResult processPlaylistDownloadTask(
                      << "--no-warnings"
                      << "--print"
                      << QString("%(id)s%1%(title)s%1%(uploader)s%1%(webpage_url)s"
-                                "%1%(url)s%1%(playlist_count)s").arg(US)
+                                "%1%(url)s%1%(playlist_count)s%1%(artist)s"
+                                "%1%(track)s").arg(US)
                      << playlistUrl;
             listProc.start(ytdlpPath, listArgs);
             if (!listProc.waitForStarted(15000)) {
@@ -1273,7 +1336,7 @@ PlaylistResult processPlaylistDownloadTask(
             // off in the middle and hand back half a list as if it were whole.
             // yt-dlp streams entries as it finds them, so wait on *silence*
             // instead: only a source that has stopped producing is stuck.
-            const int idleTimeoutMs = soundcloudSet ? 120000 : 60000;
+            const int idleTimeoutMs = fullMetadata ? 120000 : 60000;
             QString out;
             QString err;
             bool stalled = false;
@@ -1322,6 +1385,8 @@ PlaylistResult processPlaylistDownloadTask(
             const QString webpageUrl = parts.value(3).trimmed();
             const QString entryUrl = parts.value(4).trimmed();
             declaredCount = qMax(declaredCount, parts.value(5).trimmed().toInt());
+            const QString metaArtist = parts.value(6).trimmed();
+            const QString metaTrack = parts.value(7).trimmed();
 
             if (id.isEmpty() || id == "NA") {
                 appendOutput("Skipping a playlist entry with no video id.");
@@ -1342,18 +1407,31 @@ PlaylistResult processPlaylistDownloadTask(
                 entry.url = "https://www.youtube.com/watch?v=" + id;
             }
 
-            // Guess Artist/Song from the title. "Artist - Song" is the common
-            // form for music; otherwise fall back to the channel name (minus
-            // YouTube's " - Topic" auto-channel suffix) as the artist.
-            const int sep = title.indexOf(" - ");
-            if (sep > 0) {
-                entry.artist = title.left(sep).trimmed();
-                entry.song = title.mid(sep + 3).trimmed();
+            // Bandcamp tags every track with its artist and its song name, so
+            // there is nothing to guess: take them as given. This is only asked
+            // of Bandcamp — SoundCloud fills its "track" field with the whole
+            // title, artist and all, and YouTube's flat index has no tags at
+            // all.
+            const auto tagged = [](const QString &v) {
+                return !v.isEmpty() && v != QLatin1String("NA");
+            };
+            if (bandcampAlbum && tagged(metaArtist) && tagged(metaTrack)) {
+                entry.artist = metaArtist;
+                entry.song = metaTrack;
             } else {
-                QString channel = uploader;
-                channel.remove(QRegularExpression("\\s*-\\s*Topic$"));
-                entry.artist = channel.trimmed();
-                entry.song = title;
+                // Guess Artist/Song from the title. "Artist - Song" is the common
+                // form for music; otherwise fall back to the channel name (minus
+                // YouTube's " - Topic" auto-channel suffix) as the artist.
+                const int sep = title.indexOf(" - ");
+                if (sep > 0) {
+                    entry.artist = title.left(sep).trimmed();
+                    entry.song = title.mid(sep + 3).trimmed();
+                } else {
+                    QString channel = uploader;
+                    channel.remove(QRegularExpression("\\s*-\\s*Topic$"));
+                    entry.artist = channel.trimmed();
+                    entry.song = title;
+                }
             }
             if (entry.artist.isEmpty() || entry.artist == "NA") entry.artist = "Unknown Artist";
             if (entry.song.isEmpty()   || entry.song == "NA")   entry.song = id;
@@ -1377,7 +1455,8 @@ PlaylistResult processPlaylistDownloadTask(
         agg.fatal = true;
         agg.message = "No playlist entries were found. Make sure the link points to a public "
                       "YouTube playlist (containing \"list=\"), SoundCloud set "
-                      "(soundcloud.com/<artist>/sets/<set>), or Spotify / Apple Music "
+                      "(soundcloud.com/<artist>/sets/<set>), Bandcamp album "
+                      "(<artist>.bandcamp.com/album/<album>), or Spotify / Apple Music "
                       "album or playlist.";
         appendOutput(agg.message);
         agg.consoleOutput = consoleLines.join("\n");
@@ -1579,14 +1658,14 @@ void externaldownloader::getPlaylist() {
     // A YouTube playlist link must carry a "list=" parameter (unlike single
     // downloads we must NOT strip query parameters after '&', since that is
     // where the list id lives in "watch?v=...&list=..." URLs). SoundCloud sets
-    // are recognized by their .../sets/... path, Spotify and Apple Music
-    // albums/playlists by their own URL shape.
-    if (pasted.isEmpty() || (!pasted.contains("list=") && !isSoundCloudSetUrl(pasted)
-                             && !StreamingCatalog::isCollectionUrl(pasted))) {
+    // are recognized by their .../sets/... path, Bandcamp albums by /album/,
+    // Spotify and Apple Music albums/playlists by their own URL shape.
+    if (pasted.isEmpty() || !isCollectionLink(pasted)) {
         QMessageBox::warning(this, tr("Not a Playlist"),
             tr("Please paste a playlist link in the Video Link field: a YouTube playlist "
                "(containing \"list=\"), a SoundCloud set "
-               "(soundcloud.com/artist/sets/name), or a Spotify or Apple Music album "
+               "(soundcloud.com/artist/sets/name), a Bandcamp album "
+               "(artist.bandcamp.com/album/name), or a Spotify or Apple Music album "
                "or playlist."));
         ui->bt_youtube_getIt->setEnabled(true);
         if (ui->bt_youtube_getPlaylist) ui->bt_youtube_getPlaylist->setEnabled(true);
@@ -1664,12 +1743,12 @@ void externaldownloader::getPlaylist() {
 void externaldownloader::on_bt_youtube_getPlaylist_clicked()
 {
     const QString ylink = ui->txt_videoLink->text().trimmed();
-    if (ylink.isEmpty() || (!ylink.contains("list=") && !isSoundCloudSetUrl(ylink)
-                            && !StreamingCatalog::isCollectionUrl(ylink))) {
+    if (ylink.isEmpty() || !isCollectionLink(ylink)) {
         QMessageBox::information(this, tr("Playlist Downloader"),
             tr("Please paste a playlist link in the Video Link field: a YouTube playlist "
                "(containing \"list=\"), a SoundCloud set "
-               "(soundcloud.com/artist/sets/name), or a Spotify or Apple Music album "
+               "(soundcloud.com/artist/sets/name), a Bandcamp album "
+               "(artist.bandcamp.com/album/name), or a Spotify or Apple Music album "
                "or playlist."));
         return;
     }
@@ -1712,14 +1791,22 @@ void externaldownloader::on_bt_youtube_getPlaylist_clicked()
     }
 
     const StreamingCatalog::Service service = StreamingCatalog::serviceOf(ylink);
-    const QString what = (service == StreamingCatalog::Service::None)
-        ? tr("This downloads every entry of the playlist as audio and adds them to your "
-             "library. Artist and Song are guessed from each entry's title, and the "
-             "genres selected above are applied to all of them.")
-        : tr("%1 does not hand out its audio, so XFB reads the track list and then "
-             "downloads each song from YouTube. Artist and Song come from %1 itself, "
-             "and the genres selected above are applied to all of them.")
-              .arg(StreamingCatalog::serviceName(service));
+    QString what;
+    if (service != StreamingCatalog::Service::None) {
+        what = tr("%1 does not hand out its audio, so XFB reads the track list and then "
+                  "downloads each song from YouTube. Artist and Song come from %1 itself, "
+                  "and the genres selected above are applied to all of them.")
+                   .arg(StreamingCatalog::serviceName(service));
+    } else if (isBandcampAlbumUrl(ylink)) {
+        what = tr("This downloads every track of the Bandcamp album as audio and adds "
+                  "them to your library. Artist and Song come from Bandcamp's own track "
+                  "information, and the genres selected above are applied to all of "
+                  "them.");
+    } else {
+        what = tr("This downloads every entry of the playlist as audio and adds them to "
+                  "your library. Artist and Song are guessed from each entry's title, "
+                  "and the genres selected above are applied to all of them.");
+    }
 
     const auto reply = QMessageBox::question(this, tr("Download Whole Playlist?"),
         what + tr("\n\nThis can take a while. Continue?"),
@@ -1745,8 +1832,18 @@ void externaldownloader::on_bt_youtube_getIt_clicked()
     }
 
     // A whole album or playlist pasted into a single download would fetch only
-    // its first track and file it under the artist/song typed above. Point the
+    // its first track and file it under the artist/song typed above — worse on
+    // Bandcamp, where yt-dlp downloads every track of the album over one
+    // another, since --no-playlist does not apply to an album page. Point the
     // user at the button that does what they meant.
+    if (isBandcampAlbumUrl(ylink)) {
+        QMessageBox::information(this, tr("Downloader"),
+            tr("That is a Bandcamp album, not a single track. Use \"Get Playlist!\" to "
+               "download all of it, or paste the link of one track "
+               "(artist.bandcamp.com/track/name)."));
+        return;
+    }
+
     if (StreamingCatalog::isCollectionUrl(ylink)) {
         QMessageBox::information(this, tr("Downloader"),
             tr("That is a %1 album or playlist, not a single track. Use "
@@ -1815,6 +1912,10 @@ void externaldownloader::fetchVideoDetails()
     if (url.contains("list=") && !url.contains("watch?v=") && !url.contains("youtu.be/"))
         return;
     if (StreamingCatalog::isCollectionUrl(url))
+        return;
+    // A Bandcamp album link stands for every track on it, so there is no one
+    // title to put in the fields; the playlist path reads them per track.
+    if (isBandcampAlbumUrl(url))
         return;
 
     // yt-dlp cannot read Spotify or Apple Music, so those links get their
