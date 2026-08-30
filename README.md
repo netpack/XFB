@@ -39,6 +39,22 @@ If you use XFB in academic work, please cite it via [`CITATION.cff`](CITATION.cf
 
 ---
 
+## Documentation
+
+The **[XFB Manual](docs/manual/README.md)** is the operator's guide: what each
+part of the application is for, how to set it up, and what it does when you are
+not watching it.
+
+- [Getting started](docs/manual/01-getting-started.md) — first launch, where your data lives, the window
+- [The library](docs/manual/02-the-library.md) — music, jingles, adverts, programmes
+- [Going on air](docs/manual/03-going-on-air.md) — the running order, segues, cue, voice tracking, pads
+- [Automation](docs/manual/04-automation.md) — Auto Mode, rotation rules, the scheduler, the dead-air watchdog
+- [Hour clocks](docs/manual/05-hour-clocks.md) — programming the hour as a clock
+- [Listeners and streaming](docs/manual/06-listeners-and-streaming.md), [Other computers](docs/manual/07-other-computers.md), [Accessibility](docs/manual/08-accessibility.md)
+- [Settings reference](docs/manual/09-settings-reference.md) and [When something goes wrong](docs/manual/10-troubleshooting.md)
+
+---
+
 ## Installation
 
 ### macOS
