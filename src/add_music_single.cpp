@@ -221,7 +221,8 @@ void add_music_single::on_pushButton_clicked()
     QSqlQuery sql(db);
 
 
-        sql.prepare("INSERT INTO musics VALUES(NULL, ?, ?, ?, ?, ?, ?, ?, ?, 0, '-')");
+        sql.prepare("INSERT INTO musics (artist,song,genre1,genre2,country,published_date,"
+                    "path,time,played_times,last_played) VALUES(?, ?, ?, ?, ?, ?, ?, ?, 0, '-')");
         sql.addBindValue(artist);
         sql.addBindValue(song);
         sql.addBindValue(g1);
@@ -248,7 +249,8 @@ void add_music_single::on_pushButton_clicked()
 
 /*
         QSqlQuery sql;
-        sql.prepare("insert into musics values(NULL,:artist,:song,:g1,:g2,:country,:pub_date,:file,:time)");
+        sql.prepare("insert into musics (artist,song,genre1,genre2,country,published_date,path,time) "
+                    "values(:artist,:song,:g1,:g2,:country,:pub_date,:file,:time)");
         sql.bindValue(":artist",artist);
         sql.bindValue(":song",song);
         sql.bindValue(":g1",g1);

@@ -9209,7 +9209,7 @@ void player::server_check_and_schedule_new_programs(){
 
 
                         QSqlQuery sql_add(db);
-                        sql_add.prepare("INSERT INTO programs VALUES(NULL, ?, ?)");
+                        sql_add.prepare("INSERT INTO programs (name,path) VALUES(?, ?)");
                         sql_add.addBindValue(filename);
                         sql_add.addBindValue(file);
                         if(sql_add.exec()){
@@ -9462,7 +9462,9 @@ void player::server_check_and_schedule_new_programs(){
                         QSqlQuery sql_add(db);
                         int played = 0;
                         QString last = "-";
-                        sql_add.prepare("INSERT INTO musics VALUES(NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                        sql_add.prepare("INSERT INTO musics (artist,song,genre1,genre2,country,"
+                                        "published_date,path,time,played_times,last_played) "
+                                        "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                         sql_add.addBindValue(artist);
                         sql_add.addBindValue(song);
                         sql_add.addBindValue(g1);
@@ -9596,7 +9598,9 @@ void player::server_check_and_schedule_new_programs(){
                 QSqlQuery sql_add(db);
                 int played = 0;
                 QString last = "-";
-                sql_add.prepare("INSERT INTO musics VALUES(NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                sql_add.prepare("INSERT INTO musics (artist,song,genre1,genre2,country,"
+                                        "published_date,path,time,played_times,last_played) "
+                                        "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 sql_add.addBindValue(artist);
                 sql_add.addBindValue(song);
                 sql_add.addBindValue(g1);
@@ -9719,7 +9723,7 @@ void player::server_ftp_check(){
                     qDebug()<<"server_ftp_check() :: The programs date is: "<<dataDoPrograma;
 
                     QSqlQuery qry(db);
-                    qry.prepare("INSERT INTO programs VALUES(NULL, ?, ?)");
+                    qry.prepare("INSERT INTO programs (name,path) VALUES(?, ?)");
                     qry.addBindValue(nomeDoPrograma);
                     qry.addBindValue(fileNameWPath);
                     if(qry.exec()){
@@ -11083,7 +11087,7 @@ void player::on_bt_ProgramStopandProcess_clicked()
                                 } else {
 
                                             QSqlQuery qry(db);
-                                            qry.prepare("INSERT INTO programs VALUES(NULL, ?, ?)");
+                                            qry.prepare("INSERT INTO programs (name,path) VALUES(?, ?)");
                                             qry.addBindValue(NomeDestePrograma);
                                             qry.addBindValue(destinationProgram);
                                             if(qry.exec()){
@@ -11350,7 +11354,7 @@ void player::on_actionMake_a_program_from_this_playlist_triggered()
                   QMessageBox::information(this,tr("Local file deleted"),tr("The local copy of the file was deleted."));
               } else {
                           QSqlQuery qry(db);
-                          qry.prepare("INSERT INTO programs VALUES(NULL, ?, ?)");
+                          qry.prepare("INSERT INTO programs (name,path) VALUES(?, ?)");
                           qry.addBindValue(NomeDestePrograma);
                           qry.addBindValue(destino);
                           if(qry.exec()){
@@ -11371,7 +11375,7 @@ void player::on_actionMake_a_program_from_this_playlist_triggered()
               QMessageBox::information(this,tr("Local file deleted"),tr("The local copy of the file was deleted."));
           } else {
               QSqlQuery qry(db);
-              qry.prepare("INSERT INTO programs VALUES(NULL, ?, ?)");
+              qry.prepare("INSERT INTO programs (name,path) VALUES(?, ?)");
               qry.addBindValue(NomeDestePrograma);
               qry.addBindValue(destino);
               if(qry.exec()){
