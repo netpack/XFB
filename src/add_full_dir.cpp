@@ -9,6 +9,7 @@
 #include <QFileInfo>
 #include <QDebug>
 #include <QSql>
+#include <QSqlError>
 #include <QSqlQuery>
 #include <QMessageBox>
 
@@ -90,11 +91,15 @@ void add_full_dir::on_f_bt_add_clicked()
 
     // One list, one walk: every extension XFB accepts, matched case-insensitively,
     // descending into subfolders and through symlinked folders (loop-guarded).
-    const QStringList found = AudioFormats::findAudioFiles(dir);
-    qDebug() << "Scanning" << dir << "found" << found.size() << "audio files";
+    const bool recursive = ui->chk_recursive->isChecked();
+    const QStringList found = AudioFormats::findAudioFiles(dir, recursive);
+    qDebug() << "Scanning" << dir << (recursive ? "and its subfolders" : "only")
+             << "found" << found.size() << "audio files";
 
     int added = 0;
     int skipped = 0;
+    int failed = 0;
+    QString firstError;
 
     QApplication::setOverrideCursor(Qt::WaitCursor);
 
@@ -157,7 +162,12 @@ void add_full_dir::on_f_bt_add_clicked()
          int played = 0;
          QString last = "";
          QSqlQuery sql(db);
-         sql.prepare("insert into musics values(NULL,:artist,:song,:g1,:g2,:country,:pub_date,:file,:time,:played,:last)");
+         // Columns named, never positional: the table has grown (bpm, loudness,
+         // intro times) and a bare VALUES(...) has to fill every one of them or
+         // SQLite refuses the whole insert.
+         sql.prepare("insert into musics (artist,song,genre1,genre2,country,published_date,"
+                     "path,time,played_times,last_played) "
+                     "values(:artist,:song,:g1,:g2,:country,:pub_date,:file,:time,:played,:last)");
          sql.bindValue(":artist",artist);
          sql.bindValue(":song",song);
          sql.bindValue(":g1",g1);
@@ -174,8 +184,14 @@ void add_full_dir::on_f_bt_add_clicked()
              ++added;
              qDebug() << "last sql: " << sql.lastQuery();
          } else {
-           //  QMessageBox::critical(this,tr("Error"),sql.lastError().text());
-             qDebug() << "last sql: " << sql.lastQuery();
+             // Never swallow this again. A silent failure here is what made a
+             // whole folder look like it had simply been ignored: the columns
+             // of musics had grown and the insert had been refused every time,
+             // with nothing on screen and nothing in the summary to say so.
+             ++failed;
+             if (firstError.isEmpty())
+                 firstError = sql.lastError().text();
+             qWarning() << "Could not add" << filewpath << ":" << sql.lastError().text();
          }
 
 
@@ -193,6 +209,14 @@ void add_full_dir::on_f_bt_add_clicked()
            tr("No audio files were found in %1.\n\n"
               "XFB imports: %2")
                .arg(dir, AudioFormats::suffixes().join(QStringLiteral(", "))));
+   } else if (failed > 0) {
+       // A refused insert is a fault in XFB, not something the operator did
+       // wrong, so it says so plainly and hands over the reason SQLite gave.
+       QMessageBox::warning(
+           this, tr("Add directory"),
+           tr("Found %1 audio file(s): added %2, already in the library %3, "
+              "and %4 could not be added.\n\nThe database refused them: %5")
+               .arg(found.size()).arg(added).arg(skipped).arg(failed).arg(firstError));
    } else {
        QMessageBox::information(
            this, tr("Add directory"),
