@@ -6575,7 +6575,8 @@ void player::setupPlaybackShortcuts()
 
         // The dead-air watchdog. Same shelf as the rest: a property of this
         // installation, not of what is on air right now.
-        QAction *deadAir = new QAction(tr("&Dead-Air Watchdog..."), this);
+        QAction *deadAir = new QAction(QIcon(":/icons/flat/Security Checked-48.png"),
+                                       tr("&Dead-Air Watchdog..."), this);
         deadAir->setMenuRole(QAction::NoRole);
         deadAir->setStatusTip(tr("What to do when the station goes quiet"));
         connect(deadAir, &QAction::triggered, this, [this]() {
@@ -6600,7 +6601,8 @@ void player::setupPlaybackShortcuts()
             deadAirWatchdog();
         // The as-run log. In the XFB menu with the other station-wide things:
         // it is a property of the installation, not of what is on air now.
-        QAction *airLog = new QAction(tr("As-Run &Log..."), this);
+        QAction *airLog = new QAction(QIcon(":/icons/flat/Music Transcript-48.png"),
+                                      tr("As-Run &Log..."), this);
         airLog->setMenuRole(QAction::NoRole);
         airLog->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_L));
         airLog->setShortcutContext(Qt::ApplicationShortcut);
@@ -6623,7 +6625,8 @@ void player::setupPlaybackShortcuts()
         // Rotation rules. Next to the as-run log on purpose: the log is where
         // an operator notices the same artist coming round too often, and this
         // is where they do something about it.
-        QAction *rotation = new QAction(tr("&Rotation Rules..."), this);
+        QAction *rotation = new QAction(QIcon(":/icons/flat/Shuffle-48.png"),
+                                        tr("&Rotation Rules..."), this);
         rotation->setMenuRole(QAction::NoRole);
         // Ctrl+Shift+R is already the remaining-time toggle, so this takes the
         // Alt variant rather than quietly stealing a binding the operator has.
@@ -6663,7 +6666,12 @@ void player::setupPlaybackShortcuts()
         // The hour clock. It sits next to the rotation rules because the two
         // answer neighbouring questions: rotation says *which* record, the
         // clock says *what kind of thing* goes there and *when*.
-        QAction *hourClock = new QAction(tr("Hour &Clocks..."), this);
+        // The pie, not a clock face: chronometer.png already marks the three
+        // analysis passes in the Database menu, and an icon that says two
+        // different things is worse than none. A clock *is* a pie read
+        // clockwise, which is what the wheel in the window draws.
+        QAction *hourClock = new QAction(QIcon(":/icons/office-chart-pie.png"),
+                                         tr("Hour &Clocks..."), this);
         hourClock->setMenuRole(QAction::NoRole);
         // Ctrl+Shift+K: the C, L and H of "clock" are all taken already.
         hourClock->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_K));
@@ -6699,7 +6707,8 @@ void player::setupPlaybackShortcuts()
         // network at all. Same shelf as the rest: it is a property of this
         // installation, not of what is on air now. Opening the window is the
         // only way to turn the page on, and it ships off.
-        QAction *requests = new QAction(tr("Listener &Requests..."), this);
+        QAction *requests = new QAction(QIcon(":/icons/im-message-new.png"),
+                                        tr("Listener &Requests..."), this);
         requests->setMenuRole(QAction::NoRole);
         requests->setStatusTip(tr("The public now-playing page, and what "
                                   "listeners have asked for"));
