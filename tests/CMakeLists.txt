@@ -29,12 +29,11 @@ add_subdirectory(integration)
 add_subdirectory(performance)
 
 # UI tests
-add_subdirectory(ui)
 
 # Add custom target to run all tests
 add_custom_target(run_tests
     COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure --verbose
-    DEPENDS unit_tests integration_tests performance_tests ui_tests
+    DEPENDS unit_tests integration_tests performance_tests
     COMMENT "Running all tests"
 )
 

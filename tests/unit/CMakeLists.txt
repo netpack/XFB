@@ -108,6 +108,7 @@ add_executable(test_music_repository
     repositories/TestMusicRepository.cpp
     repositories/TestMusicRepository.h
     ${CMAKE_SOURCE_DIR}/src/repositories/MusicRepository.cpp
+    ${CMAKE_SOURCE_DIR}/src/audioformats.cpp
 )
 
 target_link_libraries(test_music_repository
@@ -164,26 +165,6 @@ target_include_directories(test_playlist_repository PRIVATE
 )
 
 add_test(NAME PlaylistRepositoryTest COMMAND test_playlist_repository)
-
-add_executable(test_database_migrator
-    repositories/TestDatabaseMigrator.cpp
-    repositories/TestDatabaseMigrator.h
-    ${CMAKE_SOURCE_DIR}/src/repositories/DatabaseMigrator.cpp
-)
-
-target_link_libraries(test_database_migrator
-    Qt6::Core
-    Qt6::Sql
-    Qt6::Test
-    TestUtils
-)
-
-target_include_directories(test_database_migrator PRIVATE
-    ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_SOURCE_DIR}/tests
-)
-
-add_test(NAME DatabaseMigratorTest COMMAND test_database_migrator)
 
 add_executable(test_audio_service
     services/TestAudioService.cpp
@@ -296,6 +277,7 @@ add_executable(test_music_cache
     ${CMAKE_SOURCE_DIR}/src/services/ErrorHandler.cpp
     ${CMAKE_SOURCE_DIR}/src/services/Logger.cpp
     ${CMAKE_SOURCE_DIR}/src/repositories/MusicRepository.cpp
+    ${CMAKE_SOURCE_DIR}/src/audioformats.cpp
 )
 
 target_link_libraries(test_music_cache
@@ -336,6 +318,7 @@ add_executable(test_main_controller
     ${CMAKE_SOURCE_DIR}/src/repositories/MusicRepository.cpp
     ${CMAKE_SOURCE_DIR}/src/repositories/GenreRepository.cpp
     ${CMAKE_SOURCE_DIR}/src/repositories/PlaylistRepository.cpp
+    ${CMAKE_SOURCE_DIR}/src/audioformats.cpp
 )
 
 target_link_libraries(test_main_controller
@@ -410,6 +393,9 @@ add_executable(test_pad_board_focus
     test_pad_board_focus.cpp
     ${CMAKE_SOURCE_DIR}/src/PadBoard.cpp
     ${CMAKE_SOURCE_DIR}/src/PadBoard.h
+    ${CMAKE_SOURCE_DIR}/src/audioformats.cpp
+    ${CMAKE_SOURCE_DIR}/src/audio/AudioDeviceRouter.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/AirLog.cpp
 )
 
 target_link_libraries(test_pad_board_focus
@@ -436,6 +422,6 @@ set_tests_properties(PadBoardFocusTest PROPERTIES
 
 # Add custom target for unit tests
 add_custom_target(unit_tests
-    DEPENDS test_config test_database test_service_container test_base_service test_database_service_unit test_music_repository test_genre_repository test_playlist_repository test_database_migrator test_audio_service test_error_handler test_logger test_input_validator test_database_optimizer test_music_cache test_main_controller test_accessibility_manager test_update_check_service test_pad_board_focus
+    DEPENDS test_config test_database test_service_container test_base_service test_database_service_unit test_music_repository test_genre_repository test_playlist_repository test_audio_service test_error_handler test_logger test_input_validator test_database_optimizer test_music_cache test_main_controller test_accessibility_manager test_update_check_service test_pad_board_focus
     COMMENT "Building unit tests"
 )

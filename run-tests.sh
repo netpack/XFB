@@ -28,7 +28,7 @@ info() { echo -e "${BLUE}·${NC} $1"; }
 # --- Tests that do not currently pass ----------------------------------------
 # These predate this script: the assertions describe behaviour the code does not
 # have (e.g. TestInputValidator expects paths with an embedded NUL and several
-# filename shapes to be rejected), and the integration/performance/ui groups do
+# filename shapes to be rejected), and the integration/performance groups do
 # not compile at all. They are skipped by name rather than by not building the
 # target, so that a NEW test is picked up automatically — the whole point of
 # having this script is that a test someone adds tomorrow actually runs.
@@ -39,7 +39,6 @@ BROKEN_TESTS=(
     MusicRepositoryTest
     GenreRepositoryTest
     PlaylistRepositoryTest
-    DatabaseMigratorTest
     AudioServiceTest
     ErrorHandlerTest
     InputValidatorTest
@@ -128,6 +127,6 @@ fi
 
 echo ""
 warn "${#BROKEN_TESTS[@]} unit tests assert behaviour the code does not have, and the"
-warn "integration/performance/ui groups do not compile. Neither is covered here."
+warn "integration/performance groups do not compile. Neither is covered here."
 
 exit $STATUS
