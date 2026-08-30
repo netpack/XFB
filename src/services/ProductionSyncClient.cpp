@@ -18,6 +18,7 @@
 #include <QSqlDatabase>
 #include <QSqlError>
 #include <QSqlQuery>
+#include <QUuid>
 #include <QSqlIndex>
 #include <QSqlRecord>
 #include <QStandardPaths>
@@ -846,6 +847,54 @@ QString ProductionSyncClient::hashRows(const QVector<QJsonObject> &rows,
     return hashText(hashes.join(QLatin1Char('\n')));
 }
 
+
+// A safety copy of the live database, taken the way WAL requires.
+//
+// A plain file copy is no longer a whole backup: in WAL mode the newest rows
+// sit in the -wal file until a checkpoint folds them in, so the .db on its own
+// can be missing exactly the work this copy exists to protect. VACUUM INTO
+// writes a complete, consistent database in one step — but it refuses to run
+// while any statement is open on the connection, and the library view keeps
+// one open for as long as its window is, so it is given a connection of its
+// own. If that fails for any reason, a file copy is still better than nothing.
+static bool backupDatabaseTo(const QString &dbPath, const QString &backupPath)
+{
+    QFile::remove(backupPath);
+
+    const QString connectionName =
+        QStringLiteral("backup_%1").arg(QUuid::createUuid().toString(QUuid::WithoutBraces));
+    bool copied = false;
+    {
+        QSqlDatabase backupDb = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), connectionName);
+        backupDb.setDatabaseName(dbPath);
+        backupDb.setConnectOptions(QStringLiteral("QSQLITE_BUSY_TIMEOUT=15000"));
+        if (backupDb.open()) {
+            // VACUUM takes no bound parameters, so the path goes in as a
+            // quoted literal.
+            QString target = backupPath;
+            target.replace(QLatin1Char('\''), QLatin1String("''"));
+            QSqlQuery vacuum(backupDb);
+            copied = vacuum.exec(QStringLiteral("VACUUM INTO '%1'").arg(target));
+            if (!copied) {
+                qWarning() << "Could not VACUUM the database into" << backupPath
+                           << "-" << vacuum.lastError().text();
+            }
+            backupDb.close();
+        }
+    }
+    QSqlDatabase::removeDatabase(connectionName);
+
+    if (!copied) {
+        QFile::remove(backupPath);
+        copied = QFile::copy(dbPath, backupPath);
+        if (copied) {
+            qWarning() << "Fell back to a plain file copy for" << backupPath
+                       << "- it may not carry writes still held in the -wal file.";
+        }
+    }
+    return copied;
+}
+
 void ProductionSyncClient::mergeCatalogue()
 {
     const QJsonObject tables = m_manifest.value(QStringLiteral("tables")).toObject();
@@ -867,10 +916,8 @@ void ProductionSyncClient::mergeCatalogue()
             QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
             + QStringLiteral("/backups");
         QDir().mkpath(backupDir);
-        const QString backup = QDir(backupDir).filePath(
-            QStringLiteral("before-production-sync.db"));
-        QFile::remove(backup);
-        QFile::copy(dbPath, backup);
+        backupDatabaseTo(dbPath, QDir(backupDir).filePath(
+            QStringLiteral("before-production-sync.db")));
     }
 
     db.transaction();

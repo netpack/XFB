@@ -2946,7 +2946,48 @@ bool player::checkDbOpen() {
     }
 
     qInfo() << "Database initialization successful. Connection '" << connectionName << "' is open.";
-    
+
+    // SQLite's default rollback journal lets one unfinished read block every
+    // write in the process. QSqlQueryModel hands out rows 256 at a time, so
+    // the library view over a table bigger than that keeps a read transaction
+    // open for as long as the window is — and once the library passed 256
+    // tracks, every download failed at the end with "database is locked",
+    // after the audio had already been fetched. WAL lets readers and writers
+    // work at the same time, which is the shape of this app: one long-lived
+    // reader in the UI, short writes from the download and sync workers.
+    {
+        QSqlQuery journalMode(adb);
+        if (!journalMode.exec("PRAGMA journal_mode=WAL")) {
+            qWarning() << "Could not switch the database to WAL:"
+                       << journalMode.lastError().text();
+        } else if (journalMode.next()) {
+            const QString mode = journalMode.value(0).toString();
+            qInfo() << "Database journal mode:" << mode;
+            if (mode.compare("wal", Qt::CaseInsensitive) != 0) {
+                qWarning() << "The database did not accept WAL and stays in" << mode
+                           << "- writes may fail while a large list is open.";
+            }
+        }
+
+        // Readers no longer block writers, but two writers still queue: wait
+        // for the other one rather than failing outright.
+        QSqlQuery busy(adb);
+        if (!busy.exec("PRAGMA busy_timeout=15000"))
+            qWarning() << "Could not set the busy timeout:" << busy.lastError().text();
+
+        // Fold anything left in a -wal file (a previous run that ended badly)
+        // back into the database itself, so the daily backup — a plain copy of
+        // the .db, taken before this connection exists — is complete on its
+        // own. PASSIVE because checkDbOpen() also runs with the library view
+        // open, and a TRUNCATE checkpoint would wait for that reader instead,
+        // freezing the window. Housekeeping only: while a list is being read
+        // this reports the database as locked and does nothing, and SQLite
+        // checkpoints on its own as the log grows and when the app closes.
+        QSqlQuery checkpoint(adb);
+        if (!checkpoint.exec("PRAGMA wal_checkpoint(PASSIVE)"))
+            qDebug() << "Write-ahead log left for later:" << checkpoint.lastError().text();
+    }
+
     // Create torrents table if it doesn't exist
     QSqlQuery createTorrentsTable(adb);
     QString createTorrentsTableSql = R"(
