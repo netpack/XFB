@@ -17716,4 +17716,373 @@ void player::convertMusicsTo432(const QStringList &paths)
 }
 
 
+// A song that sits in the database twice is a song that can be drawn twice in
+// the same hour, that counts twice towards the rotation separation rules, and
+// that ends up half-measured — a loudness or intro sweep updates whichever of
+// the two rows it walked into. This collapses every artist + song name pair
+// down to a single record.
+//
+// Records only. The audio files are never touched: an operator who keeps two
+// encodes of the same song on purpose still has both on disk, and deleting
+// audio is not a thing a menu item should do quietly.
+void player::on_actionRemove_duplicate_songs_triggered()
+{
+    QSqlDatabase db = QSqlDatabase::database("xfb_connection");
+    if (!db.isOpen()) {
+        qWarning() << "Database connection 'xfb_connection' is not open!";
+        QMessageBox::critical(this, tr("Database Error"),
+                              tr("Database connection is not open."));
+        return;
+    }
+
+    // What is worth carrying off a record before it is deleted. Taken from the
+    // live schema rather than hard-coded, because every one of these arrived as
+    // a migration and a database that predates one of them must not turn this
+    // into a failed SELECT.
+    static const char *const kMergeableColumns[] = {
+        "bpm", "lufs", "true_peak", "loudness_mtime", "intro_ms", "outro_ms"
+    };
+    const QSqlRecord schema = db.record(QStringLiteral("musics"));
+    QStringList mergeColumns;
+    for (const char *name : kMergeableColumns) {
+        if (schema.contains(QString::fromLatin1(name)))
+            mergeColumns << QString::fromLatin1(name);
+    }
+    const bool haveIntroLocked = schema.contains(QStringLiteral("intro_locked"));
+
+    struct Record {
+        qint64 rowid = 0;
+        qint64 id = 0;
+        QString artist;
+        QString song;
+        QString path;
+        int playedTimes = 0;
+        QString lastPlayed;
+        int introLocked = 0;
+        QVariantList extras;      // parallel to mergeColumns
+        bool fileExists = false;
+    };
+
+    QStringList columns{QStringLiteral("rowid"), QStringLiteral("id"),
+                        QStringLiteral("artist"), QStringLiteral("song"),
+                        QStringLiteral("path"), QStringLiteral("played_times"),
+                        QStringLiteral("last_played")};
+    const int extrasOffset = columns.size();
+    columns += mergeColumns;
+    if (haveIntroLocked)
+        columns << QStringLiteral("intro_locked");
+
+    QSqlQuery select(db);
+    if (!select.exec(QStringLiteral("SELECT %1 FROM musics ORDER BY rowid")
+                         .arg(columns.join(QStringLiteral(", "))))) {
+        qWarning() << "Failed to read the musics table:" << select.lastError().text();
+        QMessageBox::critical(this, tr("Database Error"),
+                              tr("Failed to read the musics table."));
+        return;
+    }
+
+    // Grouped in C++ rather than with SQL's GROUP BY: SQLite's LOWER() folds
+    // ASCII and nothing else, so "ÁGUA" and "Água" would walk out of a query
+    // as two different songs. QString::toLower() knows the rest of Unicode,
+    // and simplified() collapses the stray double spaces that come with
+    // metadata somebody typed.
+    QMap<QString, QList<Record>> groups;
+    while (select.next()) {
+        Record r;
+        r.rowid       = select.value(0).toLongLong();
+        r.id          = select.value(1).toLongLong();
+        r.artist      = select.value(2).toString();
+        r.song        = select.value(3).toString();
+        r.path        = select.value(4).toString();
+        r.playedTimes = select.value(5).toInt();
+        r.lastPlayed  = select.value(6).toString();
+        for (int i = 0; i < mergeColumns.size(); ++i)
+            r.extras << select.value(extrasOffset + i);
+        if (haveIntroLocked)
+            r.introLocked = select.value(extrasOffset + mergeColumns.size()).toInt();
+        r.fileExists = !r.path.isEmpty() && QFile::exists(r.path);
+
+        const QString key = r.artist.simplified().toLower()
+                            + QChar(0x1f)          // never occurs in a title
+                            + r.song.simplified().toLower();
+        groups[key].append(r);
+    }
+
+    // --- Work out what would go, and show it before anything moves ---
+    struct Removal {
+        Record keep;
+        QList<Record> drop;
+    };
+    QList<Removal> removals;
+    int recordsToRemove = 0;
+    for (auto it = groups.constBegin(); it != groups.constEnd(); ++it) {
+        const QList<Record> &group = it.value();
+        if (group.size() < 2)
+            continue;
+
+        // The keeper is the oldest record whose file is still on disk. Oldest,
+        // because the rest of XFB has been referring to it for longer — the
+        // as-run log, the rotation rules and any pending request all point at
+        // that row. On disk, because a record whose file is gone cannot be the
+        // one survivor of a song. If none of them still has a file, the oldest
+        // wins anyway: this removes duplicates, not missing files, and the
+        // database check beside it in the menu is what clears those out.
+        int keepIndex = 0;
+        for (int i = 1; i < group.size(); ++i) {
+            if (group.at(i).fileExists && !group.at(keepIndex).fileExists) {
+                keepIndex = i;
+                break;
+            }
+        }
+
+        Removal removal;
+        removal.keep = group.at(keepIndex);
+        for (int i = 0; i < group.size(); ++i) {
+            if (i != keepIndex)
+                removal.drop.append(group.at(i));
+        }
+        recordsToRemove += removal.drop.size();
+        removals.append(removal);
+    }
+
+    if (removals.isEmpty()) {
+        QMessageBox::information(this, tr("Remove Duplicates"),
+                                 tr("No duplicates found — every artist and song "
+                                    "name in the database appears exactly once."));
+        return;
+    }
+
+    // The whole list would be a wall of text on a library that has drifted for
+    // years, so the dialog shows a readable slice and the log keeps all of it.
+    const int kPreviewGroups = 40;
+    QStringList preview;
+    for (int i = 0; i < removals.size(); ++i) {
+        const Removal &r = removals.at(i);
+        qInfo().noquote() << "Duplicate:" << r.keep.artist << "-" << r.keep.song;
+        qInfo().noquote() << "    keep" << r.keep.path;
+        if (i < kPreviewGroups)
+            preview << QStringLiteral("%1 — %2\n    %3 %4")
+                           .arg(r.keep.artist, r.keep.song, tr("keep"), r.keep.path);
+        for (const Record &d : r.drop) {
+            qInfo().noquote() << "    drop" << d.path;
+            if (i < kPreviewGroups)
+                preview << QStringLiteral("    %1 %2").arg(tr("drop"), d.path);
+        }
+    }
+    if (removals.size() > kPreviewGroups) {
+        preview << QString()
+                << tr("… and %n more song(s), all of them listed in xfb.log.",
+                      nullptr, removals.size() - kPreviewGroups);
+    }
+
+    QMessageBox confirm(this);
+    confirm.setIcon(QMessageBox::Question);
+    confirm.setWindowTitle(tr("Remove Duplicates"));
+    confirm.setText(tr("%n song(s) appear more than once in the database.",
+                       nullptr, removals.size()));
+    confirm.setInformativeText(
+        tr("Remove %n duplicate record(s), keeping one of each song?\n\n"
+           "Play counts and any measured BPM, loudness and intro times are "
+           "merged onto the record that stays. The audio files themselves are "
+           "not deleted — only the database records.",
+           nullptr, recordsToRemove));
+    confirm.setDetailedText(preview.join(QLatin1Char('\n')));
+    confirm.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+    confirm.setDefaultButton(QMessageBox::No);
+    if (confirm.exec() != QMessageBox::Yes)
+        return;
+
+    // --- Prepare the statements once, outside the loop ---
+    QStringList assignments{QStringLiteral("played_times = :played_times"),
+                            QStringLiteral("last_played = :last_played")};
+    for (const QString &column : mergeColumns)
+        assignments << QStringLiteral("%1 = :%1").arg(column);
+    if (haveIntroLocked)
+        assignments << QStringLiteral("intro_locked = :intro_locked");
+
+    QSqlQuery mergeInto(db);
+    QSqlQuery deleteRecord(db);
+    if (!mergeInto.prepare(QStringLiteral("UPDATE musics SET %1 WHERE rowid = :rowid")
+                               .arg(assignments.join(QStringLiteral(", "))))
+        || !deleteRecord.prepare(QStringLiteral("DELETE FROM musics WHERE rowid = :rowid"))) {
+        qWarning() << "Failed to prepare the duplicate statements:"
+                   << mergeInto.lastError().text() << deleteRecord.lastError().text();
+        QMessageBox::critical(this, tr("Database Error"),
+                              tr("Failed to prepare the database queries."));
+        return;
+    }
+
+    // Rotation rules are keyed to musics.id, pending requests to musics.rowid.
+    // A record that is about to stop existing hands both over to the one that
+    // stays, so a song does not fall out of its category for having been added
+    // twice. UPDATE OR IGNORE is what keeps the rotation move honest: music_id
+    // is the primary key there, so a keeper that already has rules of its own
+    // simply keeps them.
+    const QStringList tables = db.tables();
+    const bool haveRotation = tables.contains(QStringLiteral("rotation"));
+    const bool haveRequests = tables.contains(QStringLiteral("requests"));
+    QSqlQuery moveRotation(db), dropRotation(db), moveRequests(db);
+    if (haveRotation) {
+        moveRotation.prepare(QStringLiteral(
+            "UPDATE OR IGNORE rotation SET music_id = :keep WHERE music_id = :drop"));
+        dropRotation.prepare(QStringLiteral("DELETE FROM rotation WHERE music_id = :drop"));
+    }
+    if (haveRequests) {
+        moveRequests.prepare(QStringLiteral(
+            "UPDATE requests SET music_id = :keep WHERE music_id = :drop"));
+    }
+
+    // The three stamps XFB has written into musics.last_played over the years.
+    auto parseLastPlayed = [](const QString &text) -> QDateTime {
+        const QString trimmed = text.trimmed();
+        if (trimmed.isEmpty() || trimmed == QLatin1String("-"))
+            return QDateTime();
+        QDateTime dt = QDateTime::fromString(trimmed,
+                                             QStringLiteral("yyyy-MM-dd || hh:mm:ss"));
+        if (!dt.isValid())
+            dt = QDateTime::fromString(trimmed, QStringLiteral("yyyy-MM-dd hh:mm:ss"));
+        if (!dt.isValid())
+            dt = QDateTime::fromString(trimmed, Qt::ISODate);
+        return dt;
+    };
+
+    QProgressDialog progress(tr("Removing duplicate songs…"), tr("Cancel"),
+                             0, removals.size(), this);
+    progress.setWindowModality(Qt::WindowModal);
+    progress.setValue(0);
+
+    // One transaction for the lot: a cancel or a failure half way through
+    // would otherwise leave a library with rotation rules pointing at records
+    // that are gone.
+    const bool inTransaction = db.transaction();
+    if (!inTransaction)
+        qWarning() << "Could not open a transaction; removing duplicates one by one.";
+
+    int removedCount = 0;
+    int mergedCount = 0;
+    int failedCount = 0;
+    bool cancelled = false;
+
+    for (int i = 0; i < removals.size(); ++i) {
+        progress.setValue(i);
+        qApp->processEvents();
+        if (progress.wasCanceled()) {
+            cancelled = true;
+            break;
+        }
+
+        const Removal &removal = removals.at(i);
+        const Record &keep = removal.keep;
+
+        // Merge first, so that nothing measured is lost with the record that
+        // carried it.
+        int playedTimes = keep.playedTimes;
+        QString lastPlayed = keep.lastPlayed;
+        QDateTime lastPlayedAt = parseLastPlayed(keep.lastPlayed);
+        QVariantList extras = keep.extras;
+        int introLocked = keep.introLocked;
+
+        for (const Record &drop : removal.drop) {
+            playedTimes = qMax(playedTimes, drop.playedTimes);
+            const QDateTime dropAt = parseLastPlayed(drop.lastPlayed);
+            if (dropAt.isValid() && (!lastPlayedAt.isValid() || dropAt > lastPlayedAt)) {
+                lastPlayedAt = dropAt;
+                lastPlayed = drop.lastPlayed;
+            }
+            for (int c = 0; c < mergeColumns.size(); ++c) {
+                // NULL is "never measured" for all of these. BPM counts zero as
+                // never measured too — the auto-mix chooser only ever matches
+                // on bpm > 0, so a stored 0 is not a tempo, it is an absence.
+                const bool missing = extras.at(c).isNull()
+                                     || (mergeColumns.at(c) == QLatin1String("bpm")
+                                         && extras.at(c).toDouble() <= 0.0);
+                if (!missing || drop.extras.at(c).isNull())
+                    continue;
+                extras[c] = drop.extras.at(c);
+                // intro_locked belongs to intro_ms: it says the marker beside
+                // it was placed by hand rather than measured. Taking one
+                // without the other would either freeze a number nobody chose
+                // or unlock one somebody did, so the pair travels together.
+                if (mergeColumns.at(c) == QLatin1String("intro_ms"))
+                    introLocked = drop.introLocked;
+            }
+        }
+
+        mergeInto.bindValue(QStringLiteral(":played_times"), playedTimes);
+        mergeInto.bindValue(QStringLiteral(":last_played"), lastPlayed);
+        for (int c = 0; c < mergeColumns.size(); ++c)
+            mergeInto.bindValue(QStringLiteral(":%1").arg(mergeColumns.at(c)), extras.at(c));
+        if (haveIntroLocked)
+            mergeInto.bindValue(QStringLiteral(":intro_locked"), introLocked);
+        mergeInto.bindValue(QStringLiteral(":rowid"), keep.rowid);
+        if (!mergeInto.exec()) {
+            qWarning() << "Failed to merge onto" << keep.path << ":"
+                       << mergeInto.lastError().text();
+            failedCount += removal.drop.size();
+            continue;               // leave the duplicates rather than lose data
+        }
+        mergedCount++;
+
+        for (const Record &drop : removal.drop) {
+            if (haveRotation) {
+                moveRotation.bindValue(QStringLiteral(":keep"), keep.id);
+                moveRotation.bindValue(QStringLiteral(":drop"), drop.id);
+                if (!moveRotation.exec())
+                    qWarning() << "Failed to move rotation rules:" << moveRotation.lastError().text();
+                dropRotation.bindValue(QStringLiteral(":drop"), drop.id);
+                if (!dropRotation.exec())
+                    qWarning() << "Failed to drop rotation rules:" << dropRotation.lastError().text();
+            }
+            if (haveRequests) {
+                moveRequests.bindValue(QStringLiteral(":keep"), keep.rowid);
+                moveRequests.bindValue(QStringLiteral(":drop"), drop.rowid);
+                if (!moveRequests.exec())
+                    qWarning() << "Failed to move requests:" << moveRequests.lastError().text();
+            }
+
+            deleteRecord.bindValue(QStringLiteral(":rowid"), drop.rowid);
+            if (deleteRecord.exec()) {
+                qInfo().noquote() << "Removed duplicate record:" << drop.path;
+                removedCount++;
+            } else {
+                qWarning() << "Failed to remove" << drop.path << ":"
+                           << deleteRecord.lastError().text();
+                failedCount++;
+            }
+        }
+    }
+
+    progress.setValue(removals.size());
+
+    if (inTransaction) {
+        // A cancel keeps what has already been merged and removed rather than
+        // throwing it away: every group is finished before the next one
+        // starts, so the half that ran is as consistent as the whole would be.
+        if (!db.commit()) {
+            qWarning() << "Failed to commit the duplicate removal:" << db.lastError().text();
+            db.rollback();
+            QMessageBox::critical(this, tr("Database Error"),
+                                  tr("The duplicates could not be removed — the "
+                                     "database was left untouched.\n\n%1")
+                                      .arg(db.lastError().text()));
+            return;
+        }
+    }
+
+    update_music_table();
+
+    QString summary = tr("Removed %n duplicate record(s).", nullptr, removedCount)
+                      + QLatin1Char('\n')
+                      + tr("Songs merged: %1").arg(mergedCount);
+    if (failedCount > 0)
+        summary += QLatin1Char('\n') + tr("Failed: %1 (see xfb.log)").arg(failedCount);
+    if (cancelled)
+        summary += QLatin1Char('\n') + tr("Cancelled — the rest were left alone.");
+    summary += QStringLiteral("\n\n") + tr("No audio files were deleted.");
+
+    qInfo().noquote() << "Duplicate removal:" << QString(summary).replace('\n', QLatin1String(" | "));
+    QMessageBox::information(this, tr("Remove Duplicates"), summary);
+}
+
+
 // End of player.cpp

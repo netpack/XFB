@@ -3481,11 +3481,13 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
     <addaction name="separator"/>
     <addaction name="actionCheck_the_Database_records"/>
     <addaction name="actionCheck_Database_Data_and_DELETE_all_invalid_records_witouth_confirmation"/>
+    <addaction name="actionRemove_duplicate_songs"/>
     <addaction name="separator"/>
     <addaction name="actionAutoTrim_the_silence_from_the_start_and_the_end_of_all_music_tracks_in_the_database"/>
     <addaction name="separator"/>
     <addaction name="actionConvert_all_musics_in_the_database_to_mp3"/>
     <addaction name="actionConvert_all_musics_in_the_database_to_ogg"/>
+    <addaction name="actionConvert_all_musics_in_the_database_to_opus"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="styleSheet">
@@ -3734,11 +3736,6 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
     </font>
    </property>
   </action>
-  <action name="action123">
-   <property name="text">
-    <string>123</string>
-   </property>
-  </action>
   <action name="actionAdd_a_program">
    <property name="icon">
     <iconset resource="resources.qrc">
@@ -3872,6 +3869,37 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
    </property>
    <property name="text">
     <string>Convert all musics in the database to ogg</string>
+   </property>
+   <property name="font">
+    <font>
+     <bold>true</bold>
+    </font>
+   </property>
+  </action>
+  <action name="actionConvert_all_musics_in_the_database_to_opus">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/icons/flat/Audio Wave-48.png</normaloff>:/icons/flat/Audio Wave-48.png</iconset>
+   </property>
+   <property name="text">
+    <string>Convert all musics in the database to opus</string>
+   </property>
+   <property name="font">
+    <font>
+     <bold>true</bold>
+    </font>
+   </property>
+  </action>
+  <action name="actionRemove_duplicate_songs">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/icons/ic_menu_close_clear_cancel.png</normaloff>:/icons/ic_menu_close_clear_cancel.png</iconset>
+   </property>
+   <property name="text">
+    <string>Remove duplicate songs (same artist and song name)</string>
+   </property>
+   <property name="toolTip">
+    <string>Keep one record per artist and song name, removing the rest from the database</string>
    </property>
    <property name="font">
     <font>
