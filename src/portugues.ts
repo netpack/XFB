@@ -4968,18 +4968,18 @@ Você deve ter recebido uma cópia da Licença Pública Geral GNU junto com este
     </message>
     <message>
         <location filename="externaldownloader.cpp" line="45"/>
-        <source>YouTube, SoundCloud, Spotify or Apple Music link</source>
-        <translation>Link do YouTube, SoundCloud, Spotify ou Apple Music</translation>
+        <source>YouTube, SoundCloud, Bandcamp, Spotify or Apple Music link</source>
+        <translation>Link do YouTube, SoundCloud, Bandcamp, Spotify ou Apple Music</translation>
     </message>
     <message>
         <location filename="externaldownloader.cpp" line="47"/>
-        <source>Download one track: a YouTube or SoundCloud link, or a Spotify / Apple Music track (fetched from YouTube, since neither service serves its own audio)</source>
-        <translation>Transferir uma faixa: um link do YouTube ou SoundCloud, ou uma faixa do Spotify / Apple Music (obtida no YouTube, já que nenhum destes serviços disponibiliza o seu próprio áudio)</translation>
+        <source>Download one track: a YouTube, SoundCloud or Bandcamp link, or a Spotify / Apple Music track (fetched from YouTube, since neither service serves its own audio)</source>
+        <translation>Transferir uma faixa: um link do YouTube, SoundCloud ou Bandcamp, ou uma faixa do Spotify / Apple Music (obtida no YouTube, já que nenhum destes serviços disponibiliza o seu próprio áudio)</translation>
     </message>
     <message>
         <location filename="externaldownloader.cpp" line="51"/>
-        <source>Download every track of a YouTube playlist (link containing &quot;list=&quot;), a SoundCloud set, or a Spotify / Apple Music album or playlist</source>
-        <translation>Transferir todas as faixas de uma lista de reprodução do YouTube (link que contém &quot;list=&quot;), de um set do SoundCloud, ou de um álbum ou lista de reprodução do Spotify / Apple Music</translation>
+        <source>Download every track of a YouTube playlist (link containing &quot;list=&quot;), a SoundCloud set, a Bandcamp album, or a Spotify / Apple Music album or playlist</source>
+        <translation>Transferir todas as faixas de uma lista de reprodução do YouTube (link que contém &quot;list=&quot;), de um set do SoundCloud, de um álbum do Bandcamp, ou de um álbum ou lista de reprodução do Spotify / Apple Music</translation>
     </message>
     <message>
         <location filename="externaldownloader.cpp" line="1461"/>
@@ -5026,8 +5026,8 @@ Você deve ter recebido uma cópia da Licença Pública Geral GNU junto com este
     <message>
         <location filename="externaldownloader.cpp" line="1587"/>
         <location filename="externaldownloader.cpp" line="1670"/>
-        <source>Please paste a playlist link in the Video Link field: a YouTube playlist (containing &quot;list=&quot;), a SoundCloud set (soundcloud.com/artist/sets/name), or a Spotify or Apple Music album or playlist.</source>
-        <translation>Cole um link de uma lista de reprodução no campo Link do vídeo: uma lista do YouTube (que contenha &quot;list=&quot;), um set do SoundCloud (soundcloud.com/artista/sets/nome), ou um álbum ou lista de reprodução do Spotify ou Apple Music.</translation>
+        <source>Please paste a playlist link in the Video Link field: a YouTube playlist (containing &quot;list=&quot;), a SoundCloud set (soundcloud.com/artist/sets/name), a Bandcamp album (artist.bandcamp.com/album/name), or a Spotify or Apple Music album or playlist.</source>
+        <translation>Cole um link de uma lista de reprodução no campo Link do vídeo: uma lista do YouTube (que contenha &quot;list=&quot;), um set do SoundCloud (soundcloud.com/artista/sets/nome), um álbum do Bandcamp (artista.bandcamp.com/album/nome), ou um álbum ou lista de reprodução do Spotify ou Apple Music.</translation>
     </message>
     <message>
         <location filename="externaldownloader.cpp" line="1601"/>
@@ -5145,6 +5145,16 @@ Preencha os campos Artista(s) e Música e use &quot;Saca!&quot; para essa faixa,
         <location filename="externaldownloader.cpp" line="1972"/>
         <source>Auto-filled: %1 — %2</source>
         <translation>Preenchido automaticamente: %1 — %2</translation>
+    </message>
+    <message>
+        <location filename="externaldownloader.cpp"/>
+        <source>That is a Bandcamp album, not a single track. Use &quot;Get Playlist!&quot; to download all of it, or paste the link of one track (artist.bandcamp.com/track/name).</source>
+        <translation>Isso é um álbum do Bandcamp, não uma faixa única. Use &quot;Obter a lista!&quot; para transferir tudo, ou cole o link de uma só faixa (artista.bandcamp.com/track/nome).</translation>
+    </message>
+    <message>
+        <location filename="externaldownloader.cpp"/>
+        <source>This downloads every track of the Bandcamp album as audio and adds them to your library. Artist and Song come from Bandcamp&apos;s own track information, and the genres selected above are applied to all of them.</source>
+        <translation>Isto transfere todas as faixas do álbum do Bandcamp como áudio e adiciona-as à sua biblioteca. O artista e a música vêm da informação do próprio Bandcamp, e os géneros selecionados acima são aplicados a todas elas.</translation>
     </message>
 </context>
 <context>

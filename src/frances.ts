@@ -4969,18 +4969,18 @@ Vous devriez avoir reçu une copie de la Licence publique générale GNU avec ce
     </message>
     <message>
         <location filename="externaldownloader.cpp" line="45"/>
-        <source>YouTube, SoundCloud, Spotify or Apple Music link</source>
-        <translation>Lien YouTube, SoundCloud, Spotify ou Apple Music</translation>
+        <source>YouTube, SoundCloud, Bandcamp, Spotify or Apple Music link</source>
+        <translation>Lien YouTube, SoundCloud, Bandcamp, Spotify ou Apple Music</translation>
     </message>
     <message>
         <location filename="externaldownloader.cpp" line="47"/>
-        <source>Download one track: a YouTube or SoundCloud link, or a Spotify / Apple Music track (fetched from YouTube, since neither service serves its own audio)</source>
-        <translation>Télécharger un titre : un lien YouTube ou SoundCloud, ou un titre Spotify / Apple Music (récupéré depuis YouTube, car aucun de ces services ne diffuse son propre audio)</translation>
+        <source>Download one track: a YouTube, SoundCloud or Bandcamp link, or a Spotify / Apple Music track (fetched from YouTube, since neither service serves its own audio)</source>
+        <translation>Télécharger un seul titre : un lien YouTube, SoundCloud ou Bandcamp, ou un titre Spotify / Apple Music (récupéré sur YouTube, puisque aucun de ces services ne diffuse son propre audio)</translation>
     </message>
     <message>
         <location filename="externaldownloader.cpp" line="51"/>
-        <source>Download every track of a YouTube playlist (link containing &quot;list=&quot;), a SoundCloud set, or a Spotify / Apple Music album or playlist</source>
-        <translation>Télécharger tous les titres d&apos;une playlist YouTube (lien contenant « list= »), d&apos;un set SoundCloud, ou d&apos;un album ou d&apos;une playlist Spotify / Apple Music</translation>
+        <source>Download every track of a YouTube playlist (link containing &quot;list=&quot;), a SoundCloud set, a Bandcamp album, or a Spotify / Apple Music album or playlist</source>
+        <translation>Télécharger tous les titres d&apos;une playlist YouTube (lien contenant « list= »), d&apos;un set SoundCloud, d&apos;un album Bandcamp, ou d&apos;un album ou d&apos;une playlist Spotify / Apple Music</translation>
     </message>
     <message>
         <location filename="externaldownloader.cpp" line="1461"/>
@@ -5027,8 +5027,8 @@ Vous devriez avoir reçu une copie de la Licence publique générale GNU avec ce
     <message>
         <location filename="externaldownloader.cpp" line="1587"/>
         <location filename="externaldownloader.cpp" line="1670"/>
-        <source>Please paste a playlist link in the Video Link field: a YouTube playlist (containing &quot;list=&quot;), a SoundCloud set (soundcloud.com/artist/sets/name), or a Spotify or Apple Music album or playlist.</source>
-        <translation>Collez un lien de playlist dans le champ Lien de la vidéo : une playlist YouTube (contenant « list= »), un set SoundCloud (soundcloud.com/artiste/sets/nom), ou un album ou une playlist Spotify ou Apple Music.</translation>
+        <source>Please paste a playlist link in the Video Link field: a YouTube playlist (containing &quot;list=&quot;), a SoundCloud set (soundcloud.com/artist/sets/name), a Bandcamp album (artist.bandcamp.com/album/name), or a Spotify or Apple Music album or playlist.</source>
+        <translation>Collez un lien de playlist dans le champ Lien de la vidéo : une playlist YouTube (contenant « list= »), un set SoundCloud (soundcloud.com/artiste/sets/nom), un album Bandcamp (artiste.bandcamp.com/album/nom), ou un album ou une playlist Spotify ou Apple Music.</translation>
     </message>
     <message>
         <location filename="externaldownloader.cpp" line="1601"/>
@@ -5146,6 +5146,16 @@ Remplissez les champs Artiste(s) et Musique et utilisez « Récupérer ! » pour
         <location filename="externaldownloader.cpp" line="1972"/>
         <source>Auto-filled: %1 — %2</source>
         <translation>Rempli automatiquement : %1 — %2</translation>
+    </message>
+    <message>
+        <location filename="externaldownloader.cpp"/>
+        <source>That is a Bandcamp album, not a single track. Use &quot;Get Playlist!&quot; to download all of it, or paste the link of one track (artist.bandcamp.com/track/name).</source>
+        <translation>Ceci est un album Bandcamp, et non un titre unique. Utilisez « Récupérer la playlist ! » pour tout télécharger, ou collez le lien d&apos;un seul titre (artiste.bandcamp.com/track/nom).</translation>
+    </message>
+    <message>
+        <location filename="externaldownloader.cpp"/>
+        <source>This downloads every track of the Bandcamp album as audio and adds them to your library. Artist and Song come from Bandcamp&apos;s own track information, and the genres selected above are applied to all of them.</source>
+        <translation>Ceci télécharge tous les titres de l&apos;album Bandcamp en audio et les ajoute à votre bibliothèque. L&apos;artiste et la musique proviennent des informations de Bandcamp lui-même, et les genres sélectionnés ci-dessus sont appliqués à tous.</translation>
     </message>
 </context>
 <context>
