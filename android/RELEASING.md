@@ -122,6 +122,15 @@ Then replace `REPLACE_WITH_APK_SHA256` and
 `REPLACE_WITH_SIDECAR_SHA256` in both `PKGBUILD` and `aur-xfb/PKGBUILD`.
 `package-companion.sh` prints both hashes when it finishes.
 
+Both steps are enforced by `check-aur-release-assets.sh`, which every script
+that pushes to the AUR runs first. It refuses the push if the PKGBUILD still
+holds placeholders, if the assets are not on the release, or if the declared
+sums disagree with what the release serves — the last one also catches sums
+carried over from the previous version. 3.1422 went out with both steps missed
+and was uninstallable on Arch until a user reported it; nothing before the
+guard would have caught it, because every *other* package embeds the APK and
+looks fine.
+
 ### Checking a package actually carries it
 
 ```bash

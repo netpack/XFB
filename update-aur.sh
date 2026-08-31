@@ -18,6 +18,11 @@ if [ ! -f "PKGBUILD" ]; then
     exit 1
 fi
 
+# Refuse to push a package nobody can build: the companion assets must be on
+# the release and their sums must match the PKGBUILD. See the script for why.
+./check-aur-release-assets.sh "$VERSION"
+echo ""
+
 # Check if AUR repo exists
 if [ ! -d "aur-xfb" ]; then
     echo "Cloning existing AUR repository..."

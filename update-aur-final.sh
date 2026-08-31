@@ -6,6 +6,9 @@ echo "║          Updating XFB AUR to v3.14159-5                    ║"
 echo "╚══════════════════════════════════════════════════════════╝"
 echo ""
 
+./check-aur-release-assets.sh
+echo ""
+
 # Clone AUR repo if not exists
 if [ ! -d "aur-xfb" ]; then
     echo "Cloning AUR repository..."

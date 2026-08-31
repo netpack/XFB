@@ -19,6 +19,9 @@ if ! command -v makepkg &> /dev/null; then
     exit 1
 fi
 
+./check-aur-release-assets.sh
+echo ""
+
 # Clone or update AUR repo
 if [ -d "aur-xfb" ]; then
     echo "Updating existing AUR clone..."
