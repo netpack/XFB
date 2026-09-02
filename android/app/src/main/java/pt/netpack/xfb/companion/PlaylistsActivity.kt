@@ -1,5 +1,6 @@
 package pt.netpack.xfb.companion
 
+import android.content.ComponentName
 import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
@@ -18,10 +19,14 @@ import android.widget.Button
 import android.widget.LinearLayout
 import android.text.Editable
 import android.text.TextWatcher
+import android.text.format.Formatter
 import android.view.animation.AnimationUtils
 import android.widget.EditText
 import android.widget.ProgressBar
+import androidx.media3.session.MediaController
+import androidx.media3.session.SessionToken
 import com.google.android.material.appbar.MaterialToolbar
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -123,7 +128,86 @@ class PlaylistsActivity : AppCompatActivity() {
             load()
             return true
         }
+        if (item.itemId == R.id.action_delete_downloads) {
+            confirmDeleteDownloads()
+            return true
+        }
         return super.onOptionsItemSelected(item)
+    }
+
+    /**
+     * Throws away every downloaded track, so the set can be fetched again.
+     *
+     * The reason this exists: a track downloaded before XFB kept cover art has
+     * none, and the phone reads the cover out of the file. Once the desk has
+     * put covers on its copies there is no way to pick them up but to download
+     * the tracks again — and nothing else would, because a file that is
+     * already the right size is considered complete.
+     */
+    private fun confirmDeleteDownloads() {
+        lifecycleScope.launch {
+            val (count, bytes) = withContext(Dispatchers.IO) {
+                library.downloadedFileSummary()
+            }
+            if (count == 0) {
+                MaterialAlertDialogBuilder(this@PlaylistsActivity)
+                    .setMessage(R.string.downloads_delete_none)
+                    .setPositiveButton(android.R.string.ok, null)
+                    .show()
+                return@launch
+            }
+
+            val size = Formatter.formatFileSize(this@PlaylistsActivity, bytes)
+            MaterialAlertDialogBuilder(this@PlaylistsActivity)
+                .setTitle(R.string.downloads_delete_title)
+                .setMessage(getString(R.string.downloads_delete_body, count, size))
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(R.string.downloads_delete_confirm) { _, _ ->
+                    deleteDownloads()
+                }
+                .show()
+        }
+    }
+
+    private fun deleteDownloads() {
+        lifecycleScope.launch {
+            // Playback first. Deleting a file out from under the player leaves
+            // it reading a descriptor to something that is no longer there,
+            // and the set it is playing is about to stop existing anyway.
+            stopPlayback()
+
+            val (count, bytes) = withContext(Dispatchers.IO) {
+                library.deleteDownloadedTracks()
+            }
+
+            val size = Formatter.formatFileSize(this@PlaylistsActivity, bytes)
+            MaterialAlertDialogBuilder(this@PlaylistsActivity)
+                .setMessage(getString(R.string.downloads_delete_done, count, size))
+                .setPositiveButton(android.R.string.ok, null)
+                .show()
+
+            // The rows carry "on this phone" badges worked out from the files
+            // that were just deleted.
+            load()
+        }
+    }
+
+    /** Stops the service, if it is running, and waits for it to let go. */
+    private suspend fun stopPlayback() {
+        val token = SessionToken(
+            this, ComponentName(this, PlaybackService::class.java)
+        )
+        val future = MediaController.Builder(this, token).buildAsync()
+        val controller = withContext(Dispatchers.IO) {
+            runCatching { future.get() }.getOrNull()
+        }
+        controller?.let {
+            runCatching {
+                it.stop()
+                it.clearMediaItems()
+            }
+            it.release()
+        }
     }
 
     override fun onSupportNavigateUp(): Boolean {
@@ -168,6 +252,10 @@ class PlaylistsActivity : AppCompatActivity() {
                     everything = local + fromStation.filter { it.name !in localNames }
                     showFiltered()
                     errorGroup.visibility = View.GONE
+                    // Only on a refresh the operator asked for. The silent poll
+                    // runs every few seconds, and a modal arriving in the
+                    // middle of a scroll is not an offer, it is an ambush.
+                    if (!silent) CompanionUpdate.offer(this@PlaylistsActivity, station)
                 }
                 .onFailure { error ->
                     setBusy(false)

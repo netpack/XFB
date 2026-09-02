@@ -289,6 +289,53 @@ class LibraryStore(context: Context) {
     }
 
     /**
+     * How many downloaded track files there are, and what they weigh.
+     *
+     * The little resume markers beside partial downloads are not tracks, so
+     * they are not counted — telling somebody they have twice as many tracks
+     * as they do would be worse than the few bytes they take.
+     */
+    fun downloadedFileSummary(): Pair<Int, Long> {
+        val files = trackDir.listFiles() ?: return 0 to 0L
+        var count = 0
+        var bytes = 0L
+        for (file in files) {
+            if (!file.isFile || file.name.endsWith(SyncClient.PART_SUFFIX)) continue
+            ++count
+            bytes += file.length()
+        }
+        return count to bytes
+    }
+
+    /**
+     * Deletes every downloaded track file, and returns how many went and what
+     * that freed.
+     *
+     * The manifests are deliberately left alone: the playlists stay on the
+     * phone, listing the same tracks, with nothing downloaded against them —
+     * which is exactly the state to re-download from. That is the whole point
+     * of this, since re-downloading is how a track that has since gained a
+     * cover on the desk gets one here.
+     */
+    fun deleteDownloadedTracks(): Pair<Int, Long> {
+        val files = trackDir.listFiles() ?: return 0 to 0L
+        var count = 0
+        var bytes = 0L
+        for (file in files) {
+            if (!file.isFile) continue
+            // Markers go too — they belong to downloads that are about to stop
+            // existing — but they are not what is being counted.
+            val marker = file.name.endsWith(SyncClient.PART_SUFFIX)
+            val size = file.length()
+            if (file.delete() && !marker) {
+                ++count
+                bytes += size
+            }
+        }
+        return count to bytes
+    }
+
+    /**
      * "Everything on this phone", with any crossfades that have been set on it.
      *
      * [downloadedTracks] deliberately drops overlaps, because one belongs to a

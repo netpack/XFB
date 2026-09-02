@@ -13,12 +13,14 @@ import androidx.media3.common.MediaMetadata
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
+import androidx.media3.datasource.DataSourceBitmapLoader
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.RenderersFactory
 import androidx.media3.exoplayer.audio.AudioSink
 import androidx.media3.exoplayer.audio.DefaultAudioSink
 import androidx.media3.exoplayer.source.ShuffleOrder
+import androidx.media3.session.CacheBitmapLoader
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import kotlin.math.max
@@ -137,6 +139,9 @@ class PlaybackService : MediaSessionService() {
 
         session = MediaSession.Builder(this, a)
             .setSessionActivity(openPlayer)
+            // The cache is inside ours, so a track that has a cover is decoded
+            // once and ours is only ever asked about the tracks that have none.
+            .setBitmapLoader(CoverArtLoader(this, CacheBitmapLoader(DataSourceBitmapLoader(this))))
             .setCallback(object : MediaSession.Callback {})
             .build()
 

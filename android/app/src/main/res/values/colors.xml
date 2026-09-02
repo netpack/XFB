@@ -40,4 +40,15 @@
     <color name="xfb_hairline">#1F000000</color>
     <!-- The tint behind a pressed or dragged waveform. -->
     <color name="xfb_well">#0A000000</color>
+
+    <!--
+        The ground of the sleeve shown on the notification and the lock screen
+        for a track with no cover of its own. The desk's own dark, and dark on
+        purpose: the phone colours the whole media card from that bitmap.
+
+        Not night-qualified, for the same reason — the card is coloured from the
+        cover whatever the phone's theme is, so a light sleeve gives a light
+        card with white text written on it.
+    -->
+    <color name="xfb_sleeve">#2A2A2A</color>
 </resources>

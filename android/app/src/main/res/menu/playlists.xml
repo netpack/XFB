@@ -12,4 +12,13 @@
         android:icon="@drawable/ic_refresh"
         android:title="@string/playlists_refresh"
         app:showAsAction="ifRoom" />
+
+    <!--
+        In the overflow rather than on the bar: it throws away every downloaded
+        track, and that is not something to put a thumb's width from Refresh.
+    -->
+    <item
+        android:id="@+id/action_delete_downloads"
+        android:title="@string/downloads_delete"
+        app:showAsAction="never" />
 </menu>

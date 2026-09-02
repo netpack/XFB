@@ -38,6 +38,9 @@ class SyncException(message: String) : IOException(message)
 
 object SyncClient {
 
+    /** Beside a partial download, holding the size it is heading for. */
+    const val PART_SUFFIX = ".part"
+
     private const val CONNECT_TIMEOUT_MS = 8_000
     private const val READ_TIMEOUT_MS = 20_000
 
@@ -64,6 +67,7 @@ object SyncClient {
             connection.outputStream.use { it.write(body.toByteArray()) }
 
             val status = connection.responseCode
+            CompanionUpdate.noteStationVersion(connection)
             val text = connection.readBodyText()
             if (status != 200) {
                 throw SyncException(errorMessage(text, status))
@@ -135,6 +139,30 @@ object SyncClient {
             have = 0L
         }
 
+        // A file shorter than the station's is ambiguous: it is either half a
+        // download of *this* copy, or a whole download of an older one. The
+        // difference matters, because resuming the second appends the tail of
+        // the new file to the body of the old and produces something corrupt
+        // that is exactly the right length — which is what would happen to
+        // every track the desk has since rewritten to add cover art.
+        //
+        // The station sends no ETag or Last-Modified to tell them apart, so
+        // the marker written beside a partial download does it: it holds the
+        // size that download was heading for. No marker, or a marker for a
+        // different size, means what is on disk belongs to another copy.
+        val marker = File(destination.parentFile, destination.name + PART_SUFFIX)
+        if (have > 0) {
+            val headingFor = runCatching { marker.readText().trim().toLong() }.getOrNull()
+            if (headingFor == null || headingFor != track.bytes) {
+                destination.delete()
+                have = 0L
+            }
+        }
+        if (track.bytes > 0) {
+            destination.parentFile?.mkdirs()
+            runCatching { marker.writeText(track.bytes.toString()) }
+        }
+
         val url = URL(station.url("/api/track?id=${URLEncoder.encode(track.id, "UTF-8")}"))
         val connection = (url.openConnection() as HttpURLConnection).apply {
             connectTimeout = CONNECT_TIMEOUT_MS
@@ -178,6 +206,9 @@ object SyncClient {
                     }
                 }
             }
+            // Whole and correct: the marker has nothing left to say.
+            if (track.bytes <= 0 || destination.length() == track.bytes)
+                marker.delete()
             written
         } finally {
             connection.disconnect()
@@ -194,6 +225,9 @@ object SyncClient {
         }
         try {
             val status = connection.responseCode
+            // Every answer carries what app the station has; this is the whole
+            // of how a phone that is behind finds out while syncing.
+            CompanionUpdate.noteStationVersion(connection)
             val text = connection.readBodyText()
             if (status != 200) throw SyncException(errorMessage(text, status))
             return text

@@ -130,6 +130,9 @@ class PlaylistActivity : AppCompatActivity() {
                     adapter.submit(tracks, library)
                     updateSummary()
                     downloadButton.isEnabled = loaded.isNotEmpty()
+                    // Opening a station playlist is the step before downloading
+                    // it, so it is the right moment to mention a newer app.
+                    CompanionUpdate.offer(this@PlaylistActivity, station)
                 }
                 .onFailure { error ->
                     progress.visibility = View.GONE
@@ -176,6 +179,13 @@ class PlaylistActivity : AppCompatActivity() {
             var savedAt = 0L
 
             try {
+                // One track at a time, deliberately. Three at a time was
+                // measured against a real station at 2.2 MB/s against 18.8
+                // MB/s for one — the sync server runs on XFB's GUI thread, so
+                // concurrent transfers interleave three file pumps and three
+                // sets of disk reads through a single event loop and thrash.
+                // Filling the link has to come from making the desk serve one
+                // socket faster, not from opening more of them.
                 for ((index, track) in tracks.withIndex()) {
                     summaryLabel.text = getString(
                         R.string.download_progress, index + 1, tracks.size, track.label

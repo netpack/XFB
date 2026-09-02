@@ -54,6 +54,18 @@
     <string name="update_downloading">Downloading update… %1$d%%</string>
     <string name="update_install_failed">The update could not be installed.</string>
     <string name="update_failed">The update did not download in full. Try again.</string>
+    <string name="update_offer_title">XFB has version %1$s of this app</string>
+    <string name="update_offer_message">Your station is offering a newer companion app than the one on this phone. Installing it now takes a moment and does not touch anything you have downloaded.</string>
+    <string name="update_offer_install">Install it</string>
+    <string name="update_offer_later">Not now</string>
+    <string name="update_offer_downloading">Getting the app from XFB</string>
+
+    <string name="downloads_delete">Delete downloaded tracks</string>
+    <string name="downloads_delete_title">Delete downloaded tracks</string>
+    <string name="downloads_delete_body">This deletes all %1$d track(s) on this phone and frees %2$s.\n\nYour playlists stay, listing the same tracks with nothing downloaded, so you can download them again from XFB. Anything playing now will stop.</string>
+    <string name="downloads_delete_confirm">Delete them</string>
+    <string name="downloads_delete_none">There are no downloaded tracks on this phone.</string>
+    <string name="downloads_delete_done">Deleted %1$d track(s) and freed %2$s.</string>
     <string name="player_title">Playing</string>
     <string name="player_on_air">On air</string>
     <string name="player_into_next">Crossfade into %1$s</string>
