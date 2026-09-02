@@ -2106,6 +2106,48 @@ QString MobileSyncServer::companionVersionName() const
         .value(QStringLiteral("versionName")).toString();
 }
 
+QByteArray MobileSyncServer::companionHeaders() const
+{
+    const QString apk = companionApkPath();
+    if (apk.isEmpty()) {
+        m_companionHeaders.clear();
+        m_companionReadFrom.clear();
+        m_companionReadAt = QDateTime();
+        return QByteArray();
+    }
+
+    // Keyed on the sidecar rather than the APK: the sidecar is what carries
+    // the numbers, and packaging writes it after the APK it describes.
+    const QFileInfo sidecar(QDir(QFileInfo(apk).absolutePath())
+                                .filePath(QStringLiteral("xfb-companion.json")));
+    const QDateTime stamp = sidecar.lastModified();
+    if (apk == m_companionReadFrom && stamp == m_companionReadAt)
+        return m_companionHeaders;
+
+    QByteArray headers;
+    const int code = companionVersionCode();
+    if (code > 0) {
+        headers += "X-XFB-Companion-Code: " + QByteArray::number(code) + "\r\n";
+        // The sidecar is written by our own packaging, but it is still a file
+        // on disk being copied into a response head: anything that could end
+        // the header early or start another one is dropped rather than
+        // trusted.
+        QByteArray name;
+        for (const QChar character : companionVersionName()) {
+            if (character.isLetter() || character.isDigit() || character == QLatin1Char('.')
+                || character == QLatin1Char('-') || character == QLatin1Char('_'))
+                name += character.toLatin1();
+        }
+        if (!name.isEmpty())
+            headers += "X-XFB-Companion-Name: " + name.left(32) + "\r\n";
+    }
+
+    m_companionHeaders = headers;
+    m_companionReadFrom = apk;
+    m_companionReadAt = stamp;
+    return headers;
+}
+
 void MobileSyncServer::handleAppInfo(QTcpSocket *socket)
 {
     const QString apk = companionApkPath();
@@ -2547,6 +2589,10 @@ void MobileSyncServer::sendJson(QTcpSocket *socket, const QByteArray &json, int 
     response += "Content-Type: application/json; charset=utf-8\r\n";
     response += "Content-Length: " + QByteArray::number(json.size()) + "\r\n";
     response += "Cache-Control: no-store\r\n";
+    // On every answer, not just /api/app: this is how a phone that is behind
+    // finds out, and it asks for playlists far more often than it visits the
+    // pairing screen.
+    response += companionHeaders();
     response += "Connection: close\r\n\r\n";
     response += json;
 

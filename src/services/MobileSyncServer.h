@@ -279,6 +279,18 @@ public:
     QString companionVersionName() const;
 
     /**
+     * The X-XFB-Companion-* headers put on every JSON answer, so a phone that
+     * is behind learns of a newer app the moment it pairs or syncs rather than
+     * only while it happens to be sitting on the pairing screen.
+     *
+     * Cached against the sidecar's timestamp: this is on the path of every
+     * request, including the listener page's polling, and reading two files
+     * per answer to report a number that changes once a release would be a
+     * silly thing to do.
+     */
+    QByteArray companionHeaders() const;
+
+    /**
      * Where to put xfb-companion.apk so this XFB will hand it out.
      *
      * companionApkPath() searches several places, but only this one is both
@@ -507,6 +519,11 @@ private:
 
     /// Absolute paths marked on the desktop, in the order they were added.
     QStringList m_syncSet;
+
+    /// companionHeaders()' cache, and the sidecar state it was read from.
+    mutable QByteArray m_companionHeaders;
+    mutable QString m_companionReadFrom;
+    mutable QDateTime m_companionReadAt;
 
     // --- the public listener page ------------------------------------------
 
