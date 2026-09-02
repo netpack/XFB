@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  AppStream metadata. Flathub requires this and will not accept a submission
+  without it; a self-hosted repository does not, but the software centres that
+  people actually browse read it either way.
+-->
+<component type="desktop-application">
+  <id>pt.netpack.XFB</id>
+
+  <name>XFB</name>
+  <summary>Radio automation, playout and music library management</summary>
+
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+
+  <developer id="pt.netpack">
+    <name>Netpack — Online Solutions</name>
+  </developer>
+
+  <description>
+    <p>
+      XFB is a radio automation and playout system: two decks with crossfades
+      and performance effects, a scheduled programme, a music library with
+      loudness and BPM analysis, jingles and advertising rotation, streaming to
+      Icecast, and a companion app for Android that plays a set off the desk.
+    </p>
+    <p>
+      It is built to be used without sight. The whole interface is reachable
+      from the keyboard and reported to a screen reader through AT-SPI.
+    </p>
+  </description>
+
+  <launchable type="desktop-id">pt.netpack.XFB.desktop</launchable>
+  <url type="homepage">https://github.com/netpack/XFB</url>
+  <url type="bugtracker">https://github.com/netpack/XFB/issues</url>
+  <url type="vcs-browser">https://github.com/netpack/XFB</url>
+
+  <categories>
+    <category>AudioVideo</category>
+    <category>Audio</category>
+  </categories>
+
+  <supports>
+    <control>keyboard</control>
+    <control>pointing</control>
+  </supports>
+
+  <!--
+    Declared deliberately rather than left out. XFB is a desk: it wants a
+    desktop-sized window, and claiming otherwise would put it in front of
+    people on a phone where it is unusable.
+  -->
+  <requires>
+    <display_length compare="ge">1024</display_length>
+  </requires>
+
+  <content_rating type="oars-1.1" />
+
+  <releases>
+    <release version="3.1423" date="2026-09-02">
+      <description>
+        <p>
+          Cover art can be fetched for downloads that never had any; the phone
+          app is offered updates while syncing rather than only at pairing;
+          resuming a download can no longer corrupt a track; and Fedora has a
+          package of its own.
+        </p>
+      </description>
+      <url>https://github.com/netpack/XFB/releases/tag/v3.1423</url>
+    </release>
+  </releases>
+</component>

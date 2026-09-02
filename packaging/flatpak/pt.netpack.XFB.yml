@@ -1,0 +1,103 @@
+# Flatpak manifest for XFB.
+#
+#   flatpak-builder --force-clean --user --install build-flatpak \
+#       packaging/flatpak/pt.netpack.XFB.yml
+#   flatpak run pt.netpack.XFB
+#
+# UNVERIFIED. Written on a Mac, where flatpak-builder cannot run; nothing below
+# has been built. The three things to check first are called out in comments as
+# CHECK. Build it on the Fedora machine before trusting any of it.
+#
+# The design decision behind this file: yt-dlp is NOT bundled. It goes stale in
+# days — YouTube changes and an old yt-dlp simply fails — and a read-only
+# /app would freeze whatever version shipped. XFB already downloads the official
+# standalone yt-dlp into ~/.local/bin and prefers it over any system copy, so it
+# can self-update (DependencyChecker::ensureYtDlp, and the note above
+# findYtDlpExecutable). Inside the sandbox that path is the app's own writable
+# home, so the mechanism works here unchanged. ffmpeg is the opposite case: it
+# is needed for waveforms, BPM, durations, cover art and conversion, none of
+# which can wait on a download, so it is built in.
+app-id: pt.netpack.XFB
+runtime: org.kde.Platform
+# CHECK: pick the newest KDE runtime that exists when you build. XFB needs
+# Qt >= 6.4; Fedora 44 ships 6.11 and builds it fine.
+runtime-version: '6.9'
+sdk: org.kde.Sdk
+command: XFB
+rename-desktop-file: XFB.desktop
+rename-icon: xfb_icon
+
+finish-args:
+  # Display, and the GPU for the waveform and deck views.
+  - --share=ipc
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+
+  # Audio. XFB is a playout system; without this it has nothing to do.
+  - --socket=pulseaudio
+
+  # The station's own network: Icecast, the phone sync server, the public
+  # now-playing page, and fetching yt-dlp on first use.
+  - --share=network
+
+  # The music library lives wherever the operator keeps it, and ~/.local/bin is
+  # where the self-updating yt-dlp goes.
+  # CHECK: whether ~/.var/app/pt.netpack.XFB is mounted noexec. The whole
+  # yt-dlp design depends on being able to run a downloaded binary from the
+  # app's writable home. Test before trusting: flatpak run --command=sh
+  # pt.netpack.XFB, drop a script in ~/.local/bin, chmod +x, run it.
+  - --filesystem=home
+
+  # Accessibility. This is not optional for XFB: the app is used without sight,
+  # and Qt reaches a screen reader over the AT-SPI bus. Without this a blind
+  # operator is told nothing at all — the same fault the Fedora RPM had before
+  # at-spi2-core was named as a dependency.
+  - --talk-name=org.a11y.Bus
+
+  # "XFB is on air" / dead-air alerts.
+  - --talk-name=org.freedesktop.Notifications
+
+modules:
+  # ffmpeg's command-line tools. The KDE runtime carries the libav* libraries
+  # Qt Multimedia links against, but not the ffmpeg and ffprobe binaries, and
+  # XFB shells out to both constantly.
+  # CHECK: if org.freedesktop.Platform.ffmpeg-full turns out to ship the CLI on
+  # the runtime you target, drop this module and add the extension instead —
+  # it is a great deal cheaper to build.
+  - name: ffmpeg
+    config-opts:
+      - --disable-debug
+      - --disable-doc
+      - --disable-static
+      - --enable-shared
+      - --enable-gpl
+      - --enable-libopus
+      - --enable-libmp3lame
+      - --enable-libvorbis
+    sources:
+      - type: archive
+        url: https://ffmpeg.org/releases/ffmpeg-7.1.tar.xz
+        # CHECK: replace with the sha256 of whatever release you pin.
+        sha256: 40973d44970dbc83ef302b0609f2e74982be2d85916dd2ee7472d30678a7abe6
+    modules:
+      - name: lame
+        sources:
+          - type: archive
+            url: https://downloads.sourceforge.net/lame/lame-3.100.tar.gz
+            sha256: ddfe36cab873794038ae2c1210557ad34857a4b6bdc515785d1da9e175b1da4e
+
+  - name: xfb
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DBUILD_TESTING=OFF
+    sources:
+      - type: dir
+        path: ../..
+    post-install:
+      # Flathub wants the desktop file, icon and metainfo named for the app id.
+      # rename-desktop-file and rename-icon above handle the first two; the
+      # metainfo is installed here because CMake knows nothing about it.
+      - install -Dm644 packaging/flatpak/pt.netpack.XFB.metainfo.xml
+          /app/share/metainfo/pt.netpack.XFB.metainfo.xml
