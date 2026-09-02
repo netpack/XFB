@@ -16,6 +16,7 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include "add_program.h"
 #include "optionsdialog.h"
 #include "externaldownloader.h"
+#include "CoverArtDialog.h"
 #include "aboutus.h"
 #include "audio/AudioDeviceRouter.h"
 #include "audio/BpmDetector.h"
@@ -1920,6 +1921,26 @@ checkDbOpen();
        applyLoudnessSettings();
    }
 
+   // Cover art for the downloads that predate XFB keeping one. Unlike the
+   // sweeps above this one goes out to the internet and rewrites files, so it
+   // is a window the operator drives rather than a sweep that just runs.
+   {
+       QAction *findCovers = new QAction(tr("Find the missing cover art…"), this);
+       findCovers->setToolTip(tr("Look for a cover for every track in the library that has "
+                                 "none, and — once you have seen what was found — write it "
+                                 "into the file. Downloads from before XFB kept the cover "
+                                 "have nothing to show on the deck, the phone's notification "
+                                 "or the lock screen."));
+       ui->menuDatabase->addAction(findCovers);
+       connect(findCovers, &QAction::triggered, this, [this]() {
+           // Parented to the window but not modal: finding covers for a whole
+           // library is long, and nothing here stops the station playing.
+           auto *dialog = new CoverArtDialog(this);
+           dialog->setAttribute(Qt::WA_DeleteOnClose);
+           dialog->show();
+       });
+   }
+
    // DJ decks: scratchable platters + performance FX
    {
        m_scratchClock.start();
@@ -3151,6 +3172,28 @@ bool player::checkDbOpen() {
                            << "column to musics:" << addColumn.lastError().text();
             } else {
                 qInfo() << "Added the" << col.name << "column to the musics table";
+            }
+        }
+    }
+
+    // Where a downloaded track came from.
+    //
+    //   source_url    the link the operator pasted (NULL for anything added
+    //                 from disk, which is most of an older library)
+    //
+    // Kept because a file is not the only thing a download produces: the cover
+    // art can be fetched again from here when the file turned out not to carry
+    // one, and there is no other way back to it once the download window has
+    // been closed. Same idempotent shape as the blocks above.
+    {
+        const QSqlRecord rec = adb.record(QStringLiteral("musics"));
+        if (!rec.isEmpty() && !rec.contains(QStringLiteral("source_url"))) {
+            QSqlQuery addColumn(adb);
+            if (!addColumn.exec(QStringLiteral("ALTER TABLE musics ADD COLUMN source_url TEXT"))) {
+                qWarning() << "Failed to add the source_url column to musics:"
+                           << addColumn.lastError().text();
+            } else {
+                qInfo() << "Added the source_url column to the musics table";
             }
         }
     }

@@ -137,6 +137,8 @@ set(SOURCES
     services/DependencyChecker.cpp
     services/NgrokTunnelService.cpp
     services/MobileSyncServer.cpp
+    services/CoverArtFetcher.cpp
+    CoverArtDialog.cpp
     services/StationSyncClient.cpp
     services/ProductionSyncClient.cpp
     services/StreamEncoder.cpp
@@ -249,6 +251,8 @@ set(HEADERS
     services/TorrentTypes.h
     services/NgrokTunnelService.h
     services/MobileSyncServer.h
+    services/CoverArtFetcher.h
+    CoverArtDialog.h
     services/StationSyncClient.h
     services/ProductionSyncClient.h
     services/StreamEncoder.h

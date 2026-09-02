@@ -597,8 +597,16 @@ DownloadResult processDownloadTask(
                 if (dur.isEmpty())
                     dur = "-";
                 QSqlQuery ins(db);
-                ins.prepare("INSERT INTO musics (id, artist, song, genre1, genre2, country, published_date, path, time, played_times, last_played) "
-                            "VALUES (NULL, ?, ?, ?, ?, ?, ?, ?, ?, 0, '-')");
+                // source_url is added by the migration at startup, so a
+                // database this build has never opened will not have it yet.
+                // Naming the columns is what lets the same code write to both.
+                const bool keepsSource =
+                    db.record(QStringLiteral("musics")).contains(QStringLiteral("source_url"));
+                ins.prepare(keepsSource
+                    ? "INSERT INTO musics (id, artist, song, genre1, genre2, country, published_date, path, time, played_times, last_played, source_url) "
+                      "VALUES (NULL, ?, ?, ?, ?, ?, ?, ?, ?, 0, '-', ?)"
+                    : "INSERT INTO musics (id, artist, song, genre1, genre2, country, published_date, path, time, played_times, last_played) "
+                      "VALUES (NULL, ?, ?, ?, ?, ?, ?, ?, ?, 0, '-')");
                 ins.addBindValue(yartist);
                 ins.addBindValue(ysong);
                 ins.addBindValue(g1);
@@ -607,6 +615,8 @@ DownloadResult processDownloadTask(
                 ins.addBindValue(pub_date);
                 ins.addBindValue(existingPath);
                 ins.addBindValue(dur);
+                if (keepsSource)
+                    ins.addBindValue(ylink);
                 if (ins.exec())
                     appendOutput("Existing file re-registered in the library.");
                 else
@@ -1165,8 +1175,16 @@ DownloadResult processDownloadTask(
     // 7. Add to Database
     { // Scope for QSqlQuery
         QSqlQuery queryInsert(db);
-        queryInsert.prepare("INSERT INTO musics (id, artist, song, genre1, genre2, country, published_date, path, time, played_times, last_played) "
-                            "VALUES (NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        // The link is kept so the cover art can be fetched again later: a
+        // download whose file carries no picture has nothing else to go on.
+        // See the note above about a database the migration has not reached.
+        const bool keepsSource =
+            db.record(QStringLiteral("musics")).contains(QStringLiteral("source_url"));
+        queryInsert.prepare(keepsSource
+            ? "INSERT INTO musics (id, artist, song, genre1, genre2, country, published_date, path, time, played_times, last_played, source_url) "
+              "VALUES (NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            : "INSERT INTO musics (id, artist, song, genre1, genre2, country, published_date, path, time, played_times, last_played) "
+              "VALUES (NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         queryInsert.addBindValue(yartist); // Use original non-sanitized for DB metadata
         queryInsert.addBindValue(ysong);
         queryInsert.addBindValue(g1);
@@ -1177,6 +1195,8 @@ DownloadResult processDownloadTask(
         queryInsert.addBindValue(trackDuration); // Use fetched or default duration
         queryInsert.addBindValue(0);       // Bind the integer 0
         queryInsert.addBindValue("-");    // Bind the string "-"
+        if (keepsSource)
+            queryInsert.addBindValue(ylink);
 
         // Add extra debug output right before exec()
         appendOutput("--- Binding Values (Positional) ---");
