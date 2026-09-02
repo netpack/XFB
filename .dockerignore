@@ -49,6 +49,13 @@ debian-repo/
 .git/
 .vscode/
 .kiro/
+# Agent session state, and — the reason this matters — the git worktrees kept
+# under it: each one is a second copy of the whole source tree, which is most
+# of the build context and ends up inside the source tarball the RPM is built
+# from. Emulated (non-native) docker builds also fail outright trying to read
+# through it: tar reports "Cannot open: Function not implemented".
+.claude/
+**/.claude/
 .DS_Store
 **/.DS_Store
 

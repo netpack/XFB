@@ -1,0 +1,74 @@
+# Dockerfile for building the XFB .rpm on Fedora.
+#
+# Usage:
+#   ./build-rpm-docker.sh              # both architectures
+#   docker build -t xfb-rpm-builder -f Dockerfile.fedora-build .
+#   docker run --rm -v $(pwd)/output:/output xfb-rpm-builder
+#
+# Fedora rather than "some RPM distro" because that is what was asked for: an
+# operator who uses a screen reader moved to Fedora and could not install a
+# .deb. The same spec should build on RHEL derivatives, but only Fedora is
+# tested.
+FROM fedora:44
+
+RUN dnf -y install \
+        cmake \
+        gcc-c++ \
+        make \
+        pkgconf-pkg-config \
+        rpm-build \
+        rpmdevtools \
+        desktop-file-utils \
+        qt6-qtbase-devel \
+        qt6-qtmultimedia-devel \
+        qt6-qtdeclarative-devel \
+        qt6-qtwebengine-devel \
+        qt6-qtwebchannel-devel \
+        qt6-qtpositioning-devel \
+        qt6-qtquick3d-devel \
+        qt6-qttools-devel \
+        speech-dispatcher-devel \
+        at-spi2-core-devel \
+        alsa-lib-devel \
+        pulseaudio-libs-devel \
+        sqlite-devel \
+        libcurl-devel \
+        mesa-libGL-devel \
+    && dnf clean all
+
+COPY . /src
+WORKDIR /src
+
+# CMakeLists.txt is the one place the version lives, the same place
+# bump-version.sh and the Debian build read it from.
+RUN set -eu; \
+    version="$(sed -n 's/^project(XFB VERSION \([0-9.]*\).*/\1/p' CMakeLists.txt)"; \
+    test -n "$version" || { echo "no version in CMakeLists.txt" >&2; exit 1; }; \
+    echo "$version" > /src/.rpm-version
+
+# rpmbuild wants a tarball whose top directory is name-version, so the tree is
+# staged under that name rather than built in place. Anything that is not
+# source is left out: a build/ directory that slipped past .dockerignore would
+# otherwise be copied in and confuse cmake.
+# cp -a rather than a tar pipe. Emulated (non-native) builds fail part-way
+# through a tar of a tree this size — "Cannot open: Function not implemented"
+# on an arbitrary scattering of files — while cp comes through intact. The
+# excluded directories are removed after copying rather than filtered during
+# it, which is the same result and keeps this readable.
+RUN set -eu; \
+    version="$(cat /src/.rpm-version)"; \
+    rpmdev-setuptree; \
+    mkdir -p "/tmp/xfb-$version"; \
+    cp -a /src/. "/tmp/xfb-$version/"; \
+    rm -rf "/tmp/xfb-$version/.git" "/tmp/xfb-$version/.claude" \
+           "/tmp/xfb-$version/output" "/tmp/xfb-$version/pkg-root" \
+           "/tmp/xfb-$version/build"; \
+    rm -rf "/tmp/xfb-$version"/build-*; \
+    tar -czf "$HOME/rpmbuild/SOURCES/xfb-$version.tar.gz" -C /tmp "xfb-$version"
+
+RUN set -eu; \
+    version="$(cat /src/.rpm-version)"; \
+    rpmbuild -bb --define "xfb_version $version" packaging/xfb.spec
+
+# The runner copies the finished package out.
+CMD ["/bin/sh", "-c", "mkdir -p /output && cp -v $HOME/rpmbuild/RPMS/*/*.rpm /output/"]
