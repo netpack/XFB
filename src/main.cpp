@@ -42,7 +42,7 @@ Q_IMPORT_PLUGIN(QDarwinMicrophonePermissionPlugin)
 #include <windows.h>
 #endif
 
-static const char* XFB_VERSION = "3.1422";
+static const char* XFB_VERSION = "3.1423";
 
 /**
  * Splash screen with readable text: paints a soft dark band behind the

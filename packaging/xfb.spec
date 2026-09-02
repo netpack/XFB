@@ -120,6 +120,12 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/XFB.desktop || :
 %{_datadir}/xfb/
 
 %changelog
+* Wed Sep 02 2026 Netpack <info@netpack.pt> - 1:3.1423-1
+- Cover art can be fetched for downloads that predate XFB keeping one.
+- The desk tells a paired phone what companion app it has, on every answer.
+- Requires at-spi2-core: Qt speaks AT-SPI over D-Bus rather than linking it,
+  so nothing else would have pulled it in and a screen reader heard nothing.
+
 * Mon Aug 31 2026 Netpack <info@netpack.pt> - 1:3.1422-1
 - First RPM build, for Fedora. Asked for by an operator who moved to Fedora
   for its accessibility and could not use the .deb.
