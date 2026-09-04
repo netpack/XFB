@@ -162,6 +162,9 @@ Dockerfile.aur-update
 .env
 *.log
 
+# Scratch output redirected by hand while testing (dnf, build and run logs)
+log.txt
+
 # Generated APT repository tree (update-debian-repo.sh)
 debian-repo/
 
