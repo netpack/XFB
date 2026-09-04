@@ -235,7 +235,12 @@ QWidget *HourClockDialog::buildClockTab()
     lengthRow->addWidget(m_slotMinutes);
     lengthRow->addWidget(m_slotSeconds);
     lengthRow->addStretch(1);
-    formLayout->addRow(tr("&Length:"), lengthRow);
+    // addRow() with a layout builds a label with no buddy, and a label with no
+    // buddy prints its "&" instead of underlining the letter after it — the row
+    // read "&Length:" on screen, in every language.
+    auto *lengthLabel = new QLabel(tr("&Length:"), form);
+    lengthLabel->setBuddy(m_slotMinutes);
+    formLayout->addRow(lengthLabel, lengthRow);
 
     m_applyButton = new QPushButton(tr("A&pply to slot"), form);
     m_applyButton->setAccessibleName(tr("Apply these fields to the selected slot"));
