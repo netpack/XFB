@@ -4,7 +4,10 @@
 #include "ui_add_full_dir.h"
 #include "addgenre.h"
 #include <QApplication>
+#include <QDir>
 #include <QDirIterator>
+#include <QHash>
+#include <QMap>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QDebug>
@@ -13,6 +16,28 @@
 #include <QSqlQuery>
 #include <QMessageBox>
 
+namespace {
+
+// The category a track inherits from where it sits: the first folder below the
+// one being imported. A library is usually filed "Rock/Nirvana/song.mp3", so
+// the top level is the category and everything under it is the operator's own
+// ordering. A track sitting loose in the chosen folder has no category and
+// keeps whatever the dialog says.
+QString folderCategory(const QDir &root, const QString &filePath)
+{
+    const QString relative = root.relativeFilePath(filePath);
+    if (relative.startsWith(QLatin1String("..")))
+        return QString(); // reached through a link that leaves the tree
+
+    const QStringList parts = relative.split(QLatin1Char('/'), Qt::SkipEmptyParts);
+    if (parts.size() < 2)
+        return QString();
+
+    return parts.first().trimmed();
+}
+
+} // namespace
+
 
 add_full_dir::add_full_dir(QWidget *parent) :
     QDialog(parent),
@@ -20,6 +45,7 @@ add_full_dir::add_full_dir(QWidget *parent) :
 {
     ui->setupUi(this);
     updateGenres();
+    ui->chk_folderGenres->setEnabled(ui->chk_recursive->isChecked());
     QString configFileName = "xfb.conf";
     QString writableConfigPath = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
     QString configFilePath = writableConfigPath + "/" + configFileName;
@@ -96,10 +122,34 @@ void add_full_dir::on_f_bt_add_clicked()
     qDebug() << "Scanning" << dir << (recursive ? "and its subfolders" : "only")
              << "found" << found.size() << "audio files";
 
+    // Folders as categories. A library filed "Rock/", "Pop/", "Fado/" under the
+    // chosen folder says what each track is far better than one genre picked
+    // once for the whole import, so the subfolder wins over the combo box for
+    // anything sitting inside one. Only meaningful when we descend at all.
+    const bool useFolderGenres = recursive && ui->chk_folderGenres->isChecked();
+    const QDir rootDir(dir);
+
+    // The genres already known, keyed case-insensitively, so a "rock" folder is
+    // filed under an existing "Rock" instead of creating a second spelling.
+    QHash<QString, QString> knownGenres;
+    {
+        QSqlDatabase db = QSqlDatabase::database("xfb_connection");
+        QSqlQuery genreQuery(db);
+        genreQuery.prepare("select name from genres1");
+        if (genreQuery.exec()) {
+            while (genreQuery.next()) {
+                const QString name = genreQuery.value(0).toString();
+                knownGenres.insert(name.toLower(), name);
+            }
+        }
+    }
+
     int added = 0;
     int skipped = 0;
     int failed = 0;
     QString firstError;
+    QMap<QString, int> byCategory;   // category -> tracks added under it
+    QStringList newGenres;           // categories that were not in genres1 yet
 
     QApplication::setOverrideCursor(Qt::WaitCursor);
 
@@ -126,6 +176,39 @@ void add_full_dir::on_f_bt_add_clicked()
 
          QString g1 = ui->f_cbox_genre1->currentText();
          QString g2 = ui->f_cbox_genre2->currentText();
+
+         // The folder the track lives in, if it lives in one of its own.
+         QString category;
+         if (useFolderGenres) {
+             category = folderCategory(rootDir, filewpath);
+             if (!category.isEmpty()) {
+                 const QString key = category.toLower();
+                 if (knownGenres.contains(key)) {
+                     // Keep the spelling the genre list already uses.
+                     category = knownGenres.value(key);
+                 } else {
+                     // A category nobody has typed in yet: file it, and put it
+                     // in the genre list so it can be picked and filtered like
+                     // any other. Guarded so a race cannot double it up.
+                     QSqlDatabase db = QSqlDatabase::database("xfb_connection");
+                     QSqlQuery insertGenre(db);
+                     insertGenre.prepare("insert into genres1 (name) select :n where not exists "
+                                         "(select 1 from genres1 where name = :n collate nocase)");
+                     insertGenre.bindValue(":n", category);
+                     if (insertGenre.exec()) {
+                         newGenres << category;
+                     } else {
+                         // The track still gets the folder's name; only the
+                         // genre list misses out, so say so in the log rather
+                         // than claiming a genre was added.
+                         qWarning() << "Could not add genre" << category << ":"
+                                    << insertGenre.lastError().text();
+                     }
+                     knownGenres.insert(key, category);
+                 }
+                 g1 = category;
+             }
+         }
 
          QString country = "Other country / language";
 
@@ -182,6 +265,8 @@ void add_full_dir::on_f_bt_add_clicked()
          if(sql.exec())
          {
              ++added;
+             if (!category.isEmpty())
+                 byCategory[category] += 1;
              qDebug() << "last sql: " << sql.lastQuery();
          } else {
              // Never swallow this again. A silent failure here is what made a
@@ -201,6 +286,25 @@ void add_full_dir::on_f_bt_add_clicked()
 
    QApplication::restoreOverrideCursor();
 
+   // The genre list grew, so the combo boxes behind this dialog are stale.
+   if (!newGenres.isEmpty())
+       updateGenres();
+
+   // What went where. An operator who points this at a filed library wants to
+   // read back the categories it found, not just a count.
+   QString categoryReport;
+   if (!byCategory.isEmpty()) {
+       QStringList lines;
+       for (auto it = byCategory.constBegin(); it != byCategory.constEnd(); ++it)
+           lines << tr("%1: %2").arg(it.key()).arg(it.value());
+       categoryReport = tr("\n\nFiled by subfolder:\n%1").arg(lines.join(QStringLiteral("\n")));
+       if (!newGenres.isEmpty()) {
+           newGenres.removeDuplicates();
+           categoryReport += tr("\n\nNew genres added to the list: %1")
+                                 .arg(newGenres.join(QStringLiteral(", ")));
+       }
+   }
+
    // Saying what happened beats "All done!": an operator who points this at a
    // folder of Opus files now sees whether they went in.
    if (found.isEmpty()) {
@@ -216,16 +320,25 @@ void add_full_dir::on_f_bt_add_clicked()
            this, tr("Add directory"),
            tr("Found %1 audio file(s): added %2, already in the library %3, "
               "and %4 could not be added.\n\nThe database refused them: %5")
-               .arg(found.size()).arg(added).arg(skipped).arg(failed).arg(firstError));
+               .arg(found.size()).arg(added).arg(skipped).arg(failed).arg(firstError)
+           + categoryReport);
    } else {
        QMessageBox::information(
            this, tr("Add directory"),
            tr("All done! Have a nice day!\n\n"
               "Found %1 audio file(s), added %2, already in the library %3.")
-               .arg(found.size()).arg(added).arg(skipped));
+               .arg(found.size()).arg(added).arg(skipped)
+           + categoryReport);
    }
    this->hide();
 
+}
+
+void add_full_dir::on_chk_recursive_toggled(bool checked)
+{
+    // Without descending into subfolders there are no subfolder names to file
+    // by, so the option says so rather than quietly doing nothing.
+    ui->chk_folderGenres->setEnabled(checked);
 }
 
 void add_full_dir::on_f_bt_manageGenres_clicked()

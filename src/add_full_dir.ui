@@ -89,7 +89,7 @@
     <rect>
      <x>20</x>
      <y>300</y>
-     <width>281</width>
+     <width>600</width>
      <height>20</height>
     </rect>
    </property>
@@ -170,6 +170,25 @@
     <bool>true</bool>
    </property>
   </widget>
+  <widget class="QCheckBox" name="chk_folderGenres">
+   <property name="geometry">
+    <rect>
+     <x>40</x>
+     <y>265</y>
+     <width>400</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="toolTip">
+    <string>When a song sits in a subfolder named after a category (Rock, Pop, Fado...), that name becomes its Genre1 instead of the one chosen above. A category that is not in the genre list yet is added to it.</string>
+   </property>
+   <property name="text">
+    <string>Use subfolder names as Genre1</string>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+  </widget>
   <widget class="QPushButton" name="f_bt_add">
    <property name="geometry">
     <rect>
@@ -240,7 +259,7 @@
     <rect>
      <x>450</x>
      <y>140</y>
-     <width>121</width>
+     <width>170</width>
      <height>25</height>
     </rect>
    </property>

@@ -19,6 +19,7 @@ private slots:
     void on_f_bt_browse_clicked();
     void on_f_bt_add_clicked();
     void on_f_bt_manageGenres_clicked();
+    void on_chk_recursive_toggled(bool checked);
     void updateGenres();
 
 private:
