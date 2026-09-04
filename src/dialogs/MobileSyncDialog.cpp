@@ -19,6 +19,7 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QListWidget>
+#include <QMessageBox>
 #include <QPalette>
 #include <QScreen>
 #include <QScrollArea>
@@ -167,6 +168,30 @@ MobileSyncDialog::MobileSyncDialog(MobileSyncServer *server, QWidget *parent)
 
     layout->addWidget(deviceBox);
 
+    // --- what is marked for the phone --------------------------------------
+    // Marking happens in the music list's context menu, but unmarking is not
+    // something an operator thinks to look for there: by then the marked set
+    // is invisible, and the menu only offers to clear it while it is not
+    // empty. This window is where the phone is on their mind, so the standing
+    // set is shown here with the one action that empties it.
+    auto *markedBox = new QGroupBox(tr("Marked for the phone"), this);
+    auto *markedLayout = new QVBoxLayout(markedBox);
+
+    m_markedLabel = new QLabel(this);
+    m_markedLabel->setWordWrap(true);
+    m_markedLabel->setTextInteractionFlags(Qt::TextSelectableByMouse
+                                           | Qt::TextSelectableByKeyboard);
+    markedLayout->addWidget(m_markedLabel);
+
+    m_clearMarkedButton = new QPushButton(tr("Clear the marked tracks"), this);
+    m_clearMarkedButton->setAccessibleName(
+        tr("Clear every track marked for the phone"));
+    connect(m_clearMarkedButton, &QPushButton::clicked,
+            this, &MobileSyncDialog::clearMarkedTracks);
+    markedLayout->addWidget(m_clearMarkedButton);
+
+    layout->addWidget(markedBox);
+
     // --- playlists folder --------------------------------------------------
     auto *folderRow = new QHBoxLayout;
     m_playlistsLabel = new QLabel(this);
@@ -213,6 +238,8 @@ MobileSyncDialog::MobileSyncDialog(MobileSyncServer *server, QWidget *parent)
         connect(m_server, &MobileSyncServer::stopped, this, &MobileSyncDialog::refresh);
         connect(m_server, &MobileSyncServer::pairingWindowChanged,
                 this, &MobileSyncDialog::refresh);
+        connect(m_server, &MobileSyncServer::syncSetChanged,
+                this, &MobileSyncDialog::updateMarkedTracks);
         connect(m_server, &MobileSyncServer::devicePaired, this,
                 [this](const QString &name) {
                     emit announcementRequested(tr("%1 paired with XFB").arg(name));
@@ -291,6 +318,45 @@ void MobileSyncDialog::revokeSelected()
     refresh();
 }
 
+void MobileSyncDialog::clearMarkedTracks()
+{
+    if (!m_server)
+        return;
+
+    const int count = m_server->syncSet().size();
+    if (count == 0)
+        return;
+
+    // Worth a question: the marked set is built one context-menu selection at
+    // a time and there is no undo, so clearing it by mistake means going back
+    // through the music list to find those tracks again.
+    if (QMessageBox::question(
+            this, tr("Sync to Phone"),
+            tr("Clear the %n track(s) marked for the phone?", "", count),
+            QMessageBox::Yes | QMessageBox::No) != QMessageBox::Yes) {
+        return;
+    }
+
+    m_server->clearSyncSet();
+    emit announcementRequested(
+        tr("Cleared what was marked for the phone"));
+    refresh();
+}
+
+void MobileSyncDialog::updateMarkedTracks()
+{
+    if (!m_server)
+        return;
+
+    const int count = m_server->syncSet().size();
+    m_markedLabel->setText(count == 0
+        ? tr("Nothing is marked. Right-click tracks in the music list and "
+             "choose to sync them to the phone to add them here.")
+        : tr("%n track(s) waiting for a phone to collect, offered as the "
+             "playlist \"Marked for this phone\".", "", count));
+    m_clearMarkedButton->setEnabled(count > 0);
+}
+
 void MobileSyncDialog::choosePlaylistsDirectory()
 {
     if (!m_server)
@@ -325,6 +391,7 @@ void MobileSyncDialog::refresh()
     updatePairingCode();
 
     updateDeviceList();
+    updateMarkedTracks();
 
     m_playlistsLabel->setText(tr("Saved playlists: %1").arg(m_server->playlistsDirectory()));
 

@@ -35,6 +35,7 @@ private slots:
     void toggleServer();
     void startPairing();
     void revokeSelected();
+    void clearMarkedTracks();
     void refresh();
     void updateRevokeButton();
 
@@ -42,6 +43,7 @@ private:
     void choosePlaylistsDirectory();
     void updateAddressChoices();
     void updateDeviceList();
+    void updateMarkedTracks();
     void updatePairingCode();
 
     MobileSyncServer *m_server = nullptr;
@@ -56,6 +58,8 @@ private:
     QPushButton *m_revokeButton = nullptr;
     QListWidget *m_deviceList = nullptr;
     QCheckBox   *m_autoStart = nullptr;
+    QLabel      *m_markedLabel = nullptr;
+    QPushButton *m_clearMarkedButton = nullptr;
     QLabel      *m_playlistsLabel = nullptr;
     QLabel      *m_companionLabel = nullptr;
     QTimer      *m_refreshTimer = nullptr;
