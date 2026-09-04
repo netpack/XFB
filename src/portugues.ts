@@ -939,67 +939,67 @@ Momento: %2</translation>
     <message>
         <location filename="services/AirLog.cpp" line="481"/>
         <source>Music</source>
-        <translation type="unfinished">Músicas</translation>
+        <translation>Música</translation>
     </message>
     <message>
         <location filename="services/AirLog.cpp" line="482"/>
         <source>Jingle</source>
-        <translation type="unfinished"></translation>
+        <translation>Jingle</translation>
     </message>
     <message>
         <location filename="services/AirLog.cpp" line="483"/>
         <source>Advertisement</source>
-        <translation type="unfinished"></translation>
+        <translation>Publicidade</translation>
     </message>
     <message>
         <location filename="services/AirLog.cpp" line="484"/>
         <source>Programme</source>
-        <translation type="unfinished"></translation>
+        <translation>Programa</translation>
     </message>
     <message>
         <location filename="services/AirLog.cpp" line="485"/>
         <source>Pad</source>
-        <translation type="unfinished">Pad</translation>
+        <translation>Pad</translation>
     </message>
     <message>
         <location filename="services/AirLog.cpp" line="486"/>
         <source>Stream</source>
-        <translation type="unfinished"></translation>
+        <translation>Emissão</translation>
     </message>
     <message>
         <location filename="services/AirLog.cpp" line="487"/>
         <source>Other file</source>
-        <translation type="unfinished"></translation>
+        <translation>Outro ficheiro</translation>
     </message>
     <message>
         <location filename="services/AirLog.cpp" line="493"/>
         <source>Segued</source>
-        <translation type="unfinished"></translation>
+        <translation>Encadeada</translation>
     </message>
     <message>
         <location filename="services/AirLog.cpp" line="494"/>
         <source>Played out</source>
-        <translation type="unfinished"></translation>
+        <translation>Tocada até ao fim</translation>
     </message>
     <message>
         <location filename="services/AirLog.cpp" line="495"/>
         <source>Skipped</source>
-        <translation type="unfinished"></translation>
+        <translation>Saltada</translation>
     </message>
     <message>
         <location filename="services/AirLog.cpp" line="496"/>
         <source>Stopped</source>
-        <translation type="unfinished">Parado</translation>
+        <translation>Parado</translation>
     </message>
     <message>
         <location filename="services/AirLog.cpp" line="497"/>
         <source>Interrupted</source>
-        <translation type="unfinished"></translation>
+        <translation>Interrompida</translation>
     </message>
     <message>
         <location filename="services/AirLog.cpp" line="498"/>
         <source>On air</source>
-        <translation type="unfinished"></translation>
+        <translation>No ar</translation>
     </message>
 </context>
 <context>
@@ -1007,13 +1007,13 @@ Momento: %2</translation>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="47"/>
         <source>unknown length</source>
-        <translation type="unfinished"></translation>
+        <translation>duração desconhecida</translation>
     </message>
     <message numerus="yes">
         <location filename="dialogs/AirLogDialog.cpp" line="51"/>
         <location filename="dialogs/AirLogDialog.cpp" line="54"/>
         <source>%n seconds</source>
-        <translation type="unfinished">
+        <translation>
             <numerusform></numerusform>
             <numerusform></numerusform>
         </translation>
@@ -1021,12 +1021,12 @@ Momento: %2</translation>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="52"/>
         <source>%1 and %2</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 e %2</translation>
     </message>
     <message numerus="yes">
         <location filename="dialogs/AirLogDialog.cpp" line="53"/>
         <source>%n minutes</source>
-        <translation type="unfinished">
+        <translation>
             <numerusform></numerusform>
             <numerusform></numerusform>
         </translation>
@@ -1035,256 +1035,256 @@ Momento: %2</translation>
         <location filename="dialogs/AirLogDialog.cpp" line="72"/>
         <location filename="dialogs/AirLogDialog.cpp" line="309"/>
         <source>As-Run Log</source>
-        <translation type="unfinished"></translation>
+        <translation>Registo de emissão</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="74"/>
         <source>As-run log</source>
-        <translation type="unfinished"></translation>
+        <translation>Registo de emissão</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="76"/>
         <source>A record of everything that went to air, and a report of when a given advertisement ran.</source>
-        <translation type="unfinished"></translation>
+        <translation>Um registo de tudo o que foi para o ar, e um relatório de quando uma dada publicidade passou.</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="82"/>
         <source>As-run log sections</source>
-        <translation type="unfinished"></translation>
+        <translation>Secções do registo de emissão</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="83"/>
         <source>&amp;Log</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Registo</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="84"/>
         <source>&amp;Advertiser report</source>
-        <translation type="unfinished"></translation>
+        <translation>Relatório para o &amp;anunciante</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="88"/>
         <source>Close the as-run log</source>
-        <translation type="unfinished"></translation>
+        <translation>Fechar o registo de emissão</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="106"/>
         <source>Everything XFB put to air, newest first. The times are the times the item actually started and stopped, not the times it was scheduled for.</source>
-        <translation type="unfinished"></translation>
+        <translation>Tudo o que o XFB pôs no ar, do mais recente para o mais antigo. As horas são as horas a que o item começou e acabou mesmo, não as horas para que estava programado.</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="113"/>
         <source>Show</source>
-        <translation type="unfinished"></translation>
+        <translation>Mostrar</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="114"/>
         <source>Log filters</source>
-        <translation type="unfinished"></translation>
+        <translation>Filtros do registo</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="122"/>
         <source>Show entries from</source>
-        <translation type="unfinished"></translation>
+        <translation>Mostrar entradas desde</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="123"/>
         <source>The start of the period to list, date and time of day.</source>
-        <translation type="unfinished"></translation>
+        <translation>O início do período a listar, data e hora do dia.</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="125"/>
         <source>&amp;From:</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;De:</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="130"/>
         <source>Show entries until</source>
-        <translation type="unfinished"></translation>
+        <translation>Mostrar entradas até</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="131"/>
         <source>The end of the period to list, date and time of day.</source>
-        <translation type="unfinished"></translation>
+        <translation>O fim do período a listar, data e hora do dia.</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="133"/>
         <source>&amp;To:</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Até:</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="136"/>
         <source>Everything</source>
-        <translation type="unfinished"></translation>
+        <translation>Tudo</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="139"/>
         <source>Kind of item</source>
-        <translation type="unfinished"></translation>
+        <translation>Tipo de item</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="141"/>
         <source>Limit the list to music, jingles, advertisements, programmes, pads or other files.</source>
-        <translation type="unfinished"></translation>
+        <translation>Limitar a lista a músicas, jingles, publicidades, programas, pads ou outros ficheiros.</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="143"/>
         <source>&amp;Kind:</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Tipo:</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="147"/>
         <source>artist, title or file name</source>
-        <translation type="unfinished"></translation>
+        <translation>artista, título ou nome do ficheiro</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="148"/>
         <source>Search text</source>
-        <translation type="unfinished"></translation>
+        <translation>Texto a procurar</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="150"/>
         <source>Only entries whose artist, title or file name contain this text.</source>
-        <translation type="unfinished"></translation>
+        <translation>Só as entradas cujo artista, título ou nome de ficheiro contêm este texto.</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="151"/>
         <source>&amp;Search:</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Procurar:</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="156"/>
         <source>&amp;Show these entries</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Mostrar estas entradas</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="157"/>
         <source>Show these entries</source>
-        <translation type="unfinished"></translation>
+        <translation>Mostrar estas entradas</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="159"/>
         <source>&amp;Export as CSV...</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Exportar como CSV...</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="160"/>
         <source>Export the listed entries as a CSV file</source>
-        <translation type="unfinished"></translation>
+        <translation>Exportar as entradas listadas como ficheiro CSV</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="169"/>
         <source>Started</source>
-        <translation type="unfinished"></translation>
+        <translation>Começou</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="169"/>
         <source>Ended</source>
-        <translation type="unfinished"></translation>
+        <translation>Acabou</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="169"/>
         <source>Kind</source>
-        <translation type="unfinished"></translation>
+        <translation>Tipo</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="169"/>
         <source>Artist</source>
-        <translation type="unfinished">Artista</translation>
+        <translation>Artista</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="169"/>
         <source>Title</source>
-        <translation type="unfinished">Título</translation>
+        <translation>Título</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="170"/>
         <source>Planned</source>
-        <translation type="unfinished"></translation>
+        <translation>Previsto</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="170"/>
         <source>Played</source>
-        <translation type="unfinished"></translation>
+        <translation>Tocado</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="170"/>
         <location filename="dialogs/AirLogDialog.cpp" line="410"/>
         <location filename="dialogs/AirLogDialog.cpp" line="543"/>
         <source>Ended because</source>
-        <translation type="unfinished"></translation>
+        <translation>Acabou porque</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="170"/>
         <location filename="dialogs/AirLogDialog.cpp" line="411"/>
         <location filename="dialogs/AirLogDialog.cpp" line="543"/>
         <source>Chosen by</source>
-        <translation type="unfinished"></translation>
+        <translation>Escolhido por</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="171"/>
         <source>File</source>
-        <translation type="unfinished">Ficheiro</translation>
+        <translation>Ficheiro</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="175"/>
         <source>As-run entries</source>
-        <translation type="unfinished"></translation>
+        <translation>Entradas do registo de emissão</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="176"/>
         <source>One row per item that went to air. Use the arrow keys to move between rows and columns; press a column header with the space bar to sort by it.</source>
-        <translation type="unfinished"></translation>
+        <translation>Uma linha por cada item que foi para o ar. Usa as setas para te moveres entre linhas e colunas; carrega no cabeçalho de uma coluna com a barra de espaços para ordenar por ela.</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="183"/>
         <source>How many entries are listed</source>
-        <translation type="unfinished"></translation>
+        <translation>Quantas entradas estão listadas</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="187"/>
         <source>How long the log is kept</source>
-        <translation type="unfinished"></translation>
+        <translation>Durante quanto tempo o registo é guardado</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="188"/>
         <source>Log retention</source>
-        <translation type="unfinished"></translation>
+        <translation>Retenção do registo</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="190"/>
         <source>&amp;Keep entries for:</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Guardar entradas durante:</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="193"/>
         <source> days</source>
-        <translation type="unfinished"></translation>
+        <translation> dias</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="194"/>
         <source>forever</source>
-        <translation type="unfinished"></translation>
+        <translation>para sempre</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="196"/>
         <source>Days of log to keep</source>
-        <translation type="unfinished"></translation>
+        <translation>Dias de registo a guardar</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="198"/>
         <source>Older entries are removed when XFB starts. Set it to zero to keep the log forever. Advertisers may ask for proof months later, so keep it at least as long as your invoices are disputed.</source>
-        <translation type="unfinished"></translation>
+        <translation>As entradas mais antigas são removidas quando o XFB arranca. Põe a zero para guardar o registo para sempre. Os anunciantes podem pedir provas meses depois, por isso guarda-o pelo menos enquanto as tuas faturas puderem ser contestadas.</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="230"/>
         <source>Columns</source>
-        <translation type="unfinished"></translation>
+        <translation>Colunas</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="263"/>
         <source>still on air</source>
-        <translation type="unfinished"></translation>
+        <translation>ainda no ar</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="271"/>
@@ -1292,44 +1292,44 @@ Momento: %2</translation>
         <location filename="dialogs/AirLogDialog.cpp" line="477"/>
         <location filename="dialogs/AirLogDialog.cpp" line="557"/>
         <source>Auto Mode</source>
-        <translation type="unfinished">Modo Automático</translation>
+        <translation>Modo Automático</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="271"/>
         <location filename="dialogs/AirLogDialog.cpp" line="477"/>
         <location filename="dialogs/AirLogDialog.cpp" line="557"/>
         <source>Operator</source>
-        <translation type="unfinished"></translation>
+        <translation>Operador</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="277"/>
         <source>%1, %2, started %3, played %4, %5, chosen by %6</source>
-        <translation type="unfinished"></translation>
+        <translation>%1, %2, começou %3, tocou %4, %5, escolhido por %6</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="278"/>
         <source>untitled</source>
-        <translation type="unfinished"></translation>
+        <translation>sem título</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="282"/>
         <source>at an unknown time</source>
-        <translation type="unfinished"></translation>
+        <translation>a uma hora desconhecida</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="286"/>
         <source>the operator</source>
-        <translation type="unfinished"></translation>
+        <translation>o operador</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="299"/>
         <source>Nothing aired in that period.</source>
-        <translation type="unfinished"></translation>
+        <translation>Nada foi para o ar nesse período.</translation>
     </message>
     <message numerus="yes">
         <location filename="dialogs/AirLogDialog.cpp" line="300"/>
         <source>%n entries listed.</source>
-        <translation type="unfinished">
+        <translation>
             <numerusform></numerusform>
             <numerusform></numerusform>
         </translation>
@@ -1337,39 +1337,39 @@ Momento: %2</translation>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="310"/>
         <source>There is nothing listed to export.</source>
-        <translation type="unfinished"></translation>
+        <translation>Não há nada listado para exportar.</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="329"/>
         <source>XFB as-run log</source>
-        <translation type="unfinished"></translation>
+        <translation>Registo de emissão do XFB</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="330"/>
         <location filename="dialogs/AirLogDialog.cpp" line="502"/>
         <location filename="dialogs/AirLogDialog.cpp" line="534"/>
         <source>Period: %1 to %2</source>
-        <translation type="unfinished"></translation>
+        <translation>Período: %1 a %2</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="332"/>
         <source>Kind: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Tipo: %1</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="333"/>
         <source>Exported: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Exportado: %1</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="345"/>
         <source>The log will be kept forever.</source>
-        <translation type="unfinished"></translation>
+        <translation>O registo será guardado para sempre.</translation>
     </message>
     <message numerus="yes">
         <location filename="dialogs/AirLogDialog.cpp" line="346"/>
         <source>The log will be kept for %n days. Older entries go on the next start.</source>
-        <translation type="unfinished">
+        <translation>
             <numerusform></numerusform>
             <numerusform></numerusform>
         </translation>
@@ -1377,84 +1377,84 @@ Momento: %2</translation>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="360"/>
         <source>Pick an advertisement and a period to get the number of times it aired and the exact time of every airing — the sheet to attach to an invoice.</source>
-        <translation type="unfinished"></translation>
+        <translation>Escolhe uma publicidade e um período para obteres o número de vezes que foi para o ar e a hora exata de cada passagem — a folha para juntar a uma fatura.</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="369"/>
         <source>Advertisement</source>
-        <translation type="unfinished"></translation>
+        <translation>Publicidade</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="371"/>
         <source>The advertisement to report on, from the Ads list.</source>
-        <translation type="unfinished"></translation>
+        <translation>A publicidade sobre a qual fazer o relatório, da lista de publicidades.</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="372"/>
         <source>&amp;Advertisement:</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Publicidade:</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="379"/>
         <source>Report period start</source>
-        <translation type="unfinished"></translation>
+        <translation>Início do período do relatório</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="380"/>
         <source>F&amp;rom:</source>
-        <translation type="unfinished"></translation>
+        <translation>D&amp;e:</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="385"/>
         <source>Report period end</source>
-        <translation type="unfinished"></translation>
+        <translation>Fim do período do relatório</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="386"/>
         <source>T&amp;o:</source>
-        <translation type="unfinished"></translation>
+        <translation>A&amp;té:</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="391"/>
         <source>&amp;Build the report</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Construir o relatório</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="392"/>
         <source>Build the report</source>
-        <translation type="unfinished"></translation>
+        <translation>Construir o relatório</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="393"/>
         <source>Ex&amp;port as CSV...</source>
-        <translation type="unfinished"></translation>
+        <translation>Ex&amp;portar como CSV...</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="394"/>
         <source>Export the report as a CSV file</source>
-        <translation type="unfinished"></translation>
+        <translation>Exportar o relatório como ficheiro CSV</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="402"/>
         <source>Report summary</source>
-        <translation type="unfinished"></translation>
+        <translation>Resumo do relatório</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="404"/>
         <source>Who the report is for, the period it covers and how many times the advertisement aired.</source>
-        <translation type="unfinished"></translation>
+        <translation>Para quem é o relatório, o período que cobre e quantas vezes a publicidade foi para o ar.</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="410"/>
         <location filename="dialogs/AirLogDialog.cpp" line="542"/>
         <source>No.</source>
-        <translation type="unfinished"></translation>
+        <translation>N.º</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="410"/>
         <location filename="dialogs/AirLogDialog.cpp" line="542"/>
         <source>Date</source>
-        <translation type="unfinished"></translation>
+        <translation>Data</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="410"/>
@@ -1466,64 +1466,64 @@ Momento: %2</translation>
         <location filename="dialogs/AirLogDialog.cpp" line="410"/>
         <location filename="dialogs/AirLogDialog.cpp" line="543"/>
         <source>Length aired</source>
-        <translation type="unfinished"></translation>
+        <translation>Duração emitida</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="415"/>
         <source>Airings</source>
-        <translation type="unfinished"></translation>
+        <translation>Passagens</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="416"/>
         <source>One row per airing, oldest first. Arrow keys move between rows and columns.</source>
-        <translation type="unfinished"></translation>
+        <translation>Uma linha por passagem, da mais antiga para a mais recente. As setas movem-se entre linhas e colunas.</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="437"/>
         <source>Advertisement %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Publicidade %1</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="440"/>
         <source>(no advertisements in the library)</source>
-        <translation type="unfinished"></translation>
+        <translation>(sem publicidades na biblioteca)</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="479"/>
         <source>Airing %1, %2, lasting %3, %4</source>
-        <translation type="unfinished"></translation>
+        <translation>Passagem %1, %2, com a duração de %3, %4</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="500"/>
         <source>Airing certificate</source>
-        <translation type="unfinished"></translation>
+        <translation>Certificado de emissão</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="501"/>
         <location filename="dialogs/AirLogDialog.cpp" line="533"/>
         <source>Advertisement: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Publicidade: %1</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="504"/>
         <location filename="dialogs/AirLogDialog.cpp" line="536"/>
         <source>Times aired: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Vezes que foi para o ar: %1</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="505"/>
         <source>Total airtime: %1 — issued by %2 on %3</source>
-        <translation type="unfinished"></translation>
+        <translation>Tempo total de emissão: %1 — emitido por %2 em %3</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="511"/>
         <source>%1 did not air in that period.</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 não foi para o ar nesse período.</translation>
     </message>
     <message numerus="yes">
         <location filename="dialogs/AirLogDialog.cpp" line="512"/>
         <source>%1 aired %n times in that period.</source>
-        <translation type="unfinished">
+        <translation>
             <numerusform></numerusform>
             <numerusform></numerusform>
         </translation>
@@ -1531,32 +1531,32 @@ Momento: %2</translation>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="521"/>
         <source>Advertiser Report</source>
-        <translation type="unfinished"></translation>
+        <translation>Relatório para o anunciante</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="522"/>
         <source>Build a report first — there is nothing to export.</source>
-        <translation type="unfinished"></translation>
+        <translation>Constrói primeiro um relatório — não há nada para exportar.</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="532"/>
         <source>XFB airing certificate</source>
-        <translation type="unfinished"></translation>
+        <translation>Certificado de emissão do XFB</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="537"/>
         <source>Total airtime: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Tempo total de emissão: %1</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="538"/>
         <source>Issued: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Emitido: %1</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="542"/>
         <source>Started (ISO 8601)</source>
-        <translation type="unfinished"></translation>
+        <translation>Começou (ISO 8601)</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="578"/>
@@ -1564,23 +1564,23 @@ Momento: %2</translation>
         <location filename="dialogs/AirLogDialog.cpp" line="616"/>
         <location filename="dialogs/AirLogDialog.cpp" line="624"/>
         <source>Export as CSV</source>
-        <translation type="unfinished"></translation>
+        <translation>Exportar como CSV</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="580"/>
         <source>Comma-separated values (*.csv)</source>
-        <translation type="unfinished"></translation>
+        <translation>Valores separados por vírgulas (*.csv)</translation>
     </message>
     <message>
         <location filename="dialogs/AirLogDialog.cpp" line="587"/>
         <location filename="dialogs/AirLogDialog.cpp" line="617"/>
         <source>Could not write %1: %2</source>
-        <translation type="unfinished"></translation>
+        <translation>Não foi possível escrever %1: %2</translation>
     </message>
     <message numerus="yes">
         <location filename="dialogs/AirLogDialog.cpp" line="621"/>
         <source>Exported %n rows to %1.</source>
-        <translation type="unfinished">
+        <translation>
             <numerusform></numerusform>
             <numerusform></numerusform>
         </translation>
@@ -1591,17 +1591,17 @@ Momento: %2</translation>
     <message>
         <location filename="audio/AudioDeviceRouter.cpp" line="65"/>
         <source>System default</source>
-        <translation type="unfinished"></translation>
+        <translation>Predefinição do sistema</translation>
     </message>
     <message>
         <location filename="audio/AudioDeviceRouter.cpp" line="66"/>
         <source>System default (%1)</source>
-        <translation type="unfinished"></translation>
+        <translation>Predefinição do sistema (%1)</translation>
     </message>
     <message>
         <location filename="audio/AudioDeviceRouter.cpp" line="75"/>
         <source>%1 (not connected)</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 (não ligado)</translation>
     </message>
 </context>
 <context>
@@ -1609,12 +1609,12 @@ Momento: %2</translation>
     <message>
         <location filename="audioformats.cpp" line="47"/>
         <source>Audio Files (%1)</source>
-        <translation type="unfinished"></translation>
+        <translation>Ficheiros de áudio (%1)</translation>
     </message>
     <message>
         <location filename="audioformats.cpp" line="52"/>
         <source>All Files (*)</source>
-        <translation type="unfinished">Todos os ficheiros (*)</translation>
+        <translation>Todos os ficheiros (*)</translation>
     </message>
 </context>
 <context>
@@ -1684,94 +1684,96 @@ Faça duplo clique para introduzir você mesmo um andamento.</translation>
     <message>
         <location filename="CoverArtDialog.cpp" line="20"/>
         <source>Cover art</source>
-        <translation type="unfinished"></translation>
+        <translation>Capas</translation>
     </message>
     <message>
         <location filename="CoverArtDialog.cpp" line="27"/>
         <source>XFB has embedded a cover into every download since the tagging pass learned to keep one. Anything downloaded before that has none, and nothing on this desk knows what it looked like — so the picture has to be fetched again.
 
 Nothing is written to your files until you have seen what was found and left it ticked.</source>
-        <translation type="unfinished"></translation>
+        <translation>O XFB embute uma capa em cada descarga desde que a passagem de etiquetagem aprendeu a guardar uma. Tudo o que foi descarregado antes disso não tem nenhuma, e nada nesta mesa sabe qual era — por isso a imagem tem de ser ida buscar outra vez.
+
+Nada é escrito nos teus ficheiros enquanto não tiveres visto o que foi encontrado e o deixares assinalado.</translation>
     </message>
     <message>
         <location filename="CoverArtDialog.cpp" line="38"/>
         <source>Tracks with no cover art</source>
-        <translation type="unfinished"></translation>
+        <translation>Faixas sem capa</translation>
     </message>
     <message>
         <location filename="CoverArtDialog.cpp" line="40"/>
         <source>Each row is one track. Tick a row to have its picture written into the file.</source>
-        <translation type="unfinished"></translation>
+        <translation>Cada linha é uma faixa. Assinala uma linha para que a sua imagem seja escrita no ficheiro.</translation>
     </message>
     <message>
         <location filename="CoverArtDialog.cpp" line="46"/>
         <source>Progress</source>
-        <translation type="unfinished">Progresso</translation>
+        <translation>Progresso</translation>
     </message>
     <message>
         <location filename="CoverArtDialog.cpp" line="51"/>
         <source>Status</source>
-        <translation type="unfinished">Estado</translation>
+        <translation>Estado</translation>
     </message>
     <message>
         <location filename="CoverArtDialog.cpp" line="55"/>
         <source>&amp;Find tracks with no cover</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Encontrar faixas sem capa</translation>
     </message>
     <message>
         <location filename="CoverArtDialog.cpp" line="56"/>
         <source>&amp;Look for their covers</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Procurar as capas delas</translation>
     </message>
     <message>
         <location filename="CoverArtDialog.cpp" line="57"/>
         <source>&amp;Write the ticked ones in</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Escrever as assinaladas</translation>
     </message>
     <message>
         <location filename="CoverArtDialog.cpp" line="58"/>
         <source>&amp;Stop</source>
-        <translation type="unfinished">&amp;Parar</translation>
+        <translation>&amp;Parar</translation>
     </message>
     <message>
         <location filename="CoverArtDialog.cpp" line="59"/>
         <source>&amp;Close</source>
-        <translation type="unfinished">&amp;Fechar</translation>
+        <translation>&amp;Fechar</translation>
     </message>
     <message>
         <location filename="CoverArtDialog.cpp" line="77"/>
         <source>Ready. Start by finding the tracks that have no cover.</source>
-        <translation type="unfinished"></translation>
+        <translation>Pronto. Começa por encontrar as faixas que não têm capa.</translation>
     </message>
     <message>
         <location filename="CoverArtDialog.cpp" line="97"/>
         <source>%1 — nothing written: %2</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 — nada escrito: %2</translation>
     </message>
     <message>
         <location filename="CoverArtDialog.cpp" line="99"/>
         <source>%1 — cover found from %2</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 — capa encontrada em %2</translation>
     </message>
     <message>
         <location filename="CoverArtDialog.cpp" line="140"/>
         <source>Stopping…</source>
-        <translation type="unfinished"></translation>
+        <translation>A parar…</translation>
     </message>
     <message>
         <location filename="CoverArtDialog.cpp" line="146"/>
         <source>Reading every track in the library…</source>
-        <translation type="unfinished"></translation>
+        <translation>A ler todas as faixas da biblioteca…</translation>
     </message>
     <message>
         <location filename="CoverArtDialog.cpp" line="158"/>
         <source>Every track in the library already has a cover.</source>
-        <translation type="unfinished"></translation>
+        <translation>Todas as faixas da biblioteca já têm capa.</translation>
     </message>
     <message numerus="yes">
         <location filename="CoverArtDialog.cpp" line="160"/>
         <source>%n track(s) have no cover. Look for their covers next.</source>
-        <translation type="unfinished">
+        <translation>
             <numerusform></numerusform>
             <numerusform></numerusform>
         </translation>
@@ -1779,49 +1781,49 @@ Nothing is written to your files until you have seen what was found and left it 
     <message>
         <location filename="CoverArtDialog.cpp" line="183"/>
         <source>XFB&apos;s library database could not be reached from the scan.</source>
-        <translation type="unfinished"></translation>
+        <translation>A análise não conseguiu chegar à base de dados da biblioteca do XFB.</translation>
     </message>
     <message>
         <location filename="CoverArtDialog.cpp" line="188"/>
         <source>The library database could not be opened: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Não foi possível abrir a base de dados da biblioteca: %1</translation>
     </message>
     <message>
         <location filename="CoverArtDialog.cpp" line="199"/>
         <source>Reading %1 (%2 of %3)…</source>
-        <translation type="unfinished"></translation>
+        <translation>A ler %1 (%2 de %3)…</translation>
     </message>
     <message>
         <location filename="CoverArtDialog.cpp" line="211"/>
         <source>Looking for covers…</source>
-        <translation type="unfinished"></translation>
+        <translation>À procura de capas…</translation>
     </message>
     <message>
         <location filename="CoverArtDialog.cpp" line="223"/>
         <source>Found a cover for %1 of %2. Look through them, untick anything that is wrong, then write the rest in.</source>
-        <translation type="unfinished"></translation>
+        <translation>Encontrada capa para %1 de %2. Vê-as, desassinala o que estiver errado e escreve as restantes.</translation>
     </message>
     <message>
         <location filename="CoverArtDialog.cpp" line="240"/>
         <source>Looking for the cover of %1 (%2 of %3)…</source>
-        <translation type="unfinished"></translation>
+        <translation>À procura da capa de %1 (%2 de %3)…</translation>
     </message>
     <message>
         <location filename="CoverArtDialog.cpp" line="258"/>
         <source>Nothing is ticked that has a cover to write.</source>
-        <translation type="unfinished"></translation>
+        <translation>Não está assinalado nada que tenha capa para escrever.</translation>
     </message>
     <message>
         <location filename="CoverArtDialog.cpp" line="263"/>
         <source>Write the covers in</source>
-        <translation type="unfinished"></translation>
+        <translation>Escrever as capas</translation>
     </message>
     <message numerus="yes">
         <location filename="CoverArtDialog.cpp" line="264"/>
         <source>This rewrites %n file(s) to add the cover you have seen. The audio is copied across untouched and the tags are kept.
 
 Go ahead?</source>
-        <translation type="unfinished">
+        <translation>
             <numerusform></numerusform>
             <numerusform></numerusform>
         </translation>
@@ -1829,17 +1831,17 @@ Go ahead?</source>
     <message>
         <location filename="CoverArtDialog.cpp" line="271"/>
         <source>Writing covers in…</source>
-        <translation type="unfinished"></translation>
+        <translation>A escrever as capas…</translation>
     </message>
     <message>
         <location filename="CoverArtDialog.cpp" line="290"/>
         <source>Wrote the cover into %1 file(s). %2 left in the list.</source>
-        <translation type="unfinished"></translation>
+        <translation>Capa escrita em %1 ficheiro(s). Ficam %2 na lista.</translation>
     </message>
     <message>
         <location filename="CoverArtDialog.cpp" line="306"/>
         <source>Writing the cover into %1 (%2 of %3)…</source>
-        <translation type="unfinished"></translation>
+        <translation>A escrever a capa em %1 (%2 de %3)…</translation>
     </message>
 </context>
 <context>
@@ -1847,37 +1849,37 @@ Go ahead?</source>
     <message>
         <location filename="audio/CueBus.cpp" line="56"/>
         <source>The cue could not be played: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Não foi possível fazer a pré-escuta: %1</translation>
     </message>
     <message>
         <location filename="audio/CueBus.cpp" line="117"/>
         <source>No cue output device is set. Choose one in Options, Cue and outputs — cueing needs a second output, otherwise the audition would go to air.</source>
-        <translation type="unfinished"></translation>
+        <translation>Não está definido nenhum dispositivo de saída de pré-escuta. Escolhe um em Opções, Pré-escuta e saídas — a pré-escuta precisa de uma segunda saída, senão a audição ia para o ar.</translation>
     </message>
     <message>
         <location filename="audio/CueBus.cpp" line="124"/>
         <source>The cue output device (%1) is not connected.</source>
-        <translation type="unfinished"></translation>
+        <translation>O dispositivo de saída de pré-escuta (%1) não está ligado.</translation>
     </message>
     <message>
         <location filename="audio/CueBus.cpp" line="133"/>
         <source>The cue output and the on-air output are the same device (%1). Cueing is disabled so an audition cannot go to air.</source>
-        <translation type="unfinished"></translation>
+        <translation>A saída de pré-escuta e a saída de emissão são o mesmo dispositivo (%1). A pré-escuta está desativada para que uma audição não possa ir para o ar.</translation>
     </message>
     <message>
         <location filename="audio/CueBus.cpp" line="154"/>
         <source>There is nothing to cue.</source>
-        <translation type="unfinished"></translation>
+        <translation>Não há nada para pré-escutar.</translation>
     </message>
     <message>
         <location filename="audio/CueBus.cpp" line="158"/>
         <source>The file to cue is missing: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>O ficheiro a pré-escutar não existe: %1</translation>
     </message>
     <message>
         <location filename="audio/CueBus.cpp" line="164"/>
         <source>Cueing needs ffmpeg, which was not found on this system.</source>
-        <translation type="unfinished"></translation>
+        <translation>A pré-escuta precisa do ffmpeg, que não foi encontrado neste sistema.</translation>
     </message>
 </context>
 <context>
@@ -1885,216 +1887,216 @@ Go ahead?</source>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="22"/>
         <source>Dead-Air Watchdog</source>
-        <translation type="unfinished"></translation>
+        <translation>Vigia de silêncio no ar</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="46"/>
         <source>Silence is the one fault a station cannot survive quietly: the transport still says &quot;playing&quot;, the clock still runs, and nobody in the building hears anything because the monitors are fed from the same dead output. When XFB stops making sound, this puts something on and tells you.</source>
-        <translation type="unfinished"></translation>
+        <translation>O silêncio é a única falha que uma estação não sobrevive em silêncio: o transporte continua a dizer "a tocar", o relógio continua a andar, e ninguém no edifício ouve nada porque os monitores são alimentados pela mesma saída morta. Quando o XFB deixa de fazer som, isto põe alguma coisa no ar e avisa-te.</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="55"/>
         <source>What counts as dead air</source>
-        <translation type="unfinished"></translation>
+        <translation>O que conta como silêncio no ar</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="58"/>
         <location filename="dialogs/DeadAirDialog.cpp" line="59"/>
         <source>Watch for dead air</source>
-        <translation type="unfinished"></translation>
+        <translation>Vigiar o silêncio no ar</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="66"/>
         <source> dBFS</source>
-        <translation type="unfinished"></translation>
+        <translation> dBFS</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="67"/>
         <source>Silence threshold in dBFS</source>
-        <translation type="unfinished"></translation>
+        <translation>Limiar de silêncio em dBFS</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="68"/>
         <source>Silence below:</source>
-        <translation type="unfinished"></translation>
+        <translation>Silêncio abaixo de:</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="72"/>
         <location filename="dialogs/DeadAirDialog.cpp" line="78"/>
         <location filename="dialogs/DeadAirDialog.cpp" line="84"/>
         <source> s</source>
-        <translation type="unfinished"> s</translation>
+        <translation> s</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="73"/>
         <source>Seconds of silence before the fallback starts</source>
-        <translation type="unfinished"></translation>
+        <translation>Segundos de silêncio antes de o recurso arrancar</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="74"/>
         <source>For longer than:</source>
-        <translation type="unfinished"></translation>
+        <translation>Durante mais de:</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="79"/>
         <source>Seconds of healthy audio that end an incident</source>
-        <translation type="unfinished"></translation>
+        <translation>Segundos de áudio saudável que terminam um incidente</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="80"/>
         <source>Audio is back after:</source>
-        <translation type="unfinished"></translation>
+        <translation>O áudio voltou ao fim de:</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="86"/>
         <source>After an incident the watchdog stays quiet for this long, so a station that keeps failing is rescued once and reported once rather than a hundred times.</source>
-        <translation type="unfinished"></translation>
+        <translation>Depois de um incidente a vigia fica calada este tempo, para que uma estação que falha repetidamente seja socorrida uma vez e reportada uma vez em vez de cem.</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="89"/>
         <source>Quiet period between two rescues</source>
-        <translation type="unfinished"></translation>
+        <translation>Período de silêncio entre dois socorros</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="90"/>
         <source>Do not act again for:</source>
-        <translation type="unfinished"></translation>
+        <translation>Não agir outra vez durante:</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="93"/>
         <source>A loaded running order with nothing playing is dead air too</source>
-        <translation type="unfinished"></translation>
+        <translation>Uma alinhamento carregado sem nada a tocar também é silêncio no ar</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="96"/>
         <source>Pressing Stop yourself never trips the watchdog; this is about playback that ended on its own and never came back.</source>
-        <translation type="unfinished"></translation>
+        <translation>Carregares tu em Parar nunca dispara a vigia; isto é sobre reprodução que acabou sozinha e nunca mais voltou.</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="101"/>
         <source>Silence is measured from the level meter, which only runs while the FX engine is the active audio path. With plain passthrough playback there is nothing to measure and only a frozen transport will trip the watchdog.</source>
-        <translation type="unfinished"></translation>
+        <translation>O silêncio é medido pelo medidor de nível, que só funciona enquanto o motor de efeitos é o caminho de áudio ativo. Com reprodução direta não há nada para medir e só um transporte congelado dispara a vigia.</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="111"/>
         <source>What to put on</source>
-        <translation type="unfinished"></translation>
+        <translation>O que pôr no ar</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="116"/>
         <source>A saved XFB playlist (.xml)</source>
-        <translation type="unfinished"></translation>
+        <translation>Uma playlist do XFB guardada (.xml)</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="117"/>
         <source>Fallback playlist file</source>
-        <translation type="unfinished"></translation>
+        <translation>Ficheiro da playlist de recurso</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="118"/>
         <location filename="dialogs/DeadAirDialog.cpp" line="128"/>
         <source>Browse...</source>
-        <translation type="unfinished">Procurar...</translation>
+        <translation>Procurar...</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="122"/>
         <source>Playlist:</source>
-        <translation type="unfinished"></translation>
+        <translation>Playlist:</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="126"/>
         <source>A folder of evergreen tracks</source>
-        <translation type="unfinished"></translation>
+        <translation>Uma pasta de faixas intemporais</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="127"/>
         <source>Fallback folder</source>
-        <translation type="unfinished"></translation>
+        <translation>Pasta de recurso</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="132"/>
         <source>Or folder:</source>
-        <translation type="unfinished"></translation>
+        <translation>Ou pasta:</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="134"/>
         <source>Play the folder in a random order</source>
-        <translation type="unfinished"></translation>
+        <translation>Tocar a pasta por ordem aleatória</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="139"/>
         <source>How many fallback tracks to queue</source>
-        <translation type="unfinished"></translation>
+        <translation>Quantas faixas de recurso pôr em fila</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="140"/>
         <source>Queue at most:</source>
-        <translation type="unfinished"></translation>
+        <translation>Pôr em fila no máximo:</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="154"/>
         <source>Telling somebody</source>
-        <translation type="unfinished"></translation>
+        <translation>Avisar alguém</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="156"/>
         <source>Put an alert on screen</source>
-        <translation type="unfinished"></translation>
+        <translation>Pôr um alerta no ecrã</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="158"/>
         <source>Publish the incident for a paired phone to pick up</source>
-        <translation type="unfinished"></translation>
+        <translation>Publicar o incidente para um telemóvel emparelhado o apanhar</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="160"/>
         <source>XFB&apos;s sync server is pull-only — it cannot reach out to a phone. The incident is offered on the sync server instead, and the companion app sees it the next time it looks.</source>
-        <translation type="unfinished"></translation>
+        <translation>O servidor de sincronização do XFB é só de recolha — não consegue contactar um telemóvel. Em vez disso o incidente fica disponível no servidor de sincronização, e a aplicação companheira vê-o da próxima vez que for lá.</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="168"/>
         <source>Right now</source>
-        <translation type="unfinished"></translation>
+        <translation>Neste momento</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="173"/>
         <source>I have fixed it — clear the incident</source>
-        <translation type="unfinished"></translation>
+        <translation>Já resolvi — limpar o incidente</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="233"/>
         <source>Dead-air watchdog on: silence below %1 dBFS for %2 seconds starts the fallback.</source>
-        <translation type="unfinished"></translation>
+        <translation>Vigia de silêncio ligada: silêncio abaixo de %1 dBFS durante %2 segundos arranca o recurso.</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="236"/>
         <source>Dead-air watchdog off.</source>
-        <translation type="unfinished"></translation>
+        <translation>Vigia de silêncio desligada.</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="244"/>
         <source>Fallback playlist</source>
-        <translation type="unfinished"></translation>
+        <translation>Playlist de recurso</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="246"/>
         <source>XFB playlists (*.xml)</source>
-        <translation type="unfinished"></translation>
+        <translation>Playlists do XFB (*.xml)</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="254"/>
         <source>Folder of evergreen tracks</source>
-        <translation type="unfinished"></translation>
+        <translation>Pasta de faixas intemporais</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="264"/>
         <source>Nothing to fall back on — the watchdog would raise the alarm but could not put anything on.</source>
-        <translation type="unfinished"></translation>
+        <translation>Não há recurso nenhum — a vigia daria o alarme mas não conseguiria pôr nada no ar.</translation>
     </message>
     <message numerus="yes">
         <location filename="dialogs/DeadAirDialog.cpp" line="267"/>
         <source>%n track(s) ready, starting with &quot;%1&quot;.</source>
-        <translation type="unfinished">
+        <translation>
             <numerusform></numerusform>
             <numerusform></numerusform>
         </translation>
@@ -2102,52 +2104,52 @@ Go ahead?</source>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="276"/>
         <source>The watchdog is not running.</source>
-        <translation type="unfinished"></translation>
+        <translation>A vigia não está a correr.</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="283"/>
         <source>idle</source>
-        <translation type="unfinished"></translation>
+        <translation>parada</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="284"/>
         <source>on air</source>
-        <translation type="unfinished"></translation>
+        <translation>no ar</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="285"/>
         <source>silent</source>
-        <translation type="unfinished"></translation>
+        <translation>em silêncio</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="286"/>
         <source>stalled</source>
-        <translation type="unfinished"></translation>
+        <translation>encravado</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="287"/>
         <source>running the fallback</source>
-        <translation type="unfinished"></translation>
+        <translation>a correr o recurso</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="291"/>
         <source>Station: %1 — last master peak %2 dBFS — watching for %3 s</source>
-        <translation type="unfinished"></translation>
+        <translation>Estação: %1 — último pico master %2 dBFS — a vigiar há %3 s</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="293"/>
         <source>none</source>
-        <translation type="unfinished"></translation>
+        <translation>nenhum</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="298"/>
         <source>No incident recorded since XFB started.</source>
-        <translation type="unfinished"></translation>
+        <translation>Nenhum incidente registado desde que o XFB arrancou.</translation>
     </message>
     <message>
         <location filename="dialogs/DeadAirDialog.cpp" line="299"/>
         <source>Last incident: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Último incidente: %1</translation>
     </message>
 </context>
 <context>
@@ -2155,75 +2157,77 @@ Go ahead?</source>
     <message>
         <location filename="services/DeadAirWatchdog.cpp" line="110"/>
         <source>Watchdog turned off during an incident</source>
-        <translation type="unfinished"></translation>
+        <translation>Vigia desligada durante um incidente</translation>
     </message>
     <message>
         <location filename="services/DeadAirWatchdog.cpp" line="120"/>
         <source>Dead-air watchdog armed: silence below %1 dBFS for %2 s starts the fallback</source>
-        <translation type="unfinished"></translation>
+        <translation>Vigia de silêncio armada: silêncio abaixo de %1 dBFS durante %2 s arranca o recurso</translation>
     </message>
     <message>
         <location filename="services/DeadAirWatchdog.cpp" line="254"/>
         <source>Audio has been healthy for %1 s</source>
-        <translation type="unfinished"></translation>
+        <translation>O áudio está saudável há %1 s</translation>
     </message>
     <message>
         <location filename="services/DeadAirWatchdog.cpp" line="271"/>
         <source>Nothing has been playing for %1 s with a running order loaded</source>
-        <translation type="unfinished"></translation>
+        <translation>Não toca nada há %1 s com um alinhamento carregado</translation>
     </message>
     <message>
         <location filename="services/DeadAirWatchdog.cpp" line="275"/>
         <source>Master level under %1 dBFS for %2 s (last peak %3 dBFS)</source>
-        <translation type="unfinished"></translation>
+        <translation>Nível master abaixo de %1 dBFS durante %2 s (último pico %3 dBFS)</translation>
     </message>
     <message>
         <location filename="services/DeadAirWatchdog.cpp" line="285"/>
         <source>Playback position frozen at %1 ms for %2 s while playing</source>
-        <translation type="unfinished"></translation>
+        <translation>Posição de reprodução congelada em %1 ms durante %2 s enquanto tocava</translation>
     </message>
     <message>
         <location filename="services/DeadAirWatchdog.cpp" line="308"/>
         <source>DEAD AIR at %1 — %2. Starting the fallback.</source>
-        <translation type="unfinished"></translation>
+        <translation>SILÊNCIO NO AR às %1 — %2. A arrancar o recurso.</translation>
     </message>
     <message>
         <location filename="services/DeadAirWatchdog.cpp" line="313"/>
         <location filename="services/DeadAirWatchdog.cpp" line="396"/>
         <source>Dead air</source>
-        <translation type="unfinished"></translation>
+        <translation>Silêncio no ar</translation>
     </message>
     <message>
         <location filename="services/DeadAirWatchdog.cpp" line="314"/>
         <source>%1
 
 XFB is starting the fallback material.</source>
-        <translation type="unfinished"></translation>
+        <translation>%1
+
+O XFB está a arrancar o material de recurso.</translation>
     </message>
     <message>
         <location filename="services/DeadAirWatchdog.cpp" line="328"/>
         <source>%1 — fallback: %2</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 — recurso: %2</translation>
     </message>
     <message>
         <location filename="services/DeadAirWatchdog.cpp" line="329"/>
         <source>Dead-air fallback started: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Recurso de silêncio no ar arrancado: %1</translation>
     </message>
     <message>
         <location filename="services/DeadAirWatchdog.cpp" line="333"/>
         <source>%1 — FALLBACK FAILED: %2</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 — O RECURSO FALHOU: %2</translation>
     </message>
     <message>
         <location filename="services/DeadAirWatchdog.cpp" line="334"/>
         <source>Dead-air fallback FAILED: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>O recurso de silêncio no ar FALHOU: %1</translation>
     </message>
     <message>
         <location filename="services/DeadAirWatchdog.cpp" line="336"/>
         <source>Dead air — fallback failed</source>
-        <translation type="unfinished"></translation>
+        <translation>Silêncio no ar — o recurso falhou</translation>
     </message>
     <message>
         <location filename="services/DeadAirWatchdog.cpp" line="337"/>
@@ -2232,52 +2236,56 @@ XFB is starting the fallback material.</source>
 %1
 
 The station is off the air until somebody acts.</source>
-        <translation type="unfinished"></translation>
+        <translation>O XFB não conseguiu arrancar o material de recurso.
+
+%1
+
+A estação está fora do ar até alguém agir.</translation>
     </message>
     <message>
         <location filename="services/DeadAirWatchdog.cpp" line="349"/>
         <source>Cleared by the operator</source>
-        <translation type="unfinished"></translation>
+        <translation>Limpo pelo operador</translation>
     </message>
     <message>
         <location filename="services/DeadAirWatchdog.cpp" line="366"/>
         <source>Dead-air incident ended after %1 s — %2</source>
-        <translation type="unfinished"></translation>
+        <translation>Incidente de silêncio no ar terminou ao fim de %1 s — %2</translation>
     </message>
     <message>
         <location filename="services/DeadAirWatchdog.cpp" line="369"/>
         <source>Back on air</source>
-        <translation type="unfinished"></translation>
+        <translation>De volta ao ar</translation>
     </message>
     <message>
         <location filename="services/DeadAirWatchdog.cpp" line="370"/>
         <source>Audio is flowing again after %1 s.</source>
-        <translation type="unfinished"></translation>
+        <translation>O áudio voltou a correr ao fim de %1 s.</translation>
     </message>
     <message>
         <location filename="services/DeadAirWatchdog.cpp" line="382"/>
         <source>silence</source>
-        <translation type="unfinished"></translation>
+        <translation>silêncio</translation>
     </message>
     <message>
         <location filename="services/DeadAirWatchdog.cpp" line="383"/>
         <source>stalled transport</source>
-        <translation type="unfinished"></translation>
+        <translation>transporte encravado</translation>
     </message>
     <message>
         <location filename="services/DeadAirWatchdog.cpp" line="384"/>
         <source>nothing playing</source>
-        <translation type="unfinished"></translation>
+        <translation>nada a tocar</translation>
     </message>
     <message>
         <location filename="services/DeadAirWatchdog.cpp" line="387"/>
         <source>unknown</source>
-        <translation type="unfinished"></translation>
+        <translation>desconhecido</translation>
     </message>
     <message>
         <location filename="services/DeadAirWatchdog.cpp" line="397"/>
         <source>%1 — %2</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 — %2</translation>
     </message>
 </context>
 <context>
@@ -2459,7 +2467,7 @@ The station is off the air until somebody acts.</source>
         <location filename="audio/FxEngine.cpp" line="684"/>
         <location filename="audio/FxEngine.cpp" line="765"/>
         <source>The cue output device is no longer connected</source>
-        <translation type="unfinished"></translation>
+        <translation>O dispositivo de saída de pré-escuta já não está ligado</translation>
     </message>
     <message>
         <location filename="audio/FxEngine.cpp" line="1156"/>
@@ -2473,141 +2481,141 @@ The station is off the air until somebody acts.</source>
         <location filename="services/HourClock.cpp" line="158"/>
         <location filename="services/HourClock.cpp" line="165"/>
         <source>Music sweep</source>
-        <translation type="unfinished"></translation>
+        <translation>Bloco musical</translation>
     </message>
     <message>
         <location filename="services/HourClock.cpp" line="159"/>
         <source>Advertisement break</source>
-        <translation type="unfinished"></translation>
+        <translation>Intervalo publicitário</translation>
     </message>
     <message>
         <location filename="services/HourClock.cpp" line="160"/>
         <location filename="services/HourClock.cpp" line="667"/>
         <source>Jingle</source>
-        <translation type="unfinished"></translation>
+        <translation>Jingle</translation>
     </message>
     <message>
         <location filename="services/HourClock.cpp" line="161"/>
         <source>Programme</source>
-        <translation type="unfinished"></translation>
+        <translation>Programa</translation>
     </message>
     <message>
         <location filename="services/HourClock.cpp" line="162"/>
         <location filename="services/HourClock.cpp" line="663"/>
         <source>News</source>
-        <translation type="unfinished"></translation>
+        <translation>Notícias</translation>
     </message>
     <message>
         <location filename="services/HourClock.cpp" line="163"/>
         <location filename="services/HourClock.cpp" line="664"/>
         <source>Station ID</source>
-        <translation type="unfinished"></translation>
+        <translation>Identificação da estação</translation>
     </message>
     <message>
         <location filename="services/HourClock.cpp" line="193"/>
         <source>%1 s</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 s</translation>
     </message>
     <message>
         <location filename="services/HourClock.cpp" line="195"/>
         <source>%1 min</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 min</translation>
     </message>
     <message>
         <location filename="services/HourClock.cpp" line="196"/>
         <source>%1 min %2 s</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 min %2 s</translation>
     </message>
     <message>
         <location filename="services/HourClock.cpp" line="203"/>
         <source>%1 at %2, %3, %4</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 às %2, %3, %4</translation>
     </message>
     <message>
         <location filename="services/HourClock.cpp" line="207"/>
         <source>hard-timed</source>
-        <translation type="unfinished"></translation>
+        <translation>hora fixa</translation>
     </message>
     <message>
         <location filename="services/HourClock.cpp" line="207"/>
         <source>floating</source>
-        <translation type="unfinished"></translation>
+        <translation>flutuante</translation>
     </message>
     <message>
         <location filename="services/HourClock.cpp" line="210"/>
         <source>genre %1</source>
-        <translation type="unfinished"></translation>
+        <translation>género %1</translation>
     </message>
     <message>
         <location filename="services/HourClock.cpp" line="211"/>
         <source>item %1</source>
-        <translation type="unfinished"></translation>
+        <translation>item %1</translation>
     </message>
     <message>
         <location filename="services/HourClock.cpp" line="214"/>
         <source>(runs past the next fixed item)</source>
-        <translation type="unfinished"></translation>
+        <translation>(passa por cima do próximo item de hora fixa)</translation>
     </message>
     <message>
         <location filename="services/HourClock.cpp" line="221"/>
         <source>The hour is over-full by %1. Nothing has been shortened — shorten something yourself, or the fixed items will be run into.</source>
-        <translation type="unfinished"></translation>
+        <translation>A hora está cheia a mais em %1. Nada foi encurtado — encurta alguma coisa, ou os itens de hora fixa serão atropelados.</translation>
     </message>
     <message>
         <location filename="services/HourClock.cpp" line="225"/>
         <source>The hour is under-filled by %1 that no floating item can absorb.</source>
-        <translation type="unfinished"></translation>
+        <translation>Faltam %1 para encher a hora, que nenhum item flutuante consegue absorver.</translation>
     </message>
     <message>
         <location filename="services/HourClock.cpp" line="227"/>
         <source>The hour is exactly full.</source>
-        <translation type="unfinished"></translation>
+        <translation>A hora está exatamente cheia.</translation>
     </message>
     <message>
         <location filename="services/HourClock.cpp" line="379"/>
         <source>%1 is fixed at %2 but the items before it need %3 longer.</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 está fixo às %2 mas os itens anteriores precisam de mais %3.</translation>
     </message>
     <message>
         <location filename="services/HourClock.cpp" line="401"/>
         <source>The hour is over-full by %1.</source>
-        <translation type="unfinished"></translation>
+        <translation>A hora está cheia a mais em %1.</translation>
     </message>
     <message>
         <location filename="services/HourClock.cpp" line="404"/>
         <source>%1 of the hour is not covered by any item.</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 da hora não está coberto por nenhum item.</translation>
     </message>
     <message>
         <location filename="services/HourClock.cpp" line="622"/>
         <source>Clock</source>
-        <translation type="unfinished">Relógio</translation>
+        <translation>Relógio</translation>
     </message>
     <message>
         <location filename="services/HourClock.cpp" line="640"/>
         <source>A starting point: news on the hour, sweeps either side of a jingle, and the ad break at twenty past.</source>
-        <translation type="unfinished"></translation>
+        <translation>Um ponto de partida: notícias à hora certa, blocos musicais de cada lado de um jingle, e o intervalo publicitário aos vinte.</translation>
     </message>
     <message>
         <location filename="services/HourClock.cpp" line="665"/>
         <source>Morning sweep</source>
-        <translation type="unfinished"></translation>
+        <translation>Bloco da manhã</translation>
     </message>
     <message>
         <location filename="services/HourClock.cpp" line="666"/>
         <location filename="services/HourClock.cpp" line="669"/>
         <source>Ad break</source>
-        <translation type="unfinished"></translation>
+        <translation>Intervalo publicitário</translation>
     </message>
     <message>
         <location filename="services/HourClock.cpp" line="668"/>
         <source>Second sweep</source>
-        <translation type="unfinished"></translation>
+        <translation>Segundo bloco</translation>
     </message>
     <message>
         <location filename="services/HourClock.cpp" line="670"/>
         <source>Run to the hour</source>
-        <translation type="unfinished"></translation>
+        <translation>Correr até à hora</translation>
     </message>
 </context>
 <context>
@@ -2615,464 +2623,464 @@ The station is off the air until somebody acts.</source>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="49"/>
         <source>Hour Clocks</source>
-        <translation type="unfinished"></translation>
+        <translation>Relógios da hora</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="52"/>
         <source>Hour clocks</source>
-        <translation type="unfinished"></translation>
+        <translation>Relógios da hora</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="57"/>
         <source>Hour clock sections</source>
-        <translation type="unfinished"></translation>
+        <translation>Secções do relógio da hora</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="58"/>
         <source>&amp;Clock</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Relógio</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="59"/>
         <source>&amp;Week</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Semana</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="60"/>
         <source>&amp;Auto Mode</source>
-        <translation type="unfinished"></translation>
+        <translation>Modo &amp;Automático</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="79"/>
         <source>C&amp;lock:</source>
-        <translation type="unfinished"></translation>
+        <translation>Re&amp;lógio:</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="81"/>
         <source>Clock being edited</source>
-        <translation type="unfinished"></translation>
+        <translation>Relógio a ser editado</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="85"/>
         <source>&amp;New...</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Novo...</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="86"/>
         <source>Create an empty clock</source>
-        <translation type="unfinished"></translation>
+        <translation>Criar um relógio vazio</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="87"/>
         <source>New from &amp;Example...</source>
-        <translation type="unfinished"></translation>
+        <translation>Novo a partir do &amp;exemplo...</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="89"/>
         <source>Create a clock from the worked example: news, sweeps, ad breaks</source>
-        <translation type="unfinished"></translation>
+        <translation>Criar um relógio a partir do exemplo resolvido: notícias, blocos musicais, intervalos publicitários</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="90"/>
         <source>&amp;Duplicate...</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Duplicar...</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="91"/>
         <source>Duplicate this clock</source>
-        <translation type="unfinished"></translation>
+        <translation>Duplicar este relógio</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="92"/>
         <source>Re&amp;name...</source>
-        <translation type="unfinished"></translation>
+        <translation>Muda&amp;r o nome...</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="93"/>
         <source>Rename this clock</source>
-        <translation type="unfinished"></translation>
+        <translation>Mudar o nome deste relógio</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="94"/>
         <source>De&amp;lete</source>
-        <translation type="unfinished"></translation>
+        <translation>E&amp;liminar</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="95"/>
         <source>Delete this clock</source>
-        <translation type="unfinished"></translation>
+        <translation>Eliminar este relógio</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="140"/>
         <source>The same hour as a list. Everything the wheel can do is here, from the keyboard.</source>
-        <translation type="unfinished"></translation>
+        <translation>A mesma hora em lista. Tudo o que a roda faz está aqui, a partir do teclado.</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="147"/>
         <source>Start</source>
-        <translation type="unfinished"></translation>
+        <translation>Início</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="147"/>
         <source>Length</source>
-        <translation type="unfinished"></translation>
+        <translation>Duração</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="147"/>
         <source>Type</source>
-        <translation type="unfinished"></translation>
+        <translation>Tipo</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="147"/>
         <source>Name</source>
-        <translation type="unfinished">Nome</translation>
+        <translation>Nome</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="147"/>
         <source>Genre or item</source>
-        <translation type="unfinished"></translation>
+        <translation>Género ou item</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="148"/>
         <source>Timing</source>
-        <translation type="unfinished"></translation>
+        <translation>Marcação</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="154"/>
         <source>Slots of this hour, in order</source>
-        <translation type="unfinished"></translation>
+        <translation>Blocos desta hora, por ordem</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="156"/>
         <source>Each row is one item of the hour. Choose a row, then change it in the fields below. Alt and Up or Down moves the selected item in the running order.</source>
-        <translation type="unfinished"></translation>
+        <translation>Cada linha é um item da hora. Escolhe uma linha e altera-a nos campos abaixo. Alt com Cima ou Baixo move o item selecionado na ordem de emissão.</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="164"/>
         <source>&amp;Add slot</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Adicionar bloco</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="165"/>
         <source>Add a slot after the selected one</source>
-        <translation type="unfinished"></translation>
+        <translation>Adicionar um bloco a seguir ao selecionado</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="166"/>
         <source>&amp;Remove slot</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Remover bloco</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="167"/>
         <source>Remove the selected slot</source>
-        <translation type="unfinished"></translation>
+        <translation>Remover o bloco selecionado</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="168"/>
         <source>Move &amp;up</source>
-        <translation type="unfinished"></translation>
+        <translation>Mover para &amp;cima</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="169"/>
         <source>Move the selected slot earlier</source>
-        <translation type="unfinished"></translation>
+        <translation>Mover o bloco selecionado para mais cedo</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="171"/>
         <source>Move do&amp;wn</source>
-        <translation type="unfinished"></translation>
+        <translation>Mover para &amp;baixo</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="172"/>
         <source>Move the selected slot later</source>
-        <translation type="unfinished"></translation>
+        <translation>Mover o bloco selecionado para mais tarde</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="188"/>
         <source>Selected slot</source>
-        <translation type="unfinished"></translation>
+        <translation>Bloco selecionado</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="189"/>
         <source>Fields of the selected slot</source>
-        <translation type="unfinished"></translation>
+        <translation>Campos do bloco selecionado</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="195"/>
         <source>What this slot puts on air</source>
-        <translation type="unfinished"></translation>
+        <translation>O que este bloco põe no ar</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="196"/>
         <source>&amp;Type:</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Tipo:</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="201"/>
         <source>Name of this slot</source>
-        <translation type="unfinished"></translation>
+        <translation>Nome deste bloco</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="202"/>
         <source>Na&amp;me:</source>
-        <translation type="unfinished"></translation>
+        <translation>No&amp;me:</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="207"/>
         <source>Genre or item this slot draws from</source>
-        <translation type="unfinished"></translation>
+        <translation>Género ou item de onde este bloco tira o que toca</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="208"/>
         <location filename="dialogs/HourClockDialog.cpp" line="656"/>
         <source>&amp;Genre:</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Género:</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="212"/>
         <source>&amp;Fixed time — this item must start exactly at its start time</source>
-        <translation type="unfinished"></translation>
+        <translation>Hora &amp;fixa — este item tem de começar exatamente à sua hora</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="215"/>
         <source>Hard-timed: the item starts at its own time whatever else happens</source>
-        <translation type="unfinished"></translation>
+        <translation>Hora fixa: o item começa à sua hora aconteça o que acontecer</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="223"/>
         <source>Start of this slot, minutes and seconds past the hour</source>
-        <translation type="unfinished"></translation>
+        <translation>Início deste bloco, minutos e segundos depois da hora</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="224"/>
         <source>&amp;Start past the hour:</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Início depois da hora:</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="229"/>
         <source> min</source>
-        <translation type="unfinished"></translation>
+        <translation> min</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="230"/>
         <source>Length of this slot in minutes</source>
-        <translation type="unfinished"></translation>
+        <translation>Duração deste bloco em minutos</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="233"/>
         <location filename="dialogs/HourClockDialog.cpp" line="394"/>
         <source> s</source>
-        <translation type="unfinished"> s</translation>
+        <translation> s</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="234"/>
         <source>Extra seconds of length</source>
-        <translation type="unfinished"></translation>
+        <translation>Segundos adicionais de duração</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="238"/>
         <source>&amp;Length:</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Duração:</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="240"/>
         <source>A&amp;pply to slot</source>
-        <translation type="unfinished"></translation>
+        <translation>A&amp;plicar ao bloco</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="241"/>
         <source>Apply these fields to the selected slot</source>
-        <translation type="unfinished"></translation>
+        <translation>Aplicar estes campos ao bloco selecionado</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="257"/>
         <source>How full this hour is</source>
-        <translation type="unfinished"></translation>
+        <translation>O quão cheia está esta hora</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="261"/>
         <source>&amp;Save clock</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Guardar relógio</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="262"/>
         <source>Save this clock to the database</source>
-        <translation type="unfinished"></translation>
+        <translation>Guardar este relógio na base de dados</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="264"/>
         <source>Re&amp;vert</source>
-        <translation type="unfinished"></translation>
+        <translation>Re&amp;verter</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="265"/>
         <source>Discard the unsaved changes</source>
-        <translation type="unfinished"></translation>
+        <translation>Descartar as alterações não guardadas</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="291"/>
         <source>Which clock runs in which hour. An hour with no clock keeps the plain hour grid it has always had, so a half-programmed week still goes to air.</source>
-        <translation type="unfinished"></translation>
+        <translation>Que relógio corre em que hora. Uma hora sem relógio mantém a grelha simples de sempre, por isso uma semana meio programada continua a ir para o ar.</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="305"/>
         <source>Clock assigned to each hour of the week</source>
-        <translation type="unfinished"></translation>
+        <translation>Relógio atribuído a cada hora da semana</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="307"/>
         <source>Rows are hours, columns are weekdays. Press Return on a cell to give that hour the clock chosen below.</source>
-        <translation type="unfinished"></translation>
+        <translation>As linhas são horas, as colunas são dias da semana. Carrega em Enter numa célula para dar a essa hora o relógio escolhido abaixo.</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="314"/>
         <source>Assign</source>
-        <translation type="unfinished"></translation>
+        <translation>Atribuir</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="318"/>
         <source>Clock to assign</source>
-        <translation type="unfinished"></translation>
+        <translation>Relógio a atribuir</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="319"/>
         <source>Cl&amp;ock:</source>
-        <translation type="unfinished"></translation>
+        <translation>Re&amp;lógio:</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="322"/>
         <source>Every day</source>
-        <translation type="unfinished"></translation>
+        <translation>Todos os dias</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="326"/>
         <source>Monday to Friday</source>
-        <translation type="unfinished"></translation>
+        <translation>De segunda a sexta</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="327"/>
         <source>Saturday and Sunday</source>
-        <translation type="unfinished"></translation>
+        <translation>Sábado e domingo</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="328"/>
         <source>Days to assign it to</source>
-        <translation type="unfinished"></translation>
+        <translation>Dias a que o atribuir</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="329"/>
         <source>&amp;Days:</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Dias:</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="334"/>
         <source>First hour</source>
-        <translation type="unfinished"></translation>
+        <translation>Primeira hora</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="338"/>
         <source>Last hour</source>
-        <translation type="unfinished"></translation>
+        <translation>Última hora</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="340"/>
         <source>to</source>
-        <translation type="unfinished"></translation>
+        <translation>até</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="343"/>
         <source>&amp;Hours:</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Horas:</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="346"/>
         <source>A&amp;ssign</source>
-        <translation type="unfinished"></translation>
+        <translation>A&amp;tribuir</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="347"/>
         <source>Assign the chosen clock to those hours</source>
-        <translation type="unfinished"></translation>
+        <translation>Atribuir o relógio escolhido a essas horas</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="348"/>
         <source>&amp;Clear those hours</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Limpar essas horas</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="349"/>
         <source>Remove the clock from those hours</source>
-        <translation type="unfinished"></translation>
+        <translation>Retirar o relógio dessas horas</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="359"/>
         <source>What the last assignment did</source>
-        <translation type="unfinished"></translation>
+        <translation>O que a última atribuição fez</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="374"/>
         <source>Until this is switched on, nothing here changes what goes to air. Auto Mode keeps using the hour grid — one genre per hour per weekday — exactly as before.</source>
-        <translation type="unfinished"></translation>
+        <translation>Enquanto isto não for ligado, nada aqui muda o que vai para o ar. O Modo Automático continua a usar a grelha horária — um género por hora e por dia da semana — exatamente como antes.</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="380"/>
         <source>Let Auto Mode &amp;follow the hour clock</source>
-        <translation type="unfinished"></translation>
+        <translation>Deixar o Modo Automático &amp;seguir o relógio da hora</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="382"/>
         <source>Auto Mode fills the clock&apos;s current music sweep instead of the hour&apos;s genre</source>
-        <translation type="unfinished"></translation>
+        <translation>O Modo Automático enche o bloco musical em curso no relógio em vez do género da hora</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="386"/>
         <source>Put &amp;fixed-time items on air at their time</source>
-        <translation type="unfinished"></translation>
+        <translation>Pôr os itens de hora &amp;fixa no ar à sua hora</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="388"/>
         <source>News, ad breaks and jingles marked fixed are queued when they are due</source>
-        <translation type="unfinished"></translation>
+        <translation>Notícias, intervalos publicitários e jingles marcados como fixos entram na fila quando chega a sua hora</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="396"/>
         <source>How close to its time a fixed item counts as due</source>
-        <translation type="unfinished"></translation>
+        <translation>Quão perto da sua hora um item fixo conta como devido</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="397"/>
         <source>Fi&amp;ring window:</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Janela de disparo:</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="401"/>
         <source>A clock never narrows what Auto Mode may play to nothing. The sweep&apos;s genre only shapes the first two of the picker&apos;s three passes; the last pass is the whole library, and the rotation rules relax in their usual published order underneath. A station with three tracks and a clock still plays those three tracks.</source>
-        <translation type="unfinished"></translation>
+        <translation>Um relógio nunca reduz a nada o que o Modo Automático pode tocar. O género do bloco só molda as duas primeiras das três passagens do selecionador; a última passagem é a biblioteca inteira, e por baixo as regras de rotação vão-se soltando pela ordem publicada do costume. Uma estação com três faixas e um relógio continua a tocar essas três faixas.</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="410"/>
         <source>A&amp;pply</source>
-        <translation type="unfinished"></translation>
+        <translation>A&amp;plicar</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="411"/>
         <source>Apply these Auto Mode settings</source>
-        <translation type="unfinished"></translation>
+        <translation>Aplicar estas definições do Modo Automático</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="418"/>
         <source>Auto Mode setting status</source>
-        <translation type="unfinished"></translation>
+        <translation>Estado das definições do Modo Automático</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="445"/>
         <source>(no clock — use the hour grid)</source>
-        <translation type="unfinished"></translation>
+        <translation>(sem relógio — usar a grelha horária)</translation>
     </message>
     <message numerus="yes">
         <location filename="dialogs/HourClockDialog.cpp" line="449"/>
         <source>%1 (%n slot(s))</source>
-        <translation type="unfinished">
+        <translation>
             <numerusform></numerusform>
             <numerusform></numerusform>
         </translation>
@@ -3080,62 +3088,62 @@ The station is off the air until somebody acts.</source>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="525"/>
         <source>Unsaved changes. </source>
-        <translation type="unfinished"></translation>
+        <translation>Alterações não guardadas. </translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="560"/>
         <source>Fixed at %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Fixo às %1</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="563"/>
         <source>Floating</source>
-        <translation type="unfinished"></translation>
+        <translation>Flutuante</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="565"/>
         <source>, +%1 absorbed</source>
-        <translation type="unfinished"></translation>
+        <translation>, +%1 absorvido</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="567"/>
         <source>, overruns</source>
-        <translation type="unfinished"></translation>
+        <translation>, ultrapassa</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="670"/>
         <source>&amp;Item:</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Item:</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="695"/>
         <source>Genre this sweep draws from — empty means any genre</source>
-        <translation type="unfinished"></translation>
+        <translation>Género de onde este bloco tira o que toca — vazio significa qualquer género</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="696"/>
         <source>Item this slot plays — empty means any from that library</source>
-        <translation type="unfinished"></translation>
+        <translation>Item que este bloco toca — vazio significa qualquer um dessa biblioteca</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="723"/>
         <source>Create a clock first.</source>
-        <translation type="unfinished"></translation>
+        <translation>Cria primeiro um relógio.</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="728"/>
         <source>Music sweep</source>
-        <translation type="unfinished"></translation>
+        <translation>Bloco musical</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="738"/>
         <source>Slot added at position %1 of %2. It is a floating music sweep of ten minutes until you change it.</source>
-        <translation type="unfinished"></translation>
+        <translation>Bloco adicionado na posição %1 de %2. É um bloco musical flutuante de dez minutos até o alterares.</translation>
     </message>
     <message numerus="yes">
         <location filename="dialogs/HourClockDialog.cpp" line="755"/>
         <source>%1 removed. %n slot(s) left in the hour.</source>
-        <translation type="unfinished">
+        <translation>
             <numerusform></numerusform>
             <numerusform></numerusform>
         </translation>
@@ -3143,12 +3151,12 @@ The station is off the air until somebody acts.</source>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="768"/>
         <source>Moved to position %1 of %2. %3</source>
-        <translation type="unfinished"></translation>
+        <translation>Movido para a posição %1 de %2. %3</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="808"/>
         <source>Slot updated. %1. %2</source>
-        <translation type="unfinished"></translation>
+        <translation>Bloco atualizado. %1. %2</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="895"/>
@@ -3156,39 +3164,39 @@ The station is off the air until somebody acts.</source>
         <location filename="dialogs/HourClockDialog.cpp" line="902"/>
         <location filename="dialogs/HourClockDialog.cpp" line="923"/>
         <source>New clock</source>
-        <translation type="unfinished"></translation>
+        <translation>Novo relógio</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="895"/>
         <location filename="dialogs/HourClockDialog.cpp" line="917"/>
         <source>Name for the new clock:</source>
-        <translation type="unfinished"></translation>
+        <translation>Nome para o novo relógio:</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="903"/>
         <location filename="dialogs/HourClockDialog.cpp" line="924"/>
         <source>The clock could not be created.</source>
-        <translation type="unfinished"></translation>
+        <translation>Não foi possível criar o relógio.</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="908"/>
         <source>Clock %1 created and empty.</source>
-        <translation type="unfinished"></translation>
+        <translation>Relógio %1 criado e vazio.</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="917"/>
         <source>New clock from the example</source>
-        <translation type="unfinished"></translation>
+        <translation>Novo relógio a partir do exemplo</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="918"/>
         <source>Weekday hour</source>
-        <translation type="unfinished"></translation>
+        <translation>Hora de dia útil</translation>
     </message>
     <message numerus="yes">
         <location filename="dialogs/HourClockDialog.cpp" line="929"/>
         <source>Clock %1 created with %n slot(s): news on the hour, sweeps, a jingle and two ad breaks.</source>
-        <translation type="unfinished">
+        <translation>
             <numerusform></numerusform>
             <numerusform></numerusform>
         </translation>
@@ -3197,129 +3205,129 @@ The station is off the air until somebody acts.</source>
         <location filename="dialogs/HourClockDialog.cpp" line="942"/>
         <location filename="dialogs/HourClockDialog.cpp" line="948"/>
         <source>Duplicate clock</source>
-        <translation type="unfinished"></translation>
+        <translation>Duplicar relógio</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="942"/>
         <source>Name for the copy:</source>
-        <translation type="unfinished"></translation>
+        <translation>Nome para a cópia:</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="949"/>
         <source>The clock could not be duplicated.</source>
-        <translation type="unfinished"></translation>
+        <translation>Não foi possível duplicar o relógio.</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="954"/>
         <source>Clock duplicated as %1.</source>
-        <translation type="unfinished"></translation>
+        <translation>Relógio duplicado como %1.</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="963"/>
         <location filename="dialogs/HourClockDialog.cpp" line="968"/>
         <source>Rename clock</source>
-        <translation type="unfinished"></translation>
+        <translation>Mudar o nome do relógio</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="963"/>
         <source>New name:</source>
-        <translation type="unfinished"></translation>
+        <translation>Novo nome:</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="969"/>
         <source>The clock could not be renamed.</source>
-        <translation type="unfinished"></translation>
+        <translation>Não foi possível mudar o nome do relógio.</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="976"/>
         <source>Clock renamed to %1.</source>
-        <translation type="unfinished"></translation>
+        <translation>Relógio passou a chamar-se %1.</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="985"/>
         <location filename="dialogs/HourClockDialog.cpp" line="992"/>
         <source>Delete clock</source>
-        <translation type="unfinished"></translation>
+        <translation>Eliminar relógio</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="986"/>
         <source>Delete the clock &quot;%1&quot;? Every hour it is assigned to falls back to the plain hour grid.</source>
-        <translation type="unfinished"></translation>
+        <translation>Eliminar o relógio "%1"? Todas as horas a que está atribuído voltam à grelha horária simples.</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="993"/>
         <source>The clock could not be deleted.</source>
-        <translation type="unfinished"></translation>
+        <translation>Não foi possível eliminar o relógio.</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="1001"/>
         <source>Clock %1 deleted.</source>
-        <translation type="unfinished"></translation>
+        <translation>Relógio %1 eliminado.</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="1007"/>
         <source>This clock has no name and cannot be saved.</source>
-        <translation type="unfinished"></translation>
+        <translation>Este relógio não tem nome e não pode ser guardado.</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="1011"/>
         <source>Save clock</source>
-        <translation type="unfinished"></translation>
+        <translation>Guardar relógio</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="1012"/>
         <source>The clock could not be saved.</source>
-        <translation type="unfinished"></translation>
+        <translation>Não foi possível guardar o relógio.</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="1019"/>
         <source>Clock %1 saved. %2</source>
-        <translation type="unfinished"></translation>
+        <translation>Relógio %1 guardado. %2</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="1028"/>
         <source>Unsaved changes discarded.</source>
-        <translation type="unfinished"></translation>
+        <translation>Alterações não guardadas descartadas.</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="1034"/>
         <source>Unsaved clock</source>
-        <translation type="unfinished"></translation>
+        <translation>Relógio por guardar</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="1035"/>
         <source>&quot;%1&quot; has unsaved changes. Save them?</source>
-        <translation type="unfinished"></translation>
+        <translation>"%1" tem alterações não guardadas. Guardá-las?</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="1074"/>
         <source>%1 at %2: no clock, the hour grid is used</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 às %2: sem relógio, é usada a grelha horária</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="1077"/>
         <source>%1 at %2: clock %3</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 às %2: relógio %3</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="1091"/>
         <source>That hour could not be assigned.</source>
-        <translation type="unfinished"></translation>
+        <translation>Não foi possível atribuir essa hora.</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="1097"/>
         <source>%1 at %2 now runs the clock %3.</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 às %2 passa a correr o relógio %3.</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="1099"/>
         <source>%1 at %2 is back on the plain hour grid.</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 às %2 voltou à grelha horária simples.</translation>
     </message>
     <message numerus="yes">
         <location filename="dialogs/HourClockDialog.cpp" line="1126"/>
         <source>%1 assigned to %n hour(s) of the week.</source>
-        <translation type="unfinished">
+        <translation>
             <numerusform></numerusform>
             <numerusform></numerusform>
         </translation>
@@ -3327,7 +3335,7 @@ The station is off the air until somebody acts.</source>
     <message numerus="yes">
         <location filename="dialogs/HourClockDialog.cpp" line="1150"/>
         <source>%n hour(s) put back on the plain hour grid.</source>
-        <translation type="unfinished">
+        <translation>
             <numerusform></numerusform>
             <numerusform></numerusform>
         </translation>
@@ -3335,22 +3343,22 @@ The station is off the air until somebody acts.</source>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="1169"/>
         <source>Auto Mode now follows the hour clock, and fixed items %1.</source>
-        <translation type="unfinished"></translation>
+        <translation>O Modo Automático passa a seguir o relógio da hora, e os itens de hora fixa %1.</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="1170"/>
         <source>go on air at their time</source>
-        <translation type="unfinished"></translation>
+        <translation>vão para o ar à sua hora</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="1171"/>
         <source>are left to the operator</source>
-        <translation type="unfinished"></translation>
+        <translation>ficam a cargo do operador</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="1172"/>
         <source>Auto Mode is back on the plain hour grid. Nothing about the clocks reaches the air.</source>
-        <translation type="unfinished"></translation>
+        <translation>O Modo Automático voltou à grelha horária simples. Nada dos relógios chega ao ar.</translation>
     </message>
 </context>
 <context>
@@ -3358,32 +3366,32 @@ The station is off the air until somebody acts.</source>
     <message>
         <location filename="ui/HourClockWheel.cpp" line="36"/>
         <source>Hour clock wheel</source>
-        <translation type="unfinished"></translation>
+        <translation>Roda do relógio da hora</translation>
     </message>
     <message>
         <location filename="ui/HourClockWheel.cpp" line="38"/>
         <source>The hour drawn as a clock face. Left and right arrows move between items, Return edits the selected item. Everything here can also be done in the list of slots beside it.</source>
-        <translation type="unfinished"></translation>
+        <translation>A hora desenhada como um mostrador de relógio. As setas esquerda e direita movem-se entre itens, Enter edita o item selecionado. Tudo o que se faz aqui também se faz na lista de blocos ao lado.</translation>
     </message>
     <message>
         <location filename="ui/HourClockWheel.cpp" line="258"/>
         <source>(no clock)</source>
-        <translation type="unfinished"></translation>
+        <translation>(sem relógio)</translation>
     </message>
     <message>
         <location filename="ui/HourClockWheel.cpp" line="260"/>
         <source>over by %1</source>
-        <translation type="unfinished"></translation>
+        <translation>a mais %1</translation>
     </message>
     <message>
         <location filename="ui/HourClockWheel.cpp" line="263"/>
         <source>short by %1</source>
-        <translation type="unfinished"></translation>
+        <translation>a menos %1</translation>
     </message>
     <message>
         <location filename="ui/HourClockWheel.cpp" line="266"/>
         <source>exactly full</source>
-        <translation type="unfinished"></translation>
+        <translation>exatamente cheia</translation>
     </message>
 </context>
 <context>
@@ -3391,107 +3399,107 @@ The station is off the air until somebody acts.</source>
     <message>
         <location filename="services/IcecastSource.cpp" line="54"/>
         <source>the server never answered the source request</source>
-        <translation type="unfinished"></translation>
+        <translation>o servidor nunca respondeu ao pedido de fonte</translation>
     </message>
     <message>
         <location filename="services/IcecastSource.cpp" line="125"/>
         <source>disconnected by the operator</source>
-        <translation type="unfinished"></translation>
+        <translation>desligado pelo operador</translation>
     </message>
     <message>
         <location filename="services/IcecastSource.cpp" line="149"/>
         <source>the server closed the connection</source>
-        <translation type="unfinished"></translation>
+        <translation>o servidor fechou a ligação</translation>
     </message>
     <message>
         <location filename="services/IcecastSource.cpp" line="150"/>
         <source>the server closed the connection during the handshake</source>
-        <translation type="unfinished"></translation>
+        <translation>o servidor fechou a ligação durante o aperto de mão</translation>
     </message>
     <message>
         <location filename="services/IcecastSource.cpp" line="161"/>
         <source>Connecting to %1:%2%3...</source>
-        <translation type="unfinished"></translation>
+        <translation>A ligar a %1:%2%3...</translation>
     </message>
     <message>
         <location filename="services/IcecastSource.cpp" line="223"/>
         <source>Server said: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>O servidor disse: %1</translation>
     </message>
     <message>
         <location filename="services/IcecastSource.cpp" line="230"/>
         <source>the server sent a nonsensical response</source>
-        <translation type="unfinished"></translation>
+        <translation>o servidor enviou uma resposta sem sentido</translation>
     </message>
     <message>
         <location filename="services/IcecastSource.cpp" line="250"/>
         <source>the server rejected the user name or password</source>
-        <translation type="unfinished"></translation>
+        <translation>o servidor rejeitou o nome de utilizador ou a senha</translation>
     </message>
     <message>
         <location filename="services/IcecastSource.cpp" line="253"/>
         <source>the server has no mount point %1</source>
-        <translation type="unfinished"></translation>
+        <translation>o servidor não tem o ponto de montagem %1</translation>
     </message>
     <message>
         <location filename="services/IcecastSource.cpp" line="256"/>
         <source>the mount point %1 is already in use by another source</source>
-        <translation type="unfinished"></translation>
+        <translation>o ponto de montagem %1 já está a ser usado por outra fonte</translation>
     </message>
     <message>
         <location filename="services/IcecastSource.cpp" line="260"/>
         <source>the server reported an internal error</source>
-        <translation type="unfinished"></translation>
+        <translation>o servidor comunicou um erro interno</translation>
     </message>
     <message>
         <location filename="services/IcecastSource.cpp" line="263"/>
         <source>the server did not answer with a status line</source>
-        <translation type="unfinished"></translation>
+        <translation>o servidor não respondeu com uma linha de estado</translation>
     </message>
     <message>
         <location filename="services/IcecastSource.cpp" line="266"/>
         <source>the server refused the source connection (status %1)</source>
-        <translation type="unfinished"></translation>
+        <translation>o servidor recusou a ligação de fonte (estado %1)</translation>
     </message>
     <message>
         <location filename="services/IcecastSource.cpp" line="283"/>
         <source>On air at %1:%2%3 (%4).</source>
-        <translation type="unfinished"></translation>
+        <translation>No ar em %1:%2%3 (%4).</translation>
     </message>
     <message>
         <location filename="services/IcecastSource.cpp" line="320"/>
         <source>The server is not accepting audio fast enough; dropping data.</source>
-        <translation type="unfinished"></translation>
+        <translation>O servidor não está a aceitar áudio depressa que chegue; a descartar dados.</translation>
     </message>
     <message>
         <location filename="services/IcecastSource.cpp" line="328"/>
         <source>The server caught up (%1 kB was dropped).</source>
-        <translation type="unfinished"></translation>
+        <translation>O servidor recuperou (%1 kB foram descartados).</translation>
     </message>
     <message>
         <location filename="services/IcecastSource.cpp" line="377"/>
         <source>Now playing sent to the server: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Enviado ao servidor o que está a tocar: %1</translation>
     </message>
     <message>
         <location filename="services/IcecastSource.cpp" line="379"/>
         <source>The server refused the now-playing update (status %1).</source>
-        <translation type="unfinished"></translation>
+        <translation>O servidor recusou a atualização do que está a tocar (estado %1).</translation>
     </message>
     <message>
         <location filename="services/IcecastSource.cpp" line="385"/>
         <source>Could not send the now-playing update: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Não foi possível enviar a atualização do que está a tocar: %1</translation>
     </message>
     <message>
         <location filename="services/IcecastSource.cpp" line="418"/>
         <source>Stream dropped: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Emissão caiu: %1</translation>
     </message>
     <message>
         <location filename="services/IcecastSource.cpp" line="431"/>
         <source>Reconnecting in %1 s.</source>
-        <translation type="unfinished"></translation>
+        <translation>A religar dentro de %1 s.</translation>
     </message>
 </context>
 <context>
@@ -3499,12 +3507,12 @@ The station is off the air until somebody acts.</source>
     <message>
         <location filename="audio/LoudnessScanner.cpp" line="215"/>
         <source>ffmpeg was not found</source>
-        <translation type="unfinished"></translation>
+        <translation>o ffmpeg não foi encontrado</translation>
     </message>
     <message>
         <location filename="audio/LoudnessScanner.cpp" line="216"/>
         <source>the file is missing</source>
-        <translation type="unfinished"></translation>
+        <translation>o ficheiro não existe</translation>
     </message>
 </context>
 <context>
@@ -3583,17 +3591,17 @@ The station is off the air until somebody acts.</source>
     <message>
         <location filename="dialogs/MobileSyncDialog.cpp" line="177"/>
         <source>Marked for the phone</source>
-        <translation type="unfinished"></translation>
+        <translation>Marcado para o telemóvel</translation>
     </message>
     <message>
         <location filename="dialogs/MobileSyncDialog.cpp" line="186"/>
         <source>Clear the marked tracks</source>
-        <translation type="unfinished"></translation>
+        <translation>Limpar as faixas marcadas</translation>
     </message>
     <message>
         <location filename="dialogs/MobileSyncDialog.cpp" line="188"/>
         <source>Clear every track marked for the phone</source>
-        <translation type="unfinished"></translation>
+        <translation>Limpar todas as faixas marcadas para o telemóvel</translation>
     </message>
     <message>
         <location filename="dialogs/MobileSyncDialog.cpp" line="200"/>
@@ -3638,7 +3646,7 @@ The station is off the air until somebody acts.</source>
     <message numerus="yes">
         <location filename="dialogs/MobileSyncDialog.cpp" line="335"/>
         <source>Clear the %n track(s) marked for the phone?</source>
-        <translation type="unfinished">
+        <translation>
             <numerusform></numerusform>
             <numerusform></numerusform>
         </translation>
@@ -3646,17 +3654,17 @@ The station is off the air until somebody acts.</source>
     <message>
         <location filename="dialogs/MobileSyncDialog.cpp" line="342"/>
         <source>Cleared what was marked for the phone</source>
-        <translation type="unfinished">Limpou-se o que estava marcado para o telemóvel</translation>
+        <translation>Limpou-se o que estava marcado para o telemóvel</translation>
     </message>
     <message>
         <location filename="dialogs/MobileSyncDialog.cpp" line="353"/>
         <source>Nothing is marked. Right-click tracks in the music list and choose to sync them to the phone to add them here.</source>
-        <translation type="unfinished"></translation>
+        <translation>Não há nada marcado. Clica com o botão direito nas faixas da lista de músicas e escolhe sincronizá-las para o telemóvel para as acrescentares aqui.</translation>
     </message>
     <message numerus="yes">
         <location filename="dialogs/MobileSyncDialog.cpp" line="355"/>
         <source>%n track(s) waiting for a phone to collect, offered as the playlist &quot;Marked for this phone&quot;.</source>
-        <translation type="unfinished">
+        <translation>
             <numerusform></numerusform>
             <numerusform></numerusform>
         </translation>
@@ -3887,124 +3895,124 @@ expira em %2 s</translation>
         <location filename="services/MobileSyncServer.cpp" line="1325"/>
         <location filename="services/MobileSyncServer.cpp" line="1844"/>
         <source>That is a lot of asking. Give it a minute and try again.</source>
-        <translation type="unfinished"></translation>
+        <translation>Isso são muitos pedidos. Espera um minuto e tenta outra vez.</translation>
     </message>
     <message>
         <location filename="services/MobileSyncServer.cpp" line="1331"/>
         <source>Sending a request takes POST.</source>
-        <translation type="unfinished"></translation>
+        <translation>Enviar um pedido exige POST.</translation>
     </message>
     <message>
         <location filename="services/MobileSyncServer.cpp" line="1465"/>
         <source>That request could not be read.</source>
-        <translation type="unfinished"></translation>
+        <translation>Não foi possível ler esse pedido.</translation>
     </message>
     <message>
         <location filename="services/MobileSyncServer.cpp" line="1473"/>
         <source>Choose a track from the search results first.</source>
-        <translation type="unfinished"></translation>
+        <translation>Escolhe primeiro uma faixa dos resultados da pesquisa.</translation>
     </message>
     <message>
         <location filename="services/MobileSyncServer.cpp" line="1481"/>
         <source>The studio has plenty to be going on with just now. Try again later.</source>
-        <translation type="unfinished"></translation>
+        <translation>O estúdio já tem que chegue por agora. Tenta mais tarde.</translation>
     </message>
     <message>
         <location filename="services/MobileSyncServer.cpp" line="1502"/>
         <source>XFB could not take that request.</source>
-        <translation type="unfinished"></translation>
+        <translation>O XFB não conseguiu aceitar esse pedido.</translation>
     </message>
     <message>
         <location filename="services/MobileSyncServer.cpp" line="1511"/>
         <source>Passed to the studio. They decide what goes on.</source>
-        <translation type="unfinished"></translation>
+        <translation>Passado ao estúdio. São eles que decidem o que vai para o ar.</translation>
     </message>
     <message>
         <location filename="services/MobileSyncServer.cpp" line="1514"/>
         <source>A listener</source>
-        <translation type="unfinished"></translation>
+        <translation>Um ouvinte</translation>
     </message>
     <message>
         <location filename="services/MobileSyncServer.cpp" line="1514"/>
         <source>asked for a track</source>
-        <translation type="unfinished"></translation>
+        <translation>pediu uma faixa</translation>
     </message>
     <message>
         <location filename="services/MobileSyncServer.cpp" line="1553"/>
         <source>This station</source>
-        <translation type="unfinished"></translation>
+        <translation>Esta estação</translation>
     </message>
     <message>
         <location filename="services/MobileSyncServer.cpp" line="1562"/>
         <location filename="services/MobileSyncServer.cpp" line="1853"/>
         <source>Nothing on air just now</source>
-        <translation type="unfinished"></translation>
+        <translation>Nada no ar neste momento</translation>
     </message>
     <message>
         <location filename="services/MobileSyncServer.cpp" line="1610"/>
         <location filename="services/MobileSyncServer.cpp" line="1854"/>
         <source>Nothing logged in the last hour.</source>
-        <translation type="unfinished"></translation>
+        <translation>Nada registado na última hora.</translation>
     </message>
     <message>
         <location filename="services/MobileSyncServer.cpp" line="1855"/>
         <source>Asking for:</source>
-        <translation type="unfinished"></translation>
+        <translation>A pedir:</translation>
     </message>
     <message>
         <location filename="services/MobileSyncServer.cpp" line="1877"/>
         <source>On air now</source>
-        <translation type="unfinished"></translation>
+        <translation>No ar agora</translation>
     </message>
     <message>
         <location filename="services/MobileSyncServer.cpp" line="1881"/>
         <source>Played in the last hour</source>
-        <translation type="unfinished"></translation>
+        <translation>Tocado na última hora</translation>
     </message>
     <message>
         <location filename="services/MobileSyncServer.cpp" line="1882"/>
         <source>Ask for a track</source>
-        <translation type="unfinished"></translation>
+        <translation>Pedir uma faixa</translation>
     </message>
     <message>
         <location filename="services/MobileSyncServer.cpp" line="1883"/>
         <source>Searching the library needs JavaScript. What is on air and what has just played are above, and they are the whole of this page without it.</source>
-        <translation type="unfinished"></translation>
+        <translation>Procurar na biblioteca precisa de JavaScript. O que está no ar e o que acabou de tocar estão acima, e sem ele é isso a página toda.</translation>
     </message>
     <message>
         <location filename="services/MobileSyncServer.cpp" line="1886"/>
         <source>Search for a title or an artist</source>
-        <translation type="unfinished"></translation>
+        <translation>Procurar um título ou um artista</translation>
     </message>
     <message>
         <location filename="services/MobileSyncServer.cpp" line="1887"/>
         <source>Start typing...</source>
-        <translation type="unfinished"></translation>
+        <translation>Começa a escrever...</translation>
     </message>
     <message>
         <location filename="services/MobileSyncServer.cpp" line="1888"/>
         <source>Your name (optional)</source>
-        <translation type="unfinished"></translation>
+        <translation>O teu nome (opcional)</translation>
     </message>
     <message>
         <location filename="services/MobileSyncServer.cpp" line="1889"/>
         <source>A dedication (optional)</source>
-        <translation type="unfinished"></translation>
+        <translation>Uma dedicatória (opcional)</translation>
     </message>
     <message>
         <location filename="services/MobileSyncServer.cpp" line="1893"/>
         <source>Send it to the studio</source>
-        <translation type="unfinished"></translation>
+        <translation>Enviar ao estúdio</translation>
     </message>
     <message>
         <location filename="services/MobileSyncServer.cpp" line="1894"/>
         <source>The studio decides what goes on air. A request is an ask, not a queue, and nothing here puts anything on by itself.</source>
-        <translation type="unfinished"></translation>
+        <translation>O estúdio decide o que vai para o ar. Um pedido é um pedido, não uma fila, e nada aqui põe seja o que for no ar por si só.</translation>
     </message>
     <message>
         <location filename="services/MobileSyncServer.cpp" line="1897"/>
         <source>Served by XFB on this station&apos;s own network.</source>
-        <translation type="unfinished"></translation>
+        <translation>Servido pelo XFB na rede da própria estação.</translation>
     </message>
     <message>
         <location filename="services/MobileSyncServer.cpp" line="2174"/>
@@ -4234,23 +4242,23 @@ expira em %2 s</translation>
     <message>
         <location filename="PlaylistWaveView.cpp" line="1241"/>
         <source>Intro %1, set by hand. Drag the marker to change it; right-click to measure it again.</source>
-        <translation type="unfinished"></translation>
+        <translation>Intro %1, definida à mão. Arrasta o marcador para a alterar; clica com o botão direito para a medir outra vez.</translation>
     </message>
     <message>
         <location filename="PlaylistWaveView.cpp" line="1244"/>
         <source>Intro %1, measured from the waveform. Drag the marker to correct it.</source>
-        <translation type="unfinished"></translation>
+        <translation>Intro %1, medida a partir da forma de onda. Arrasta o marcador para a corrigir.</translation>
     </message>
     <message>
         <location filename="PlaylistWaveView.cpp" line="1268"/>
         <source>INTRO %1 · %2</source>
         <comment>intro length, then the live countdown</comment>
-        <translation type="unfinished"></translation>
+        <translation>INTRO %1 · %2</translation>
     </message>
     <message>
         <location filename="PlaylistWaveView.cpp" line="1271"/>
         <source>INTRO %1</source>
-        <translation type="unfinished"></translation>
+        <translation>INTRO %1</translation>
     </message>
     <message>
         <location filename="PlaylistWaveView.cpp" line="1327"/>
@@ -4270,7 +4278,7 @@ expira em %2 s</translation>
     <message>
         <location filename="PlaylistWaveView.cpp" line="1454"/>
         <source>Intro %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Intro %1</translation>
     </message>
     <message>
         <location filename="PlaylistWaveView.cpp" line="1471"/>
@@ -4305,12 +4313,12 @@ expira em %2 s</translation>
     <message>
         <location filename="PlaylistWaveView.cpp" line="1611"/>
         <source>Measure the intro again (discard my value)</source>
-        <translation type="unfinished"></translation>
+        <translation>Medir a intro outra vez (descartar o meu valor)</translation>
     </message>
     <message>
         <location filename="PlaylistWaveView.cpp" line="1612"/>
         <source>Measure the intro of this track</source>
-        <translation type="unfinished"></translation>
+        <translation>Medir a intro desta faixa</translation>
     </message>
 </context>
 <context>
@@ -4457,12 +4465,12 @@ expira em %2 s</translation>
     <message>
         <location filename="PadBoard.cpp" line="416"/>
         <source>Cue in the headphones</source>
-        <translation type="unfinished"></translation>
+        <translation>Pré-escutar nos auscultadores</translation>
     </message>
     <message>
         <location filename="PadBoard.cpp" line="417"/>
         <source>Play this pad on the cue output only</source>
-        <translation type="unfinished"></translation>
+        <translation>Tocar este pad só na saída de pré-escuta</translation>
     </message>
     <message>
         <location filename="PadBoard.cpp" line="424"/>
@@ -6060,34 +6068,36 @@ Instalar agora?</translation>
     <message>
         <location filename="audio/LoudnessScanner.cpp" line="92"/>
         <source>ffmpeg produced no loudness summary</source>
-        <translation type="unfinished"></translation>
+        <translation>o ffmpeg não produziu resumo de intensidade sonora</translation>
     </message>
     <message>
         <location filename="audio/LoudnessScanner.cpp" line="106"/>
         <source>no integrated loudness in the ffmpeg summary</source>
-        <translation type="unfinished"></translation>
+        <translation>não há intensidade sonora integrada no resumo do ffmpeg</translation>
     </message>
     <message>
         <location filename="audio/LoudnessScanner.cpp" line="111"/>
         <source>the file is silent</source>
-        <translation type="unfinished"></translation>
+        <translation>o ficheiro está em silêncio</translation>
     </message>
     <message>
         <location filename="commonFunctions.cpp" line="41"/>
         <source>Microphone</source>
-        <translation type="unfinished"></translation>
+        <translation>Microfone</translation>
     </message>
     <message>
         <location filename="commonFunctions.cpp" line="42"/>
         <source>XFB is not allowed to use the microphone, so it cannot record.
 
 Allow it under Privacy &amp; Security → Microphone in the system settings, then try again.</source>
-        <translation type="unfinished"></translation>
+        <translation>O XFB não tem autorização para usar o microfone, por isso não pode gravar.
+
+Autoriza-o em Privacidade e Segurança → Microfone nas definições do sistema e tenta outra vez.</translation>
     </message>
     <message>
         <location filename="permission_utils.mm" line="80"/>
         <source>Microphone Access Denied</source>
-        <translation type="unfinished"></translation>
+        <translation>Acesso ao microfone recusado</translation>
     </message>
     <message>
         <location filename="permission_utils.mm" line="81"/>
@@ -6096,12 +6106,16 @@ Allow it under Privacy &amp; Security → Microphone in the system settings, the
 Audio recording and potentially other audio features will not work.
 
 Please go to System Settings &gt; Privacy &amp; Security &gt; Microphone and enable access for XFB.</source>
-        <translation type="unfinished"></translation>
+        <translation>Foi recusado ao XFB o acesso ao microfone.
+
+A gravação de áudio e possivelmente outras funcionalidades de áudio não vão funcionar.
+
+Vai a Definições do Sistema &gt; Privacidade e Segurança &gt; Microfone e ativa o acesso para o XFB.</translation>
     </message>
     <message>
         <location filename="permission_utils.mm" line="90"/>
         <source>Microphone Access Required</source>
-        <translation type="unfinished"></translation>
+        <translation>É necessário acesso ao microfone</translation>
     </message>
     <message>
         <location filename="permission_utils.mm" line="91"/>
@@ -6110,92 +6124,96 @@ Please go to System Settings &gt; Privacy &amp; Security &gt; Microphone and ena
 macOS should now prompt you for permission.
 
 Please click &apos;Allow&apos; or &apos;OK&apos; when prompted for audio features to work correctly.</source>
-        <translation type="unfinished"></translation>
+        <translation>O XFB precisa de acesso ao microfone para as funcionalidades de áudio.
+
+O macOS deve pedir-te agora a autorização.
+
+Carrega em 'Permitir' ou 'OK' quando for pedido, para que as funcionalidades de áudio funcionem bem.</translation>
     </message>
     <message>
         <location filename="permission_utils.mm" line="98"/>
         <source>Permission Check Error</source>
-        <translation type="unfinished"></translation>
+        <translation>Erro na verificação da autorização</translation>
     </message>
     <message>
         <location filename="permission_utils.mm" line="99"/>
         <source>Could not determine microphone permission status.</source>
-        <translation type="unfinished"></translation>
+        <translation>Não foi possível determinar o estado da autorização do microfone.</translation>
     </message>
     <message>
         <location filename="services/CoverArtFetcher.cpp" line="184"/>
         <source>yt-dlp was not found on this computer.</source>
-        <translation type="unfinished"></translation>
+        <translation>o yt-dlp não foi encontrado neste computador.</translation>
     </message>
     <message>
         <location filename="services/CoverArtFetcher.cpp" line="195"/>
         <source>the link it was downloaded from</source>
-        <translation type="unfinished"></translation>
+        <translation>a ligação de onde foi descarregado</translation>
     </message>
     <message>
         <location filename="services/CoverArtFetcher.cpp" line="203"/>
         <source>this track has no artist or title to search for.</source>
-        <translation type="unfinished"></translation>
+        <translation>esta faixa não tem artista nem título por onde procurar.</translation>
     </message>
     <message>
         <location filename="services/CoverArtFetcher.cpp" line="208"/>
         <source>a search for &quot;%1&quot;</source>
-        <translation type="unfinished"></translation>
+        <translation>uma procura por "%1"</translation>
     </message>
     <message>
         <location filename="services/CoverArtFetcher.cpp" line="212"/>
         <source>no picture was found for it.</source>
-        <translation type="unfinished"></translation>
+        <translation>não foi encontrada nenhuma imagem para ela.</translation>
     </message>
     <message>
         <location filename="services/CoverArtFetcher.cpp" line="221"/>
         <source>what came back was not an image.</source>
-        <translation type="unfinished"></translation>
+        <translation>o que veio não era uma imagem.</translation>
     </message>
     <message>
         <location filename="services/CoverArtFetcher.cpp" line="273"/>
         <source>ffmpeg was not found on this computer.</source>
-        <translation type="unfinished"></translation>
+        <translation>o ffmpeg não foi encontrado neste computador.</translation>
     </message>
     <message>
         <location filename="services/CoverArtFetcher.cpp" line="277"/>
         <source>there is no picture to write.</source>
-        <translation type="unfinished"></translation>
+        <translation>não há imagem para escrever.</translation>
     </message>
     <message>
         <location filename="services/CoverArtFetcher.cpp" line="300"/>
         <source>the picture could not be prepared for an Opus file.</source>
-        <translation type="unfinished"></translation>
+        <translation>não foi possível preparar a imagem para um ficheiro Opus.</translation>
     </message>
     <message>
         <location filename="services/CoverArtFetcher.cpp" line="325"/>
         <source>a temporary metadata file could not be written.</source>
-        <translation type="unfinished"></translation>
+        <translation>não foi possível escrever um ficheiro temporário de metadados.</translation>
     </message>
     <message>
         <location filename="services/CoverArtFetcher.cpp" line="380"/>
         <source>ffmpeg could not write the cover in.</source>
-        <translation type="unfinished"></translation>
+        <translation>o ffmpeg não conseguiu escrever a capa.</translation>
     </message>
     <message>
         <location filename="services/CoverArtFetcher.cpp" line="381"/>
         <source>ffmpeg could not write the cover in: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>o ffmpeg não conseguiu escrever a capa: %1</translation>
     </message>
     <message>
         <location filename="services/CoverArtFetcher.cpp" line="391"/>
         <source>the original file could not be set aside.</source>
-        <translation type="unfinished"></translation>
+        <translation>não foi possível pôr o ficheiro original de parte.</translation>
     </message>
     <message>
         <location filename="services/CoverArtFetcher.cpp" line="397"/>
         <source>the file with the cover could not be put in place.</source>
-        <translation type="unfinished"></translation>
+        <translation>não foi possível pôr no lugar o ficheiro com a capa.</translation>
     </message>
     <message>
         <location filename="services/StreamService.cpp" line="41"/>
         <source>Main stream</source>
-        <translation type="unfinished"></translation>
+        <translation>Emissão principal</translation>
     </message>
 </context>
 <context>
@@ -6204,260 +6222,262 @@ Please click &apos;Allow&apos; or &apos;OK&apos; when prompted for audio feature
         <location filename="dialogs/RequestTrayDialog.cpp" line="25"/>
         <location filename="dialogs/RequestTrayDialog.cpp" line="375"/>
         <source>Listener Requests</source>
-        <translation type="unfinished"></translation>
+        <translation>Pedidos dos ouvintes</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="43"/>
         <source>The public page</source>
-        <translation type="unfinished"></translation>
+        <translation>A página pública</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="49"/>
         <source>Switching this on serves a web page to anybody who can reach this computer over the network — everyone on the studio Wi-Fi, and, if this machine is reachable from the internet or someone has forwarded a port to it, anybody at all.
 
 The page carries what is on air, what played in the last hour, and — if you allow it — a search of your titles and artists. It serves no audio and no files of any kind, and it cannot put anything on air. It is off until you switch it on here, and switching it off closes it again at once.</source>
-        <translation type="unfinished"></translation>
+        <translation>Ligar isto serve uma página web a qualquer pessoa que consiga chegar a este computador pela rede — toda a gente no Wi-Fi do estúdio e, se esta máquina for alcançável a partir da internet ou alguém lhe tiver encaminhado uma porta, qualquer pessoa.
+
+A página leva o que está no ar, o que tocou na última hora e — se o permitires — uma pesquisa dos teus títulos e artistas. Não serve áudio nem ficheiros de espécie alguma, e não consegue pôr nada no ar. Está desligada até a ligares aqui, e desligá-la fecha-a outra vez de imediato.</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="60"/>
         <source>What enabling the public page does</source>
-        <translation type="unfinished"></translation>
+        <translation>O que ligar a página pública faz</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="64"/>
         <source>Serve a public now-playing page on this network</source>
-        <translation type="unfinished"></translation>
+        <translation>Servir uma página pública do que está a tocar nesta rede</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="65"/>
         <source>Serve a public now-playing page</source>
-        <translation type="unfinished"></translation>
+        <translation>Servir uma página pública do que está a tocar</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="70"/>
         <source>Let listeners search the library and ask for a track</source>
-        <translation type="unfinished"></translation>
+        <translation>Deixar os ouvintes procurar na biblioteca e pedir uma faixa</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="72"/>
         <source>Listeners see titles and artists only. They never see a file, a folder or anything they could download, and what they ask for arrives in the list below — it does not go anywhere near the running order until you put it there.</source>
-        <translation type="unfinished"></translation>
+        <translation>Os ouvintes veem apenas títulos e artistas. Nunca veem um ficheiro, uma pasta ou fosse o que fosse que pudessem descarregar, e o que pedem chega à lista abaixo — não chega perto do alinhamento enquanto não fores tu a pô-lo lá.</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="76"/>
         <source>Accept listener requests</source>
-        <translation type="unfinished"></translation>
+        <translation>Aceitar pedidos dos ouvintes</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="84"/>
         <source>This computer&apos;s name is used when empty</source>
-        <translation type="unfinished"></translation>
+        <translation>Se ficar vazio é usado o nome deste computador</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="85"/>
         <source>Station name shown on the page</source>
-        <translation type="unfinished"></translation>
+        <translation>Nome da estação mostrado na página</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="88"/>
         <source>Call the station:</source>
-        <translation type="unfinished"></translation>
+        <translation>Chamar à estação:</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="92"/>
         <source>A line of your own under the name (optional)</source>
-        <translation type="unfinished"></translation>
+        <translation>Uma frase tua por baixo do nome (opcional)</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="93"/>
         <source>Tagline shown under the station name</source>
-        <translation type="unfinished"></translation>
+        <translation>Frase mostrada por baixo do nome da estação</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="96"/>
         <source>Tagline:</source>
-        <translation type="unfinished"></translation>
+        <translation>Frase:</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="104"/>
         <source>Where the page can be reached</source>
-        <translation type="unfinished"></translation>
+        <translation>Onde a página pode ser alcançada</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="107"/>
         <location filename="dialogs/RequestTrayDialog.cpp" line="247"/>
         <source>Start serving</source>
-        <translation type="unfinished">Começar a servir</translation>
+        <translation>Começar a servir</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="109"/>
         <source>The page rides on the same server the phone and station sync use. Nothing is served at all until that server is listening.</source>
-        <translation type="unfinished"></translation>
+        <translation>A página anda no mesmo servidor que a sincronização do telemóvel e da estação usam. Não é servido nada enquanto esse servidor não estiver à escuta.</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="116"/>
         <source>The public page is no longer being served.</source>
-        <translation type="unfinished"></translation>
+        <translation>A página pública já não está a ser servida.</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="119"/>
         <source>Now serving on port %1.</source>
-        <translation type="unfinished"></translation>
+        <translation>A servir na porta %1.</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="129"/>
         <source>What listeners have asked for</source>
-        <translation type="unfinished"></translation>
+        <translation>O que os ouvintes pediram</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="133"/>
         <source>Nothing here plays by itself. A request sits in this list until you add it to the running order, mark it played or dismiss it.</source>
-        <translation type="unfinished"></translation>
+        <translation>Nada aqui toca sozinho. Um pedido fica nesta lista até o adicionares ao alinhamento, o marcares como tocado ou o dispensares.</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="140"/>
         <source>Received</source>
-        <translation type="unfinished"></translation>
+        <translation>Recebido</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="140"/>
         <source>Track</source>
-        <translation type="unfinished"></translation>
+        <translation>Faixa</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="140"/>
         <source>From</source>
-        <translation type="unfinished"></translation>
+        <translation>De</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="141"/>
         <source>Dedication</source>
-        <translation type="unfinished"></translation>
+        <translation>Dedicatória</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="141"/>
         <source>Status</source>
-        <translation type="unfinished">Estado</translation>
+        <translation>Estado</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="149"/>
         <source>Listener requests</source>
-        <translation type="unfinished"></translation>
+        <translation>Pedidos dos ouvintes</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="160"/>
         <source>Select a request to read it in full.</source>
-        <translation type="unfinished"></translation>
+        <translation>Seleciona um pedido para o leres por inteiro.</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="161"/>
         <source>The selected request in full</source>
-        <translation type="unfinished"></translation>
+        <translation>O pedido selecionado por inteiro</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="164"/>
         <source>Show the ones already dealt with</source>
-        <translation type="unfinished"></translation>
+        <translation>Mostrar os já tratados</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="169"/>
         <source>Add to the playlist</source>
-        <translation type="unfinished"></translation>
+        <translation>Adicionar à playlist</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="170"/>
         <source>Puts the track at the end of the running order. It does not start playing it.</source>
-        <translation type="unfinished"></translation>
+        <translation>Põe a faixa no fim do alinhamento. Não a começa a tocar.</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="176"/>
         <source>Mark as played</source>
-        <translation type="unfinished"></translation>
+        <translation>Marcar como tocado</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="181"/>
         <source>Dismiss</source>
-        <translation type="unfinished"></translation>
+        <translation>Dispensar</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="188"/>
         <source>Refresh</source>
-        <translation type="unfinished"></translation>
+        <translation>Atualizar</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="195"/>
         <source>How many requests are waiting</source>
-        <translation type="unfinished"></translation>
+        <translation>Quantos pedidos estão à espera</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="237"/>
         <source>The public page is on. Anyone who can reach this computer can read it.</source>
-        <translation type="unfinished"></translation>
+        <translation>A página pública está ligada. Qualquer pessoa que chegue a este computador pode lê-la.</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="238"/>
         <source>The public page is off.</source>
-        <translation type="unfinished"></translation>
+        <translation>A página pública está desligada.</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="247"/>
         <source>Stop serving</source>
-        <translation type="unfinished">Parar de servir</translation>
+        <translation>Parar de servir</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="250"/>
         <source>The page is switched off; nothing is being served.</source>
-        <translation type="unfinished"></translation>
+        <translation>A página está desligada; não está a ser servido nada.</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="255"/>
         <source>The page is switched on, but the network server is not running, so nothing is reachable yet.</source>
-        <translation type="unfinished"></translation>
+        <translation>A página está ligada, mas o servidor de rede não está a correr, por isso ainda não se chega a nada.</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="262"/>
         <source>Serving on port %1, but this computer has no network address.</source>
-        <translation type="unfinished"></translation>
+        <translation>A servir na porta %1, mas este computador não tem endereço de rede.</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="264"/>
         <source>Anyone on this network can open: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Qualquer pessoa nesta rede pode abrir: %1</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="282"/>
         <source>%1 — %2</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 — %2</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="285"/>
         <source>Added</source>
-        <translation type="unfinished">Adicionado</translation>
+        <translation>Adicionado</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="286"/>
         <source>Played</source>
-        <translation type="unfinished"></translation>
+        <translation>Tocado</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="287"/>
         <source>Dismissed</source>
-        <translation type="unfinished"></translation>
+        <translation>Dispensado</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="288"/>
         <source>Waiting</source>
-        <translation type="unfinished"></translation>
+        <translation>À espera</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="312"/>
         <source>Nothing waiting.</source>
-        <translation type="unfinished"></translation>
+        <translation>Nada à espera.</translation>
     </message>
     <message numerus="yes">
         <location filename="dialogs/RequestTrayDialog.cpp" line="313"/>
         <source>%n request(s) waiting.</source>
-        <translation type="unfinished">
+        <translation>
             <numerusform></numerusform>
             <numerusform></numerusform>
         </translation>
@@ -6465,47 +6485,47 @@ The page carries what is on air, what played in the last hour, and — if you al
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="341"/>
         <source>Track: %1 — %2</source>
-        <translation type="unfinished"></translation>
+        <translation>Faixa: %1 — %2</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="342"/>
         <source>Asked for at %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Pedido às %1</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="345"/>
         <source>From: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>De: %1</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="347"/>
         <source>Dedication: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Dedicatória: %1</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="349"/>
         <source>Sent from %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Enviado de %1</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="376"/>
         <source>That track is no longer where the library says it is, so it cannot be added.</source>
-        <translation type="unfinished"></translation>
+        <translation>Essa faixa já não está onde a biblioteca diz que está, por isso não pode ser adicionada.</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="383"/>
         <source>%1 added to the running order.</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 adicionada ao alinhamento.</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="388"/>
         <source>Request marked as played.</source>
-        <translation type="unfinished"></translation>
+        <translation>Pedido marcado como tocado.</translation>
     </message>
     <message>
         <location filename="dialogs/RequestTrayDialog.cpp" line="393"/>
         <source>Request dismissed.</source>
-        <translation type="unfinished"></translation>
+        <translation>Pedido dispensado.</translation>
     </message>
 </context>
 <context>
@@ -6513,194 +6533,194 @@ The page carries what is on air, what played in the last hour, and — if you al
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="47"/>
         <source>Rotation Rules</source>
-        <translation type="unfinished"></translation>
+        <translation>Regras de rotação</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="53"/>
         <source>A good picker is not a rotation. What a listener notices is the repetition nobody controlled for: the same artist twice in half an hour, the same song either side of a shift, a Christmas record in June. These rules are preferences, not filters — when the library cannot satisfy them all, Auto Mode gives them up one at a time rather than going silent, and the last tab says which ones it had to give up.</source>
-        <translation type="unfinished"></translation>
+        <translation>Um bom selecionador não é uma rotação. O que o ouvinte nota é a repetição que ninguém controlou: o mesmo artista duas vezes em meia hora, a mesma música de um lado e do outro de um turno, um disco de Natal em junho. Estas regras são preferências, não filtros — quando a biblioteca não as consegue satisfazer todas, o Modo Automático abdica delas uma de cada vez em vez de ficar em silêncio, e o último separador diz de quais teve de abdicar.</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="64"/>
         <source>Rotation sections</source>
-        <translation type="unfinished"></translation>
+        <translation>Secções da rotação</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="65"/>
         <source>&amp;Station Rules</source>
-        <translation type="unfinished"></translation>
+        <translation>Regras da &amp;estação</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="66"/>
         <source>&amp;Tracks</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Faixas</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="67"/>
         <source>&amp;Why This Track?</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Porquê esta faixa?</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="71"/>
         <source>Dialog buttons</source>
-        <translation type="unfinished"></translation>
+        <translation>Botões da janela</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="101"/>
         <source>Separation</source>
-        <translation type="unfinished"></translation>
+        <translation>Separação</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="104"/>
         <location filename="dialogs/RotationDialog.cpp" line="105"/>
         <source>Apply rotation rules when Auto Mode picks</source>
-        <translation type="unfinished"></translation>
+        <translation>Aplicar as regras de rotação quando o Modo Automático escolhe</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="106"/>
         <source>With this off, Auto Mode behaves exactly as it did before rotation existed: this hour&apos;s genre, a matching tempo, and nothing it played recently.</source>
-        <translation type="unfinished"></translation>
+        <translation>Com isto desligado, o Modo Automático comporta-se exatamente como antes de existir rotação: o género desta hora, um andamento a condizer, e nada do que tocou há pouco.</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="113"/>
         <source> min</source>
-        <translation type="unfinished"></translation>
+        <translation> min</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="114"/>
         <location filename="dialogs/RotationDialog.cpp" line="121"/>
         <source>off</source>
-        <translation type="unfinished"></translation>
+        <translation>desligado</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="115"/>
         <source>Minutes before the same artist may return</source>
-        <translation type="unfinished"></translation>
+        <translation>Minutos antes de o mesmo artista poder voltar</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="116"/>
         <source>Same &amp;artist not within:</source>
-        <translation type="unfinished"></translation>
+        <translation>Mesmo &amp;artista não antes de:</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="120"/>
         <source> h</source>
-        <translation type="unfinished"></translation>
+        <translation> h</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="122"/>
         <source>Hours before the same title may return</source>
-        <translation type="unfinished"></translation>
+        <translation>Horas antes de o mesmo título poder voltar</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="123"/>
         <source>Same t&amp;itle not within:</source>
-        <translation type="unfinished"></translation>
+        <translation>Mesmo tít&amp;ulo não antes de:</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="126"/>
         <source>Both are measured against the as-run log — what actually went to air, not what was queued. On an install whose log is still empty, the library&apos;s own last-played stamp is used instead.</source>
-        <translation type="unfinished"></translation>
+        <translation>Ambas são medidas pelo registo de emissão — o que foi mesmo para o ar, não o que ficou em fila. Numa instalação cujo registo ainda está vazio, é usada a marca de última reprodução da própria biblioteca.</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="133"/>
         <source>Category weights</source>
-        <translation type="unfinished"></translation>
+        <translation>Pesos das categorias</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="137"/>
         <source>How often a category comes up relative to the others. A power track at 10 against a gold track at 2 is picked five times as often when both are eligible.</source>
-        <translation type="unfinished"></translation>
+        <translation>Com que frequência uma categoria sai em relação às outras. Uma faixa power a 10 contra uma faixa gold a 2 é escolhida cinco vezes mais quando ambas são elegíveis.</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="146"/>
         <source>Power category weight</source>
-        <translation type="unfinished"></translation>
+        <translation>Peso da categoria Power</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="147"/>
         <source>&amp;Power:</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Power:</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="152"/>
         <source>Secondary category weight</source>
-        <translation type="unfinished"></translation>
+        <translation>Peso da categoria Secundária</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="153"/>
         <source>&amp;Secondary:</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Secundária:</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="158"/>
         <source>Gold category weight</source>
-        <translation type="unfinished"></translation>
+        <translation>Peso da categoria Gold</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="159"/>
         <source>&amp;Gold:</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Gold:</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="164"/>
         <source>Category for tracks with no rules of their own</source>
-        <translation type="unfinished"></translation>
+        <translation>Categoria para faixas sem regras próprias</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="165"/>
         <source>Nobody categorises ten thousand tracks by hand on day one, so a track with no rotation row of its own runs on this.</source>
-        <translation type="unfinished"></translation>
+        <translation>Ninguém categoriza dez mil faixas à mão no primeiro dia, por isso uma faixa sem linha de rotação própria funciona com esta.</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="168"/>
         <source>&amp;Default category:</source>
-        <translation type="unfinished"></translation>
+        <translation>Categoria por &amp;omissão:</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="172"/>
         <source>How many candidates each pick considers</source>
-        <translation type="unfinished"></translation>
+        <translation>Quantos candidatos cada escolha considera</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="173"/>
         <source>A random sample of the eligible pool, large enough to be a fair draw and small enough that a huge library still picks instantly.</source>
-        <translation type="unfinished"></translation>
+        <translation>Uma amostra aleatória do conjunto elegível, grande o suficiente para ser um sorteio justo e pequena o suficiente para que uma biblioteca enorme continue a escolher num instante.</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="176"/>
         <source>Candidates per pic&amp;k:</source>
-        <translation type="unfinished"></translation>
+        <translation>Candidatos por &amp;escolha:</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="181"/>
         <source>Rotation settings status</source>
-        <translation type="unfinished"></translation>
+        <translation>Estado das definições de rotação</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="185"/>
         <source>&amp;Restore Defaults</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Repor os valores por omissão</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="186"/>
         <source>Restore the default rotation settings</source>
-        <translation type="unfinished"></translation>
+        <translation>Repor as definições de rotação por omissão</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="188"/>
         <source>&amp;Apply</source>
-        <translation type="unfinished">&amp;Aplicar</translation>
+        <translation>&amp;Aplicar</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="189"/>
         <source>Apply the rotation settings</source>
-        <translation type="unfinished"></translation>
+        <translation>Aplicar as definições de rotação</translation>
     </message>
     <message numerus="yes">
         <location filename="dialogs/RotationDialog.cpp" line="230"/>
         <source>Rotation settings saved. %n track(s) have rules of their own.</source>
-        <translation type="unfinished">
+        <translation>
             <numerusform></numerusform>
             <numerusform></numerusform>
         </translation>
@@ -6708,308 +6728,308 @@ The page carries what is on air, what played in the last hour, and — if you al
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="239"/>
         <source>Defaults restored — press Apply to keep them.</source>
-        <translation type="unfinished"></translation>
+        <translation>Valores por omissão repostos — carrega em Aplicar para os manter.</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="251"/>
         <source>&amp;Find:</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Procurar:</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="253"/>
         <source>Artist or title</source>
-        <translation type="unfinished"></translation>
+        <translation>Artista ou título</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="255"/>
         <source>Search the library by artist or title</source>
-        <translation type="unfinished"></translation>
+        <translation>Procurar na biblioteca por artista ou título</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="258"/>
         <source>&amp;Search</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Procurar</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="259"/>
         <source>Search the library</source>
-        <translation type="unfinished"></translation>
+        <translation>Procurar na biblioteca</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="268"/>
         <source>Artist</source>
-        <translation type="unfinished">Artista</translation>
+        <translation>Artista</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="268"/>
         <source>Title</source>
-        <translation type="unfinished">Título</translation>
+        <translation>Título</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="268"/>
         <source>Category</source>
-        <translation type="unfinished"></translation>
+        <translation>Categoria</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="269"/>
         <source>Hours</source>
-        <translation type="unfinished"></translation>
+        <translation>Horas</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="269"/>
         <source>Days</source>
-        <translation type="unfinished"></translation>
+        <translation>Dias</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="269"/>
         <source>Dates</source>
-        <translation type="unfinished"></translation>
+        <translation>Datas</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="270"/>
         <source>Weight</source>
-        <translation type="unfinished"></translation>
+        <translation>Peso</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="278"/>
         <source>Library tracks and their rotation rules</source>
-        <translation type="unfinished"></translation>
+        <translation>Faixas da biblioteca e as suas regras de rotação</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="280"/>
         <source>Select one or more tracks, then set their rules below and choose Apply to Selection.</source>
-        <translation type="unfinished"></translation>
+        <translation>Seleciona uma ou mais faixas, define as regras abaixo e escolhe Aplicar à seleção.</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="288"/>
         <source>Track selection summary</source>
-        <translation type="unfinished"></translation>
+        <translation>Resumo da seleção de faixas</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="292"/>
         <source>Set on the selected tracks</source>
-        <translation type="unfinished"></translation>
+        <translation>Definir nas faixas selecionadas</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="296"/>
         <source>Only the ticked rows are written; everything left unticked keeps whatever the selected tracks already had.</source>
-        <translation type="unfinished"></translation>
+        <translation>Só as linhas assinaladas são escritas; tudo o que ficar por assinalar mantém o que as faixas selecionadas já tinham.</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="302"/>
         <source>&amp;Category:</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Categoria:</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="303"/>
         <source>Set the category on the selected tracks</source>
-        <translation type="unfinished"></translation>
+        <translation>Definir a categoria nas faixas selecionadas</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="307"/>
         <source>Category to set</source>
-        <translation type="unfinished"></translation>
+        <translation>Categoria a definir</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="314"/>
         <source>&amp;Hours the track may play:</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Horas em que a faixa pode tocar:</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="315"/>
         <source>Set the permitted hours on the selected tracks</source>
-        <translation type="unfinished"></translation>
+        <translation>Definir as horas permitidas nas faixas selecionadas</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="323"/>
         <source>Allow the %1 o&apos;clock hour</source>
-        <translation type="unfinished"></translation>
+        <translation>Permitir a hora das %1</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="330"/>
         <source>All ho&amp;urs</source>
-        <translation type="unfinished"></translation>
+        <translation>Todas as &amp;horas</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="331"/>
         <source>Tick every hour</source>
-        <translation type="unfinished"></translation>
+        <translation>Assinalar todas as horas</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="333"/>
         <source>&amp;No hours</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Nenhuma hora</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="334"/>
         <source>Untick every hour</source>
-        <translation type="unfinished"></translation>
+        <translation>Desassinalar todas as horas</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="342"/>
         <source>&amp;Weekdays the track may play:</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Dias da semana em que a faixa pode tocar:</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="343"/>
         <source>Set the permitted weekdays on the selected tracks</source>
-        <translation type="unfinished"></translation>
+        <translation>Definir os dias da semana permitidos nas faixas selecionadas</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="347"/>
         <source>Mon</source>
-        <translation type="unfinished"></translation>
+        <translation>Seg</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="347"/>
         <source>Tue</source>
-        <translation type="unfinished"></translation>
+        <translation>Ter</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="347"/>
         <source>Wed</source>
-        <translation type="unfinished"></translation>
+        <translation>Qua</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="347"/>
         <source>Thu</source>
-        <translation type="unfinished"></translation>
+        <translation>Qui</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="348"/>
         <source>Fri</source>
-        <translation type="unfinished"></translation>
+        <translation>Sex</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="348"/>
         <source>Sat</source>
-        <translation type="unfinished"></translation>
+        <translation>Sáb</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="348"/>
         <source>Sun</source>
-        <translation type="unfinished"></translation>
+        <translation>Dom</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="352"/>
         <source>Allow %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Permitir %1</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="361"/>
         <source>Not &amp;before:</source>
-        <translation type="unfinished"></translation>
+        <translation>Não &amp;antes de:</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="362"/>
         <source>Set the earliest date on the selected tracks</source>
-        <translation type="unfinished"></translation>
+        <translation>Definir a data mais cedo nas faixas selecionadas</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="366"/>
         <source>Earliest date the track may play</source>
-        <translation type="unfinished"></translation>
+        <translation>Data mais cedo em que a faixa pode tocar</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="373"/>
         <source>&amp;Expires after:</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Expira depois de:</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="374"/>
         <source>Set the expiry date on the selected tracks</source>
-        <translation type="unfinished"></translation>
+        <translation>Definir a data de expiração nas faixas selecionadas</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="378"/>
         <source>Last date the track may play</source>
-        <translation type="unfinished"></translation>
+        <translation>Última data em que a faixa pode tocar</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="386"/>
         <source>An unticked date means no limit. Leaving both unticked and ticking nothing else clears nothing — use Clear Rules for that.</source>
-        <translation type="unfinished"></translation>
+        <translation>Uma data por assinalar significa sem limite. Deixar as duas por assinalar e não assinalar mais nada não limpa nada — para isso usa Limpar regras.</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="393"/>
         <source>Wei&amp;ght:</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Peso:</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="394"/>
         <source>Set the weight on the selected tracks</source>
-        <translation type="unfinished"></translation>
+        <translation>Definir o peso nas faixas selecionadas</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="399"/>
         <source>Weight to set</source>
-        <translation type="unfinished"></translation>
+        <translation>Peso a definir</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="400"/>
         <source>use the category&apos;s weight</source>
-        <translation type="unfinished"></translation>
+        <translation>usar o peso da categoria</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="402"/>
         <source>Take the weight from the category instead of setting it per track</source>
-        <translation type="unfinished"></translation>
+        <translation>Tirar o peso da categoria em vez de o definir faixa a faixa</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="413"/>
         <source>C&amp;lear Rules</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Limpar regras</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="414"/>
         <source>Remove all rotation rules from the selected tracks</source>
-        <translation type="unfinished"></translation>
+        <translation>Remover todas as regras de rotação das faixas selecionadas</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="415"/>
         <source>The tracks go back to the station defaults.</source>
-        <translation type="unfinished"></translation>
+        <translation>As faixas voltam aos valores por omissão da estação.</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="417"/>
         <source>A&amp;pply to Selection</source>
-        <translation type="unfinished"></translation>
+        <translation>A&amp;plicar à seleção</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="418"/>
         <source>Apply the ticked rules to the selected tracks</source>
-        <translation type="unfinished"></translation>
+        <translation>Aplicar as regras assinaladas às faixas selecionadas</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="445"/>
         <source>The library database is not open.</source>
-        <translation type="unfinished"></translation>
+        <translation>A base de dados da biblioteca não está aberta.</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="463"/>
         <source>Could not read the library: %1</source>
-        <translation type="unfinished">Não foi possível ler a biblioteca: %1</translation>
+        <translation>Não foi possível ler a biblioteca: %1</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="504"/>
         <source>%1 (category)</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 (categoria)</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="512"/>
         <location filename="dialogs/RotationDialog.cpp" line="715"/>
         <source>%1 — %2</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 — %2</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="515"/>
         <source>on the station defaults</source>
-        <translation type="unfinished"></translation>
+        <translation>com os valores por omissão da estação</translation>
     </message>
     <message numerus="yes">
         <location filename="dialogs/RotationDialog.cpp" line="523"/>
         <source>%n track(s) listed; %1 in the library have rules of their own.</source>
-        <translation type="unfinished">
+        <translation>
             <numerusform></numerusform>
             <numerusform></numerusform>
         </translation>
@@ -7017,7 +7037,7 @@ The page carries what is on air, what played in the last hour, and — if you al
     <message numerus="yes">
         <location filename="dialogs/RotationDialog.cpp" line="564"/>
         <source>%n track(s) selected.</source>
-        <translation type="unfinished">
+        <translation>
             <numerusform></numerusform>
             <numerusform></numerusform>
         </translation>
@@ -7026,12 +7046,12 @@ The page carries what is on air, what played in the last hour, and — if you al
         <location filename="dialogs/RotationDialog.cpp" line="572"/>
         <location filename="dialogs/RotationDialog.cpp" line="629"/>
         <source>Select some tracks first.</source>
-        <translation type="unfinished"></translation>
+        <translation>Seleciona primeiro algumas faixas.</translation>
     </message>
     <message numerus="yes">
         <location filename="dialogs/RotationDialog.cpp" line="619"/>
         <source>Rotation rules written for %n track(s).</source>
-        <translation type="unfinished">
+        <translation>
             <numerusform></numerusform>
             <numerusform></numerusform>
         </translation>
@@ -7039,7 +7059,7 @@ The page carries what is on air, what played in the last hour, and — if you al
     <message numerus="yes">
         <location filename="dialogs/RotationDialog.cpp" line="645"/>
         <source>%n track(s) put back on the station defaults.</source>
-        <translation type="unfinished">
+        <translation>
             <numerusform></numerusform>
             <numerusform></numerusform>
         </translation>
@@ -7047,7 +7067,7 @@ The page carries what is on air, what played in the last hour, and — if you al
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="659"/>
         <source>The last few Auto Mode picks, and what each one cost. A pick with nothing in the &quot;Relaxed&quot; column satisfied every rule. A column that is never empty is telling you a rule is wrong for this library — a 40 minute artist separation cannot be kept by a library of two hundred tracks.</source>
-        <translation type="unfinished"></translation>
+        <translation>As últimas escolhas do Modo Automático, e o que cada uma custou. Uma escolha com nada na coluna "Soltas" satisfez todas as regras. Uma coluna que nunca está vazia está a dizer-te que uma regra está errada para esta biblioteca — uma separação de artistas de 40 minutos não se aguenta numa biblioteca de duzentas faixas.</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="669"/>
@@ -7057,132 +7077,132 @@ The page carries what is on air, what played in the last hour, and — if you al
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="669"/>
         <source>Track</source>
-        <translation type="unfinished"></translation>
+        <translation>Faixa</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="669"/>
         <source>Pass</source>
-        <translation type="unfinished"></translation>
+        <translation>Passagem</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="670"/>
         <source>Relaxed</source>
-        <translation type="unfinished"></translation>
+        <translation>Soltas</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="670"/>
         <source>Pool</source>
-        <translation type="unfinished"></translation>
+        <translation>Conjunto</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="671"/>
         <source>Category / weight</source>
-        <translation type="unfinished"></translation>
+        <translation>Categoria / peso</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="678"/>
         <source>Recent Auto Mode picks</source>
-        <translation type="unfinished"></translation>
+        <translation>Escolhas recentes do Modo Automático</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="680"/>
         <source>Select a pick to read why the tracks it turned down were turned down.</source>
-        <translation type="unfinished"></translation>
+        <translation>Seleciona uma escolha para ler porque foram recusadas as faixas que recusou.</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="686"/>
         <source>Why this track was picked</source>
-        <translation type="unfinished"></translation>
+        <translation>Porque foi esta faixa escolhida</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="690"/>
         <source>&amp;Refresh</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Atualizar</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="691"/>
         <source>Reload the recent picks</source>
-        <translation type="unfinished"></translation>
+        <translation>Recarregar as escolhas recentes</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="693"/>
         <source>&amp;Clear</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Limpar</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="694"/>
         <source>Forget the recent picks</source>
-        <translation type="unfinished"></translation>
+        <translation>Esquecer as escolhas recentes</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="723"/>
         <source>rotation switched off</source>
-        <translation type="unfinished"></translation>
+        <translation>rotação desligada</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="725"/>
         <source>%1 of %2</source>
-        <translation type="unfinished">%1 de %2</translation>
+        <translation>%1 de %2</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="730"/>
         <source>%1 / %2</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 / %2</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="737"/>
         <source>Auto Mode has not picked anything since XFB started. Turn Auto Mode on and the reason for each pick appears here.</source>
-        <translation type="unfinished"></translation>
+        <translation>O Modo Automático não escolheu nada desde que o XFB arrancou. Liga o Modo Automático e a razão de cada escolha aparece aqui.</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="752"/>
         <source>Picked: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Escolhida: %1</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="753"/>
         <source>At: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Às: %1</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="754"/>
         <source>Pass: %1 (%2 candidates offered, %3 survived the rules)</source>
-        <translation type="unfinished"></translation>
+        <translation>Passagem: %1 (%2 candidatos apresentados, %3 sobreviveram às regras)</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="757"/>
         <source>Rotation rules were switched off for this pick.</source>
-        <translation type="unfinished"></translation>
+        <translation>As regras de rotação estavam desligadas nesta escolha.</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="759"/>
         <source>Category: %1, weight %2</source>
-        <translation type="unfinished"></translation>
+        <translation>Categoria: %1, peso %2</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="763"/>
         <source>Every rotation rule was honoured.</source>
-        <translation type="unfinished"></translation>
+        <translation>Todas as regras de rotação foram respeitadas.</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="764"/>
         <source>Rules relaxed, in the order they were given up: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Regras soltas, pela ordem em que foram abandonadas: %1</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="767"/>
         <source>Recent play history came from the as-run log.</source>
-        <translation type="unfinished"></translation>
+        <translation>O histórico recente veio do registo de emissão.</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="768"/>
         <source>The as-run log is still empty, so the library&apos;s last-played stamps were used instead.</source>
-        <translation type="unfinished"></translation>
+        <translation>O registo de emissão ainda está vazio, por isso foram usadas as marcas de última reprodução da biblioteca.</translation>
     </message>
     <message>
         <location filename="dialogs/RotationDialog.cpp" line="772"/>
         <source>Some of what it turned down:</source>
-        <translation type="unfinished"></translation>
+        <translation>Algumas das que recusou:</translation>
     </message>
 </context>
 <context>
@@ -7190,67 +7210,67 @@ The page carries what is on air, what played in the last hour, and — if you al
     <message>
         <location filename="services/RotationRules.cpp" line="177"/>
         <source>Power</source>
-        <translation type="unfinished"></translation>
+        <translation>Power</translation>
     </message>
     <message>
         <location filename="services/RotationRules.cpp" line="179"/>
         <source>Gold</source>
-        <translation type="unfinished"></translation>
+        <translation>Gold</translation>
     </message>
     <message>
         <location filename="services/RotationRules.cpp" line="181"/>
         <source>Secondary</source>
-        <translation type="unfinished"></translation>
+        <translation>Secundária</translation>
     </message>
     <message>
         <location filename="services/RotationRules.cpp" line="198"/>
         <source>artist separation halved</source>
-        <translation type="unfinished"></translation>
+        <translation>separação de artistas reduzida a metade</translation>
     </message>
     <message>
         <location filename="services/RotationRules.cpp" line="199"/>
         <source>artist separation dropped</source>
-        <translation type="unfinished"></translation>
+        <translation>separação de artistas abandonada</translation>
     </message>
     <message>
         <location filename="services/RotationRules.cpp" line="200"/>
         <source>title separation halved</source>
-        <translation type="unfinished"></translation>
+        <translation>separação de títulos reduzida a metade</translation>
     </message>
     <message>
         <location filename="services/RotationRules.cpp" line="201"/>
         <source>title separation dropped</source>
-        <translation type="unfinished"></translation>
+        <translation>separação de títulos abandonada</translation>
     </message>
     <message>
         <location filename="services/RotationRules.cpp" line="202"/>
         <source>daypart restrictions dropped</source>
-        <translation type="unfinished"></translation>
+        <translation>restrições de faixa horária abandonadas</translation>
     </message>
     <message>
         <location filename="services/RotationRules.cpp" line="203"/>
         <source>date windows dropped</source>
-        <translation type="unfinished"></translation>
+        <translation>janelas de datas abandonadas</translation>
     </message>
     <message>
         <location filename="services/RotationRules.cpp" line="388"/>
         <source>any hour</source>
-        <translation type="unfinished"></translation>
+        <translation>qualquer hora</translation>
     </message>
     <message>
         <location filename="services/RotationRules.cpp" line="399"/>
         <source>%1:00-%2:59</source>
-        <translation type="unfinished"></translation>
+        <translation>%1:00-%2:59</translation>
     </message>
     <message>
         <location filename="services/RotationRules.cpp" line="404"/>
         <source>%1:00 only</source>
-        <translation type="unfinished"></translation>
+        <translation>só às %1:00</translation>
     </message>
     <message numerus="yes">
         <location filename="services/RotationRules.cpp" line="405"/>
         <source>%n hour(s)</source>
-        <translation type="unfinished">
+        <translation>
             <numerusform>%n hora</numerusform>
             <numerusform>%n horas</numerusform>
         </translation>
@@ -7258,87 +7278,87 @@ The page carries what is on air, what played in the last hour, and — if you al
     <message>
         <location filename="services/RotationRules.cpp" line="412"/>
         <source>every day</source>
-        <translation type="unfinished"></translation>
+        <translation>todos os dias</translation>
     </message>
     <message>
         <location filename="services/RotationRules.cpp" line="413"/>
         <source>Mon</source>
-        <translation type="unfinished"></translation>
+        <translation>Seg</translation>
     </message>
     <message>
         <location filename="services/RotationRules.cpp" line="413"/>
         <source>Tue</source>
-        <translation type="unfinished"></translation>
+        <translation>Ter</translation>
     </message>
     <message>
         <location filename="services/RotationRules.cpp" line="414"/>
         <source>Wed</source>
-        <translation type="unfinished"></translation>
+        <translation>Qua</translation>
     </message>
     <message>
         <location filename="services/RotationRules.cpp" line="414"/>
         <source>Thu</source>
-        <translation type="unfinished"></translation>
+        <translation>Qui</translation>
     </message>
     <message>
         <location filename="services/RotationRules.cpp" line="415"/>
         <source>Fri</source>
-        <translation type="unfinished"></translation>
+        <translation>Sex</translation>
     </message>
     <message>
         <location filename="services/RotationRules.cpp" line="415"/>
         <source>Sat</source>
-        <translation type="unfinished"></translation>
+        <translation>Sáb</translation>
     </message>
     <message>
         <location filename="services/RotationRules.cpp" line="416"/>
         <source>Sun</source>
-        <translation type="unfinished"></translation>
+        <translation>Dom</translation>
     </message>
     <message>
         <location filename="services/RotationRules.cpp" line="429"/>
         <source>always</source>
-        <translation type="unfinished"></translation>
+        <translation>sempre</translation>
     </message>
     <message>
         <location filename="services/RotationRules.cpp" line="431"/>
         <source>%1 to %2</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 a %2</translation>
     </message>
     <message>
         <location filename="services/RotationRules.cpp" line="433"/>
         <source>from %1</source>
-        <translation type="unfinished"></translation>
+        <translation>a partir de %1</translation>
     </message>
     <message>
         <location filename="services/RotationRules.cpp" line="434"/>
         <source>until %1</source>
-        <translation type="unfinished"></translation>
+        <translation>até %1</translation>
     </message>
     <message>
         <location filename="services/RotationRules.cpp" line="571"/>
         <source>%1 — not in rotation until %2</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 — fora de rotação até %2</translation>
     </message>
     <message>
         <location filename="services/RotationRules.cpp" line="579"/>
         <source>%1 — expired on %2</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 — expirou em %2</translation>
     </message>
     <message>
         <location filename="services/RotationRules.cpp" line="590"/>
         <source>%1 — not scheduled for this hour</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 — não está programado para esta hora</translation>
     </message>
     <message>
         <location filename="services/RotationRules.cpp" line="597"/>
         <source>%1 — not scheduled for this weekday</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 — não está programado para este dia da semana</translation>
     </message>
     <message numerus="yes">
         <location filename="services/RotationRules.cpp" line="608"/>
         <source>%1 — same title %n minute(s) ago</source>
-        <translation type="unfinished">
+        <translation>
             <numerusform></numerusform>
             <numerusform></numerusform>
         </translation>
@@ -7346,7 +7366,7 @@ The page carries what is on air, what played in the last hour, and — if you al
     <message numerus="yes">
         <location filename="services/RotationRules.cpp" line="620"/>
         <source>%1 — same artist %n minute(s) ago</source>
-        <translation type="unfinished">
+        <translation>
             <numerusform></numerusform>
             <numerusform></numerusform>
         </translation>
@@ -7357,42 +7377,42 @@ The page carries what is on air, what played in the last hour, and — if you al
     <message>
         <location filename="services/StationSyncClient.cpp" line="241"/>
         <source>Studio monitoring turned off.</source>
-        <translation type="unfinished"></translation>
+        <translation>Monitorização do estúdio desligada.</translation>
     </message>
     <message>
         <location filename="services/StationSyncClient.cpp" line="274"/>
         <source>the station answered something unreadable</source>
-        <translation type="unfinished"></translation>
+        <translation>a estação respondeu algo ilegível</translation>
     </message>
     <message>
         <location filename="services/StationSyncClient.cpp" line="290"/>
         <source>unreachable</source>
-        <translation type="unfinished"></translation>
+        <translation>inalcançável</translation>
     </message>
     <message>
         <location filename="services/StationSyncClient.cpp" line="291"/>
         <source>the studio machine is not answering (%1)</source>
-        <translation type="unfinished"></translation>
+        <translation>a máquina do estúdio não está a responder (%1)</translation>
     </message>
     <message>
         <location filename="services/StationSyncClient.cpp" line="302"/>
         <source>the studio reports &quot;%1&quot;</source>
-        <translation type="unfinished"></translation>
+        <translation>o estúdio comunica "%1"</translation>
     </message>
     <message>
         <location filename="services/StationSyncClient.cpp" line="303"/>
         <source>nothing</source>
-        <translation type="unfinished"></translation>
+        <translation>nada</translation>
     </message>
     <message>
         <location filename="services/StationSyncClient.cpp" line="311"/>
         <source>The studio is making sound again (%1).</source>
-        <translation type="unfinished"></translation>
+        <translation>O estúdio voltou a fazer som (%1).</translation>
     </message>
     <message>
         <location filename="services/StationSyncClient.cpp" line="323"/>
         <source>No sound from %1 for %2 seconds — %3.</source>
-        <translation type="unfinished"></translation>
+        <translation>Sem som de %1 há %2 segundos — %3.</translation>
     </message>
     <message>
         <location filename="services/StationSyncClient.cpp" line="410"/>
@@ -7642,28 +7662,28 @@ Configure isto nas duas máquinas: use a metade de cima na que está no ar e a m
     <message>
         <location filename="dialogs/StationSyncDialog.cpp" line="169"/>
         <source>Check the studio every</source>
-        <translation type="unfinished"></translation>
+        <translation>Verificar o estúdio a cada</translation>
     </message>
     <message>
         <location filename="dialogs/StationSyncDialog.cpp" line="172"/>
         <location filename="dialogs/StationSyncDialog.cpp" line="180"/>
         <source> seconds</source>
-        <translation type="unfinished"></translation>
+        <translation> segundos</translation>
     </message>
     <message>
         <location filename="dialogs/StationSyncDialog.cpp" line="175"/>
         <source>How often to check the studio</source>
-        <translation type="unfinished"></translation>
+        <translation>Com que frequência verificar o estúdio</translation>
     </message>
     <message>
         <location filename="dialogs/StationSyncDialog.cpp" line="177"/>
         <source>and warn after</source>
-        <translation type="unfinished"></translation>
+        <translation>e avisar ao fim de</translation>
     </message>
     <message>
         <location filename="dialogs/StationSyncDialog.cpp" line="183"/>
         <source>How long the studio may be dark before the alarm</source>
-        <translation type="unfinished"></translation>
+        <translation>Durante quanto tempo o estúdio pode ficar às escuras antes do alarme</translation>
     </message>
     <message>
         <location filename="dialogs/StationSyncDialog.cpp" line="193"/>
@@ -7768,27 +7788,27 @@ Configure isto nas duas máquinas: use a metade de cima na que está no ar e a m
     <message>
         <location filename="dialogs/StationSyncDialog.cpp" line="443"/>
         <source>Not watching the studio.</source>
-        <translation type="unfinished"></translation>
+        <translation>Não está a vigiar o estúdio.</translation>
     </message>
     <message>
         <location filename="dialogs/StationSyncDialog.cpp" line="447"/>
         <source>THE STUDIO IS DARK. Nothing has been put on air automatically — that is still yours to decide.</source>
-        <translation type="unfinished"></translation>
+        <translation>O ESTÚDIO ESTÁ ÀS ESCURAS. Não foi posto nada no ar automaticamente — isso continua a ser decisão tua.</translation>
     </message>
     <message>
         <location filename="dialogs/StationSyncDialog.cpp" line="453"/>
         <source>Studio: %1%2</source>
-        <translation type="unfinished"></translation>
+        <translation>Estúdio: %1%2</translation>
     </message>
     <message>
         <location filename="dialogs/StationSyncDialog.cpp" line="454"/>
         <source>not heard from yet</source>
-        <translation type="unfinished"></translation>
+        <translation>ainda sem notícias</translation>
     </message>
     <message>
         <location filename="dialogs/StationSyncDialog.cpp" line="457"/>
         <source> — last making sound at %1</source>
-        <translation type="unfinished"></translation>
+        <translation> — fez som pela última vez às %1</translation>
     </message>
     <message>
         <location filename="dialogs/StationSyncDialog.cpp" line="173"/>
@@ -7837,27 +7857,27 @@ Configure isto nas duas máquinas: use a metade de cima na que está no ar e a m
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="37"/>
         <source>Stream to Icecast</source>
-        <translation type="unfinished"></translation>
+        <translation>Emitir para Icecast</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="51"/>
         <source>Now playing sent: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Enviado o que está a tocar: %1</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="68"/>
         <source>Send what XFB is playing straight to an Icecast server, with the track titles, without a second program listening to the sound card. The external Icecast and butt buttons on the main window still work exactly as before; this is an alternative, not a replacement.</source>
-        <translation type="unfinished"></translation>
+        <translation>Envia o que o XFB está a tocar diretamente para um servidor Icecast, com os títulos das faixas, sem um segundo programa a ouvir a placa de som. Os botões externos do Icecast e do butt na janela principal continuam a funcionar exatamente como antes; isto é uma alternativa, não uma substituição.</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="81"/>
         <source>Mounts</source>
-        <translation type="unfinished"></translation>
+        <translation>Pontos de montagem</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="85"/>
         <source>Configured stream mounts</source>
-        <translation type="unfinished"></translation>
+        <translation>Pontos de montagem configurados</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="90"/>
@@ -7867,238 +7887,238 @@ Configure isto nas duas máquinas: use a metade de cima na que está no ar e a m
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="91"/>
         <source>Duplicate</source>
-        <translation type="unfinished"></translation>
+        <translation>Duplicar</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="92"/>
         <source>Remove</source>
-        <translation type="unfinished"></translation>
+        <translation>Remover</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="105"/>
         <source>Server</source>
-        <translation type="unfinished"></translation>
+        <translation>Servidor</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="108"/>
         <source>Stream to this mount</source>
-        <translation type="unfinished"></translation>
+        <translation>Emitir para este ponto de montagem</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="112"/>
         <source>Website 128k</source>
-        <translation type="unfinished"></translation>
+        <translation>Site 128k</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="113"/>
         <source>Label:</source>
-        <translation type="unfinished">Etiqueta:</translation>
+        <translation>Etiqueta:</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="117"/>
         <source>Host:</source>
-        <translation type="unfinished"></translation>
+        <translation>Servidor:</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="122"/>
         <source>Port:</source>
-        <translation type="unfinished">Porta:</translation>
+        <translation>Porta:</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="126"/>
         <source>Mount point:</source>
-        <translation type="unfinished"></translation>
+        <translation>Ponto de montagem:</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="130"/>
         <source>User name:</source>
-        <translation type="unfinished"></translation>
+        <translation>Nome de utilizador:</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="134"/>
         <source>Password:</source>
-        <translation type="unfinished">Senha: </translation>
+        <translation>Senha: </translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="136"/>
         <source>Use HTTP PUT instead of SOURCE</source>
-        <translation type="unfinished"></translation>
+        <translation>Usar HTTP PUT em vez de SOURCE</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="137"/>
         <source>Icecast 2.4.1 and later prefer PUT. If the server refuses the source connection, try the other one.</source>
-        <translation type="unfinished"></translation>
+        <translation>O Icecast 2.4.1 e posteriores preferem PUT. Se o servidor recusar a ligação de fonte, experimenta o outro.</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="142"/>
         <source>MP3 (libmp3lame)</source>
-        <translation type="unfinished"></translation>
+        <translation>MP3 (libmp3lame)</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="144"/>
         <source>Opus (Ogg)</source>
-        <translation type="unfinished"></translation>
+        <translation>Opus (Ogg)</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="146"/>
         <source>Codec:</source>
-        <translation type="unfinished">Codec:</translation>
+        <translation>Codec:</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="149"/>
         <source>Bitrate:</source>
-        <translation type="unfinished"></translation>
+        <translation>Débito:</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="156"/>
         <source>What listeners and directories see</source>
-        <translation type="unfinished"></translation>
+        <translation>O que os ouvintes e os diretórios veem</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="160"/>
         <source>Station name:</source>
-        <translation type="unfinished"></translation>
+        <translation>Nome da estação:</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="162"/>
         <source>Genre:</source>
-        <translation type="unfinished"></translation>
+        <translation>Género:</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="164"/>
         <source>Description:</source>
-        <translation type="unfinished">Descrição:</translation>
+        <translation>Descrição:</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="167"/>
         <source>Web site:</source>
-        <translation type="unfinished"></translation>
+        <translation>Site:</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="168"/>
         <source>List this mount in public directories</source>
-        <translation type="unfinished"></translation>
+        <translation>Listar este ponto de montagem em diretórios públicos</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="176"/>
         <source>Go on air automatically when XFB starts</source>
-        <translation type="unfinished"></translation>
+        <translation>Ir para o ar automaticamente quando o XFB arranca</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="184"/>
         <source>Save settings</source>
-        <translation type="unfinished"></translation>
+        <translation>Guardar definições</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="186"/>
         <location filename="dialogs/StreamDialog.cpp" line="461"/>
         <source>Go on air</source>
-        <translation type="unfinished"></translation>
+        <translation>Ir para o ar</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="204"/>
         <source>Streaming log</source>
-        <translation type="unfinished"></translation>
+        <translation>Registo da emissão</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="208"/>
         <source>Close</source>
-        <translation type="unfinished">Fechar</translation>
+        <translation>Fechar</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="235"/>
         <source>%1 kbit/s</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 kbit/s</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="261"/>
         <source> (off)</source>
-        <translation type="unfinished"></translation>
+        <translation> (desligado)</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="263"/>
         <source> - on air</source>
-        <translation type="unfinished"></translation>
+        <translation> - no ar</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="265"/>
         <source> - connecting</source>
-        <translation type="unfinished"></translation>
+        <translation> - a ligar</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="312"/>
         <source>%1 (copy)</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 (cópia)</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="325"/>
         <source>Remove mount</source>
-        <translation type="unfinished"></translation>
+        <translation>Remover ponto de montagem</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="326"/>
         <source>Remove the mount &quot;%1&quot;?</source>
-        <translation type="unfinished"></translation>
+        <translation>Remover o ponto de montagem "%1"?</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="412"/>
         <source>Settings saved.</source>
-        <translation type="unfinished"></translation>
+        <translation>Definições guardadas.</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="413"/>
         <source>Stream settings saved</source>
-        <translation type="unfinished"></translation>
+        <translation>Definições de emissão guardadas</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="425"/>
         <source>Streaming stopped</source>
-        <translation type="unfinished"></translation>
+        <translation>Emissão parada</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="445"/>
         <source>Nothing to stream to</source>
-        <translation type="unfinished"></translation>
+        <translation>Não há para onde emitir</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="446"/>
         <source>Enable at least one mount and give it a host before going on air.</source>
-        <translation type="unfinished"></translation>
+        <translation>Ativa pelo menos um ponto de montagem e dá-lhe um servidor antes de ires para o ar.</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="452"/>
         <source>Streaming started</source>
-        <translation type="unfinished"></translation>
+        <translation>Emissão iniciada</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="461"/>
         <source>Go off air</source>
-        <translation type="unfinished"></translation>
+        <translation>Sair do ar</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="474"/>
         <source>on air</source>
-        <translation type="unfinished"></translation>
+        <translation>no ar</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="477"/>
         <source>connecting</source>
-        <translation type="unfinished"></translation>
+        <translation>a ligar</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="480"/>
         <source>off</source>
-        <translation type="unfinished"></translation>
+        <translation>desligado</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="490"/>
         <source>Not streaming.</source>
-        <translation type="unfinished"></translation>
+        <translation>Não está a emitir.</translation>
     </message>
     <message>
         <location filename="dialogs/StreamDialog.cpp" line="492"/>
         <source>Streaming, but no mount is enabled.</source>
-        <translation type="unfinished"></translation>
+        <translation>A emitir, mas não há nenhum ponto de montagem ativo.</translation>
     </message>
 </context>
 <context>
@@ -8106,52 +8126,52 @@ Configure isto nas duas máquinas: use a metade de cima na que está no ar e a m
     <message>
         <location filename="services/StreamEncoder.cpp" line="148"/>
         <source>ffmpeg was not found - the built-in encoder needs it.</source>
-        <translation type="unfinished"></translation>
+        <translation>O ffmpeg não foi encontrado - o codificador interno precisa dele.</translation>
     </message>
     <message>
         <location filename="services/StreamEncoder.cpp" line="164"/>
         <source>encoder: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>codificador: %1</translation>
     </message>
     <message>
         <location filename="services/StreamEncoder.cpp" line="168"/>
         <source>ffmpeg failed to start</source>
-        <translation type="unfinished"></translation>
+        <translation>o ffmpeg não conseguiu arrancar</translation>
     </message>
     <message>
         <location filename="services/StreamEncoder.cpp" line="175"/>
         <source>ffmpeg crashed</source>
-        <translation type="unfinished"></translation>
+        <translation>o ffmpeg estoirou</translation>
     </message>
     <message>
         <location filename="services/StreamEncoder.cpp" line="176"/>
         <source>ffmpeg exited with code %1</source>
-        <translation type="unfinished"></translation>
+        <translation>o ffmpeg terminou com o código %1</translation>
     </message>
     <message>
         <location filename="services/StreamEncoder.cpp" line="181"/>
         <source>ffmpeg did not start</source>
-        <translation type="unfinished"></translation>
+        <translation>o ffmpeg não arrancou</translation>
     </message>
     <message>
         <location filename="services/StreamEncoder.cpp" line="194"/>
         <source>Encoder started: %1 at %2 kbit/s.</source>
-        <translation type="unfinished"></translation>
+        <translation>Codificador arrancado: %1 a %2 kbit/s.</translation>
     </message>
     <message>
         <location filename="services/StreamEncoder.cpp" line="225"/>
         <source>%1 - restarting the encoder in %2 s.</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 - a reiniciar o codificador dentro de %2 s.</translation>
     </message>
     <message>
         <location filename="services/StreamEncoder.cpp" line="242"/>
         <source>The encoder is not keeping up; dropping audio.</source>
-        <translation type="unfinished"></translation>
+        <translation>O codificador não está a aguentar o ritmo; a descartar áudio.</translation>
     </message>
     <message>
         <location filename="services/StreamEncoder.cpp" line="249"/>
         <source>The encoder caught up (%1 kB of audio was dropped).</source>
-        <translation type="unfinished"></translation>
+        <translation>O codificador recuperou (%1 kB de áudio foram descartados).</translation>
     </message>
 </context>
 <context>
@@ -8159,17 +8179,17 @@ Configure isto nas duas máquinas: use a metade de cima na que está no ar e a m
     <message>
         <location filename="services/StreamService.cpp" line="222"/>
         <source>There is no enabled mount to stream to.</source>
-        <translation type="unfinished"></translation>
+        <translation>Não há nenhum ponto de montagem ativo para onde emitir.</translation>
     </message>
     <message>
         <location filename="services/StreamService.cpp" line="244"/>
         <source>Streaming stopped.</source>
-        <translation type="unfinished"></translation>
+        <translation>Emissão parada.</translation>
     </message>
     <message>
         <location filename="services/StreamService.cpp" line="332"/>
         <source>Tap format changed to %1 Hz, %2 channels; restarting the encoders.</source>
-        <translation type="unfinished"></translation>
+        <translation>O formato da derivação mudou para %1 Hz, %2 canais; a reiniciar os codificadores.</translation>
     </message>
 </context>
 <context>
@@ -8195,67 +8215,67 @@ Configure isto nas duas máquinas: use a metade de cima na que está no ar e a m
     <message>
         <location filename="audio/VoiceRecorder.cpp" line="116"/>
         <source>A take is already being recorded.</source>
-        <translation type="unfinished"></translation>
+        <translation>Já está a ser gravada uma locução.</translation>
     </message>
     <message>
         <location filename="audio/VoiceRecorder.cpp" line="118"/>
         <source>There is nowhere to write the take.</source>
-        <translation type="unfinished"></translation>
+        <translation>Não há onde escrever a gravação.</translation>
     </message>
     <message>
         <location filename="audio/VoiceRecorder.cpp" line="133"/>
         <source>No microphone or line input was found on this computer.</source>
-        <translation type="unfinished"></translation>
+        <translation>Não foi encontrado nenhum microfone ou entrada de linha neste computador.</translation>
     </message>
     <message>
         <location filename="audio/VoiceRecorder.cpp" line="147"/>
         <source>%1 cannot record 16-bit audio, which is what a voice track is written as.</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 não consegue gravar áudio de 16 bits, que é como a locução é escrita.</translation>
     </message>
     <message>
         <location filename="audio/VoiceRecorder.cpp" line="154"/>
         <source>The take could not be written to %1: %2</source>
-        <translation type="unfinished"></translation>
+        <translation>Não foi possível escrever a gravação em %1: %2</translation>
     </message>
     <message>
         <location filename="audio/VoiceRecorder.cpp" line="170"/>
         <source>%1 could not be opened for recording.</source>
-        <translation type="unfinished"></translation>
+        <translation>Não foi possível abrir %1 para gravação.</translation>
     </message>
     <message>
         <location filename="audio/VoiceRecorder.cpp" line="183"/>
         <source>The recording stopped: the input device reported an error.</source>
-        <translation type="unfinished"></translation>
+        <translation>A gravação parou: o dispositivo de entrada comunicou um erro.</translation>
     </message>
     <message>
         <location filename="audio/VoiceRecorder.cpp" line="202"/>
         <source>Writing the take failed: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>A escrita da gravação falhou: %1</translation>
     </message>
     <message>
         <location filename="audio/VoiceRecorder.cpp" line="330"/>
         <source>ffmpeg was not found, so the take stays as a WAV file.</source>
-        <translation type="unfinished"></translation>
+        <translation>O ffmpeg não foi encontrado, por isso a gravação fica como ficheiro WAV.</translation>
     </message>
     <message>
         <location filename="audio/VoiceRecorder.cpp" line="332"/>
         <source>The take is missing.</source>
-        <translation type="unfinished"></translation>
+        <translation>A gravação não existe.</translation>
     </message>
     <message>
         <location filename="audio/VoiceRecorder.cpp" line="346"/>
         <source>ffmpeg could not be started, so the take stays as a WAV file.</source>
-        <translation type="unfinished"></translation>
+        <translation>Não foi possível iniciar o ffmpeg, por isso a gravação fica como ficheiro WAV.</translation>
     </message>
     <message>
         <location filename="audio/VoiceRecorder.cpp" line="351"/>
         <source>Converting the take to Opus took too long; it stays as a WAV file.</source>
-        <translation type="unfinished"></translation>
+        <translation>A conversão da gravação para Opus demorou demasiado; fica como ficheiro WAV.</translation>
     </message>
     <message>
         <location filename="audio/VoiceRecorder.cpp" line="358"/>
         <source>This ffmpeg cannot encode Opus, so the take stays as a WAV file.</source>
-        <translation type="unfinished"></translation>
+        <translation>Este ffmpeg não consegue codificar Opus, por isso a gravação fica como ficheiro WAV.</translation>
     </message>
 </context>
 <context>
@@ -8266,312 +8286,312 @@ Configure isto nas duas máquinas: use a metade de cima na que está no ar e a m
         <location filename="dialogs/VoiceTrackDialog.cpp" line="902"/>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="918"/>
         <source>Voice track</source>
-        <translation type="unfinished"></translation>
+        <translation>Locução</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="498"/>
         <source>Recording stopped. The link is %1 seconds long. %2</source>
-        <translation type="unfinished"></translation>
+        <translation>Gravação parada. A locução tem %1 segundos. %2</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="551"/>
         <source>Record your link across the join between &lt;b&gt;%1&lt;/b&gt; and &lt;b&gt;%2&lt;/b&gt;.</source>
-        <translation type="unfinished"></translation>
+        <translation>Grava a tua locução por cima da passagem entre &lt;b&gt;%1&lt;/b&gt; e &lt;b&gt;%2&lt;/b&gt;.</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="557"/>
         <source>Voice track: what this join is</source>
-        <translation type="unfinished"></translation>
+        <translation>Locução: o que é esta passagem</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="568"/>
         <source>The take</source>
-        <translation type="unfinished"></translation>
+        <translation>A gravação</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="571"/>
         <source>&amp;Input:</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Entrada:</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="577"/>
         <source>Recording input device</source>
-        <translation type="unfinished"></translation>
+        <translation>Dispositivo de entrada de gravação</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="582"/>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="872"/>
         <source>&amp;Record</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Gravar</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="583"/>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="874"/>
         <source>Record the link</source>
-        <translation type="unfinished"></translation>
+        <translation>Gravar a locução</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="584"/>
         <source>Start recording at the point the link is set to start; press again to stop.</source>
-        <translation type="unfinished"></translation>
+        <translation>Começa a gravar no ponto em que a locução está marcada para começar; carrega outra vez para parar.</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="589"/>
         <source>Re&amp;take</source>
-        <translation type="unfinished"></translation>
+        <translation>Gravar de &amp;novo</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="590"/>
         <source>Throw this take away and record again</source>
-        <translation type="unfinished"></translation>
+        <translation>Deitar esta gravação fora e gravar outra vez</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="596"/>
         <source>Recording level</source>
-        <translation type="unfinished"></translation>
+        <translation>Nível de gravação</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="600"/>
         <source>Length recorded</source>
-        <translation type="unfinished"></translation>
+        <translation>Duração gravada</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="608"/>
         <source>Monitoring</source>
-        <translation type="unfinished"></translation>
+        <translation>Monitorização</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="611"/>
         <source>Monitor on the &amp;main output while recording (this output may be feeding air)</source>
-        <translation type="unfinished"></translation>
+        <translation>Monitorizar na saída &amp;principal enquanto grava (esta saída pode estar a alimentar a emissão)</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="613"/>
         <source>Monitor on the main output while recording</source>
-        <translation type="unfinished"></translation>
+        <translation>Monitorizar na saída principal enquanto grava</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="619"/>
         <source>You will hear the join in the cue headphones while you record.</source>
-        <translation type="unfinished"></translation>
+        <translation>Vais ouvir a passagem nos auscultadores de pré-escuta enquanto gravas.</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="623"/>
         <source>No cue monitoring: %1 You can still record — tick the box below to hear the join on the main output instead, or record without hearing it.</source>
-        <translation type="unfinished"></translation>
+        <translation>Sem monitorização de pré-escuta: %1 Podes gravar na mesma — assinala a caixa abaixo para ouvires a passagem na saída principal, ou grava sem a ouvir.</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="627"/>
         <source>no cue bus is available.</source>
-        <translation type="unfinished"></translation>
+        <translation>não há nenhuma saída de pré-escuta disponível.</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="631"/>
         <source>Where the link sits</source>
-        <translation type="unfinished"></translation>
+        <translation>Onde a locução fica</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="636"/>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="671"/>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="679"/>
         <source> ms</source>
-        <translation type="unfinished"> ms</translation>
+        <translation> ms</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="637"/>
         <source>Link starts this long before the outgoing song ends</source>
-        <translation type="unfinished"></translation>
+        <translation>A locução começa este tempo antes de a música que sai acabar</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="644"/>
         <source>Starts &amp;before the outgoing song ends:</source>
-        <translation type="unfinished"></translation>
+        <translation>Começa &amp;antes de a música que sai acabar:</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="648"/>
         <source>Where the link sits relative to the join</source>
-        <translation type="unfinished"></translation>
+        <translation>Onde a locução fica em relação à passagem</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="653"/>
         <source>Ducking (written onto both songs as an ordinary volume line)</source>
-        <translation type="unfinished"></translation>
+        <translation>Ducking (escrito nas duas músicas como uma linha de volume normal)</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="660"/>
         <source> %</source>
-        <translation type="unfinished"></translation>
+        <translation> %</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="661"/>
         <source>Music level under the voice, as a percentage</source>
-        <translation type="unfinished"></translation>
+        <translation>Nível da música por baixo da voz, em percentagem</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="662"/>
         <source>How loud the music stays while you are talking. This is a percentage of the track&apos;s own level, not decibels.</source>
-        <translation type="unfinished"></translation>
+        <translation>Quão alta fica a música enquanto falas. Isto é uma percentagem do nível da própria faixa, não decibéis.</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="665"/>
         <source>Music &amp;under the voice:</source>
-        <translation type="unfinished"></translation>
+        <translation>Música por &amp;baixo da voz:</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="672"/>
         <source>Duck fade length in milliseconds</source>
-        <translation type="unfinished"></translation>
+        <translation>Duração da descida do ducking em milissegundos</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="673"/>
         <source>&amp;Fade down and up over:</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Descer e subir em:</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="680"/>
         <source>How long the music stays down after you stop talking</source>
-        <translation type="unfinished"></translation>
+        <translation>Durante quanto tempo a música fica em baixo depois de parares de falar</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="681"/>
         <source>&amp;Hold down after the voice:</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Manter em baixo depois da voz:</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="683"/>
         <source>Re&amp;generate the ducking</source>
-        <translation type="unfinished"></translation>
+        <translation>Re&amp;gerar o ducking</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="684"/>
         <source>Generate the ducking again from the take</source>
-        <translation type="unfinished"></translation>
+        <translation>Gerar o ducking outra vez a partir da gravação</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="685"/>
         <source>Rebuild both volume lines from the take. Any hand edits you made in the wave view are kept until you press this.</source>
-        <translation type="unfinished"></translation>
+        <translation>Reconstruir as duas linhas de volume a partir da gravação. As edições à mão que fizeste na vista de onda mantêm-se até carregares aqui.</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="694"/>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="1196"/>
         <source>&amp;Play the link in place</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Tocar a locução no sítio</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="695"/>
         <source>Play the link in place</source>
-        <translation type="unfinished"></translation>
+        <translation>Tocar a locução no sítio</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="696"/>
         <source>Hear the end of the outgoing song, the link and the start of the incoming song, with the ducking as it will go out.</source>
-        <translation type="unfinished"></translation>
+        <translation>Ouve o fim da música que sai, a locução e o início da música que entra, com o ducking tal como vai para o ar.</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="704"/>
         <source>Save the take as &amp;Opus instead of WAV (needs an ffmpeg with Opus support)</source>
-        <translation type="unfinished"></translation>
+        <translation>Guardar a gravação como &amp;Opus em vez de WAV (precisa de um ffmpeg com suporte a Opus)</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="706"/>
         <source>Save the take as Opus</source>
-        <translation type="unfinished"></translation>
+        <translation>Guardar a gravação como Opus</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="710"/>
         <source>&amp;Keep the voice track</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Manter a locução</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="712"/>
         <source>Keep the voice track and add it to the playlist</source>
-        <translation type="unfinished"></translation>
+        <translation>Manter a locução e adicioná-la à playlist</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="713"/>
         <source>&amp;Discard</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Descartar</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="715"/>
         <source>Discard the take and close</source>
-        <translation type="unfinished"></translation>
+        <translation>Descartar a gravação e fechar</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="786"/>
         <source>The take could not be analysed, so no ducking was written. The link itself is fine.</source>
-        <translation type="unfinished"></translation>
+        <translation>Não foi possível analisar a gravação, por isso não foi escrito nenhum ducking. A locução em si está bem.</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="854"/>
         <source>The link is %1 seconds long.</source>
-        <translation type="unfinished"></translation>
+        <translation>A locução tem %1 segundos.</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="858"/>
         <source>No speech was found in it, so no ducking was written.</source>
-        <translation type="unfinished"></translation>
+        <translation>Não foi encontrada fala nela, por isso não foi escrito nenhum ducking.</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="859"/>
         <source>%1 ducking %2 written onto the songs.</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 %2 de ducking escrita nas músicas.</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="861"/>
         <source>section was</source>
-        <translation type="unfinished"></translation>
+        <translation>secção foi</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="861"/>
         <source>sections were</source>
-        <translation type="unfinished"></translation>
+        <translation>secções foram</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="872"/>
         <source>&amp;Stop</source>
-        <translation type="unfinished">&amp;Parar</translation>
+        <translation>&amp;Parar</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="873"/>
         <source>Stop recording the link</source>
-        <translation type="unfinished"></translation>
+        <translation>Parar de gravar a locução</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="903"/>
         <source>XFB could not create the folder its voice tracks are kept in, so there is nowhere to record to.</source>
-        <translation type="unfinished"></translation>
+        <translation>O XFB não conseguiu criar a pasta onde guarda as locuções, por isso não há onde gravar.</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="935"/>
         <source>Recording. Talk over the join; press Stop when you are done.</source>
-        <translation type="unfinished"></translation>
+        <translation>A gravar. Fala por cima da passagem; carrega em Parar quando acabares.</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="955"/>
         <source>Take discarded. Press Record to try again.</source>
-        <translation type="unfinished"></translation>
+        <translation>Gravação descartada. Carrega em Gravar para tentar outra vez.</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="1076"/>
         <source>Stopped.</source>
-        <translation type="unfinished"></translation>
+        <translation>Parado.</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="1129"/>
         <source>&amp;Stop the audition</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Parar a audição</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="1130"/>
         <source>Playing the link in place.</source>
-        <translation type="unfinished"></translation>
+        <translation>A tocar a locução no sítio.</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="1179"/>
         <source>End of the audition.</source>
-        <translation type="unfinished"></translation>
+        <translation>Fim da audição.</translation>
     </message>
 </context>
 <context>
@@ -8579,62 +8599,62 @@ Configure isto nas duas máquinas: use a metade de cima na que está no ar e a m
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="103"/>
         <source>Voice track timeline</source>
-        <translation type="unfinished"></translation>
+        <translation>Linha temporal da locução</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="104"/>
         <source>The end of the outgoing song, the start of the incoming song and the link, on one timeline. Use the Left and Right arrow keys to move the link a tenth of a second, Shift with an arrow for a whole second, Page Up and Page Down for five seconds.</source>
-        <translation type="unfinished"></translation>
+        <translation>O fim da música que sai, o início da música que entra e a locução, numa só linha temporal. Usa as setas Esquerda e Direita para mover a locução um décimo de segundo, Shift com uma seta para um segundo inteiro, Page Up e Page Down para cinco segundos.</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="235"/>
         <source>Outgoing: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Sai: %1</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="236"/>
         <source>Incoming: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Entra: %1</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="237"/>
         <source>The link (not recorded yet)</source>
-        <translation type="unfinished"></translation>
+        <translation>A locução (ainda não gravada)</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="238"/>
         <source>The link</source>
-        <translation type="unfinished"></translation>
+        <translation>A locução</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="326"/>
         <source>next song in</source>
-        <translation type="unfinished"></translation>
+        <translation>próxima música em</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="328"/>
         <source>song ends</source>
-        <translation type="unfinished"></translation>
+        <translation>a música acaba</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="437"/>
         <source>%1 seconds before the next song starts</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 segundos antes de a próxima música começar</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="439"/>
         <source>%1 seconds after the next song starts</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 segundos depois de a próxima música começar</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="441"/>
         <source>exactly where the next song starts</source>
-        <translation type="unfinished"></translation>
+        <translation>exatamente onde a próxima música começa</translation>
     </message>
     <message>
         <location filename="dialogs/VoiceTrackDialog.cpp" line="443"/>
         <source>Link starts %1 seconds before the outgoing song ends, %2.</source>
-        <translation type="unfinished"></translation>
+        <translation>A locução começa %1 segundos antes de a música que sai acabar, %2.</translation>
     </message>
 </context>
 <context>
@@ -9120,7 +9140,7 @@ Encontrados %1 ficheiro(s) de áudio, adicionados %2, já na biblioteca %3.</tra
         <location filename="add_program.ui" line="354"/>
         <location filename="add_program.ui" line="396"/>
         <source>dd/MM/yyyy</source>
-        <translation type="unfinished"></translation>
+        <translation>dd/MM/yyyy</translation>
     </message>
     <message>
         <location filename="add_program.ui" line="367"/>
@@ -9166,22 +9186,22 @@ Encontrados %1 ficheiro(s) de áudio, adicionados %2, já na biblioteca %3.</tra
         <location filename="add_program.cpp" line="291"/>
         <location filename="add_program.cpp" line="320"/>
         <source>Date interval</source>
-        <translation type="unfinished"></translation>
+        <translation>Intervalo de datas</translation>
     </message>
     <message>
         <location filename="add_program.cpp" line="292"/>
         <source>The end date is before the start date.</source>
-        <translation type="unfinished"></translation>
+        <translation>A data de fim é anterior à data de início.</translation>
     </message>
     <message>
         <location filename="add_program.cpp" line="321"/>
         <source>The schedule could not be saved.</source>
-        <translation type="unfinished"></translation>
+        <translation>Não foi possível guardar o agendamento.</translation>
     </message>
     <message>
         <location filename="add_program.cpp" line="326"/>
         <source>From %1 To %2 at %3</source>
-        <translation type="unfinished"></translation>
+        <translation>De %1 a %2 às %3</translation>
     </message>
 </context>
 <context>
@@ -9308,7 +9328,7 @@ Encontrados %1 ficheiro(s) de áudio, adicionados %2, já na biblioteca %3.</tra
         <location filename="add_pub.ui" line="396"/>
         <location filename="add_pub.ui" line="438"/>
         <source>dd/MM/yyyy</source>
-        <translation type="unfinished"></translation>
+        <translation>dd/MM/yyyy</translation>
     </message>
     <message>
         <location filename="add_pub.ui" line="409"/>
@@ -9334,22 +9354,22 @@ Encontrados %1 ficheiro(s) de áudio, adicionados %2, já na biblioteca %3.</tra
         <location filename="add_pub.cpp" line="342"/>
         <location filename="add_pub.cpp" line="371"/>
         <source>Date interval</source>
-        <translation type="unfinished"></translation>
+        <translation>Intervalo de datas</translation>
     </message>
     <message>
         <location filename="add_pub.cpp" line="343"/>
         <source>The end date is before the start date.</source>
-        <translation type="unfinished"></translation>
+        <translation>A data de fim é anterior à data de início.</translation>
     </message>
     <message>
         <location filename="add_pub.cpp" line="372"/>
         <source>The schedule could not be saved.</source>
-        <translation type="unfinished"></translation>
+        <translation>Não foi possível guardar o agendamento.</translation>
     </message>
     <message>
         <location filename="add_pub.cpp" line="377"/>
         <source>From %1 To %2 at %3</source>
-        <translation type="unfinished"></translation>
+        <translation>De %1 a %2 às %3</translation>
     </message>
 </context>
 <context>
@@ -9971,42 +9991,42 @@ Preencha os campos Artista(s) e Música e use &quot;Saca!&quot; para essa faixa,
     <message>
         <location filename="optionsdialog.ui" line="264"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Play every track at the same programme loudness (EBU R128). Each file&apos;s loudness is measured once — Database → Measure the loudness (EBU R128) of the database — and playback applies the difference as a live gain. Files are never modified and never re-encoded. Tracks that have not been measured play untouched.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
-        <translation type="unfinished"></translation>
+        <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Tocar todas as faixas com a mesma intensidade sonora de programa (EBU R128). A intensidade de cada ficheiro é medida uma vez — Base de Dados → Medir a intensidade sonora (EBU R128) da base de dados — e a reprodução aplica a diferença como ganho em tempo real. Os ficheiros nunca são modificados nem recodificados. As faixas que não foram medidas tocam intactas.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
         <location filename="optionsdialog.ui" line="267"/>
         <source>Loudness normalisation (EBU R128)</source>
-        <translation type="unfinished"></translation>
+        <translation>Normalização da intensidade sonora (EBU R128)</translation>
     </message>
     <message>
         <location filename="optionsdialog.ui" line="276"/>
         <source>Target loudness:</source>
-        <translation type="unfinished"></translation>
+        <translation>Intensidade sonora alvo:</translation>
     </message>
     <message>
         <location filename="optionsdialog.ui" line="283"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The programme loudness every track is brought to. -23 LUFS is the EBU R128 broadcast reference, -16 LUFS suits streaming and most radio automation, -9 LUFS is as loud as anything should ever be asked to go.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
-        <translation type="unfinished"></translation>
+        <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;A intensidade sonora de programa a que todas as faixas são levadas. -23 LUFS é a referência de emissão da EBU R128, -16 LUFS serve para streaming e para a maior parte da automação de rádio, -9 LUFS é o mais alto que alguma vez se deve pedir a seja o que for.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
         <location filename="optionsdialog.ui" line="286"/>
         <source> LUFS</source>
-        <translation type="unfinished"></translation>
+        <translation> LUFS</translation>
     </message>
     <message>
         <location filename="optionsdialog.ui" line="308"/>
         <source>True peak ceiling:</source>
-        <translation type="unfinished"></translation>
+        <translation>Teto de pico real:</translation>
     </message>
     <message>
         <location filename="optionsdialog.ui" line="315"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The highest inter-sample peak playback may produce. A track&apos;s gain is reduced rather than let its true peak pass this, and a limiter on the master output holds the line for anything that slips through — a mis-measured track cannot clip the transmitter.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
-        <translation type="unfinished"></translation>
+        <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;O pico entre amostras mais alto que a reprodução pode produzir. O ganho de uma faixa é reduzido em vez de deixar o seu pico real passar disto, e um limitador na saída master segura a linha para o que escapar — uma faixa mal medida não pode saturar o emissor.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
         <location filename="optionsdialog.ui" line="318"/>
         <source> dBTP</source>
-        <translation type="unfinished"></translation>
+        <translation> dBTP</translation>
     </message>
     <message>
         <location filename="optionsdialog.ui" line="355"/>
@@ -10201,142 +10221,142 @@ Preencha os campos Artista(s) e Música e use &quot;Saca!&quot; para essa faixa,
     <message>
         <location filename="optionsdialog.cpp" line="254"/>
         <source>System default</source>
-        <translation type="unfinished"></translation>
+        <translation>Predefinição do sistema</translation>
     </message>
     <message>
         <location filename="optionsdialog.cpp" line="255"/>
         <source>System default (%1)</source>
-        <translation type="unfinished"></translation>
+        <translation>Predefinição do sistema (%1)</translation>
     </message>
     <message>
         <location filename="optionsdialog.cpp" line="261"/>
         <source>None — cueing off</source>
-        <translation type="unfinished"></translation>
+        <translation>Nenhuma — pré-escuta desligada</translation>
     </message>
     <message>
         <location filename="optionsdialog.cpp" line="268"/>
         <source>%1 (mono)</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 (mono)</translation>
     </message>
     <message>
         <location filename="optionsdialog.cpp" line="276"/>
         <source>%1 (not connected)</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 (não ligado)</translation>
     </message>
     <message>
         <location filename="optionsdialog.cpp" line="295"/>
         <source>Cueing is off. Pick a second output — headphones on another sound card — to audition tracks without putting them to air.</source>
-        <translation type="unfinished"></translation>
+        <translation>A pré-escuta está desligada. Escolhe uma segunda saída — auscultadores noutra placa de som — para ouvires faixas sem as pores no ar.</translation>
     </message>
     <message>
         <location filename="optionsdialog.cpp" line="299"/>
         <source>⚠ The cue output is the same device as the on-air output. Cueing stays disabled: an audition would go to air.</source>
-        <translation type="unfinished"></translation>
+        <translation>⚠ A saída de pré-escuta é o mesmo dispositivo que a saída de emissão. A pré-escuta fica desativada: uma audição iria para o ar.</translation>
     </message>
     <message>
         <location filename="optionsdialog.cpp" line="303"/>
         <source>Cue audio plays only on the cue output. It never reaches the on-air output or the stream.</source>
-        <translation type="unfinished"></translation>
+        <translation>O áudio de pré-escuta toca apenas na saída de pré-escuta. Nunca chega à saída de emissão nem à emissão em direto.</translation>
     </message>
     <message>
         <location filename="optionsdialog.cpp" line="324"/>
         <source>On-air output device</source>
-        <translation type="unfinished"></translation>
+        <translation>Dispositivo de saída de emissão</translation>
     </message>
     <message>
         <location filename="optionsdialog.cpp" line="325"/>
         <source>Where the main player, the DJ decks, the pads and the stream player send their audio.</source>
-        <translation type="unfinished"></translation>
+        <translation>Para onde o leitor principal, os pratos de DJ, os pads e o leitor de emissão enviam o seu áudio.</translation>
     </message>
     <message>
         <location filename="optionsdialog.cpp" line="329"/>
         <source>On-air output:</source>
-        <translation type="unfinished"></translation>
+        <translation>Saída de emissão:</translation>
     </message>
     <message>
         <location filename="optionsdialog.cpp" line="332"/>
         <source>Cue output device (headphones)</source>
-        <translation type="unfinished"></translation>
+        <translation>Dispositivo de saída de pré-escuta (auscultadores)</translation>
     </message>
     <message>
         <location filename="optionsdialog.cpp" line="333"/>
         <source>The private ear. Auditions and spoken cues play here and nowhere else.</source>
-        <translation type="unfinished"></translation>
+        <translation>O ouvido privado. As audições e os avisos falados tocam aqui e em mais lado nenhum.</translation>
     </message>
     <message>
         <location filename="optionsdialog.cpp" line="337"/>
         <source>Cue output:</source>
-        <translation type="unfinished"></translation>
+        <translation>Saída de pré-escuta:</translation>
     </message>
     <message>
         <location filename="optionsdialog.cpp" line="345"/>
         <source>Cue monitor level</source>
-        <translation type="unfinished"></translation>
+        <translation>Nível do monitor de pré-escuta</translation>
     </message>
     <message>
         <location filename="optionsdialog.cpp" line="347"/>
         <source>Cue monitor level in percent</source>
-        <translation type="unfinished"></translation>
+        <translation>Nível do monitor de pré-escuta em percentagem</translation>
     </message>
     <message>
         <location filename="optionsdialog.cpp" line="354"/>
         <source>Cue level:</source>
-        <translation type="unfinished"></translation>
+        <translation>Nível de pré-escuta:</translation>
     </message>
     <message>
         <location filename="optionsdialog.cpp" line="360"/>
         <source>Cue routing status</source>
-        <translation type="unfinished"></translation>
+        <translation>Estado do encaminhamento da pré-escuta</translation>
     </message>
     <message>
         <location filename="optionsdialog.cpp" line="367"/>
         <source>Spoken cues in the private ear</source>
-        <translation type="unfinished"></translation>
+        <translation>Avisos falados no ouvido privado</translation>
     </message>
     <message>
         <location filename="optionsdialog.cpp" line="370"/>
         <source>Speak XFB&apos;s own announcements into the cue output</source>
-        <translation type="unfinished"></translation>
+        <translation>Falar os avisos do próprio XFB na saída de pré-escuta</translation>
     </message>
     <message>
         <location filename="optionsdialog.cpp" line="372"/>
         <source>Speak XFB&apos;s announcements into the cue output</source>
-        <translation type="unfinished"></translation>
+        <translation>Falar os avisos do XFB na saída de pré-escuta</translation>
     </message>
     <message>
         <location filename="optionsdialog.cpp" line="373"/>
         <source>XFB&apos;s own status messages are also spoken privately. Your screen reader keeps speaking through its own output — XFB cannot move that.</source>
-        <translation type="unfinished"></translation>
+        <translation>As mensagens de estado do próprio XFB também são ditas em privado. O teu leitor de ecrã continua a falar pela saída dele — o XFB não pode mudar isso.</translation>
     </message>
     <message>
         <location filename="optionsdialog.cpp" line="379"/>
         <source>Count the on-air track down (30, 20, 10, 5 seconds) and say the intro length</source>
-        <translation type="unfinished"></translation>
+        <translation>Contar a faixa no ar em contagem decrescente (30, 20, 10, 5 segundos) e dizer a duração da intro</translation>
     </message>
     <message>
         <location filename="optionsdialog.cpp" line="381"/>
         <source>Spoken countdown to the end of the on-air track</source>
-        <translation type="unfinished"></translation>
+        <translation>Contagem decrescente falada até ao fim da faixa no ar</translation>
     </message>
     <message>
         <location filename="optionsdialog.cpp" line="382"/>
         <source>Spoken in the cue headphones only, so it never goes to air.</source>
-        <translation type="unfinished"></translation>
+        <translation>Dito apenas nos auscultadores de pré-escuta, por isso nunca vai para o ar.</translation>
     </message>
     <message>
         <location filename="optionsdialog.cpp" line="390"/>
         <source>Spoken cues are rendered by the system&apos;s own speech tool.</source>
-        <translation type="unfinished"></translation>
+        <translation>Os avisos falados são produzidos pela ferramenta de fala do próprio sistema.</translation>
     </message>
     <message>
         <location filename="optionsdialog.cpp" line="391"/>
         <source>No text-to-speech tool was found on this system, so spoken cues cannot be produced. Everything is still shown on screen and sent to your screen reader.</source>
-        <translation type="unfinished"></translation>
+        <translation>Não foi encontrada nenhuma ferramenta de síntese de fala neste sistema, por isso não é possível produzir avisos falados. Tudo continua a ser mostrado no ecrã e enviado ao teu leitor de ecrã.</translation>
     </message>
     <message>
         <location filename="optionsdialog.cpp" line="400"/>
         <source>Cue and outputs</source>
-        <translation type="unfinished"></translation>
+        <translation>Pré-escuta e saídas</translation>
     </message>
     <message>
         <location filename="optionsdialog.cpp" line="436"/>
@@ -11101,12 +11121,12 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
     <message>
         <location filename="player.ui" line="3899"/>
         <source>Remove duplicate songs (same artist and song name)</source>
-        <translation type="unfinished"></translation>
+        <translation>Remover músicas duplicadas (mesmo artista e mesmo nome de música)</translation>
     </message>
     <message>
         <location filename="player.ui" line="3902"/>
         <source>Keep one record per artist and song name, removing the rest from the database</source>
-        <translation type="unfinished"></translation>
+        <translation>Manter um registo por artista e nome de música, removendo os restantes da base de dados</translation>
     </message>
     <message>
         <location filename="player.ui" line="3916"/>
@@ -12760,78 +12780,78 @@ Medi-las novamente? Vale a pena fazê-lo depois de uma atualização, e é a for
     <message>
         <location filename="player.cpp" line="726"/>
         <source>Intro set to %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Intro definida em %1</translation>
     </message>
     <message>
         <location filename="player.cpp" line="733"/>
         <source>This track is not in the database, so its intro cannot be saved</source>
-        <translation type="unfinished"></translation>
+        <translation>Esta faixa não está na base de dados, por isso a sua intro não pode ser guardada</translation>
     </message>
     <message>
         <location filename="player.cpp" line="1888"/>
         <source>Measure the intro and outro times of the database</source>
-        <translation type="unfinished"></translation>
+        <translation>Medir os tempos de intro e de fecho da base de dados</translation>
     </message>
     <message>
         <location filename="player.cpp" line="1889"/>
         <source>Work out, for every music track that has not been measured yet, how long its intro runs before the vocal and how long its run-out is. This is a level heuristic, not vocal detection: correct anything it gets wrong by dragging the marker on the now-playing wave strip, and your value is kept the next time this runs.</source>
-        <translation type="unfinished"></translation>
+        <translation>Calcular, para cada faixa de música ainda não medida, quanto tempo a intro corre antes da voz e qual é a duração do fecho. Isto é uma heurística de nível, não deteção de voz: corrige o que estiver errado arrastando o marcador na tira de onda do que está a tocar, e o teu valor é mantido da próxima vez que isto correr.</translation>
     </message>
     <message>
         <location filename="player.cpp" line="1909"/>
         <source>Measure the loudness (EBU R128) of the database</source>
-        <translation type="unfinished"></translation>
+        <translation>Medir a intensidade sonora (EBU R128) da base de dados</translation>
     </message>
     <message>
         <location filename="player.cpp" line="1910"/>
         <source>Measure the integrated loudness and true peak of every track, jingle, commercial and programme that has not been measured yet, so playback can put them all on air at the same level. Files are never modified. Anything whose file changed since it was measured is measured again.</source>
-        <translation type="unfinished"></translation>
+        <translation>Medir a intensidade sonora integrada e o pico real de cada faixa, jingle, publicidade e programa ainda não medido, para que a reprodução os possa pôr no ar todos ao mesmo nível. Os ficheiros nunca são modificados. Tudo o que tiver mudado de ficheiro desde que foi medido é medido outra vez.</translation>
     </message>
     <message>
         <location filename="player.cpp" line="1928"/>
         <source>Find the missing cover art…</source>
-        <translation type="unfinished"></translation>
+        <translation>Procurar as capas em falta…</translation>
     </message>
     <message>
         <location filename="player.cpp" line="1929"/>
         <source>Look for a cover for every track in the library that has none, and — once you have seen what was found — write it into the file. Downloads from before XFB kept the cover have nothing to show on the deck, the phone&apos;s notification or the lock screen.</source>
-        <translation type="unfinished"></translation>
+        <translation>Procurar uma capa para cada faixa da biblioteca que não tenha nenhuma e — depois de veres o que foi encontrado — escrevê-la no ficheiro. As descargas anteriores a o XFB guardar a capa não têm nada para mostrar no prato, na notificação do telemóvel ou no ecrã bloqueado.</translation>
     </message>
     <message>
         <location filename="player.cpp" line="3380"/>
         <source>Cue this track in the headphones</source>
-        <translation type="unfinished"></translation>
+        <translation>Pré-escutar esta faixa nos auscultadores</translation>
     </message>
     <message>
         <location filename="player.cpp" line="3385"/>
         <source>Cue this track in the headphones	%1</source>
-        <translation type="unfinished"></translation>
+        <translation>Pré-escutar esta faixa nos auscultadores	%1</translation>
     </message>
     <message>
         <location filename="player.cpp" line="3388"/>
         <source>Listen to this track on the cue output only. It never reaches the on-air output.</source>
-        <translation type="unfinished"></translation>
+        <translation>Ouvir esta faixa apenas na saída de pré-escuta. Nunca chega à saída de emissão.</translation>
     </message>
     <message>
         <location filename="player.cpp" line="3610"/>
         <source>Cue this jingle in the headphones</source>
-        <translation type="unfinished"></translation>
+        <translation>Pré-escutar este jingle nos auscultadores</translation>
     </message>
     <message>
         <location filename="player.cpp" line="3965"/>
         <source>Cue this program in the headphones</source>
-        <translation type="unfinished"></translation>
+        <translation>Pré-escutar este programa nos auscultadores</translation>
     </message>
     <message>
         <location filename="player.cpp" line="4502"/>
         <source>%1. Intro %2</source>
-        <translation type="unfinished"></translation>
+        <translation>%1. Intro %2</translation>
     </message>
     <message numerus="yes">
         <location filename="player.cpp" line="4746"/>
         <source>%n second(s)</source>
         <comment>spoken countdown to the end of the on-air track</comment>
-        <translation type="unfinished">
+        <translation>
             <numerusform>%n segundo</numerusform>
             <numerusform>%n segundos</numerusform>
         </translation>
@@ -12839,101 +12859,103 @@ Medi-las novamente? Vale a pena fazê-lo depois de uma atualização, e é a for
     <message>
         <location filename="player.cpp" line="5399"/>
         <source>A voice track sits between two tracks. Put at least two in the playlist first.</source>
-        <translation type="unfinished"></translation>
+        <translation>Uma locução fica entre duas faixas. Põe primeiro pelo menos duas na playlist.</translation>
     </message>
     <message>
         <location filename="player.cpp" line="5402"/>
         <location filename="player.cpp" line="5425"/>
         <location filename="player.cpp" line="5474"/>
         <source>Voice track</source>
-        <translation type="unfinished"></translation>
+        <translation>Locução</translation>
     </message>
     <message>
         <location filename="player.cpp" line="5414"/>
         <source>The first join XFB can prepare is the one above track 2; moved there.</source>
-        <translation type="unfinished"></translation>
+        <translation>A primeira passagem que o XFB pode preparar é a que fica acima da faixa 2; movido para lá.</translation>
     </message>
     <message>
         <location filename="player.cpp" line="5426"/>
         <source>The sound-wave store is not available, so XFB cannot analyse the join.</source>
-        <translation type="unfinished"></translation>
+        <translation>O armazém de formas de onda não está disponível, por isso o XFB não consegue analisar a passagem.</translation>
     </message>
     <message>
         <location filename="player.cpp" line="5441"/>
         <source>Voice track over the join between %1 and %2.</source>
-        <translation type="unfinished"></translation>
+        <translation>Locução por cima da passagem entre %1 e %2.</translation>
     </message>
     <message>
         <location filename="player.cpp" line="5449"/>
         <source>Voice track discarded.</source>
-        <translation type="unfinished"></translation>
+        <translation>Locução descartada.</translation>
     </message>
     <message>
         <location filename="player.cpp" line="5470"/>
         <source>That join has already gone to air, so the link was not inserted. The recording is kept at %1.</source>
-        <translation type="unfinished"></translation>
+        <translation>Essa passagem já foi para o ar, por isso a locução não foi inserida. A gravação fica guardada em %1.</translation>
     </message>
     <message>
         <location filename="player.cpp" line="5505"/>
         <source>Voice track added at position %1, starting %2 seconds before %3 ends. The ducking was written onto both songs.</source>
-        <translation type="unfinished"></translation>
+        <translation>Locução adicionada na posição %1, a começar %2 segundos antes de %3 acabar. O ducking foi escrito nas duas músicas.</translation>
     </message>
     <message>
         <location filename="player.cpp" line="5510"/>
         <source>Voice track added at position %1. No ducking was written — no speech was found in the take.</source>
-        <translation type="unfinished"></translation>
+        <translation>Locução adicionada na posição %1. Não foi escrito ducking — não foi encontrada fala na gravação.</translation>
     </message>
     <message>
         <location filename="player.cpp" line="5659"/>
         <source>Intro %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Intro %1</translation>
     </message>
     <message>
         <location filename="player.cpp" line="5695"/>
         <source>The intro of this track has not been measured</source>
-        <translation type="unfinished"></translation>
+        <translation>A intro desta faixa não foi medida</translation>
     </message>
     <message>
         <location filename="player.cpp" line="5697"/>
         <source>No intro: this track starts straight in</source>
-        <translation type="unfinished"></translation>
+        <translation>Sem intro: esta faixa começa logo</translation>
     </message>
     <message>
         <location filename="player.cpp" line="5701"/>
         <source>%1 of intro left, of %2</source>
-        <translation type="unfinished"></translation>
+        <translation>Faltam %1 de intro, de %2</translation>
     </message>
     <message>
         <location filename="player.cpp" line="5706"/>
         <source>Intro %1, set by hand, already passed</source>
-        <translation type="unfinished"></translation>
+        <translation>Intro %1, definida à mão, já passou</translation>
     </message>
     <message>
         <location filename="player.cpp" line="5708"/>
         <source>Intro %1, already passed</source>
-        <translation type="unfinished"></translation>
+        <translation>Intro %1, já passou</translation>
     </message>
     <message>
         <location filename="player.cpp" line="5720"/>
         <source>Intro analysis is already running</source>
-        <translation type="unfinished"></translation>
+        <translation>A análise das intros já está a correr</translation>
     </message>
     <message>
         <location filename="player.cpp" line="5728"/>
         <source>Measure intros</source>
-        <translation type="unfinished"></translation>
+        <translation>Medir intros</translation>
     </message>
     <message>
         <location filename="player.cpp" line="5729"/>
         <source>Every track in the database already has an intro time.
 
 Measure them all again? Anything you corrected by hand is kept — only the values XFB worked out itself are replaced.</source>
-        <translation type="unfinished"></translation>
+        <translation>Todas as faixas da base de dados já têm tempo de intro.
+
+Medi-las todas outra vez? Tudo o que corrigiste à mão é mantido — só os valores que o XFB calculou sozinho são substituídos.</translation>
     </message>
     <message numerus="yes">
         <location filename="player.cpp" line="5743"/>
         <source>Measuring the intro of %n track(s)...</source>
-        <translation type="unfinished">
+        <translation>
             <numerusform></numerusform>
             <numerusform></numerusform>
         </translation>
@@ -12941,42 +12963,44 @@ Measure them all again? Anything you corrected by hand is kept — only the valu
     <message>
         <location filename="player.cpp" line="5764"/>
         <source>Intro analysis canceled - %1 track(s) measured</source>
-        <translation type="unfinished"></translation>
+        <translation>Análise das intros cancelada - %1 faixa(s) medida(s)</translation>
     </message>
     <message>
         <location filename="player.cpp" line="5766"/>
         <source>Intros: %1 track(s) measured, %2 left alone (set by hand, silent or unreadable)</source>
-        <translation type="unfinished"></translation>
+        <translation>Intros: %1 faixa(s) medida(s), %2 deixada(s) em paz (definidas à mão, em silêncio ou ilegíveis)</translation>
     </message>
     <message>
         <location filename="player.cpp" line="5769"/>
         <source>Intros: %1 track(s) measured, %2 could not be measured</source>
-        <translation type="unfinished"></translation>
+        <translation>Intros: %1 faixa(s) medida(s), %2 não puderam ser medidas</translation>
     </message>
     <message>
         <location filename="player.cpp" line="5931"/>
         <source>A loudness scan is already running</source>
-        <translation type="unfinished"></translation>
+        <translation>Já está a correr uma análise de intensidade sonora</translation>
     </message>
     <message>
         <location filename="player.cpp" line="5936"/>
         <location filename="player.cpp" line="5947"/>
         <source>Measure loudness</source>
-        <translation type="unfinished"></translation>
+        <translation>Medir a intensidade sonora</translation>
     </message>
     <message>
         <location filename="player.cpp" line="5937"/>
         <source>ffmpeg was not found, so loudness cannot be measured.
 
 Install ffmpeg and try again.</source>
-        <translation type="unfinished"></translation>
+        <translation>O ffmpeg não foi encontrado, por isso não é possível medir a intensidade sonora.
+
+Instala o ffmpeg e tenta outra vez.</translation>
     </message>
     <message numerus="yes">
         <location filename="player.cpp" line="5948"/>
         <source>Everything in the database has already been measured (%n item(s)).
 
 Measure it all again?</source>
-        <translation type="unfinished">
+        <translation>
             <numerusform></numerusform>
             <numerusform></numerusform>
         </translation>
@@ -12984,7 +13008,7 @@ Measure it all again?</source>
     <message numerus="yes">
         <location filename="player.cpp" line="5980"/>
         <source>Measuring the loudness of %n item(s)...</source>
-        <translation type="unfinished">
+        <translation>
             <numerusform></numerusform>
             <numerusform></numerusform>
         </translation>
@@ -12992,12 +13016,12 @@ Measure it all again?</source>
     <message>
         <location filename="player.cpp" line="6001"/>
         <source>Loudness scan canceled — %1 item(s) measured</source>
-        <translation type="unfinished"></translation>
+        <translation>Análise de intensidade sonora cancelada — %1 item(s) medido(s)</translation>
     </message>
     <message>
         <location filename="player.cpp" line="6002"/>
         <source>Loudness: %1 item(s) measured, %2 skipped as unchanged, %3 could not be measured</source>
-        <translation type="unfinished"></translation>
+        <translation>Intensidade sonora: %1 item(s) medido(s), %2 saltado(s) por não terem mudado, %3 não puderam ser medidos</translation>
     </message>
     <message>
         <location filename="player.cpp" line="6407"/>
@@ -13012,44 +13036,44 @@ Measure it all again?</source>
     <message>
         <location filename="player.cpp" line="6432"/>
         <source>Announce the &amp;intro countdown</source>
-        <translation type="unfinished"></translation>
+        <translation>Anunciar a contagem da &amp;intro</translation>
     </message>
     <message>
         <location filename="player.cpp" line="6435"/>
         <source>Say how much of the intro is left before the vocal</source>
-        <translation type="unfinished"></translation>
+        <translation>Dizer quanto falta da intro antes da voz</translation>
     </message>
     <message>
         <location filename="player.cpp" line="6448"/>
         <source>&amp;Cue the selected track (headphones)</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Pré-escutar a faixa selecionada (auscultadores)</translation>
     </message>
     <message>
         <location filename="player.cpp" line="6451"/>
         <location filename="player.cpp" line="7642"/>
         <source>Listen to the selected track in the cue headphones only</source>
-        <translation type="unfinished"></translation>
+        <translation>Ouvir a faixa selecionada apenas nos auscultadores de pré-escuta</translation>
     </message>
     <message>
         <location filename="player.cpp" line="6460"/>
         <source>&amp;Voice track over this join...</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Locução por cima desta passagem...</translation>
     </message>
     <message>
         <location filename="player.cpp" line="6463"/>
         <source>Record your link over the join above the selected playlist track; XFB writes the ducking</source>
-        <translation type="unfinished"></translation>
+        <translation>Grava a tua locução por cima da passagem acima da faixa selecionada da playlist; o XFB escreve o ducking</translation>
     </message>
     <message>
         <location filename="player.cpp" line="6473"/>
         <source>Stop the c&amp;ue</source>
-        <translation type="unfinished"></translation>
+        <translation>Parar a pré-esc&amp;uta</translation>
     </message>
     <message>
         <location filename="player.cpp" line="6480"/>
         <location filename="player.cpp" line="7682"/>
         <source>Cue stopped</source>
-        <translation type="unfinished"></translation>
+        <translation>Pré-escuta parada</translation>
     </message>
     <message>
         <location filename="player.cpp" line="6495"/>
@@ -13094,82 +13118,82 @@ Measure it all again?</source>
     <message>
         <location filename="player.cpp" line="6598"/>
         <source>Stream to &amp;Icecast...</source>
-        <translation type="unfinished"></translation>
+        <translation>Emitir para &amp;Icecast...</translation>
     </message>
     <message>
         <location filename="player.cpp" line="6622"/>
         <source>&amp;Dead-Air Watchdog...</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Vigia de silêncio no ar...</translation>
     </message>
     <message>
         <location filename="player.cpp" line="6624"/>
         <source>What to do when the station goes quiet</source>
-        <translation type="unfinished"></translation>
+        <translation>O que fazer quando a estação fica em silêncio</translation>
     </message>
     <message>
         <location filename="player.cpp" line="6648"/>
         <source>As-Run &amp;Log...</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Registo de emissão...</translation>
     </message>
     <message>
         <location filename="player.cpp" line="6652"/>
         <source>What actually went to air, and when</source>
-        <translation type="unfinished"></translation>
+        <translation>O que foi mesmo para o ar, e quando</translation>
     </message>
     <message>
         <location filename="player.cpp" line="6663"/>
         <source>As-run log opened</source>
-        <translation type="unfinished"></translation>
+        <translation>Registo de emissão aberto</translation>
     </message>
     <message>
         <location filename="player.cpp" line="6672"/>
         <source>&amp;Rotation Rules...</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Regras de rotação...</translation>
     </message>
     <message>
         <location filename="player.cpp" line="6678"/>
         <source>Artist and title separation, categories, dayparts and seasonal dates</source>
-        <translation type="unfinished"></translation>
+        <translation>Separação de artistas e títulos, categorias, faixas horárias e datas sazonais</translation>
     </message>
     <message>
         <location filename="player.cpp" line="6704"/>
         <source>Rotation rules opened</source>
-        <translation type="unfinished"></translation>
+        <translation>Regras de rotação abertas</translation>
     </message>
     <message>
         <location filename="player.cpp" line="6717"/>
         <source>Hour &amp;Clocks...</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Relógios da hora...</translation>
     </message>
     <message>
         <location filename="player.cpp" line="6722"/>
         <source>Programme the hour as a clock: sweeps, ad breaks, jingles and fixed-time items</source>
-        <translation type="unfinished"></translation>
+        <translation>Programar a hora como um relógio: blocos musicais, intervalos publicitários, jingles e itens de hora fixa</translation>
     </message>
     <message>
         <location filename="player.cpp" line="6744"/>
         <source>Hour clocks opened</source>
-        <translation type="unfinished"></translation>
+        <translation>Relógios da hora abertos</translation>
     </message>
     <message>
         <location filename="player.cpp" line="6754"/>
         <source>Listener &amp;Requests...</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Pedidos dos ouvintes...</translation>
     </message>
     <message>
         <location filename="player.cpp" line="6756"/>
         <source>The public now-playing page, and what listeners have asked for</source>
-        <translation type="unfinished"></translation>
+        <translation>A página pública do que está a tocar, e o que os ouvintes pediram</translation>
     </message>
     <message>
         <location filename="player.cpp" line="6773"/>
         <source>Requested track added to the running order: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Faixa pedida adicionada ao alinhamento: %1</translation>
     </message>
     <message>
         <location filename="player.cpp" line="6780"/>
         <source>Listener requests opened</source>
-        <translation type="unfinished"></translation>
+        <translation>Pedidos dos ouvintes abertos</translation>
     </message>
     <message>
         <location filename="player.cpp" line="6814"/>
@@ -13185,24 +13209,26 @@ Measure it all again?</source>
     <message>
         <location filename="player.cpp" line="6889"/>
         <source>STUDIO DARK — %1</source>
-        <translation type="unfinished"></translation>
+        <translation>ESTÚDIO ÀS ESCURAS — %1</translation>
     </message>
     <message>
         <location filename="player.cpp" line="6890"/>
         <source>Studio dark. %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Estúdio às escuras. %1</translation>
     </message>
     <message>
         <location filename="player.cpp" line="6891"/>
         <source>The studio is dark</source>
-        <translation type="unfinished"></translation>
+        <translation>O estúdio está às escuras</translation>
     </message>
     <message>
         <location filename="player.cpp" line="6892"/>
         <source>%1
 
 This machine is the backup. Nothing has been put on air automatically — check the studio, and use Take Over when you have decided to.</source>
-        <translation type="unfinished"></translation>
+        <translation>%1
+
+Esta máquina é a de reserva. Não foi posto nada no ar automaticamente — vê o estúdio, e usa Assumir quando tiveres decidido.</translation>
     </message>
     <message>
         <location filename="player.cpp" line="6917"/>
@@ -13213,27 +13239,27 @@ This machine is the backup. Nothing has been put on air automatically — check 
     <message>
         <location filename="player.cpp" line="6991"/>
         <source>%1 — fallback started: %2</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 — recurso arrancado: %2</translation>
     </message>
     <message>
         <location filename="player.cpp" line="6992"/>
         <source>%1 — FALLBACK FAILED: %2</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 — O RECURSO FALHOU: %2</translation>
     </message>
     <message>
         <location filename="player.cpp" line="7042"/>
         <source>Auto Mode picked %1 track(s) from the library</source>
-        <translation type="unfinished"></translation>
+        <translation>O Modo Automático escolheu %1 faixa(s) da biblioteca</translation>
     </message>
     <message>
         <location filename="player.cpp" line="7052"/>
         <source>no fallback playlist or folder is configured, and nothing else could be found to play</source>
-        <translation type="unfinished"></translation>
+        <translation>não há playlist nem pasta de recurso configurada, e não se encontrou mais nada para tocar</translation>
     </message>
     <message numerus="yes">
         <location filename="player.cpp" line="7085"/>
         <source>%n track(s) from %1</source>
-        <translation type="unfinished">
+        <translation>
             <numerusform></numerusform>
             <numerusform></numerusform>
         </translation>
@@ -13241,12 +13267,12 @@ This machine is the backup. Nothing has been put on air automatically — check 
     <message>
         <location filename="player.cpp" line="7086"/>
         <source>the fallback material</source>
-        <translation type="unfinished"></translation>
+        <translation>o material de recurso</translation>
     </message>
     <message numerus="yes">
         <location filename="player.cpp" line="7087"/>
         <source>queued %n track(s) but the player did not start</source>
-        <translation type="unfinished">
+        <translation>
             <numerusform></numerusform>
             <numerusform></numerusform>
         </translation>
@@ -13254,12 +13280,12 @@ This machine is the backup. Nothing has been put on air automatically — check 
     <message>
         <location filename="player.cpp" line="7249"/>
         <source>Streaming: on air</source>
-        <translation type="unfinished"></translation>
+        <translation>Emissão: no ar</translation>
     </message>
     <message>
         <location filename="player.cpp" line="7250"/>
         <source>Streaming: off air</source>
-        <translation type="unfinished"></translation>
+        <translation>Emissão: fora do ar</translation>
     </message>
     <message>
         <location filename="player.cpp" line="7385"/>
@@ -13381,47 +13407,47 @@ This machine is the backup. Nothing has been put on air automatically — check 
     <message>
         <location filename="player.cpp" line="7591"/>
         <source>Cue monitor</source>
-        <translation type="unfinished"></translation>
+        <translation>Monitor de pré-escuta</translation>
     </message>
     <message>
         <location filename="player.cpp" line="7592"/>
         <source>What is playing in the cue headphones. Cue audio never reaches the on-air output.</source>
-        <translation type="unfinished"></translation>
+        <translation>O que está a tocar nos auscultadores de pré-escuta. O áudio de pré-escuta nunca chega à saída de emissão.</translation>
     </message>
     <message>
         <location filename="player.cpp" line="7652"/>
         <source>CUE: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>PRÉ-ESCUTA: %1</translation>
     </message>
     <message>
         <location filename="player.cpp" line="7656"/>
         <source>Cue monitor: %1 is playing in the cue headphones</source>
-        <translation type="unfinished"></translation>
+        <translation>Monitor de pré-escuta: %1 está a tocar nos auscultadores de pré-escuta</translation>
     </message>
     <message>
         <location filename="player.cpp" line="7663"/>
         <source>Cue monitor: nothing is being cued</source>
-        <translation type="unfinished"></translation>
+        <translation>Monitor de pré-escuta: não está nada em pré-escuta</translation>
     </message>
     <message>
         <location filename="player.cpp" line="7675"/>
         <source>There is nothing to cue</source>
-        <translation type="unfinished"></translation>
+        <translation>Não há nada para pré-escutar</translation>
     </message>
     <message>
         <location filename="player.cpp" line="7684"/>
         <source>Cueing %1 in the headphones</source>
-        <translation type="unfinished"></translation>
+        <translation>A pré-escutar %1 nos auscultadores</translation>
     </message>
     <message>
         <location filename="player.cpp" line="7700"/>
         <source>Select a track in the library or the playlist first</source>
-        <translation type="unfinished"></translation>
+        <translation>Seleciona primeiro uma faixa na biblioteca ou na playlist</translation>
     </message>
     <message>
         <location filename="player.cpp" line="7705"/>
         <source>No track is selected</source>
-        <translation type="unfinished"></translation>
+        <translation>Não está nenhuma faixa selecionada</translation>
     </message>
     <message>
         <location filename="player.cpp" line="7734"/>
@@ -13602,32 +13628,32 @@ Continuar?</translation>
     <message>
         <location filename="player.cpp" line="8632"/>
         <source>tempo-matched, genre %1</source>
-        <translation type="unfinished"></translation>
+        <translation>andamento a condizer, género %1</translation>
     </message>
     <message>
         <location filename="player.cpp" line="8634"/>
         <source>tempo-matched</source>
-        <translation type="unfinished"></translation>
+        <translation>andamento a condizer</translation>
     </message>
     <message>
         <location filename="player.cpp" line="8636"/>
         <source>genre %1</source>
-        <translation type="unfinished"></translation>
+        <translation>género %1</translation>
     </message>
     <message>
         <location filename="player.cpp" line="8638"/>
         <source>whole library</source>
-        <translation type="unfinished"></translation>
+        <translation>biblioteca inteira</translation>
     </message>
     <message>
         <location filename="player.cpp" line="8875"/>
         <source>%1 is due now but there is no audio for it.</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 está na hora mas não tem áudio.</translation>
     </message>
     <message>
         <location filename="player.cpp" line="8885"/>
         <source>%1 is due at %2 past the hour and is next in the running order.</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 está marcado para os %2 depois da hora e é o próximo do alinhamento.</translation>
     </message>
     <message>
         <location filename="player.cpp" line="10373"/>
@@ -13776,7 +13802,7 @@ Medi-las agora? Cada faixa é descodificada uma vez, em segundo plano; também p
     <message>
         <location filename="player.cpp" line="11113"/>
         <source>Update with your package manager</source>
-        <translation type="unfinished"></translation>
+        <translation>Atualizar com o teu gestor de pacotes</translation>
     </message>
     <message>
         <location filename="player.cpp" line="11114"/>
@@ -13785,7 +13811,11 @@ Medi-las agora? Cada faixa é descodificada uma vez, em segundo plano; também p
     yay -Syu xfb
 
 then launch XFB again to run version %1.</source>
-        <translation type="unfinished"></translation>
+        <translation>Esta cópia do XFB é gerida pelo pacman, por isso a atualização vem do AUR. Corre o teu ajudante do AUR, por exemplo:
+
+    yay -Syu xfb
+
+e volta a lançar o XFB para correres a versão %1.</translation>
     </message>
     <message>
         <location filename="player.cpp" line="11148"/>
@@ -14532,34 +14562,34 @@ Ignoradas (já em 432 Hz): %1</translation>
     <message>
         <location filename="player.cpp" line="17823"/>
         <source>Failed to read the musics table.</source>
-        <translation type="unfinished"></translation>
+        <translation>Não foi possível ler a tabela de músicas.</translation>
     </message>
     <message>
         <location filename="player.cpp" line="17892"/>
         <location filename="player.cpp" line="17923"/>
         <location filename="player.cpp" line="18127"/>
         <source>Remove Duplicates</source>
-        <translation type="unfinished"></translation>
+        <translation>Remover duplicados</translation>
     </message>
     <message>
         <location filename="player.cpp" line="17893"/>
         <source>No duplicates found — every artist and song name in the database appears exactly once.</source>
-        <translation type="unfinished"></translation>
+        <translation>Não foram encontrados duplicados — cada artista e nome de música da base de dados aparece exatamente uma vez.</translation>
     </message>
     <message>
         <location filename="player.cpp" line="17908"/>
         <source>keep</source>
-        <translation type="unfinished"></translation>
+        <translation>manter</translation>
     </message>
     <message>
         <location filename="player.cpp" line="17912"/>
         <source>drop</source>
-        <translation type="unfinished"></translation>
+        <translation>deitar fora</translation>
     </message>
     <message numerus="yes">
         <location filename="player.cpp" line="17917"/>
         <source>… and %n more song(s), all of them listed in xfb.log.</source>
-        <translation type="unfinished">
+        <translation>
             <numerusform></numerusform>
             <numerusform></numerusform>
         </translation>
@@ -14567,7 +14597,7 @@ Ignoradas (já em 432 Hz): %1</translation>
     <message numerus="yes">
         <location filename="player.cpp" line="17924"/>
         <source>%n song(s) appear more than once in the database.</source>
-        <translation type="unfinished">
+        <translation>
             <numerusform></numerusform>
             <numerusform></numerusform>
         </translation>
@@ -14577,7 +14607,7 @@ Ignoradas (já em 432 Hz): %1</translation>
         <source>Remove %n duplicate record(s), keeping one of each song?
 
 Play counts and any measured BPM, loudness and intro times are merged onto the record that stays. The audio files themselves are not deleted — only the database records.</source>
-        <translation type="unfinished">
+        <translation>
             <numerusform></numerusform>
             <numerusform></numerusform>
         </translation>
@@ -14585,24 +14615,26 @@ Play counts and any measured BPM, loudness and intro times are merged onto the r
     <message>
         <location filename="player.cpp" line="17954"/>
         <source>Failed to prepare the database queries.</source>
-        <translation type="unfinished"></translation>
+        <translation>Não foi possível preparar as consultas à base de dados.</translation>
     </message>
     <message>
         <location filename="player.cpp" line="17992"/>
         <source>Removing duplicate songs…</source>
-        <translation type="unfinished"></translation>
+        <translation>A remover músicas duplicadas…</translation>
     </message>
     <message>
         <location filename="player.cpp" line="18108"/>
         <source>The duplicates could not be removed — the database was left untouched.
 
 %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Não foi possível remover os duplicados — a base de dados ficou intacta.
+
+%1</translation>
     </message>
     <message numerus="yes">
         <location filename="player.cpp" line="18117"/>
         <source>Removed %n duplicate record(s).</source>
-        <translation type="unfinished">
+        <translation>
             <numerusform></numerusform>
             <numerusform></numerusform>
         </translation>
@@ -14610,22 +14642,22 @@ Play counts and any measured BPM, loudness and intro times are merged onto the r
     <message>
         <location filename="player.cpp" line="18119"/>
         <source>Songs merged: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Músicas fundidas: %1</translation>
     </message>
     <message>
         <location filename="player.cpp" line="18121"/>
         <source>Failed: %1 (see xfb.log)</source>
-        <translation type="unfinished"></translation>
+        <translation>Falhou: %1 (vê o xfb.log)</translation>
     </message>
     <message>
         <location filename="player.cpp" line="18123"/>
         <source>Cancelled — the rest were left alone.</source>
-        <translation type="unfinished"></translation>
+        <translation>Cancelado — os restantes ficaram intactos.</translation>
     </message>
     <message>
         <location filename="player.cpp" line="18124"/>
         <source>No audio files were deleted.</source>
-        <translation type="unfinished"></translation>
+        <translation>Não foi apagado nenhum ficheiro de áudio.</translation>
     </message>
     <message>
         <location filename="player.cpp" line="11321"/>
@@ -14678,7 +14710,7 @@ Play counts and any measured BPM, loudness and intro times are merged onto the r
     <message>
         <location filename="player.cpp" line="3260"/>
         <source>Cue this track in the headphones</source>
-        <translation type="unfinished"></translation>
+        <translation>Pré-escutar esta faixa nos auscultadores</translation>
     </message>
     <message>
         <location filename="player.cpp" line="3279"/>
@@ -14693,12 +14725,12 @@ Play counts and any measured BPM, loudness and intro times are merged onto the r
     <message>
         <location filename="player.cpp" line="3292"/>
         <source>Voice track over the join above this track...</source>
-        <translation type="unfinished"></translation>
+        <translation>Locução por cima da passagem acima desta faixa...</translation>
     </message>
     <message>
         <location filename="player.cpp" line="3294"/>
         <source>Record your link across this join. XFB writes the ducking onto both songs as an ordinary volume line you can then edit by hand.</source>
-        <translation type="unfinished"></translation>
+        <translation>Grava a tua locução por cima desta passagem. O XFB escreve o ducking nas duas músicas como uma linha de volume normal que podes depois editar à mão.</translation>
     </message>
     <message>
         <location filename="player.cpp" line="3667"/>
@@ -14718,7 +14750,7 @@ Play counts and any measured BPM, loudness and intro times are merged onto the r
     <message>
         <location filename="player.cpp" line="3671"/>
         <source>Cue this advert in the headphones</source>
-        <translation type="unfinished"></translation>
+        <translation>Pré-escutar esta publicidade nos auscultadores</translation>
     </message>
     <message>
         <location filename="player.cpp" line="3705"/>
