@@ -236,6 +236,14 @@ void add_pub::on_pushButton_clicked()
 
 }
 
+void add_pub::on_pushButton_2_clicked()
+{
+    // reject() rather than hide(), so Cancel and Escape leave this window the
+    // same way. Dates already added with "Add new" are written to the
+    // scheduler as they are added and are not taken back by this.
+    reject();
+}
+
 void add_pub::on_pushButton_6_clicked()
 {
     /*add new date and time with type 2 (dayOfTheWeek+houre+min)*/

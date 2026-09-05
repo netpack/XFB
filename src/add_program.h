@@ -22,6 +22,10 @@ private slots:
     void on_pushButton_4_clicked();
     void on_pushButton_clicked();
 
+    // Cancel. It had no slot at all, so the button did nothing: the only way
+    // out of this window was Save or the title bar.
+    void on_pushButton_2_clicked();
+
     void on_pushButton_6_clicked();
 
     void on_pushButton_5_clicked();
