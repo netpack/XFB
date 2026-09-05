@@ -711,6 +711,12 @@ private slots:
     QPointer<class AirLogDialog> m_airLogDialog;
     /** The rotation editor and the "why did it pick that?" view. */
     QPointer<class RotationDialog> m_rotationDialog;
+    /** Marking the library for the national music quota, and the report that
+     *  measures the as-run log against it. */
+    QPointer<class QuotaDialog> m_quotaDialog;
+    /** Opens that window on @a preselected, which is what both the menu entry
+     *  and the music table's context menu want. */
+    void openMusicQuota(const QList<qint64> &preselected);
 
     // --- the hour clock -----------------------------------------------
     // The format as radio writes it: an ordered, timed hour of sweeps, ad

@@ -129,6 +129,7 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include "services/BrailleDisplayService.h"
 #include "dialogs/AccessibilityPreferencesDialog.h"
 #include "dialogs/AirLogDialog.h"
+#include "dialogs/QuotaDialog.h"
 #include "dialogs/DeadAirDialog.h"
 #include "dialogs/RequestTrayDialog.h"
 #include "services/DeadAirWatchdog.h"
@@ -141,6 +142,7 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include "services/LibraryWatcher.h"
 #include "services/StreamService.h"
 #include "services/AirLog.h"
+#include "services/MusicQuota.h"
 #include "services/RotationRules.h"
 #include "dialogs/RotationDialog.h"
 #include "services/HourClock.h"
@@ -3088,6 +3090,14 @@ bool player::checkDbOpen() {
     // install that predates it gets the table on its next launch.
     AirLog::ensureSchema(adb);
 
+    // Which tracks count towards the national music quota, so the as-run log
+    // can be measured against it. Same reasoning as the as-run log above:
+    // created here rather than in a migration so an install that predates the
+    // feature gets the table on its next launch. A track with no row is not
+    // counted against the station — it is counted as unmarked, which is what
+    // lets a library be classified a few albums at a time.
+    MusicQuota::ensureSchema(adb);
+
     // Per-track rotation rules (category, daypart, date window, weight).
     // Same reasoning as the as-run log above: created here rather than in a
     // migration so an install that predates the feature gets the table on its
@@ -3474,6 +3484,15 @@ void player::musicViewContextMenu(const QPoint& pos) {
         thisMenu.addSeparator();
     }
 
+    // The quota marking, on the selection. Not in the batch submenu: it is
+    // offered for one track as readily as for forty, and it is the entry an
+    // operator reaches for while listening to something they have just
+    // realised nobody has ever classified.
+    QAction *actQuota = thisMenu.addAction(
+        QIcon(":/icons/flat/Music Transcript-48.png"),
+        multiSelect ? tr("Mark %1 tracks for the music quota...").arg(count)
+                    : tr("Mark this track for the music quota..."));
+
     QAction *actRetune432 = thisMenu.addAction(
         QIcon(":/icons/flat/tuning-fork-64.png"),
         multiSelect ? tr("Retune %1 tracks to 432 Hz...").arg(count)
@@ -3522,6 +3541,7 @@ void player::musicViewContextMenu(const QPoint& pos) {
             if (batch)
                 batch->setEnabled(mayEdit);
         }
+        actQuota->setEnabled(access.allows(QStringLiteral("programming.quota")));
         actRetune432->setEnabled(access.allows(QStringLiteral("library.retune")));
         const bool mayPair = access.allows(QStringLiteral("station.sync.mobile"));
         actSyncSelection->setEnabled(mayPair);
@@ -3567,6 +3587,14 @@ void player::musicViewContextMenu(const QPoint& pos) {
         for (const QString &path : getSelectedPaths())
             ui->playlist->addItem(path);
         calculate_playlist_total_time();
+
+    } else if (selectedItem == actQuota) {
+        QList<qint64> ids;
+        for (int id : getSelectedIds()) {
+            if (id > 0 && !ids.contains(id))
+                ids.append(id);
+        }
+        openMusicQuota(ids);
 
     } else if (selectedItem == actRetune432) {
         convertMusicsTo432(getSelectedPaths());
@@ -6862,6 +6890,38 @@ void player::setupPlaybackShortcuts()
         addAction(rotation);
         AccessControl::instance().guard(rotation, QStringLiteral("programming.rotation"));
 
+        // The national music quota. Next to the rotation rules because it is
+        // the same job seen from the other end: rotation decides what goes on
+        // next, this says what the month has to add up to, and both are read
+        // off the same as-run log.
+        QAction *quota = new QAction(QIcon(":/icons/flat/Music Transcript-48.png"),
+                                     tr("Music &Quota..."), this);
+        quota->setMenuRole(QAction::NoRole);
+        // Ctrl+Shift+Q would be quit on a few desktops; Ctrl+Alt+Q is free.
+        quota->setShortcut(QKeySequence(Qt::CTRL | Qt::ALT | Qt::Key_Q));
+        quota->setShortcutContext(Qt::ApplicationShortcut);
+        quota->setStatusTip(tr("Mark the library for the national music quota, "
+                               "and measure what went to air against it"));
+        connect(quota, &QAction::triggered, this, [this]() {
+            // Whatever is highlighted in the music table is what the operator
+            // means to mark, so it arrives selected — the same as the rotation
+            // editor above.
+            QList<qint64> preselected;
+            if (ui->musicView && ui->musicView->selectionModel()) {
+                const QModelIndexList rows =
+                    ui->musicView->selectionModel()->selectedRows(0);
+                for (const QModelIndex &index : rows) {
+                    const qint64 id = index.data().toLongLong();
+                    if (id > 0 && !preselected.contains(id))
+                        preselected.append(id);
+                }
+            }
+            openMusicQuota(preselected);
+        });
+        ui->menuXFB->addAction(quota);
+        addAction(quota);
+        AccessControl::instance().guard(quota, QStringLiteral("programming.quota"));
+
         // The hour clock. It sits next to the rotation rules because the two
         // answer neighbouring questions: rotation says *which* record, the
         // clock says *what kind of thing* goes there and *when*.
@@ -7980,6 +8040,26 @@ void player::announceAccessible(const QString &message)
         return;
     if (auto *manager = container->resolve<AccessibilityManager>())
         manager->announceMessage(message, AccessibilityManager::Priority::Normal);
+}
+
+// The music quota window. Two ways in — the XFB menu and the music table's
+// context menu — and both mean the same thing, so the window itself is built
+// once and kept: the marking tab holds a selection and a half-typed search
+// that reopening from scratch would throw away.
+void player::openMusicQuota(const QList<qint64> &preselected)
+{
+    if (!m_quotaDialog) {
+        m_quotaDialog = new QuotaDialog(this, preselected);
+        m_quotaDialog->setAttribute(Qt::WA_DeleteOnClose, false);
+        connect(m_quotaDialog, &QuotaDialog::announcementRequested,
+                this, &player::announceAccessible);
+    } else {
+        m_quotaDialog->preselect(preselected);
+    }
+    m_quotaDialog->show();
+    m_quotaDialog->raise();
+    m_quotaDialog->activateWindow();
+    announceAccessible(tr("Music quota opened"));
 }
 
 // ---------------------------------------------------------------------------

@@ -46,6 +46,8 @@ set(SOURCES
     dialogs/AirLogDialog.cpp
     # Rotation editor + the "why did it pick this?" view
     dialogs/RotationDialog.cpp
+    # Music quota: marking the library, and the report off the as-run log
+    dialogs/QuotaDialog.cpp
     # Hour clock editor: the wheel, its accessible text twin, the week grid
     dialogs/HourClockDialog.cpp
     dialogs/DeadAirDialog.cpp
@@ -88,6 +90,8 @@ set(SOURCES
     services/AirLog.cpp
     # Rotation rules: separation, categories, dayparts, seasonal windows
     services/RotationRules.cpp
+    # National music quota: the per-track marks and the figures off the log
+    services/MusicQuota.cpp
     # The hour clock: the format as an ordered, timed hour of slots
     services/HourClock.cpp
     services/DeadAirWatchdog.cpp
@@ -195,6 +199,7 @@ set(HEADERS
     dialogs/StreamDialog.h
     dialogs/AirLogDialog.h
     dialogs/RotationDialog.h
+    dialogs/QuotaDialog.h
     dialogs/HourClockDialog.h
     dialogs/DeadAirDialog.h
     dialogs/WatchedFoldersDialog.h
@@ -216,6 +221,7 @@ set(HEADERS
     services/MusicCache.h
     services/AirLog.h
     services/RotationRules.h
+    services/MusicQuota.h
     services/HourClock.h
     services/DeadAirWatchdog.h
     services/LibraryWatcher.h

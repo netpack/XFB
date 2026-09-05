@@ -166,6 +166,10 @@ const QVector<AccessControl::Permission> &AccessControl::catalogue()
             {QStringLiteral("programming.airlog"), programming,
              tr("Read the as-run log"),
              tr("What actually went to air, and the advertiser report.")},
+            {QStringLiteral("programming.quota"), programming,
+             tr("Mark and report the music quota"),
+             tr("Say which tracks count as national music, and measure what "
+                "went to air against the station's obligation.")},
             {QStringLiteral("programming.requests"), programming,
              tr("Run the listener request line"),
              tr("The public page and the requests that arrive on it.")},
