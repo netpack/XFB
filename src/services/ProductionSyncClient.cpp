@@ -93,6 +93,9 @@ constexpr qint64 kUploadChunkBytes = 1024 * 1024;
 /** How many rows travel in one request. */
 constexpr int kRowBatch = 200;
 
+/** How many of a category's files a shared-folder check opens. */
+constexpr int kShareCheckSample = 20;
+
 QString humanBytes(qint64 bytes)
 {
     if (bytes >= 1024LL * 1024 * 1024)
@@ -163,12 +166,25 @@ void ProductionSyncClient::load()
     m_syncOnStart = settings.value(QStringLiteral("SyncOnStart"), false).toBool();
     m_publishAutomatically =
         settings.value(QStringLiteral("PublishAutomatically"), true).toBool();
+    // Shared unless this machine was set up before there was a choice: an
+    // existing production computer already holds a copy of the library and
+    // has a baseline built around it, and quietly switching it to the share
+    // would strand all of that.
+    const QVariant storage = settings.value(QStringLiteral("MediaStorage"));
+    m_mediaStorage = storage.toString().compare(QLatin1String("local"), Qt::CaseInsensitive) == 0
+                         ? MediaStorage::LocalCopy
+                         : MediaStorage::Shared;
+    m_needsPull = settings.value(QStringLiteral("NeedsPull"), false).toBool();
     m_lastSync = settings.value(QStringLiteral("LastSync")).toDateTime();
     m_lastResult = settings.value(QStringLiteral("LastResult")).toString();
     for (const QString &category : kMediaTables) {
         const QString value = settings.value(QStringLiteral("Root/") + category).toString();
         if (!value.isEmpty())
             m_roots.insert(category, value);
+        const QString there =
+            settings.value(QStringLiteral("StationRoot/") + category).toString();
+        if (!there.isEmpty())
+            m_stationRoots.insert(category, there);
     }
     settings.endGroup();
 }
@@ -184,10 +200,17 @@ void ProductionSyncClient::save()
     settings.setValue(QStringLiteral("AutoSyncMinutes"), m_autoSyncMinutes);
     settings.setValue(QStringLiteral("SyncOnStart"), m_syncOnStart);
     settings.setValue(QStringLiteral("PublishAutomatically"), m_publishAutomatically);
+    settings.setValue(QStringLiteral("NeedsPull"), m_needsPull);
     settings.setValue(QStringLiteral("LastSync"), m_lastSync);
     settings.setValue(QStringLiteral("LastResult"), m_lastResult);
+    settings.setValue(QStringLiteral("MediaStorage"),
+                      m_mediaStorage == MediaStorage::LocalCopy
+                          ? QStringLiteral("local")
+                          : QStringLiteral("shared"));
     for (auto it = m_roots.constBegin(); it != m_roots.constEnd(); ++it)
         settings.setValue(QStringLiteral("Root/") + it.key(), it.value());
+    for (auto it = m_stationRoots.constBegin(); it != m_stationRoots.constEnd(); ++it)
+        settings.setValue(QStringLiteral("StationRoot/") + it.key(), it.value());
     settings.endGroup();
     settings.sync();
     // The token lives in here now.
@@ -304,6 +327,28 @@ void ProductionSyncClient::setSyncOnStart(bool on)
 {
     m_syncOnStart = on;
     save();
+}
+
+void ProductionSyncClient::setMediaStorage(MediaStorage storage)
+{
+    if (m_mediaStorage == storage)
+        return;
+    m_mediaStorage = storage;
+    save();
+
+    // The two arrangements disagree about where every file is, so what the two
+    // ends last agreed on under the old one is worth nothing under the new.
+    // Dropping it makes the next run look at the station afresh; the merge
+    // rules then keep whatever this machine holds that the station does not.
+    m_baselineRows.clear();
+    m_baselineTables.clear();
+    m_baselinePlaylists.clear();
+    saveBaseline();
+    m_needsPull = true;
+    save();
+
+    emit mediaStorageChanged(m_mediaStorage);
+    refreshPendingChanges();
 }
 
 void ProductionSyncClient::setPublishAutomatically(bool on)
@@ -557,7 +602,21 @@ void ProductionSyncClient::pull()
     m_filesPublished = m_rowsPublished = m_publishFailures = m_playlistsPublished = 0;
     m_rowsRemoved = m_filesDeletedThere = 0;
 
+    m_filesMissingOnShare = m_filesCopiedToShare = 0;
+
     setBusy(true);
+
+    // An unmounted share and a station that has deleted its library look the
+    // same from here — every file missing, every row skipped — so the one that
+    // is this machine's own fault is caught before the station is troubled.
+    if (sharesMedia()) {
+        QString reason;
+        if (!sharedRootsUsable(&reason)) {
+            abortRun(reason);
+            return;
+        }
+    }
+
     setStage(Stage::Connecting, tr("Asking %1 what it is playing...").arg(m_host));
 
     QNetworkReply *reply = get(QStringLiteral("/api/station/manifest"));
@@ -602,6 +661,7 @@ void ProductionSyncClient::onManifest(const QByteArray &body)
     }
 
     m_manifest = document.object();
+    rememberStationRoots(m_manifest.value(QStringLiteral("roots")).toObject());
     const QString name = m_manifest.value(QStringLiteral("station")).toString();
     if (!name.isEmpty() && name != m_peerName) {
         m_peerName = name;
@@ -647,6 +707,35 @@ void ProductionSyncClient::planFiles(const QJsonObject &manifest)
 {
     const QJsonObject tables = manifest.value(QStringLiteral("tables")).toObject();
 
+    // On shared storage there is nothing to plan. The station's roots and this
+    // machine's roots are the same folders, so every file the manifest names
+    // is already open-able here at exactly the path the merge will write. All
+    // this pass does is look, so that a share which turns out to hold half of
+    // what the station claims is reported as that rather than as a catalogue
+    // with holes in it.
+    if (sharesMedia()) {
+        for (const QString &category : kMediaTables) {
+            const QJsonArray rows = tables.value(category).toArray();
+            const QString root = localRoot(category);
+            for (const QJsonValue &value : rows) {
+                const QJsonObject file =
+                    value.toObject().value(QStringLiteral("file")).toObject();
+                if (file.isEmpty())
+                    continue;
+                const QString rel = file.value(QStringLiteral("rel")).toString();
+                if (!MobileSyncServer::isSafeRelativePath(rel))
+                    continue;
+                const qint64 bytes = file.value(QStringLiteral("bytes")).toInteger();
+                const QFileInfo here(QDir(root).filePath(rel));
+                if (here.exists() && (bytes <= 0 || here.size() == bytes))
+                    ++m_filesAlreadyHere;
+                else
+                    ++m_filesMissingOnShare;
+            }
+        }
+        return;
+    }
+
     for (const QString &category : kMediaTables) {
         const QJsonArray rows = tables.value(category).toArray();
         const QString root = localRoot(category);
@@ -676,6 +765,56 @@ void ProductionSyncClient::planFiles(const QJsonObject &manifest)
             m_pending.enqueue(job);
         }
     }
+}
+
+bool ProductionSyncClient::sharedRootsUsable(QString *reason) const
+{
+    for (const QString &category : kMediaTables) {
+        const QString root = localRoot(category).trimmed();
+        if (root.isEmpty()) {
+            if (reason) {
+                *reason = tr("This XFB has no folder set for %1. On shared "
+                             "storage every media folder has to point at the "
+                             "station's own — set them in Options.")
+                              .arg(tableTitle(category));
+            }
+            return false;
+        }
+        if (!QDir(root).exists()) {
+            if (reason) {
+                *reason = tr("The folder for %1 (%2) is not there. If it is on "
+                             "the station, check that the share is mounted.")
+                              .arg(tableTitle(category), root);
+            }
+            return false;
+        }
+    }
+    return true;
+}
+
+void ProductionSyncClient::rememberStationRoots(const QJsonObject &roots)
+{
+    if (roots.isEmpty())
+        return;
+    bool changed = false;
+    for (const QString &category : kMediaTables) {
+        const QString value = roots.value(category).toString();
+        if (value.isEmpty() || m_stationRoots.value(category) == value)
+            continue;
+        m_stationRoots.insert(category, value);
+        changed = true;
+    }
+    if (changed)
+        save();
+}
+
+bool ProductionSyncClient::isUnderRoot(const QString &path, const QString &category) const
+{
+    const QString root = QDir::cleanPath(localRoot(category));
+    if (root.isEmpty())
+        return false;
+    const QString clean = QDir::cleanPath(path);
+    return clean == root || clean.startsWith(root + QLatin1Char('/'));
 }
 
 void ProductionSyncClient::startNextFile()
@@ -1158,6 +1297,12 @@ void ProductionSyncClient::afterPull()
         abortRun(tr("Sync stopped."));
         return;
     }
+    // The merge has just written the baseline from what the station holds, so
+    // whatever is left over here really is this machine's own work.
+    if (m_needsPull) {
+        m_needsPull = false;
+        save();
+    }
     if (m_publishAfterPull) {
         m_publishAfterPull = false;
         startPublish();
@@ -1274,6 +1419,119 @@ void ProductionSyncClient::scanForChanges()
     emit pendingChangesChanged();
 }
 
+void ProductionSyncClient::checkSharedStorage()
+{
+    if (m_host.isEmpty() || m_token.isEmpty()) {
+        emit sharedStorageChecked(false, tr("This XFB is not paired with a station yet."));
+        return;
+    }
+    QString reason;
+    if (!sharedRootsUsable(&reason)) {
+        emit sharedStorageChecked(false, reason);
+        return;
+    }
+
+    QNetworkReply *hello = get(QStringLiteral("/api/production/hello"));
+    connect(hello, &QNetworkReply::finished, this, [this, hello]() {
+        hello->deleteLater();
+        if (hello->error() == QNetworkReply::NoError) {
+            rememberStationRoots(QJsonDocument::fromJson(hello->readAll())
+                                     .object()
+                                     .value(QStringLiteral("roots"))
+                                     .toObject());
+        }
+
+        QNetworkReply *reply = get(QStringLiteral("/api/station/manifest"));
+        connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+            reply->deleteLater();
+            if (reply->error() != QNetworkReply::NoError) {
+                emit sharedStorageChecked(
+                    false, tr("Could not ask the station what it holds: %1")
+                               .arg(reply->errorString()));
+                return;
+            }
+
+            const QJsonObject tables = QJsonDocument::fromJson(reply->readAll())
+                                           .object()
+                                           .value(QStringLiteral("tables"))
+                                           .toObject();
+            int looked = 0;
+            int found = 0;
+            QStringList empties;
+            QString firstMiss;
+
+            for (const QString &category : kMediaTables) {
+                const QJsonArray rows = tables.value(category).toArray();
+                if (rows.isEmpty())
+                    continue;
+                const QString root = localRoot(category);
+                // A sample rather than the lot: this runs while the operator
+                // waits, and a station with forty thousand tracks would have
+                // them staring at a spinner to learn what twenty files can
+                // tell them just as well.
+                int seen = 0;
+                for (const QJsonValue &value : rows) {
+                    if (seen >= kShareCheckSample)
+                        break;
+                    const QJsonObject file =
+                        value.toObject().value(QStringLiteral("file")).toObject();
+                    const QString rel = file.value(QStringLiteral("rel")).toString();
+                    if (rel.isEmpty() || !MobileSyncServer::isSafeRelativePath(rel))
+                        continue;
+                    ++seen;
+                    ++looked;
+                    const qint64 bytes = file.value(QStringLiteral("bytes")).toInteger();
+                    const QFileInfo here(QDir(root).filePath(rel));
+                    if (here.exists() && (bytes <= 0 || here.size() == bytes)) {
+                        ++found;
+                    } else if (firstMiss.isEmpty()) {
+                        firstMiss = here.absoluteFilePath();
+                    }
+                }
+                if (seen > 0 && found == 0)
+                    empties << tableTitle(category);
+            }
+
+            if (looked == 0) {
+                emit sharedStorageChecked(
+                    false, tr("The station has no media to check against yet, so "
+                              "there is nothing here to prove the folders are "
+                              "shared. Try again once it has some."));
+                return;
+            }
+            if (found == looked) {
+                emit sharedStorageChecked(
+                    true, tr("Checked %n file(s) the station named and found "
+                             "every one of them on this machine's folders. "
+                             "These are the same folders.", nullptr, looked));
+                return;
+            }
+            if (found == 0) {
+                emit sharedStorageChecked(
+                    false, tr("None of the %n file(s) the station named is on "
+                              "this machine's folders — the first one it looked "
+                              "for was %1. These are not the same folders: "
+                              "either the share is not mounted or the media "
+                              "folders in Options point somewhere else.",
+                              nullptr, looked)
+                               .arg(firstMiss));
+                return;
+            }
+            QString detail = tr("Found %1 of the %n file(s) the station named. "
+                                "The folders are shared but not complete — the "
+                                "first one missing was %2.", nullptr, looked)
+                                 .arg(found)
+                                 .arg(firstMiss);
+            if (!empties.isEmpty()) {
+                detail += QLatin1Char(' ')
+                          + tr("Nothing at all was found for %1.")
+                                .arg(empties.join(QStringLiteral(", ")));
+            }
+            emit sharedStorageChecked(false, detail);
+        });
+    });
+}
+
 void ProductionSyncClient::refreshPendingChanges()
 {
     if (m_busy)
@@ -1291,13 +1549,29 @@ void ProductionSyncClient::publish()
         emit failed(tr("This XFB is not paired with a station yet."));
         return;
     }
+    if (m_needsPull) {
+        emit failed(tr("Fetch from the station first. Where the media is kept "
+                       "has changed, so this XFB has to see what the station "
+                       "holds before it can tell that apart from new work."));
+        return;
+    }
     m_cancelled = false;
     m_publishAfterPull = false;
     m_filesFetched = m_filesFailed = m_filesAlreadyHere = 0;
     m_playlistsFetched = m_rowsWritten = m_rowsKept = 0;
     m_filesPublished = m_rowsPublished = m_publishFailures = m_playlistsPublished = 0;
     m_rowsRemoved = m_filesDeletedThere = 0;
+    m_filesMissingOnShare = m_filesCopiedToShare = 0;
     setBusy(true);
+
+    if (sharesMedia()) {
+        QString reason;
+        if (!sharedRootsUsable(&reason)) {
+            abortRun(reason);
+            return;
+        }
+    }
+
     startPublish();
 }
 
@@ -1317,10 +1591,101 @@ void ProductionSyncClient::startPublish()
     for (const PendingRow &row : std::as_const(m_uploads))
         m_bytesTotal += row.bytes;
 
-    setStage(Stage::Uploading, tr("Sending %1 to %2...")
-                                   .arg(humanBytes(m_bytesTotal), m_peerName.isEmpty()
-                                                                      ? m_host : m_peerName));
+    if (sharesMedia()) {
+        setStage(Stage::Uploading, tr("Putting the work on the station's folders..."));
+    } else {
+        setStage(Stage::Uploading, tr("Sending %1 to %2...")
+                                       .arg(humanBytes(m_bytesTotal), m_peerName.isEmpty()
+                                                                          ? m_host : m_peerName));
+    }
     startNextUpload();
+}
+
+QString ProductionSyncClient::shareTargetFor(const QString &source,
+                                            const QString &category) const
+{
+    const QDir root(localRoot(category));
+    const QFileInfo info(source);
+    const QString base = info.completeBaseName();
+    const QString suffix = info.suffix().isEmpty()
+                               ? QString()
+                               : QLatin1Char('.') + info.suffix();
+
+    // Straight into the category folder, under its own name: this is a file
+    // the station is about to be told to play, and burying it under a hashed
+    // folder because of where it happened to come from would make a mess of a
+    // music library somebody else has to live in.
+    QString candidate = root.filePath(base + suffix);
+    for (int n = 2; n < 1000; ++n) {
+        const QFileInfo there(candidate);
+        if (!there.exists())
+            return candidate;
+        if (there.size() == info.size())
+            return candidate;   // same name, same size: the same file already
+        candidate = root.filePath(QStringLiteral("%1 (%2)%3").arg(base)
+                                      .arg(n).arg(suffix));
+    }
+    return candidate;
+}
+
+bool ProductionSyncClient::repointRow(const QString &table, const QString &from,
+                                      const QString &to)
+{
+    QSqlDatabase db = libraryDatabase();
+    if (!db.isValid() || !db.isOpen())
+        return false;
+    QSqlQuery query(db);
+    query.prepare(QStringLiteral("UPDATE \"%1\" SET path = :to WHERE path = :from")
+                      .arg(table));
+    query.bindValue(QStringLiteral(":to"), to);
+    query.bindValue(QStringLiteral(":from"), from);
+    if (!query.exec()) {
+        qWarning() << "Could not repoint" << from << "at the shared copy:"
+                   << query.lastError().text();
+        return false;
+    }
+    return true;
+}
+
+bool ProductionSyncClient::placeOnShare(PendingRow &row)
+{
+    // The ordinary case by a long way: the operator has been editing entries
+    // that came from the station in the first place, and their files never
+    // left the share.
+    if (isUnderRoot(row.path, row.table)) {
+        row.relative = relativeFor(row.path, row.table);
+        return true;
+    }
+
+    const QString target = shareTargetFor(row.path, row.table);
+    const QFileInfo existing(target);
+    if (!(existing.exists() && existing.size() == QFileInfo(row.path).size())) {
+        QDir().mkpath(QFileInfo(target).absolutePath());
+        // A half-written copy is worse than none: the station would be told to
+        // play a truncated file. So it lands beside its name and is only given
+        // that name once all of it is there.
+        const QString part = target + kPartSuffix;
+        QFile::remove(part);
+        if (!QFile::copy(row.path, part)) {
+            qWarning() << "Could not copy" << row.path << "to the shared folder" << part;
+            return false;
+        }
+        QFile::remove(target);
+        if (!QFile::rename(part, target)) {
+            QFile::remove(part);
+            qWarning() << "Could not put" << part << "in place as" << target;
+            return false;
+        }
+        ++m_filesCopiedToShare;
+    }
+
+    // From here on this machine plays the shared copy too. Without this the
+    // next scan would find the original again and offer to copy it a second
+    // time, and this desk would go on playing a file nobody else can hear.
+    repointRow(row.table, row.path, target);
+    row.path = target;
+    row.relative = relativeFor(target, row.table);
+    return true;
 }
 
 void ProductionSyncClient::startNextUpload()
@@ -1355,6 +1720,25 @@ void ProductionSyncClient::startNextUpload()
     m_currentUpload = m_uploads.dequeue();
     m_uploadOffset = 0;
     m_uploadConflicts = 0;
+
+    // Shared storage: there is nowhere to send it to. The file is either
+    // already on the station's own disk — in which case uploading it would be
+    // this machine reading a file and writing it over itself — or it is a
+    // local one that belongs on the share, and a copy over the mount is both
+    // quicker than HTTP and the only way the path in the entry can be right.
+    if (sharesMedia()) {
+        if (placeOnShare(m_currentUpload)) {
+            m_bytesDone += m_currentUpload.bytes;
+            m_readyRows.append(m_currentUpload);
+        } else {
+            ++m_publishFailures;
+        }
+        reportProgress();
+        // Straight on rather than through the event loop would recurse once
+        // per entry, and a thousand new tracks is a thousand frames of stack.
+        QTimer::singleShot(0, this, &ProductionSyncClient::startNextUpload);
+        return;
+    }
 
     // Ask before sending: a track that travelled down from this very station
     // is already there, and a previous attempt may have got most of the way.
@@ -1677,6 +2061,18 @@ void ProductionSyncClient::completeRun()
     QStringList parts;
     if (m_filesFetched > 0)
         parts << tr("%n file(s) copied down", nullptr, m_filesFetched);
+    if (sharesMedia() && m_filesAlreadyHere > 0) {
+        parts << tr("%n file(s) read straight off the station's folders",
+                    nullptr, m_filesAlreadyHere);
+    }
+    if (m_filesCopiedToShare > 0) {
+        parts << tr("%n file(s) copied onto the station's folders",
+                    nullptr, m_filesCopiedToShare);
+    }
+    if (m_filesMissingOnShare > 0) {
+        parts << tr("%n entry/entries the station lists but the shared folders "
+                    "do not hold", nullptr, m_filesMissingOnShare);
+    }
     if (m_rowsWritten > 0)
         parts << tr("%n catalogue row(s) from the station", nullptr, m_rowsWritten);
     if (m_rowsKept > 0)

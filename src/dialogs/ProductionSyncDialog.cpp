@@ -4,6 +4,7 @@
 
 #include <QCheckBox>
 #include <QDialogButtonBox>
+#include <QDir>
 #include <QFont>
 #include <QFormLayout>
 #include <QGroupBox>
@@ -14,6 +15,7 @@
 #include <QMessageBox>
 #include <QProgressBar>
 #include <QPushButton>
+#include <QRadioButton>
 #include <QScrollArea>
 #include <QSignalBlocker>
 #include <QSpinBox>
@@ -37,11 +39,14 @@ ProductionSyncDialog::ProductionSyncDialog(MobileSyncServer *server,
 
     auto *intro = new QLabel(
         tr("Prepare the station's programme on another computer instead of on "
-           "the one that is broadcasting. A production computer copies down "
-           "this station's music, jingles, ads, programs and schedule, plays "
-           "them locally while the work is done, and sends new and changed "
-           "entries back — where Auto Mode starts using them on its very next "
-           "choice.\n\n"
+           "the one that is broadcasting. A production computer reads this "
+           "station's catalogue, plays what it holds while the work is done, "
+           "and sends new and changed entries back — where Auto Mode starts "
+           "using them on its very next choice.\n\n"
+           "This is not a backup and it does not stand in for one. It prepares "
+           "what goes on air; a machine that can take over when the studio "
+           "dies is what Broadcast Redundancy is for, and a station wanting "
+           "both wants two separate machines.\n\n"
            "Set this up on both machines: use the top half on the one that is "
            "on air, and the bottom half on the one doing the preparing."),
         content);
@@ -155,6 +160,63 @@ ProductionSyncDialog::ProductionSyncDialog(MobileSyncServer *server,
     m_peerStatus->setWordWrap(true);
     productionLayout->addWidget(m_peerStatus);
 
+    // --- where the audio this machine works with actually lives -------------
+    auto *storageBox = new QGroupBox(tr("Where the music is kept"), productionBox);
+    auto *storageLayout = new QVBoxLayout(storageBox);
+
+    m_sharedStorage = new QRadioButton(
+        tr("Work on the station's folders over the network"), storageBox);
+    storageLayout->addWidget(m_sharedStorage);
+    auto *sharedHelp = new QLabel(
+        tr("Nothing is copied here. Point this XFB's music, jingle, ad and "
+           "programme folders (in Options) at the station's own folders on the "
+           "network, and this machine plays and edits the very files that go "
+           "on air. A station's library is tens of gigabytes; this is the "
+           "arrangement for a station with more than one desk."),
+        storageBox);
+    sharedHelp->setWordWrap(true);
+    sharedHelp->setIndent(20);
+    storageLayout->addWidget(sharedHelp);
+
+    m_localStorage = new QRadioButton(
+        tr("Keep a copy of the station's music on this machine"), storageBox);
+    storageLayout->addWidget(m_localStorage);
+    auto *localHelp = new QLabel(
+        tr("Everything is copied down and new work is uploaded back. Right for "
+           "a laptop that leaves the building, and for a small library; it "
+           "costs a full copy of the station's media per machine."),
+        storageBox);
+    localHelp->setWordWrap(true);
+    localHelp->setIndent(20);
+    storageLayout->addWidget(localHelp);
+
+    if (m_client && m_client->mediaStorage() == ProductionSyncClient::MediaStorage::LocalCopy)
+        m_localStorage->setChecked(true);
+    else
+        m_sharedStorage->setChecked(true);
+
+    m_folderSummary = new QLabel(storageBox);
+    m_folderSummary->setWordWrap(true);
+    m_folderSummary->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    storageLayout->addWidget(m_folderSummary);
+
+    auto *checkRow = new QHBoxLayout;
+    m_checkShare = new QPushButton(tr("Check the shared folders"), storageBox);
+    m_checkShare->setToolTip(
+        tr("Asks the station for a sample of what it holds and looks for those "
+           "very files under this machine's folders. Two machines can agree on "
+           "a folder name and still be looking at different disks; opening the "
+           "files is the only thing that proves they are not."));
+    checkRow->addWidget(m_checkShare);
+    checkRow->addStretch();
+    storageLayout->addLayout(checkRow);
+
+    m_shareStatus = new QLabel(storageBox);
+    m_shareStatus->setWordWrap(true);
+    storageLayout->addWidget(m_shareStatus);
+
+    productionLayout->addWidget(storageBox);
+
     auto *actionRow = new QHBoxLayout;
     m_syncButton = new QPushButton(tr("Fetch and publish"), productionBox);
     m_fetchButton = new QPushButton(tr("Fetch from the station"), productionBox);
@@ -208,7 +270,11 @@ ProductionSyncDialog::ProductionSyncDialog(MobileSyncServer *server,
            "here to entries the station has not touched. Where both ends "
            "changed the same entry, the station wins — it is the one on air. A "
            "copy of the database is put in XFB's backups folder before each "
-           "fetch."),
+           "fetch.\n\n"
+           "On the station's shared folders a run is a matter of seconds — "
+           "there is nothing to transfer but the entries themselves — so it is "
+           "worth letting it run every few minutes. That is what makes this "
+           "desk and the studio agree about what exists."),
         productionBox);
     note->setWordWrap(true);
     QFont noteFont = note->font();
@@ -265,6 +331,52 @@ ProductionSyncDialog::ProductionSyncDialog(MobileSyncServer *server,
         emit announcementRequested(on
             ? tr("Withdrawn entries will have their audio files deleted")
             : tr("Withdrawn entries will keep their audio files"));
+    });
+
+    connect(m_checkShare, &QPushButton::clicked, this, &ProductionSyncDialog::checkShare);
+    connect(m_sharedStorage, &QRadioButton::toggled, this, [this](bool on) {
+        if (!m_client || !on
+            || m_client->mediaStorage() == ProductionSyncClient::MediaStorage::Shared) {
+            return;
+        }
+        const auto answer = QMessageBox::question(
+            this, tr("Production Computers"),
+            tr("Work on the station's folders over the network?\n\n"
+               "This XFB's media folders have to point at the station's own "
+               "folders for that to mean anything — set them in Options if you "
+               "have not already, then press \"Check the shared folders\".\n\n"
+               "Nothing already on this machine is deleted, but what this XFB "
+               "and the station last agreed on is dropped, so the next fetch "
+               "has to run before anything can be published."));
+        if (answer != QMessageBox::Yes) {
+            QSignalBlocker block(m_localStorage);
+            m_localStorage->setChecked(true);
+            return;
+        }
+        m_client->setMediaStorage(ProductionSyncClient::MediaStorage::Shared);
+        updateStorageSide();
+        emit announcementRequested(tr("Working on the station's shared folders"));
+    });
+    connect(m_localStorage, &QRadioButton::toggled, this, [this](bool on) {
+        if (!m_client || !on
+            || m_client->mediaStorage() == ProductionSyncClient::MediaStorage::LocalCopy) {
+            return;
+        }
+        const auto answer = QMessageBox::question(
+            this, tr("Production Computers"),
+            tr("Keep a copy of the station's music on this machine?\n\n"
+               "The next fetch will copy the station's whole library down, "
+               "which on a station of any size is a great many gigabytes and a "
+               "long wait. Only worth it for a machine that has to work with "
+               "the network unplugged."));
+        if (answer != QMessageBox::Yes) {
+            QSignalBlocker block(m_sharedStorage);
+            m_sharedStorage->setChecked(true);
+            return;
+        }
+        m_client->setMediaStorage(ProductionSyncClient::MediaStorage::LocalCopy);
+        updateStorageSide();
+        emit announcementRequested(tr("Keeping a local copy of the station's music"));
     });
 
     connect(m_syncOnStart, &QCheckBox::toggled, this, [this](bool on) {
@@ -324,6 +436,12 @@ ProductionSyncDialog::ProductionSyncDialog(MobileSyncServer *server,
                     m_peerStatus->setText(tr("Paired with %1.").arg(name));
                     emit announcementRequested(tr("Paired with station %1").arg(name));
                     updateProductionSide();
+                });
+        connect(m_client, &ProductionSyncClient::sharedStorageChecked, this,
+                [this](bool ok, const QString &detail) {
+                    m_shareStatus->setText(ok ? tr("Shared: %1").arg(detail)
+                                              : tr("Not shared: %1").arg(detail));
+                    emit announcementRequested(detail);
                 });
         connect(m_client, &ProductionSyncClient::pairingFailed, this,
                 [this](const QString &reason) {
@@ -482,6 +600,58 @@ void ProductionSyncDialog::syncNow()
     m_client->sync();
 }
 
+void ProductionSyncDialog::checkShare()
+{
+    if (!m_client)
+        return;
+    m_shareStatus->setText(tr("Asking the station what it holds, and looking "
+                              "for it here..."));
+    m_client->checkSharedStorage();
+}
+
+void ProductionSyncDialog::updateStorageSide()
+{
+    if (!m_client)
+        return;
+
+    const bool shared = m_client->sharesMedia();
+    m_folderSummary->setVisible(shared);
+    m_checkShare->setVisible(shared);
+    m_shareStatus->setVisible(shared);
+    if (!shared)
+        return;
+
+    // Both columns, side by side, because the whole arrangement rests on these
+    // being two names for one folder and the operator is the only one who can
+    // say whether they are.
+    struct Row { QString category; QString title; };
+    const QVector<Row> categories = {
+        {QStringLiteral("musics"),   tr("Music")},
+        {QStringLiteral("jingles"),  tr("Jingles")},
+        {QStringLiteral("pub"),      tr("Ads")},
+        {QStringLiteral("programs"), tr("Programs")},
+    };
+
+    QStringList lines;
+    for (const Row &row : categories) {
+        const QString here = m_client->localRoot(row.category);
+        const QString there = m_client->stationRoot(row.category);
+        if (there.isEmpty()) {
+            lines << tr("%1: %2 here.").arg(row.title,
+                                            here.isEmpty() ? tr("nowhere set") : here);
+        } else if (QDir::cleanPath(here) == QDir::cleanPath(there)) {
+            lines << tr("%1: %2 — the same path on both.").arg(row.title, here);
+        } else {
+            lines << tr("%1: %2 here, %3 on the station.")
+                         .arg(row.title, here.isEmpty() ? tr("nowhere set") : here, there);
+        }
+    }
+    lines << tr("The two may reach the same folder by different names — a "
+                "drive letter here for what the station calls a full path — "
+                "which is fine. Only the check below can tell.");
+    m_folderSummary->setText(lines.join(QLatin1Char('\n')));
+}
+
 void ProductionSyncDialog::updateProductionSide()
 {
     if (!m_client)
@@ -501,6 +671,8 @@ void ProductionSyncDialog::updateProductionSide()
     m_publishButton->setEnabled(paired && !busy);
     m_forgetButton->setEnabled(paired);
     m_pairButton->setEnabled(!busy);
+    m_checkShare->setEnabled(paired && !busy);
+    updateStorageSide();
 
     const QStringList pending = m_client->pendingChanges();
     m_pendingList->clear();

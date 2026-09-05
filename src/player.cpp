@@ -6603,11 +6603,12 @@ void player::setupPlaybackShortcuts()
         if (syncSettings.value(QStringLiteral("MobileSync/AutoStart"), false).toBool())
             mobileSyncServer();
 
-        // Station backup: the same window is used on the machine that is on
-        // air and on the one standing by, because when it is being set up
+        // Broadcast redundancy: the same window is used on the machine that is
+        // on air and on the one standing by, because when it is being set up
         // nobody yet knows which will turn out to be which.
         QAction *stationSync = new QAction(
-            QIcon(":/icons/flat/Connection Sync-48.png"), tr("Station &Backup..."), this);
+            QIcon(":/icons/flat/Connection Sync-48.png"),
+            tr("Broadcast &Redundancy..."), this);
         stationSync->setMenuRole(QAction::NoRole);
         connect(stationSync, &QAction::triggered, this, [this]() {
             if (!m_stationSyncDialog) {

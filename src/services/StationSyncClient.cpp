@@ -452,7 +452,7 @@ void StationSyncClient::pairWith(const QString &host, quint16 port, const QStrin
             // The station's operator opened the phone pairing window instead;
             // that token would be refused by every endpoint we need.
             emit pairingFailed(tr("That code was for pairing a phone. On the main "
-                                  "station, open Station Backup and start pairing "
+                                  "station, open Broadcast Redundancy and start pairing "
                                   "from there instead."));
             return;
         }

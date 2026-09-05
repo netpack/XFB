@@ -13,6 +13,7 @@ class QLineEdit;
 class QListWidget;
 class QProgressBar;
 class QPushButton;
+class QRadioButton;
 class QSpinBox;
 class QTimer;
 
@@ -48,6 +49,7 @@ private slots:
     void startPairing();
     void pairWithStation();
     void fetchNow();
+    void checkShare();
     void publishNow();
     void syncNow();
     void refresh();
@@ -55,6 +57,8 @@ private slots:
 private:
     void updateStationSide();
     void updateProductionSide();
+    /** Re-reads the folder lines and the wording that depends on the mode. */
+    void updateStorageSide();
 
     MobileSyncServer     *m_server = nullptr;
     ProductionSyncClient *m_client = nullptr;
@@ -76,6 +80,11 @@ private:
     QPushButton  *m_pairButton = nullptr;
     QPushButton  *m_forgetButton = nullptr;
     QLabel       *m_peerStatus = nullptr;
+    QRadioButton *m_sharedStorage = nullptr;
+    QRadioButton *m_localStorage = nullptr;
+    QLabel       *m_folderSummary = nullptr;
+    QPushButton  *m_checkShare = nullptr;
+    QLabel       *m_shareStatus = nullptr;
     QPushButton  *m_fetchButton = nullptr;
     QPushButton  *m_publishButton = nullptr;
     QPushButton  *m_syncButton = nullptr;

@@ -2460,6 +2460,18 @@ QJsonObject MobileSyncServer::buildStationManifest()
     manifest.insert(QStringLiteral("generatedAt"),
                     QDateTime::currentDateTimeUtc().toString(Qt::ISODate));
 
+    // The folders these rows are relative to. A production computer on shared
+    // storage shows them to the operator so that the folders to mount are the
+    // station's own words rather than a guess; a backup ignores them, since it
+    // keeps its copy wherever it likes.
+    QJsonObject roots;
+    for (const QString &category : mediaCategories()) {
+        const QString root = categoryRoot(category);
+        if (!root.isEmpty())
+            roots.insert(category, root);
+    }
+    manifest.insert(QStringLiteral("roots"), roots);
+
     m_stationIndex.clear();
 
     QSqlDatabase db = libraryDatabase();
@@ -2780,6 +2792,19 @@ void MobileSyncServer::handleProductionHello(QTcpSocket *socket)
     for (const QString &category : mediaCategories())
         categories.append(category);
     object.insert(QStringLiteral("categories"), categories);
+
+    // Where this station keeps each of them. A production computer working on
+    // shared folders cannot verify the arrangement from these — the same share
+    // is /srv/radio here and S:\ there — but the operator setting it up has to
+    // be told which folders to mount, and guessing from the other end of a
+    // building is how the wrong disk gets shared.
+    QJsonObject roots;
+    for (const QString &category : mediaCategories()) {
+        const QString root = categoryRoot(category);
+        if (!root.isEmpty())
+            roots.insert(category, root);
+    }
+    object.insert(QStringLiteral("roots"), roots);
 
     sendJson(socket, QJsonDocument(object).toJson(QJsonDocument::Compact));
 }

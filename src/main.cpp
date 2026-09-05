@@ -511,7 +511,7 @@ int main(int argc, char *argv[])
     // settings, library, caches — hangs off the application name, so naming
     // the profile is all it takes to run one alongside another without the
     // two treading on each other. This is what makes it possible to try
-    // Station Backup (XFB → Station Backup) with two instances on one desk
+    // Broadcast Redundancy (XFB → Broadcast Redundancy) with two instances on one desk
     // before there is a second machine to put the backup on:
     //     XFB_PROFILE=backup open -n /Applications/XFB.app
     if (qEnvironmentVariableIsSet("XFB_PROFILE")) {

@@ -27,14 +27,29 @@ class QTimer;
  *
  * This is both halves of that:
  *
- *  - **Down.** The station's catalogue, media, jingles, ads, programs, schedule
- *    and saved playlists are copied onto this machine, so the operator here is
+ *  - **Down.** The station's catalogue, jingles, ads, programs, schedule and
+ *    saved playlists come down to this machine, so the operator here is
  *    working with what is actually on air rather than a guess at it, and can
- *    audition any of it locally without touching the broadcast.
+ *    audition any of it without touching the broadcast.
+ *
+ *    Whether the *audio* comes down with it is the whole of MediaStorage. A
+ *    station's music runs to tens of gigabytes, and copying it onto every desk
+ *    in the building is a poor use of an afternoon and of the disks. So the
+ *    ordinary arrangement is MediaStorage::Shared: the media folders on this
+ *    machine are pointed at the station's own folders over the network, and
+ *    then nothing is copied at all — the catalogue that arrives already names
+ *    files this machine can open, because both ends resolve the same relative
+ *    position under their own root and those roots are the same folder. The
+ *    older arrangement, MediaStorage::LocalCopy, is still there for a machine
+ *    that has to work with the share unplugged.
  *  - **Up.** Whatever is added or changed here — a new track, a new jingle, a
  *    new ad, a rearranged hour — is published back to the station, where Auto
  *    Mode picks it up on its very next choice, because every pick is a fresh
- *    query against the station's own database.
+ *    query against the station's own database. On shared storage the file is
+ *    already where the station will look for it, so publishing is rows alone
+ *    and takes a moment; a track the operator dropped in from a memory stick
+ *    or a local disk is copied onto the share first, so that the entry the
+ *    station receives names a file the station can actually open.
  *
  * It is deliberately *not* a mirror. StationSyncClient replaces what it finds,
  * which is exactly right for a backup and exactly wrong here: a production
@@ -73,6 +88,44 @@ public:
     };
     Q_ENUM(Stage)
 
+    /**
+     * Where the audio this machine works with actually lives.
+     *
+     * The catalogue always comes down — it is rows, it is small, and without
+     * it there is nothing to look at. This is only about the files the rows
+     * point at.
+     */
+    enum class MediaStorage {
+        /**
+         * The station's folders, reached over the network and mounted here.
+         *
+         * Nothing is copied in either direction: this machine's MusicPath,
+         * JinglePath, ProgramsPath and PubPath name the very folders the
+         * station reads from, so a row that arrives naming `rock/track.opus`
+         * under the music root resolves, on both machines, to the same file on
+         * the same disk. It plays here over the network and it airs there off
+         * the station's own mount. A file the operator adds from a local disk
+         * is copied onto the share before its entry is published, because an
+         * entry pointing at somebody's Desktop is an entry the station cannot
+         * play.
+         *
+         * This is the arrangement for a station with more than a couple of
+         * desks: the library is not duplicated, and there is only ever one
+         * copy of a track to be wrong about.
+         */
+        Shared,
+        /**
+         * A full copy of the station's media on this machine's own disk.
+         *
+         * What Production Computers did before shared storage, and still the
+         * right answer for a laptop that leaves the building: everything is
+         * fetched down, worked on offline, and uploaded back. It costs a copy
+         * of the whole library per machine.
+         */
+        LocalCopy,
+    };
+    Q_ENUM(MediaStorage)
+
     explicit ProductionSyncClient(QObject *parent = nullptr);
     ~ProductionSyncClient() override;
 
@@ -109,6 +162,35 @@ public:
     QString localRoot(const QString &category) const;
     void setLocalRoot(const QString &category, const QString &path);
 
+    // --- where the audio lives ----------------------------------------------
+
+    MediaStorage mediaStorage() const { return m_mediaStorage; }
+    void setMediaStorage(MediaStorage storage);
+    bool sharesMedia() const { return m_mediaStorage == MediaStorage::Shared; }
+
+    /**
+     * The folder the station keeps @p category in, as the station last said.
+     *
+     * Only worth showing the operator: it is the station's own path, and this
+     * machine may well reach the same folder by another one (a Windows drive
+     * letter for what the station calls /srv/radio). Empty until a hello or a
+     * check has been answered.
+     */
+    QString stationRoot(const QString &category) const { return m_stationRoots.value(category); }
+
+    /**
+     * Asks the station what it holds, then looks for a sample of it under this
+     * machine's own roots.
+     *
+     * This is the only honest test of a shared setup. Comparing the two ends'
+     * folder *names* proves nothing — the same share is `/Volumes/Radio` here
+     * and `S:\` there, and two machines can just as easily agree on a name for
+     * two different disks. Opening the files the station named and finding
+     * them the right size is what actually establishes that these are the same
+     * folders. Answers on sharedStorageChecked().
+     */
+    void checkSharedStorage();
+
     // --- what is waiting to go up -------------------------------------------
 
     /**
@@ -142,6 +224,12 @@ signals:
     void finished(const QString &summary);
     void failed(const QString &reason);
     void pendingChangesChanged();
+    void mediaStorageChanged(ProductionSyncClient::MediaStorage storage);
+    /**
+     * The result of checkSharedStorage(): whether the station's files were
+     * found under this machine's roots, and a sentence saying what was tried.
+     */
+    void sharedStorageChecked(bool ok, const QString &detail);
 
 private:
     /** One file this machine still has to fetch from the station. */
@@ -200,6 +288,39 @@ private:
 
     /** The position @p path would take under the station's own category root. */
     QString relativeFor(const QString &path, const QString &category) const;
+
+    /** True when @p path is inside this machine's root for @p category. */
+    bool isUnderRoot(const QString &path, const QString &category) const;
+    /**
+     * Puts @p row's file on the shared folders and points the row at it.
+     *
+     * Does nothing at all to a file that is already there, which is the usual
+     * case: on shared storage almost everything the operator touches came from
+     * the station in the first place. A file from somewhere else — a memory
+     * stick, a download folder, a colleague's disk — is copied under the
+     * category root and the row in *this* machine's database is repointed at
+     * the copy, so that what plays here from now on is the same file that
+     * plays on air, and the next scan does not offer to copy it again.
+     *
+     * Returns false when the share could not be written, which is the one
+     * failure the operator has to know about: the entry is then not published,
+     * rather than published as a path only this desk can open.
+     */
+    bool placeOnShare(PendingRow &row);
+    /** A free name for @p source under the root of @p category. */
+    QString shareTargetFor(const QString &source, const QString &category) const;
+    /** Repoints this machine's own row for @p from at @p to. */
+    bool repointRow(const QString &table, const QString &from, const QString &to);
+    /**
+     * Checks the roots are reachable before a shared run leans on them.
+     *
+     * An unmounted share looks exactly like a station that has deleted its
+     * whole library: every file is missing, every row is skipped, and the
+     * operator is told the catalogue is empty. Better to stop and say so.
+     */
+    bool sharedRootsUsable(QString *reason) const;
+    /** Remembers the folders a hello or manifest reported. */
+    void rememberStationRoots(const QJsonObject &roots);
     /**
      * A stable fingerprint of a row's columns, used to spot a change.
      *
@@ -227,9 +348,21 @@ private:
     QDateTime m_lastSync;
     QString m_lastResult;
     QHash<QString, QString> m_roots;
+    MediaStorage m_mediaStorage = MediaStorage::Shared;
+    /** category -> the folder the station said it uses, for display only. */
+    QHash<QString, QString> m_stationRoots;
 
     bool m_busy = false;
     bool m_cancelled = false;
+    /**
+     * Set when the baseline has been thrown away and not yet rebuilt.
+     *
+     * Without a baseline every row on this machine looks like new work, and
+     * publishing would push the whole catalogue over the station's own. A
+     * fetch rebuilds it from what the station actually holds, so publishing
+     * waits for one.
+     */
+    bool m_needsPull = false;
     bool m_publishAfterPull = false;
     Stage m_stage = Stage::Idle;
 
@@ -270,6 +403,10 @@ private:
     int m_filesFetched = 0;
     int m_filesFailed = 0;
     int m_filesAlreadyHere = 0;
+    /** Shared storage: files the manifest named that are not on the share. */
+    int m_filesMissingOnShare = 0;
+    /** Shared storage: files copied onto the share so they could be published. */
+    int m_filesCopiedToShare = 0;
     int m_playlistsFetched = 0;
     int m_rowsWritten = 0;
     int m_rowsKept = 0;

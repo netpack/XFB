@@ -30,8 +30,8 @@ class QTimer;
  * backup's schedule.
  *
  * Pairing is the same six-digit exchange the phone companion uses, except that
- * the operator opens the window from the Station Backup dialog, which is what
- * makes the resulting token a station token — see MobileSyncServer::PeerRole.
+ * the operator opens the window from the Broadcast Redundancy dialog, which is
+ * what makes the resulting token a station token — see MobileSyncServer::PeerRole.
  * The transport is plain HTTP on the local network: the token keeps strangers
  * out, it does not encrypt what travels, so this belongs on a network the
  * station controls.

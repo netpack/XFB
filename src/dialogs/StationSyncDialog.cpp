@@ -26,7 +26,7 @@ StationSyncDialog::StationSyncDialog(MobileSyncServer *server,
     , m_server(server)
     , m_client(client)
 {
-    setWindowTitle(tr("Station Backup"));
+    setWindowTitle(tr("Broadcast Redundancy"));
     setModal(false);   // a sync can take an hour; the operator keeps working
 
     auto *outer = new QVBoxLayout(this);
@@ -39,6 +39,12 @@ StationSyncDialog::StationSyncDialog(MobileSyncServer *server,
            "ads, programs, schedule and playlists as this one, so that if the "
            "studio machine fails the backup only has to be launched to go back "
            "on air.\n\n"
+           "Everything is copied, on purpose. A machine that has to survive the "
+           "studio going down cannot depend on anything in the studio, which "
+           "means its own disk, its own copy of every file, and no share to be "
+           "cut off from. That is what makes this different from Production "
+           "Computers, where a second machine works on the station's own files "
+           "over the network and copies nothing.\n\n"
            "Set this up on both machines: use the top half on the one that is "
            "on air, and the bottom half on the one standing by."), content);
     intro->setWordWrap(true);
@@ -233,7 +239,7 @@ StationSyncDialog::StationSyncDialog(MobileSyncServer *server,
         if (!m_client)
             return;
         const auto answer = QMessageBox::question(
-            this, tr("Station Backup"),
+            this, tr("Broadcast Redundancy"),
             tr("Forget the station this machine mirrors? The music already "
                "copied here stays where it is; only the pairing is dropped."));
         if (answer != QMessageBox::Yes)
@@ -340,7 +346,7 @@ void StationSyncDialog::startPairing()
     if (!m_server)
         return;
     if (!m_server->isListening() && !m_server->start()) {
-        QMessageBox::warning(this, tr("Station Backup"),
+        QMessageBox::warning(this, tr("Broadcast Redundancy"),
                              tr("XFB could not start serving on the network."));
         return;
     }
