@@ -420,8 +420,35 @@ set_tests_properties(PadBoardFocusTest PROPERTIES
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
 )
 
+# Who is at the desk: accounts, roles, and the permission behind each menu
+# entry. A widget test only because QAction is a GUI class, so offscreen.
+add_executable(test_access_control
+    services/TestAccessControl.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/AccessControl.cpp
+)
+
+target_link_libraries(test_access_control
+    Qt6::Core
+    Qt6::Gui
+    Qt6::Widgets
+    Qt6::Network
+    Qt6::Test
+    TestUtils
+)
+
+target_include_directories(test_access_control PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/tests
+)
+
+add_test(NAME AccessControlTest COMMAND test_access_control)
+
+set_tests_properties(AccessControlTest PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+)
+
 # Add custom target for unit tests
 add_custom_target(unit_tests
-    DEPENDS test_config test_database test_service_container test_base_service test_database_service_unit test_music_repository test_genre_repository test_playlist_repository test_audio_service test_error_handler test_logger test_input_validator test_database_optimizer test_music_cache test_main_controller test_accessibility_manager test_update_check_service test_pad_board_focus
+    DEPENDS test_config test_database test_service_container test_base_service test_database_service_unit test_music_repository test_genre_repository test_playlist_repository test_audio_service test_error_handler test_logger test_input_validator test_database_optimizer test_music_cache test_main_controller test_accessibility_manager test_update_check_service test_pad_board_focus test_access_control
     COMMENT "Building unit tests"
 )

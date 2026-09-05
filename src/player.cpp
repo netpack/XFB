@@ -150,6 +150,9 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include "services/ProductionSyncClient.h"
 #include "services/StationSyncClient.h"
 #include "dialogs/AccessibilityTutorialDialog.h"
+#include "dialogs/SignInDialog.h"
+#include "dialogs/UsersRolesDialog.h"
+#include "services/AccessControl.h"
 #include "services/AudioFeedbackService.h"
 #include "services/LiveRegionManager.h"
 #include "services/SystemStatusAnnouncer.h"
@@ -1865,6 +1868,7 @@ checkDbOpen();
        QAction *conv432All = new QAction(QIcon(":/icons/flat/tuning-fork-64.png"),
                                          tr("Convert all musics in the database to 432 Hz tuning"), this);
        ui->menuDatabase->addAction(conv432All);
+       AccessControl::instance().guard(conv432All, QStringLiteral("library.retune"));
        connect(conv432All, &QAction::triggered, this, &player::convertAllMusicsTo432);
    }
 
@@ -1878,6 +1882,7 @@ checkDbOpen();
                                  "Each track is decoded once; the result is stored in the "
                                  "database."));
        ui->menuDatabase->addAction(analyzeBpm);
+       AccessControl::instance().guard(analyzeBpm, QStringLiteral("library.analyse"));
        connect(analyzeBpm, &QAction::triggered, this, &player::analyzeLibraryBpm);
    }
 
@@ -1895,6 +1900,7 @@ checkDbOpen();
                                    "marker on the now-playing wave strip, and your value is "
                                    "kept the next time this runs."));
        ui->menuDatabase->addAction(analyzeIntro);
+       AccessControl::instance().guard(analyzeIntro, QStringLiteral("library.analyse"));
        connect(analyzeIntro, &QAction::triggered, this, &player::analyzeLibraryIntro);
    }
 
@@ -1915,6 +1921,7 @@ checkDbOpen();
                                    "Files are never modified. Anything whose file changed since it "
                                    "was measured is measured again."));
        ui->menuDatabase->addAction(scanLoudness);
+       AccessControl::instance().guard(scanLoudness, QStringLiteral("library.analyse"));
        connect(scanLoudness, &QAction::triggered, this, &player::scanLibraryLoudness);
 
        // updateConfig() ran before the players existed (it is called at the
@@ -1935,6 +1942,7 @@ checkDbOpen();
                                  "have nothing to show on the deck, the phone's notification "
                                  "or the lock screen."));
        ui->menuDatabase->addAction(findCovers);
+       AccessControl::instance().guard(findCovers, QStringLiteral("library.coverart"));
        connect(findCovers, &QAction::triggered, this, [this]() {
            // Parented to the window but not modal: finding covers for a whole
            // library is long, and nothing here stops the station playing.
@@ -1955,6 +1963,8 @@ checkDbOpen();
                                      "lands in one is added to the music, jingles, "
                                      "publicities or programs library on its own."));
        ui->menuDatabase->addAction(watchedFolders);
+       AccessControl::instance().guard(watchedFolders,
+                                       QStringLiteral("library.watchedfolders"));
        connect(watchedFolders, &QAction::triggered, this, [this]() {
            if (!m_watchedFoldersDialog) {
                m_watchedFoldersDialog = new WatchedFoldersDialog(libraryWatcher(), this);
@@ -2093,6 +2103,11 @@ checkDbOpen();
    makeSidePanelScrollable();
    makeTabScrollable(ui->tabTorrents);
 
+
+   // Who is at the desk, and what they may do with it. Last, because it
+   // disables menu entries and buttons that everything above has just
+   // finished creating.
+   setupAccessControl();
 
    qDebug() << "Player constructor completed successfully";
 
@@ -3293,11 +3308,20 @@ void::player::playlistContextMenu(const QPoint& pos){
     QString cueThis = tr("Cue this track in the headphones");
 
 
-    thisMenu.addAction(cueThis);
+    QAction *entryCue = thisMenu.addAction(cueThis);
     thisMenu.addSeparator();
-    thisMenu.addAction(remove);
-    thisMenu.addAction(moveToTop);
-    thisMenu.addAction(moveToBottom);
+    QAction *entryRemove = thisMenu.addAction(remove);
+    QAction *entryToTop = thisMenu.addAction(moveToTop);
+    QAction *entryToBottom = thisMenu.addAction(moveToBottom);
+
+    {
+        const AccessControl &access = AccessControl::instance();
+        const bool mayEditOrder = access.allows(QStringLiteral("playlist.edit"));
+        entryCue->setEnabled(access.allows(QStringLiteral("playback.cue")));
+        entryRemove->setEnabled(mayEditOrder);
+        entryToTop->setEnabled(mayEditOrder);
+        entryToBottom->setEnabled(mayEditOrder);
+    }
 
     // Volume line (Sonar-style envelope drawn over the track's waveform in
     // the wave view): offer Add or Remove depending on the clicked track
@@ -3328,6 +3352,17 @@ void::player::playlistContextMenu(const QPoint& pos){
                                "ducking onto both songs as an ordinary volume line "
                                "you can then edit by hand."));
     voiceAction->setEnabled(menuRow >= 1);
+
+    {
+        const AccessControl &access = AccessControl::instance();
+        // The volume line and the auto-mix both change how the running order
+        // sounds, so they go with editing it.
+        const bool mayEditOrder = access.allows(QStringLiteral("playlist.edit"));
+        volAction->setEnabled(mayEditOrder);
+        autoMixAction->setEnabled(access.allows(QStringLiteral("playback.automix")));
+        if (voiceAction->isEnabled())
+            voiceAction->setEnabled(access.allows(QStringLiteral("playback.voicetrack")));
+    }
 
     QAction* selectedItem = thisMenu.exec(globalPos);
     if(selectedItem){
@@ -3469,6 +3504,33 @@ void player::musicViewContextMenu(const QPoint& pos) {
     thisMenu.addSeparator();
     QAction *actAudacity = thisMenu.addAction(tr("Open this in Audacity"));
     QAction *actInfo = thisMenu.addAction(tr("Retrieve metadata from file (mediainfo)"));
+
+    // What this session may not do is greyed out rather than missing, so an
+    // operator sees the entry is there and learns from the tooltip why it will
+    // not open. Set here rather than through AccessControl::guard() because
+    // this menu is built afresh on every right-click and thrown away after.
+    {
+        const AccessControl &access = AccessControl::instance();
+        const bool mayQueue   = access.allows(QStringLiteral("playlist.edit"));
+        const bool mayEdit    = access.allows(QStringLiteral("library.edit"));
+        const bool mayDelete  = access.allows(QStringLiteral("library.delete"));
+        actAddBottom->setEnabled(mayQueue);
+        actAddTop->setEnabled(mayQueue);
+        if (actCue)
+            actCue->setEnabled(access.allows(QStringLiteral("playback.cue")));
+        for (QAction *batch : {actSetGenre1, actSetGenre2, actSetArtist, actSetCountry}) {
+            if (batch)
+                batch->setEnabled(mayEdit);
+        }
+        actRetune432->setEnabled(access.allows(QStringLiteral("library.retune")));
+        const bool mayPair = access.allows(QStringLiteral("station.sync.mobile"));
+        actSyncSelection->setEnabled(mayPair);
+        actSyncAll->setEnabled(mayPair);
+        if (actSyncClear)
+            actSyncClear->setEnabled(mayPair);
+        actDelete->setEnabled(mayDelete);
+        actAudacity->setEnabled(access.allows(QStringLiteral("library.audacity")));
+    }
 
     QAction* selectedItem = thisMenu.exec(globalPos);
     if (!selectedItem) return;
@@ -3642,14 +3704,26 @@ void player::jinglesViewContextMenu(const QPoint& pos) {
     const QString actionOpenAudacity = tr("Open this in Audacity");
     const QString actionCue = tr("Cue this jingle in the headphones");
 
-    thisMenu.addAction(actionAddToBottom);
-    thisMenu.addAction(actionAddToTop);
+    // The entries are kept so what this session may not do can be greyed out
+    // rather than removed; the menu is thrown away when it closes.
+    QAction *entryAddBottom = thisMenu.addAction(actionAddToBottom);
+    QAction *entryAddTop = thisMenu.addAction(actionAddToTop);
     thisMenu.addSeparator();
-    thisMenu.addAction(actionCue);
+    QAction *entryCue = thisMenu.addAction(actionCue);
     thisMenu.addSeparator();
-    thisMenu.addAction(actionDeleteFromDB);
+    QAction *entryDelete = thisMenu.addAction(actionDeleteFromDB);
     thisMenu.addSeparator();
-    thisMenu.addAction(actionOpenAudacity);
+    QAction *entryAudacity = thisMenu.addAction(actionOpenAudacity);
+
+    {
+        const AccessControl &access = AccessControl::instance();
+        const bool mayQueue = access.allows(QStringLiteral("playlist.edit"));
+        entryAddBottom->setEnabled(mayQueue);
+        entryAddTop->setEnabled(mayQueue);
+        entryCue->setEnabled(access.allows(QStringLiteral("playback.cue")));
+        entryDelete->setEnabled(access.allows(QStringLiteral("library.delete")));
+        entryAudacity->setEnabled(access.allows(QStringLiteral("library.audacity")));
+    }
 
     QAction* selectedItem = thisMenu.exec(globalPos);
     if (!selectedItem) return;
@@ -3704,13 +3778,23 @@ void::player::pubViewContextMenu(const QPoint& pos){
     QString cueThisAdvert = tr("Cue this advert in the headphones");
 
     QSqlDatabase db = QSqlDatabase::database("xfb_connection");
-    thisMenu.addAction(addToBottomOfPlaylist);
-    thisMenu.addAction(addtoTopOfPlaylist);
+    QAction *entryAddBottom = thisMenu.addAction(addToBottomOfPlaylist);
+    QAction *entryAddTop = thisMenu.addAction(addtoTopOfPlaylist);
     thisMenu.addSeparator();
-    thisMenu.addAction(cueThisAdvert);
+    QAction *entryCue = thisMenu.addAction(cueThisAdvert);
     thisMenu.addSeparator();
-    thisMenu.addAction(deleteThisFromDB);
-    thisMenu.addAction(openWithAudacity);
+    QAction *entryDelete = thisMenu.addAction(deleteThisFromDB);
+    QAction *entryAudacity = thisMenu.addAction(openWithAudacity);
+
+    {
+        const AccessControl &access = AccessControl::instance();
+        const bool mayQueue = access.allows(QStringLiteral("playlist.edit"));
+        entryAddBottom->setEnabled(mayQueue);
+        entryAddTop->setEnabled(mayQueue);
+        entryCue->setEnabled(access.allows(QStringLiteral("playback.cue")));
+        entryDelete->setEnabled(access.allows(QStringLiteral("library.delete")));
+        entryAudacity->setEnabled(access.allows(QStringLiteral("library.audacity")));
+    }
 
     QAction* selectedItem = thisMenu.exec(globalPos);
     if (selectedItem)
@@ -3997,17 +4081,32 @@ void player::programsViewContextMenu(const QPoint& pos) {
     const QString actionCheckSent = tr("Verify that the program is in the server");
     const QString actionCue = tr("Cue this program in the headphones");
 
-    thisMenu.addAction(actionAddToBottom);
-    thisMenu.addAction(actionAddToTop);
+    QAction *entryAddBottom = thisMenu.addAction(actionAddToBottom);
+    QAction *entryAddTop = thisMenu.addAction(actionAddToTop);
     thisMenu.addSeparator();
-    thisMenu.addAction(actionCue);
+    QAction *entryCue = thisMenu.addAction(actionCue);
     thisMenu.addSeparator();
-    thisMenu.addAction(actionDeleteFromDB);
+    QAction *entryDelete = thisMenu.addAction(actionDeleteFromDB);
     thisMenu.addSeparator();
-    thisMenu.addAction(actionOpenAudacity);
+    QAction *entryAudacity = thisMenu.addAction(actionOpenAudacity);
     thisMenu.addSeparator();
-    thisMenu.addAction(actionCheckSent);
-    thisMenu.addAction(actionResendToServer);
+    QAction *entryCheckSent = thisMenu.addAction(actionCheckSent);
+    QAction *entryResend = thisMenu.addAction(actionResendToServer);
+
+    {
+        const AccessControl &access = AccessControl::instance();
+        const bool mayQueue = access.allows(QStringLiteral("playlist.edit"));
+        entryAddBottom->setEnabled(mayQueue);
+        entryAddTop->setEnabled(mayQueue);
+        entryCue->setEnabled(access.allows(QStringLiteral("playback.cue")));
+        entryDelete->setEnabled(access.allows(QStringLiteral("library.delete")));
+        entryAudacity->setEnabled(access.allows(QStringLiteral("library.audacity")));
+        // Both of these talk to the station's server, which is where the
+        // server permissions live.
+        const bool mayReachServer = access.allows(QStringLiteral("station.server.ftp"));
+        entryCheckSent->setEnabled(mayReachServer);
+        entryResend->setEnabled(mayReachServer);
+    }
 
     QAction* selectedItem = thisMenu.exec(globalPos);
     if (!selectedItem) return;
@@ -4097,11 +4196,20 @@ void player::torrentsViewContextMenu(const QPoint& pos) {
     const QString actionCopyMagnet = tr("Copy Magnet Link");
     const QString actionViewDetails = tr("View Details");
 
-    thisMenu.addAction(actionDownload);
-    thisMenu.addAction(actionDownloadAndStream);
+    QAction *entryDownload = thisMenu.addAction(actionDownload);
+    QAction *entryDownloadStream = thisMenu.addAction(actionDownloadAndStream);
     thisMenu.addSeparator();
-    thisMenu.addAction(actionCopyMagnet);
+    QAction *entryMagnet = thisMenu.addAction(actionCopyMagnet);
     thisMenu.addAction(actionViewDetails);
+
+    {
+        // Viewing what a search found costs nothing; taking it does.
+        const bool mayTorrent =
+            AccessControl::instance().allows(QStringLiteral("downloads.torrents"));
+        entryDownload->setEnabled(mayTorrent);
+        entryDownloadStream->setEnabled(mayTorrent);
+        entryMagnet->setEnabled(mayTorrent);
+    }
 
     QAction* selectedItem = thisMenu.exec(globalPos);
     if (!selectedItem) return;
@@ -6346,6 +6454,7 @@ void player::setupPlaybackShortcuts()
         action->setShortcutContext(Qt::ApplicationShortcut);
         connect(action, &QAction::triggered, this, e.slot);
         addAction(action); // keep the shortcut alive even when the menu is closed
+        AccessControl::instance().guard(action, QStringLiteral("playback.transport"));
     }
 
     playbackMenu->addSeparator();
@@ -6361,6 +6470,7 @@ void player::setupPlaybackShortcuts()
         addSelectionToPlaylist(focusedLibraryView(), false);
     });
     addAction(addEnd);
+    AccessControl::instance().guard(addEnd, QStringLiteral("playlist.edit"));
 
     QAction *addTop = playbackMenu->addAction(QIcon(":/icons/align-vertical-top.png"),
                                               tr("Add selection to &start of playlist"));
@@ -6370,6 +6480,7 @@ void player::setupPlaybackShortcuts()
         addSelectionToPlaylist(focusedLibraryView(), true);
     });
     addAction(addTop);
+    AccessControl::instance().guard(addTop, QStringLiteral("playlist.edit"));
 
     playbackMenu->addSeparator();
 
@@ -6409,6 +6520,7 @@ void player::setupPlaybackShortcuts()
     moveUp->setShortcutContext(Qt::ApplicationShortcut);
     connect(moveUp, &QAction::triggered, this, [movePlaylistItem]() { movePlaylistItem(-1); });
     addAction(moveUp);
+    AccessControl::instance().guard(moveUp, QStringLiteral("playlist.edit"));
 
     QAction *moveDown = playbackMenu->addAction(QIcon(":/icons/align-vertical-bottom.png"),
                                                 tr("Move playlist track &down"));
@@ -6416,6 +6528,7 @@ void player::setupPlaybackShortcuts()
     moveDown->setShortcutContext(Qt::ApplicationShortcut);
     connect(moveDown, &QAction::triggered, this, [movePlaylistItem]() { movePlaylistItem(1); });
     addAction(moveDown);
+    AccessControl::instance().guard(moveDown, QStringLiteral("playlist.edit"));
 
     playbackMenu->addSeparator();
 
@@ -6484,6 +6597,7 @@ void player::setupPlaybackShortcuts()
     m_cueAction->setStatusTip(tr("Listen to the selected track in the cue headphones only"));
     connect(m_cueAction, &QAction::triggered, this, [this]() { cueCurrentSelection(); });
     addAction(m_cueAction);
+    AccessControl::instance().guard(m_cueAction, QStringLiteral("playback.cue"));
 
     // --- Voice tracking ---
     // Ctrl+Shift+V: V for voice, and the last obvious free letter. Ctrl+Shift+
@@ -6501,6 +6615,7 @@ void player::setupPlaybackShortcuts()
             openVoiceTrackDialog(row);
     });
     addAction(voiceTrack);
+    AccessControl::instance().guard(voiceTrack, QStringLiteral("playback.voicetrack"));
 
     m_cueStopAction = playbackMenu->addAction(QIcon(":/icons/flat/Stop Sign-32.png"),
                                               tr("Stop the c&ue"));
@@ -6514,6 +6629,7 @@ void player::setupPlaybackShortcuts()
         }
     });
     addAction(m_cueStopAction);
+    AccessControl::instance().guard(m_cueStopAction, QStringLiteral("playback.cue"));
 
     // Insert before Options so File/Playlists keep their familiar positions.
     ui->menuBar->insertMenu(ui->menuXFB->menuAction(), playbackMenu);
@@ -6596,6 +6712,7 @@ void player::setupPlaybackShortcuts()
         });
         ui->menuXFB->addAction(mobileSync);
         addAction(mobileSync);
+        AccessControl::instance().guard(mobileSync, QStringLiteral("station.sync.mobile"));
 
         // Constructing the server is what honours the auto-start setting, so
         // an operator who asked for it does not have to open the dialog first.
@@ -6624,6 +6741,7 @@ void player::setupPlaybackShortcuts()
         });
         ui->menuXFB->addAction(stationSync);
         addAction(stationSync);
+        AccessControl::instance().guard(stationSync, QStringLiteral("station.sync.station"));
 
         // Streaming from inside XFB. Sits with the other station-wide
         // settings for the same reason the sync windows do: it is a property
@@ -6644,6 +6762,7 @@ void player::setupPlaybackShortcuts()
         });
         ui->menuXFB->addAction(streamAction);
         addAction(streamAction);
+        AccessControl::instance().guard(streamAction, QStringLiteral("station.stream"));
 
         // An operator who asked to go on air at startup should not have to
         // open the window first; constructing the service is what honours it.
@@ -6669,6 +6788,7 @@ void player::setupPlaybackShortcuts()
         });
         ui->menuXFB->addAction(deadAir);
         addAction(deadAir);
+        AccessControl::instance().guard(deadAir, QStringLiteral("programming.deadair"));
 
         // Constructing it is what arms it, so an operator who turned it on
         // does not have to open the window every morning. Reading the setting
@@ -6698,6 +6818,7 @@ void player::setupPlaybackShortcuts()
         });
         ui->menuXFB->addAction(airLog);
         addAction(airLog);
+        AccessControl::instance().guard(airLog, QStringLiteral("programming.airlog"));
 
         // Rotation rules. Next to the as-run log on purpose: the log is where
         // an operator notices the same artist coming round too often, and this
@@ -6739,6 +6860,7 @@ void player::setupPlaybackShortcuts()
         });
         ui->menuXFB->addAction(rotation);
         addAction(rotation);
+        AccessControl::instance().guard(rotation, QStringLiteral("programming.rotation"));
 
         // The hour clock. It sits next to the rotation rules because the two
         // answer neighbouring questions: rotation says *which* record, the
@@ -6779,6 +6901,7 @@ void player::setupPlaybackShortcuts()
         });
         ui->menuXFB->addAction(hourClock);
         addAction(hourClock);
+        AccessControl::instance().guard(hourClock, QStringLiteral("programming.hourclock"));
 
         // Listener requests, and the switch that puts the public page on the
         // network at all. Same shelf as the rest: it is a property of this
@@ -6815,6 +6938,7 @@ void player::setupPlaybackShortcuts()
         });
         ui->menuXFB->addAction(requests);
         addAction(requests);
+        AccessControl::instance().guard(requests, QStringLiteral("programming.requests"));
 
         // A backup that only copies when somebody remembers to ask is not a
         // backup, so the client is built at startup whenever it has standing
@@ -6861,6 +6985,7 @@ void player::setupPlaybackShortcuts()
         });
         ui->menuXFB->addAction(productionSync);
         addAction(productionSync);
+        AccessControl::instance().guard(productionSync, QStringLiteral("station.sync.production"));
 
         // A production machine with standing orders fetches without being
         // asked, the same way the backup does.
@@ -6895,6 +7020,237 @@ void player::setupPlaybackShortcuts()
 
 // Like the phone sync server, the backup client is built on demand and does
 // nothing at all until it has been paired with a station.
+namespace {
+
+/**
+ * Watches the application for signs of life, so the desk can lock itself
+ * after a quiet spell.
+ *
+ * It is its own object rather than the window's event filter because it wants
+ * every event the application sees, and player::eventFilter is written around
+ * the handful of widgets it was installed on. All it does is notice input and
+ * restart a timer; nothing here can swallow an event.
+ */
+class DeskIdleWatcher : public QObject
+{
+public:
+    DeskIdleWatcher(QTimer *timer, QObject *parent)
+        : QObject(parent), m_timer(timer)
+    {
+        qApp->installEventFilter(this);
+    }
+
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override
+    {
+        switch (event->type()) {
+        case QEvent::KeyPress:
+        case QEvent::MouseButtonPress:
+        case QEvent::MouseMove:
+        case QEvent::Wheel:
+        case QEvent::TouchBegin:
+            if (m_timer && m_timer->isActive())
+                m_timer->start(); // restart from now
+            break;
+        default:
+            break;
+        }
+        return QObject::eventFilter(watched, event);
+    }
+
+private:
+    QPointer<QTimer> m_timer;
+};
+
+} // namespace
+
+void player::setupAccessControl()
+{
+    AccessControl &access = AccessControl::instance();
+
+    // The menu entries that come from player.ui. The runtime-built ones are
+    // bound where they are created, so the permission sits next to the entry
+    // rather than in a table somebody has to remember to update.
+    const struct { QAction *action; const char *permission; } bindings[] = {
+        {ui->actionOpen,                      "playlist.open"},
+        {ui->actionSave_Playlist,             "playlist.save"},
+        {ui->actionLoad_Playlist,             "playlist.load"},
+        {ui->actionClear_Playlist,            "playlist.clear"},
+        {ui->actionAdd_a_single_song,         "library.add.single"},
+        {ui->actionAdd_a_song_from_Youtube_or_Other, "downloads.external"},
+        {ui->actionAdd_all_songs_in_a_folder, "library.add.folder"},
+        {ui->actionAdd_Jingle,                "library.add.jingle"},
+        {ui->actionAdd_a_publicity,           "library.add.publicity"},
+        {ui->actionAdd_a_program,             "library.add.program"},
+        {ui->actionManage_Genres,             "library.genres"},
+        {ui->actionCheck_the_Database_records, "library.check"},
+        {ui->actionCheck_Database_Data_and_DELETE_all_invalid_records_witouth_confirmation,
+                                              "library.purge"},
+        {ui->actionRemove_duplicate_songs,    "library.duplicates"},
+        {ui->actionAutoTrim_the_silence_from_the_start_and_the_end_of_all_music_tracks_in_the_database,
+                                              "library.autotrim"},
+        {ui->actionConvert_all_musics_in_the_database_to_mp3, "library.convert"},
+        {ui->actionConvert_all_musics_in_the_database_to_ogg, "library.convert"},
+        {ui->actionConvert_all_musics_in_the_database_to_opus, "library.convert"},
+        {ui->actionFullScreen,                "station.fullscreen"},
+        {ui->actionOptions,                   "station.options"},
+        {ui->actionRecord_a_new_Program,      "programming.record"},
+        {ui->actionMake_a_program_from_this_playlist, "programming.makeprogram"},
+        {ui->actionForce_an_FTP_Check,        "station.server.ftp"},
+        {ui->actionForce_monitorization,      "station.server.monitor"},
+        {ui->actionUpdate_Dinamic_Server_s_IP, "station.server.ip"},
+        {ui->actionUpdate_System,             "station.update"},
+        {ui->actionInstall_all_dependencies,  "station.dependencies"},
+    };
+    for (const auto &binding : bindings)
+        access.guard(binding.action, QLatin1String(binding.permission));
+
+    // Help and the accessibility preferences are deliberately not in that
+    // list. A station that can lock somebody out of the screen reader
+    // settings has built a trap, not a safeguard.
+
+    if (ui->menuXFB) {
+        ui->menuXFB->addSeparator();
+
+        QAction *usersRoles = new QAction(QIcon(":/icons/flat/Security Checked-48.png"),
+                                          tr("&Users and roles..."), this);
+        usersRoles->setMenuRole(QAction::NoRole);
+        usersRoles->setToolTip(tr("Who may sign in to this XFB, and what each of "
+                                  "them is allowed to do with it."));
+        connect(usersRoles, &QAction::triggered, this, [this]() {
+            if (!m_usersRolesDialog) {
+                m_usersRolesDialog = new UsersRolesDialog(this);
+                m_usersRolesDialog->setAttribute(Qt::WA_DeleteOnClose, false);
+                connect(m_usersRolesDialog, &UsersRolesDialog::announcementRequested,
+                        this, &player::announceAccessible);
+            }
+            m_usersRolesDialog->show();
+            m_usersRolesDialog->raise();
+            m_usersRolesDialog->activateWindow();
+        });
+        ui->menuXFB->addAction(usersRoles);
+        addAction(usersRoles);
+        // Not guarded: on an unprotected installation this is the only way in,
+        // and once there are accounts it refuses on its own — see below.
+        connect(&access, &AccessControl::sessionChanged, usersRoles, [usersRoles]() {
+            const AccessControl &control = AccessControl::instance();
+            usersRoles->setEnabled(!control.isProtected() || control.isAdministrator());
+        });
+        usersRoles->setEnabled(!access.isProtected() || access.isAdministrator());
+
+        m_lockDeskAction = new QAction(QIcon(":/icons/lock.png"),
+                                       tr("&Lock the desk"), this);
+        m_lockDeskAction->setMenuRole(QAction::NoRole);
+        m_lockDeskAction->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_L));
+        m_lockDeskAction->setShortcutContext(Qt::ApplicationShortcut);
+        m_lockDeskAction->setToolTip(tr("Ask for a password before the desk can be "
+                                        "touched again. Whatever is on air stays "
+                                        "on air."));
+        connect(m_lockDeskAction, &QAction::triggered, this, &player::lockDesk);
+        ui->menuXFB->addAction(m_lockDeskAction);
+        addAction(m_lockDeskAction);
+    }
+
+    connect(&access, &AccessControl::sessionChanged, this, [this]() {
+        refreshOperatorInTitle();
+        applyAccessToControls();
+    });
+
+    // The desk locks itself only when an administrator asked it to, and the
+    // timer is rebuilt whenever that setting changes.
+    m_idleLockTimer = new QTimer(this);
+    m_idleLockTimer->setSingleShot(true);
+    connect(m_idleLockTimer, &QTimer::timeout, this, [this]() {
+        if (AccessControl::instance().autoLockMinutes() > 0)
+            lockDesk();
+    });
+    new DeskIdleWatcher(m_idleLockTimer, this);
+
+    auto armIdleLock = [this]() {
+        const int minutes = AccessControl::instance().autoLockMinutes();
+        if (minutes > 0)
+            m_idleLockTimer->start(minutes * 60 * 1000);
+        else
+            m_idleLockTimer->stop();
+    };
+    connect(&access, &AccessControl::sessionChanged, this, armIdleLock);
+    armIdleLock();
+
+    refreshOperatorInTitle();
+    applyAccessToControls();
+}
+
+void player::refreshOperatorInTitle()
+{
+    AccessControl &access = AccessControl::instance();
+
+    // The title is where an operator glances to be sure they are not about to
+    // work as somebody else — which matters most on the machine three people
+    // share across a day.
+    QString title = QStringLiteral("XFB");
+    if (access.isProtected()) {
+        const AccessControl::User user = access.currentUser();
+        const QString who = user.displayName.isEmpty() ? user.username : user.displayName;
+        if (who.isEmpty())
+            title += tr(" — nobody signed in");
+        else
+            title += QStringLiteral(" — %1 (%2)").arg(who, access.currentRoleName());
+    }
+    setWindowTitle(title);
+}
+
+void player::applyAccessToControls()
+{
+    // Everything else this feature touches is a menu entry, which guard()
+    // takes care of. These are the controls an operator actually uses, and
+    // leaving them live would make the menu entry beside them a decoration.
+    const bool mayDrive = AccessControl::instance().allows(QStringLiteral("playback.transport"));
+    for (QWidget *button : {static_cast<QWidget *>(ui->btPlay),
+                            static_cast<QWidget *>(ui->btStop),
+                            static_cast<QWidget *>(ui->bt_pause_play),
+                            static_cast<QWidget *>(ui->btPlayNext)}) {
+        if (button)
+            button->setEnabled(mayDrive);
+    }
+
+    const bool mayAutoMix = AccessControl::instance().allows(QStringLiteral("playback.automix"));
+    if (ui->bt_autoMode)
+        ui->bt_autoMode->setEnabled(mayAutoMix);
+}
+
+void player::lockDesk()
+{
+    AccessControl &access = AccessControl::instance();
+    if (!access.isProtected()) {
+        QMessageBox::information(
+            this, tr("Nothing to lock"),
+            tr("This installation has no accounts, so there is no password to ask "
+               "for. Create one in Options ▸ Users and roles."));
+        return;
+    }
+    if (m_deskLocked)
+        return;
+
+    m_deskLocked = true;
+    m_idleLockTimer->stop();
+
+    // The session goes before the question is asked: if XFB is killed while
+    // the lock is up, it does not come back signed in as whoever left.
+    access.signOut();
+    announceAccessible(tr("The desk is locked. The station is still on air."));
+
+    if (!SignInDialog::ask(SignInDialog::Mode::Lock, this)) {
+        // Quit was chosen, and the question about going off air has already
+        // been asked and answered inside the dialog.
+        m_deskLocked = false;
+        close();
+        return;
+    }
+
+    m_deskLocked = false;
+    announceAccessible(tr("Signed in as %1.").arg(access.currentUser().displayName));
+}
+
 StationSyncClient *player::stationSyncClient()
 {
     if (m_stationSync)
@@ -8407,7 +8763,15 @@ void player::on_torrentsView_pressed(const QModelIndex &index)
         QAction *downloadStreamAction = menu.addAction(tr("Download and Stream"));
         menu.addSeparator();
         QAction *copyMagnetAction = menu.addAction(tr("Copy Magnet Link"));
-        
+
+        {
+            const bool mayTorrent =
+                AccessControl::instance().allows(QStringLiteral("downloads.torrents"));
+            downloadAction->setEnabled(mayTorrent);
+            downloadStreamAction->setEnabled(mayTorrent);
+            copyMagnetAction->setEnabled(mayTorrent);
+        }
+
         QAction *selected = menu.exec(QCursor::pos());
         if (!selected) return;
         
@@ -10395,6 +10759,12 @@ for(const QPair<QVariant, QString> &expired : std::as_const(expiredIntervals)){
 
 void player::on_actionOptions_triggered()
 {
+    // The menu entry is disabled for a session without this, but the slot
+    // is also reachable from a shortcut and from other code, and what it
+    // does cannot be taken back.
+    if (!AccessControl::instance().demand(QStringLiteral("station.options"), this))
+        return;
+
     // Use show() instead of exec() to avoid blocking the event loop
     // (exec() blocks QMediaPlayer signal processing and causes audio to stop updating)
     optionsDialog *opt = new optionsDialog(this);
@@ -12011,6 +12381,12 @@ void player::calculate_playlist_total_time() {
 }
 void player::on_actionCheck_Database_Data_and_DELETE_all_invalid_records_witouth_confirmation_triggered()
 {
+    // The menu entry is disabled for a session without this, but the slot
+    // is also reachable from a shortcut and from other code, and what it
+    // does cannot be taken back.
+    if (!AccessControl::instance().demand(QStringLiteral("library.purge"), this))
+        return;
+
 
 
     QSqlDatabase db = QSqlDatabase::database("xfb_connection");
@@ -12592,6 +12968,12 @@ void player::on_bt_sndconv_clicked()
 
 void player::on_actionAutoTrim_the_silence_from_the_start_and_the_end_of_all_music_tracks_in_the_database_triggered()
 {
+    // The menu entry is disabled for a session without this, but the slot
+    // is also reachable from a shortcut and from other code, and what it
+    // does cannot be taken back.
+    if (!AccessControl::instance().demand(QStringLiteral("library.autotrim"), this))
+        return;
+
     QSqlDatabase db = QSqlDatabase::database("xfb_connection");
     if (!db.isOpen()) {
         qWarning() << "Database connection 'xfb_connection' is not open!";
@@ -12830,11 +13212,23 @@ void player::on_actionAutoTrim_the_silence_from_the_start_and_the_end_of_all_mus
 
 void player::on_actionUpdate_System_triggered()
 {
+    // The menu entry is disabled for a session without this, but the slot
+    // is also reachable from a shortcut and from other code, and what it
+    // does cannot be taken back.
+    if (!AccessControl::instance().demand(QStringLiteral("station.update"), this))
+        return;
+
     checkForUpdates();
 }
 
 void player::on_actionInstall_all_dependencies_triggered()
 {
+    // The menu entry is disabled for a session without this, but the slot
+    // is also reachable from a shortcut and from other code, and what it
+    // does cannot be taken back.
+    if (!AccessControl::instance().demand(QStringLiteral("station.dependencies"), this))
+        return;
+
     DependencyChecker depChecker;
     depChecker.installAllInteractive(this);
 }
@@ -13912,6 +14306,12 @@ void player::on_bt_apply_multi_selection_clicked()
 
 void player::on_actionConvert_all_musics_in_the_database_to_mp3_triggered()
 {
+    // The menu entry is disabled for a session without this, but the slot
+    // is also reachable from a shortcut and from other code, and what it
+    // does cannot be taken back.
+    if (!AccessControl::instance().demand(QStringLiteral("library.convert"), this))
+        return;
+
     QSqlDatabase db = QSqlDatabase::database("xfb_connection"); // Or pass it in
     if (!db.isOpen()) {
         qWarning() << "Database connection 'xfb_connection' is not open!";
@@ -14182,6 +14582,12 @@ void player::on_actionConvert_all_musics_in_the_database_to_mp3_triggered()
 }
 void player::on_actionConvert_all_musics_in_the_database_to_ogg_triggered()
 {
+    // The menu entry is disabled for a session without this, but the slot
+    // is also reachable from a shortcut and from other code, and what it
+    // does cannot be taken back.
+    if (!AccessControl::instance().demand(QStringLiteral("library.convert"), this))
+        return;
+
     QSqlDatabase db = QSqlDatabase::database("xfb_connection"); // Or pass it in
     if (!db.isOpen()) {
         qWarning() << "Database connection 'xfb_connection' is not open!";
@@ -14453,6 +14859,12 @@ void player::on_actionConvert_all_musics_in_the_database_to_ogg_triggered()
 }
 void player::on_actionConvert_all_musics_in_the_database_to_opus_triggered()
 {
+    // The menu entry is disabled for a session without this, but the slot
+    // is also reachable from a shortcut and from other code, and what it
+    // does cannot be taken back.
+    if (!AccessControl::instance().demand(QStringLiteral("library.convert"), this))
+        return;
+
     QSqlDatabase db = QSqlDatabase::database("xfb_connection"); // Or pass it in
     if (!db.isOpen()) {
         qWarning() << "Database connection 'xfb_connection' is not open!";
@@ -17830,6 +18242,12 @@ void player::convertMusicsTo432(const QStringList &paths)
 // audio is not a thing a menu item should do quietly.
 void player::on_actionRemove_duplicate_songs_triggered()
 {
+    // The menu entry is disabled for a session without this, but the slot
+    // is also reachable from a shortcut and from other code, and what it
+    // does cannot be taken back.
+    if (!AccessControl::instance().demand(QStringLiteral("library.duplicates"), this))
+        return;
+
     QSqlDatabase db = QSqlDatabase::database("xfb_connection");
     if (!db.isOpen()) {
         qWarning() << "Database connection 'xfb_connection' is not open!";

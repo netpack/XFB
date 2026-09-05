@@ -53,6 +53,10 @@ set(SOURCES
     dialogs/WatchedFoldersDialog.cpp
     # Listener requests + the switch that puts the public page on the network
     dialogs/RequestTrayDialog.cpp
+    # Who is at the desk: sign-in, and the window an administrator
+    # manages users and roles from
+    dialogs/SignInDialog.cpp
+    dialogs/UsersRolesDialog.cpp
     dialogs/StationSyncDialog.cpp
     dialogs/ProductionSyncDialog.cpp
     dialogs/StreamDialog.cpp
@@ -88,6 +92,8 @@ set(SOURCES
     services/HourClock.cpp
     services/DeadAirWatchdog.cpp
     services/LibraryWatcher.cpp
+    # Operator accounts, roles, and the permission behind every menu entry
+    services/AccessControl.cpp
     # The public now-playing page's request line (table, settings, search)
     services/RequestLine.cpp
     # Basic accessibility (working components)
@@ -182,6 +188,8 @@ set(HEADERS
     audio/VoiceDuck.h
     dialogs/AudioFxDialog.h
     dialogs/MobileSyncDialog.h
+    dialogs/SignInDialog.h
+    dialogs/UsersRolesDialog.h
     dialogs/StationSyncDialog.h
     dialogs/ProductionSyncDialog.h
     dialogs/StreamDialog.h
@@ -211,6 +219,7 @@ set(HEADERS
     services/HourClock.h
     services/DeadAirWatchdog.h
     services/LibraryWatcher.h
+    services/AccessControl.h
     services/RequestLine.h
     services/AccessibilityManager.h
     services/AccessibilitySettingsService.h

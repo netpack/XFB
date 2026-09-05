@@ -1,5 +1,7 @@
 #include "player.h"
 #include "ThemeManager.h"
+#include "dialogs/SignInDialog.h"
+#include "services/AccessControl.h"
 
 #ifdef XFB_HAS_DARWIN_MIC_PERMISSION
 #include <QtPlugin>
@@ -628,6 +630,34 @@ int main(int argc, char *argv[])
     // 9. Theme
     showSplashMessage(QObject::tr("Applying theme..."));
     ThemeManager::apply(&app);
+
+    // 9b. Who is at the desk
+    //
+    // On an installation nobody has protected there are no accounts and this
+    // does nothing at all — which is every station that has just updated into
+    // this version. Where there are accounts, XFB asks before it builds the
+    // window: refusing the question has to leave nothing behind, and by the
+    // time the player exists it has already opened the database, armed the
+    // watched folders and possibly gone on air.
+    //
+    // The splash is taken down first. A modal question behind a frameless
+    // always-on-top splash screen is a machine that looks hung.
+    {
+        AccessControl &access = AccessControl::instance();
+        if (access.isProtected()) {
+            if (access.signInRequired()) {
+                splash.hide();
+                if (!SignInDialog::ask(SignInDialog::Mode::Startup))
+                    return 0;
+                splash.show();
+                showSplashMessage(QObject::tr("Loading main window..."));
+            } else {
+                // Asked not to be asked: come up as the account the
+                // administrator named, or as the one that can do least.
+                access.signInAutomatically();
+            }
+        }
+    }
 
     // 10. Create main window
     showSplashMessage(QObject::tr("Loading main window..."));

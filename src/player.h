@@ -830,6 +830,30 @@ private slots:
     /// Samples the transport for the watchdog once a second.
     QTimer *m_deadAirFeedTimer = nullptr;
 
+    // --- Who is at the desk ---
+    // Operator accounts, roles and the permission behind every menu entry.
+    // On an installation nobody has protected there are no accounts, every
+    // permission is granted and none of this shows: XFB behaves exactly as it
+    // did before the feature existed. Where there are accounts, the menu
+    // entries this session may not use are disabled and say why, the title bar
+    // says who is signed in, and the desk can be locked without the station
+    // coming off air.
+    void setupAccessControl();
+    /** Puts the operator and their role in the title bar. */
+    void refreshOperatorInTitle();
+    /** Disables the controls that are not menu entries — the transport
+     *  buttons — for a session that may not use them. */
+    void applyAccessToControls();
+    /** Blanks the desk behind a sign-in question. Playback is untouched:
+     *  a locked studio machine is still on air. */
+    void lockDesk();
+    QPointer<class UsersRolesDialog> m_usersRolesDialog;
+    QAction *m_lockDeskAction = nullptr;
+    QAction *m_signOutAction = nullptr;
+    QTimer *m_idleLockTimer = nullptr;
+    /// True while the sign-in question is up, so idleness cannot open a second.
+    bool m_deskLocked = false;
+
     // --- Adding library tracks to the playlist from the keyboard ---
     // The library views' only route into the playlist used to be the
     // right-click context menu, which is unreachable on a Mac keyboard (no
