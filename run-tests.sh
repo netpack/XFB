@@ -94,8 +94,12 @@ if ! cmake -S . -B "$BUILD_DIR" -DBUILD_TESTING=ON > /tmp/xfb-test-configure.log
 fi
 ok "Configured"
 
+# --parallel with no number is "make -j" with no number, which is unlimited;
+# on a small runner that is how you get cc1plus killed rather than a build.
+JOBS=$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo "4")
+
 info "Building the unit tests..."
-if ! cmake --build "$BUILD_DIR" --target unit_tests --parallel > /tmp/xfb-test-build.log 2>&1; then
+if ! cmake --build "$BUILD_DIR" --target unit_tests --parallel "$JOBS" > /tmp/xfb-test-build.log 2>&1; then
     err "Test build failed:"
     grep -E "error:" /tmp/xfb-test-build.log | head -20
     exit 1

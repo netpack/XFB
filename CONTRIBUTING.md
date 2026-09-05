@@ -30,7 +30,7 @@ runs). In short:
 sudo apt install build-essential cmake pkg-config qt6-base-dev \
   qt6-multimedia-dev qt6-webengine-dev qt6-declarative-dev # …see the Dockerfile
 cmake -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build --target XFB --parallel
+cmake --build build --target XFB --parallel "$(nproc)"
 ```
 
 Alternatively, `./build-deb-docker.sh amd64|arm64` builds the `.deb` in Docker

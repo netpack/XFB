@@ -86,7 +86,7 @@ cd XFB
 # Or build manually
 mkdir build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
-cmake --build . --parallel
+cmake --build . --parallel 4   # a job count, not a bare --parallel: that means unlimited
 ```
 
 #### Build Options
