@@ -3295,7 +3295,7 @@ void player::on_actionOpen_triggered()
     }
 }
 
-void::player::playlistContextMenu(const QPoint& pos){
+void player::playlistContextMenu(const QPoint& pos){
     QPoint globalPos = ui->playlist->mapToGlobal(pos);
     QMenu thisMenu;
     QString remove = tr("Remove this track from the playlist");
@@ -3768,7 +3768,7 @@ void player::jinglesViewContextMenu(const QPoint& pos) {
 }
 
 
-void::player::pubViewContextMenu(const QPoint& pos){
+void player::pubViewContextMenu(const QPoint& pos){
     QPoint globalPos = ui->pubView->mapToGlobal(pos);
     QMenu thisMenu;
     QString addToBottomOfPlaylist = tr("Add to the bottom of playlist");

@@ -10939,23 +10939,23 @@ Encontrados %1 ficheiro(s) de áudio, adicionados %2, já na biblioteca %3.</tra
         <translation>Selecionar Ficheiro</translation>
     </message>
     <message>
-        <location filename="add_program.cpp" line="291"/>
-        <location filename="add_program.cpp" line="320"/>
+        <location filename="add_program.cpp" line="299"/>
+        <location filename="add_program.cpp" line="328"/>
         <source>Date interval</source>
         <translation>Intervalo de datas</translation>
     </message>
     <message>
-        <location filename="add_program.cpp" line="292"/>
+        <location filename="add_program.cpp" line="300"/>
         <source>The end date is before the start date.</source>
         <translation>A data de fim é anterior à data de início.</translation>
     </message>
     <message>
-        <location filename="add_program.cpp" line="321"/>
+        <location filename="add_program.cpp" line="329"/>
         <source>The schedule could not be saved.</source>
         <translation>Não foi possível guardar o agendamento.</translation>
     </message>
     <message>
-        <location filename="add_program.cpp" line="326"/>
+        <location filename="add_program.cpp" line="334"/>
         <source>From %1 To %2 at %3</source>
         <translation>De %1 a %2 às %3</translation>
     </message>
@@ -11107,23 +11107,23 @@ Encontrados %1 ficheiro(s) de áudio, adicionados %2, já na biblioteca %3.</tra
         <translation>Selecionar Ficheiro</translation>
     </message>
     <message>
-        <location filename="add_pub.cpp" line="342"/>
-        <location filename="add_pub.cpp" line="371"/>
+        <location filename="add_pub.cpp" line="350"/>
+        <location filename="add_pub.cpp" line="379"/>
         <source>Date interval</source>
         <translation>Intervalo de datas</translation>
     </message>
     <message>
-        <location filename="add_pub.cpp" line="343"/>
+        <location filename="add_pub.cpp" line="351"/>
         <source>The end date is before the start date.</source>
         <translation>A data de fim é anterior à data de início.</translation>
     </message>
     <message>
-        <location filename="add_pub.cpp" line="372"/>
+        <location filename="add_pub.cpp" line="380"/>
         <source>The schedule could not be saved.</source>
         <translation>Não foi possível guardar o agendamento.</translation>
     </message>
     <message>
-        <location filename="add_pub.cpp" line="377"/>
+        <location filename="add_pub.cpp" line="385"/>
         <source>From %1 To %2 at %3</source>
         <translation>De %1 a %2 às %3</translation>
     </message>
@@ -13268,6 +13268,7 @@ Também pode usar: ffmpeg -i entrada.ogg saida.mp3</translation>
         <translation>O Sound Converter permite converter ficheiros de áudio entre formatos. É fornecido pelo programa &quot;soundconverter&quot;.</translation>
     </message>
     <message>
+        <location filename="player.cpp" line="3822"/>
         <location filename="player.cpp" line="13272"/>
         <source>Sure?</source>
         <translation>Tem a certeza?</translation>
@@ -13288,6 +13289,7 @@ Também pode usar: ffmpeg -i entrada.ogg saida.mp3</translation>
         <translation>Deseja apagar todos os ficheiros selectionados do disco rigido também?</translation>
     </message>
     <message>
+        <location filename="player.cpp" line="3832"/>
         <location filename="player.cpp" line="4293"/>
         <location filename="player.cpp" line="13301"/>
         <source>Error</source>
@@ -13647,6 +13649,7 @@ Débito: %8</translation>
     <message>
         <location filename="player.cpp" line="3440"/>
         <location filename="player.cpp" line="3701"/>
+        <location filename="player.cpp" line="3774"/>
         <location filename="player.cpp" line="4076"/>
         <source>Add to the bottom of playlist</source>
         <translation>Adicionar ao fim da playlist</translation>
@@ -13654,6 +13657,7 @@ Débito: %8</translation>
     <message>
         <location filename="player.cpp" line="3441"/>
         <location filename="player.cpp" line="3702"/>
+        <location filename="player.cpp" line="3775"/>
         <location filename="player.cpp" line="4077"/>
         <source>Add to the top of the playlist</source>
         <translation>Adicionar ao topo da playlist</translation>
@@ -13726,6 +13730,7 @@ Débito: %8</translation>
     <message>
         <location filename="player.cpp" line="3505"/>
         <location filename="player.cpp" line="3704"/>
+        <location filename="player.cpp" line="3777"/>
         <location filename="player.cpp" line="4079"/>
         <source>Open this in Audacity</source>
         <translation>Abrir com o Audacity</translation>
@@ -14589,6 +14594,7 @@ Medi-las novamente? Vale a pena fazê-lo depois de uma atualização, e é a for
         <translation>Pastas que o XFB vigia: tudo o que aparecer de novo numa delas é adicionado sozinho à biblioteca de músicas, jingles, publicidades ou programas.</translation>
     </message>
     <message>
+        <location filename="player.cpp" line="3308"/>
         <location filename="player.cpp" line="3448"/>
         <source>Cue this track in the headphones</source>
         <translation>Pré-escutar esta faixa nos auscultadores</translation>
@@ -16488,9 +16494,6 @@ As contagens de reproduções e quaisquer BPM, intensidade sonora e tempos de in
         <source>It&apos;s not possible to send the Program to the server if XFB role is set to Server</source>
         <translation>Não é possível enviar ficheiros para o servidor se o XFB está no modo Server</translation>
     </message>
-</context>
-<context>
-    <name>void::player</name>
     <message>
         <location filename="player.cpp" line="3301"/>
         <source>Remove this track from the playlist</source>
@@ -16527,11 +16530,6 @@ As contagens de reproduções e quaisquer BPM, intensidade sonora e tempos de in
         <translation>Fazer o auto-mix da transição para esta faixa</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3308"/>
-        <source>Cue this track in the headphones</source>
-        <translation>Pré-escutar esta faixa nos auscultadores</translation>
-    </message>
-    <message>
         <location filename="player.cpp" line="3336"/>
         <source>A volume line controls the track&apos;s volume over time: double-click the line to add points, drag points (or the line between them) to shape the volume, double-click a point to reset it to 0 dB, right-click a point to remove it.</source>
         <translation>Uma linha de volume controla o volume da faixa ao longo do tempo: faça duplo clique na linha para adicionar pontos, arraste os pontos (ou a linha entre eles) para moldar o volume, faça duplo clique num ponto para o repor em 0 dB e clique com o botão direito num ponto para o remover.</translation>
@@ -16552,34 +16550,9 @@ As contagens de reproduções e quaisquer BPM, intensidade sonora e tempos de in
         <translation>Grava a tua locução por cima desta passagem. O XFB escreve o ducking nas duas músicas como uma linha de volume normal que podes depois editar à mão.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3774"/>
-        <source>Add to the bottom of playlist</source>
-        <translation>Adicionar ao fundo da playlist</translation>
-    </message>
-    <message>
-        <location filename="player.cpp" line="3775"/>
-        <source>Add to the top of the playlist</source>
-        <translation>Adicionar ao topo da playlist</translation>
-    </message>
-    <message>
-        <location filename="player.cpp" line="3777"/>
-        <source>Open this in Audacity</source>
-        <translation>Abrir com o Audacity</translation>
-    </message>
-    <message>
         <location filename="player.cpp" line="3778"/>
         <source>Cue this advert in the headphones</source>
         <translation>Pré-escutar esta publicidade nos auscultadores</translation>
-    </message>
-    <message>
-        <location filename="player.cpp" line="3822"/>
-        <source>Sure?</source>
-        <translation>Tem a certeza?</translation>
-    </message>
-    <message>
-        <location filename="player.cpp" line="3832"/>
-        <source>Error</source>
-        <translation>Erro</translation>
     </message>
     <message>
         <location filename="player.cpp" line="3829"/>

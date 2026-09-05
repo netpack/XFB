@@ -10940,23 +10940,23 @@ Found %1 audio file(s), added %2, already in the library %3.</source>
         <translation>Selectionner le fichier</translation>
     </message>
     <message>
-        <location filename="add_program.cpp" line="291"/>
-        <location filename="add_program.cpp" line="320"/>
+        <location filename="add_program.cpp" line="299"/>
+        <location filename="add_program.cpp" line="328"/>
         <source>Date interval</source>
         <translation>Intervalle de dates</translation>
     </message>
     <message>
-        <location filename="add_program.cpp" line="292"/>
+        <location filename="add_program.cpp" line="300"/>
         <source>The end date is before the start date.</source>
         <translation>La date de fin est antérieure à la date de début.</translation>
     </message>
     <message>
-        <location filename="add_program.cpp" line="321"/>
+        <location filename="add_program.cpp" line="329"/>
         <source>The schedule could not be saved.</source>
         <translation>La programmation n&apos;a pas pu être enregistrée.</translation>
     </message>
     <message>
-        <location filename="add_program.cpp" line="326"/>
+        <location filename="add_program.cpp" line="334"/>
         <source>From %1 To %2 at %3</source>
         <translation>Du %1 au %2 à %3</translation>
     </message>
@@ -11108,23 +11108,23 @@ Found %1 audio file(s), added %2, already in the library %3.</source>
         <translation>Selectionner le fichier</translation>
     </message>
     <message>
-        <location filename="add_pub.cpp" line="342"/>
-        <location filename="add_pub.cpp" line="371"/>
+        <location filename="add_pub.cpp" line="350"/>
+        <location filename="add_pub.cpp" line="379"/>
         <source>Date interval</source>
         <translation>Intervalle de dates</translation>
     </message>
     <message>
-        <location filename="add_pub.cpp" line="343"/>
+        <location filename="add_pub.cpp" line="351"/>
         <source>The end date is before the start date.</source>
         <translation>La date de fin est antérieure à la date de début.</translation>
     </message>
     <message>
-        <location filename="add_pub.cpp" line="372"/>
+        <location filename="add_pub.cpp" line="380"/>
         <source>The schedule could not be saved.</source>
         <translation>La programmation n&apos;a pas pu être enregistrée.</translation>
     </message>
     <message>
-        <location filename="add_pub.cpp" line="377"/>
+        <location filename="add_pub.cpp" line="385"/>
         <source>From %1 To %2 at %3</source>
         <translation>Du %1 au %2 à %3</translation>
     </message>
@@ -13283,6 +13283,7 @@ Vous pouvez aussi utiliser : ffmpeg -i entree.ogg sortie.mp3</translation>
         <translation>Le Sound Converter permet de convertir des fichiers audio d&apos;un format à l&apos;autre. Il est fourni par le programme « soundconverter ».</translation>
     </message>
     <message>
+        <location filename="player.cpp" line="3822"/>
         <location filename="player.cpp" line="13272"/>
         <source>Sure?</source>
         <translation>Vous êtes sûr ?</translation>
@@ -13303,6 +13304,7 @@ Vous pouvez aussi utiliser : ffmpeg -i entree.ogg sortie.mp3</translation>
         <translation>Voulez-vous aussi supprimer du disque dur tous les fichiers sélectionnés ?</translation>
     </message>
     <message>
+        <location filename="player.cpp" line="3832"/>
         <location filename="player.cpp" line="4293"/>
         <location filename="player.cpp" line="13301"/>
         <source>Error</source>
@@ -13662,6 +13664,7 @@ Débit : %8</translation>
     <message>
         <location filename="player.cpp" line="3440"/>
         <location filename="player.cpp" line="3701"/>
+        <location filename="player.cpp" line="3774"/>
         <location filename="player.cpp" line="4076"/>
         <source>Add to the bottom of playlist</source>
         <translation>Ajouter à la fin de la liste de lecture</translation>
@@ -13669,6 +13672,7 @@ Débit : %8</translation>
     <message>
         <location filename="player.cpp" line="3441"/>
         <location filename="player.cpp" line="3702"/>
+        <location filename="player.cpp" line="3775"/>
         <location filename="player.cpp" line="4077"/>
         <source>Add to the top of the playlist</source>
         <translation>Ajouter en tête de la liste de lecture</translation>
@@ -13741,6 +13745,7 @@ Débit : %8</translation>
     <message>
         <location filename="player.cpp" line="3505"/>
         <location filename="player.cpp" line="3704"/>
+        <location filename="player.cpp" line="3777"/>
         <location filename="player.cpp" line="4079"/>
         <source>Open this in Audacity</source>
         <translation>Ouvrir avec Audacity</translation>
@@ -14604,6 +14609,7 @@ Les mesurer à nouveau ? Cela vaut la peine après une mise à jour, et c&apos;e
         <translation>Les dossiers que XFB surveille : tout ce qui y arrive de nouveau est ajouté tout seul à la bibliothèque de musiques, de jingles, de publicités ou de programmes.</translation>
     </message>
     <message>
+        <location filename="player.cpp" line="3308"/>
         <location filename="player.cpp" line="3448"/>
         <source>Cue this track in the headphones</source>
         <translation>Pré-écouter ce morceau au casque</translation>
@@ -16503,9 +16509,6 @@ Les compteurs de diffusion et les valeurs de BPM, de sonie et d&apos;intro déj�
         <source>It&apos;s not possible to send the Program to the server if XFB role is set to Server</source>
         <translation>Il n&apos;est pas possible d&apos;envoyer le programme si le Mode est &apos;Serveur&apos;</translation>
     </message>
-</context>
-<context>
-    <name>void::player</name>
     <message>
         <location filename="player.cpp" line="3301"/>
         <source>Remove this track from the playlist</source>
@@ -16542,11 +16545,6 @@ Les compteurs de diffusion et les valeurs de BPM, de sonie et d&apos;intro déj�
         <translation>Auto-mixer la transition vers ce morceau</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3308"/>
-        <source>Cue this track in the headphones</source>
-        <translation>Pré-écouter ce morceau au casque</translation>
-    </message>
-    <message>
         <location filename="player.cpp" line="3336"/>
         <source>A volume line controls the track&apos;s volume over time: double-click the line to add points, drag points (or the line between them) to shape the volume, double-click a point to reset it to 0 dB, right-click a point to remove it.</source>
         <translation>Une ligne de volume contrôle le volume du morceau au fil du temps : double-cliquez sur la ligne pour ajouter des points, faites glisser les points (ou la ligne entre eux) pour modeler le volume, double-cliquez sur un point pour le remettre à 0 dB et faites un clic droit sur un point pour le supprimer.</translation>
@@ -16567,34 +16565,14 @@ Les compteurs de diffusion et les valeurs de BPM, de sonie et d&apos;intro déj�
         <translation>Enregistrez votre intervention par-dessus cet enchaînement. XFB écrit le ducking sur les deux morceaux comme une courbe de volume ordinaire que vous pouvez ensuite retoucher à la main.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3774"/>
-        <source>Add to the bottom of playlist</source>
-        <translation>Ajouter en fin de Playlist</translation>
-    </message>
-    <message>
-        <location filename="player.cpp" line="3775"/>
-        <source>Add to the top of the playlist</source>
-        <translation>Ajouter en début de Playlist</translation>
-    </message>
-    <message>
         <location filename="player.cpp" line="3776"/>
         <source>Delete this pub from the database</source>
         <translation>Supprimer cette annonce de la base de données</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3777"/>
-        <source>Open this in Audacity</source>
-        <translation>Ouvrir avec Audacity</translation>
-    </message>
-    <message>
         <location filename="player.cpp" line="3778"/>
         <source>Cue this advert in the headphones</source>
         <translation>Pré-écouter cette publicité au casque</translation>
-    </message>
-    <message>
-        <location filename="player.cpp" line="3822"/>
-        <source>Sure?</source>
-        <translation>Confirmer ?</translation>
     </message>
     <message>
         <location filename="player.cpp" line="3822"/>
@@ -16610,11 +16588,6 @@ Les compteurs de diffusion et les valeurs de BPM, de sonie et d&apos;intro déj�
         <location filename="player.cpp" line="3829"/>
         <source>The pub was removed from the database!</source>
         <translation>L&apos;annonce a été supprimée de la base de données !</translation>
-    </message>
-    <message>
-        <location filename="player.cpp" line="3832"/>
-        <source>Error</source>
-        <translation>Erreur</translation>
     </message>
 </context>
 </TS>
