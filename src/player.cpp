@@ -137,6 +137,8 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include "dialogs/StationSyncDialog.h"
 #include "dialogs/StreamDialog.h"
 #include "dialogs/VoiceTrackDialog.h"
+#include "dialogs/WatchedFoldersDialog.h"
+#include "services/LibraryWatcher.h"
 #include "services/StreamService.h"
 #include "services/AirLog.h"
 #include "services/RotationRules.h"
@@ -1940,6 +1942,36 @@ checkDbOpen();
            dialog->setAttribute(Qt::WA_DeleteOnClose);
            dialog->show();
        });
+   }
+
+   // Folders that feed the library on their own. Sits with the other ways
+   // material gets in rather than with the station-wide settings: an operator
+   // looking for "how do songs get into XFB" looks in this menu.
+   {
+       QAction *watchedFolders = new QAction(QIcon(":/icons/flat/Import-48.png"),
+                                             tr("Watched folders…"), this);
+       watchedFolders->setMenuRole(QAction::NoRole);
+       watchedFolders->setToolTip(tr("Folders XFB keeps an eye on: anything new that "
+                                     "lands in one is added to the music, jingles, "
+                                     "publicities or programs library on its own."));
+       ui->menuDatabase->addAction(watchedFolders);
+       connect(watchedFolders, &QAction::triggered, this, [this]() {
+           if (!m_watchedFoldersDialog) {
+               m_watchedFoldersDialog = new WatchedFoldersDialog(libraryWatcher(), this);
+               m_watchedFoldersDialog->setAttribute(Qt::WA_DeleteOnClose, false);
+               connect(m_watchedFoldersDialog, &WatchedFoldersDialog::announcementRequested,
+                       this, &player::announceAccessible);
+           }
+           m_watchedFoldersDialog->show();
+           m_watchedFoldersDialog->raise();
+           m_watchedFoldersDialog->activateWindow();
+       });
+
+       // Constructing it is what arms it, so folders an operator turned on
+       // are being watched from startup without opening the window. With it
+       // off nothing is constructed and no timer runs.
+       if (LibraryWatcher::loadConfig().enabled)
+           libraryWatcher();
    }
 
    // DJ decks: scratchable platters + performance FX
@@ -6938,6 +6970,32 @@ ProductionSyncClient *player::productionSyncClient()
 // and catastrophic; the false positive is common and immediate. So it stays
 // off until the operator has been through the dialog, seen the threshold, and
 // pointed it at material they are willing to hear go out.
+LibraryWatcher *player::libraryWatcher()
+{
+    if (m_libraryWatcher)
+        return m_libraryWatcher;
+
+    m_libraryWatcher = new LibraryWatcher(this);
+
+    // The library views are showing rows that no longer say everything the
+    // database does, so they are rebuilt — and said out loud, because an
+    // import that happens on its own is exactly the kind of change a screen
+    // reader user would otherwise never learn about.
+    connect(m_libraryWatcher, &LibraryWatcher::imported, this,
+            [this](int count, const QString &what) {
+        Q_UNUSED(count)
+        update_music_table();
+        announceAccessible(what);
+    });
+
+    connect(m_libraryWatcher, &LibraryWatcher::logMessage, this,
+            [](const QString &message) {
+        qInfo() << "[WatchedFolders]" << message;
+    });
+
+    return m_libraryWatcher;
+}
+
 DeadAirWatchdog *player::deadAirWatchdog()
 {
     if (m_deadAirWatchdog)

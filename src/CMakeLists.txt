@@ -49,6 +49,8 @@ set(SOURCES
     # Hour clock editor: the wheel, its accessible text twin, the week grid
     dialogs/HourClockDialog.cpp
     dialogs/DeadAirDialog.cpp
+    # Folders XFB watches, so material dropped in one files itself
+    dialogs/WatchedFoldersDialog.cpp
     # Listener requests + the switch that puts the public page on the network
     dialogs/RequestTrayDialog.cpp
     dialogs/StationSyncDialog.cpp
@@ -85,6 +87,7 @@ set(SOURCES
     # The hour clock: the format as an ordered, timed hour of slots
     services/HourClock.cpp
     services/DeadAirWatchdog.cpp
+    services/LibraryWatcher.cpp
     # The public now-playing page's request line (table, settings, search)
     services/RequestLine.cpp
     # Basic accessibility (working components)
@@ -186,6 +189,7 @@ set(HEADERS
     dialogs/RotationDialog.h
     dialogs/HourClockDialog.h
     dialogs/DeadAirDialog.h
+    dialogs/WatchedFoldersDialog.h
     dialogs/RequestTrayDialog.h
     dialogs/VoiceTrackDialog.h
     # Pads tab
@@ -206,6 +210,7 @@ set(HEADERS
     services/RotationRules.h
     services/HourClock.h
     services/DeadAirWatchdog.h
+    services/LibraryWatcher.h
     services/RequestLine.h
     services/AccessibilityManager.h
     services/AccessibilitySettingsService.h

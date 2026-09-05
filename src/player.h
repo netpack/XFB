@@ -805,6 +805,16 @@ private slots:
     QPointer<class DeadAirWatchdog> m_deadAirWatchdog;
     QPointer<class DeadAirDialog> m_deadAirDialog;
 
+    // --- Watched import folders ---
+    // Folders that feed the library on their own: anything that lands in one
+    // and is not in the database yet is filed under it, so material dropped on
+    // a share by the production desk or an agency is on the system without
+    // anybody remembering to import it. Created at startup only when the
+    // operator has turned it on.
+    class LibraryWatcher *libraryWatcher();
+    QPointer<class LibraryWatcher> m_libraryWatcher;
+    QPointer<class WatchedFoldersDialog> m_watchedFoldersDialog;
+
     // --- The public now-playing page and its request line ---
     // A page served to whoever can reach this machine, off until the operator
     // switches it on in the window below. What it may say about the air comes
