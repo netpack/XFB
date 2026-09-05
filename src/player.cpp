@@ -1925,7 +1925,8 @@ checkDbOpen();
    // sweeps above this one goes out to the internet and rewrites files, so it
    // is a window the operator drives rather than a sweep that just runs.
    {
-       QAction *findCovers = new QAction(tr("Find the missing cover art…"), this);
+       QAction *findCovers = new QAction(QIcon(":/icons/insert-image.png"),
+                                         tr("Find the missing cover art…"), this);
        findCovers->setToolTip(tr("Look for a cover for every track in the library that has "
                                  "none, and — once you have seen what was found — write it "
                                  "into the file. Downloads from before XFB kept the cover "
