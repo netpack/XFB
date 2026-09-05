@@ -2,6 +2,638 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="pt" sourcelanguage="en">
 <context>
+    <name>AccessControl</name>
+    <message>
+        <location filename="services/AccessControl.cpp" line="60"/>
+        <source>Library</source>
+        <translation>Biblioteca</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="61"/>
+        <source>Playlist and playback</source>
+        <translation>Playlist e reprodução</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="62"/>
+        <source>Programming</source>
+        <translation>Programação</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="63"/>
+        <source>Station</source>
+        <translation>Estação</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="64"/>
+        <source>Downloads</source>
+        <translation>Transferências</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="65"/>
+        <source>Administration</source>
+        <translation>Administração</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="70"/>
+        <source>Add a single song</source>
+        <translation>Adicionar uma única música</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="71"/>
+        <source>Import one music file into the library.</source>
+        <translation>Importar um ficheiro de música para a biblioteca.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="73"/>
+        <source>Add all songs in a folder</source>
+        <translation>Adicionar todas as músicas de uma pasta</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="74"/>
+        <source>Import a whole folder, subfolders and all.</source>
+        <translation>Importar uma pasta inteira, subpastas incluídas.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="76"/>
+        <source>Add a jingle</source>
+        <translation>Adicionar Jingle</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="76"/>
+        <source>Import a jingle.</source>
+        <translation>Importar um jingle.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="78"/>
+        <source>Add a publicity</source>
+        <translation>Adicionar publicidade</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="78"/>
+        <source>Import an advert.</source>
+        <translation>Importar um anúncio.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="80"/>
+        <source>Add a program</source>
+        <translation>Adicionar Programa</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="80"/>
+        <source>Import a recorded programme.</source>
+        <translation>Importar um programa gravado.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="82"/>
+        <source>Manage genres</source>
+        <translation>Gerir Géneros</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="83"/>
+        <source>Add, rename and remove the genres tracks are filed under.</source>
+        <translation>Adicionar, mudar o nome e remover os géneros em que as faixas são arrumadas.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="85"/>
+        <source>Edit track details</source>
+        <translation>Editar os dados de uma faixa</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="86"/>
+        <source>Change the artist, title, genre or country of tracks already in the library, one at a time or in a batch.</source>
+        <translation>Alterar o artista, o título, o género ou o país de faixas que já estão na biblioteca, uma a uma ou em lote.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="89"/>
+        <source>Delete tracks from the database</source>
+        <translation>Eliminar faixas da base de dados</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="90"/>
+        <source>Remove a track, jingle, advert or programme from the library.</source>
+        <translation>Remover da biblioteca uma faixa, um jingle, um anúncio ou um programa.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="92"/>
+        <source>Check and update the records</source>
+        <translation>Verificar e atualizar os registos</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="93"/>
+        <source>Walk the library looking for records whose file has moved or whose duration is missing, and repair them.</source>
+        <translation>Percorrer a biblioteca à procura de registos cujo ficheiro mudou de sítio ou a quem falta a duração, e repará-los.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="96"/>
+        <source>Delete every invalid record without confirmation</source>
+        <translation>Eliminar todos os registos inválidos sem confirmação</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="97"/>
+        <source>The sweep that removes anything it cannot find on disk, in one pass and with nothing to confirm. An unmounted share makes it empty the library.</source>
+        <translation>A varredura que remove tudo o que não encontrar no disco, de uma só vez e sem nada a confirmar. Uma partilha que não esteja montada leva-a a esvaziar a biblioteca.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="101"/>
+        <source>Remove duplicate songs</source>
+        <translation>Remover músicas duplicadas</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="102"/>
+        <source>Keep one record per artist and title, deleting the rest.</source>
+        <translation>Manter um registo por artista e título, eliminando os restantes.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="104"/>
+        <source>AutoTrim the silence from every track</source>
+        <translation>Cortar automaticamente o silêncio de todas as faixas</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="105"/>
+        <source>Rewrite every music file in the library with its leading and trailing silence removed.</source>
+        <translation>Reescrever todos os ficheiros de música da biblioteca sem o silêncio do início e do fim.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="108"/>
+        <source>Convert the whole library to another format</source>
+        <translation>Converter toda a biblioteca para outro formato</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="109"/>
+        <source>Re-encode every music file to mp3, ogg or opus. Hours of work and the original encoding is not coming back.</source>
+        <translation>Recodificar todos os ficheiros de música para mp3, ogg ou opus. São horas de trabalho e a codificação original não volta.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="112"/>
+        <source>Retune the whole library to 432 Hz</source>
+        <translation>Reafinar toda a biblioteca para 432 Hz</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="113"/>
+        <source>Re-encode every music file at the other tuning.</source>
+        <translation>Recodificar todos os ficheiros de música na outra afinação.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="115"/>
+        <source>Analyse tempo, intros and loudness</source>
+        <translation>Analisar andamento, introduções e intensidade sonora</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="116"/>
+        <source>The background sweeps that fill in BPM, intro times and replay gain. They read the files and never rewrite them.</source>
+        <translation>As varreduras em segundo plano que preenchem o BPM, os tempos de introdução e o ganho de reprodução. Leem os ficheiros e nunca os reescrevem.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="119"/>
+        <source>Find the missing cover art</source>
+        <translation>Encontrar as capas em falta</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="120"/>
+        <source>Look up covers for tracks that have none and write them into the files.</source>
+        <translation>Procurar capas para as faixas que não têm nenhuma e escrevê-las nos ficheiros.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="123"/>
+        <source>Set the watched folders</source>
+        <translation>Definir as pastas vigiadas</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="124"/>
+        <source>Choose which folders file themselves into the library.</source>
+        <translation>Escolher que pastas se arquivam sozinhas na biblioteca.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="126"/>
+        <source>Open a track in Audacity</source>
+        <translation>Abrir uma faixa no Audacity</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="127"/>
+        <source>Hand a library file to the external editor.</source>
+        <translation>Entregar um ficheiro da biblioteca ao editor externo.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="131"/>
+        <source>Play, pause, stop and skip</source>
+        <translation>Tocar, pausar, parar e saltar</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="132"/>
+        <source>Drive what is on air. Withdrawing this leaves somebody who can watch the station run but not touch it.</source>
+        <translation>Comandar o que está no ar. Retirar isto deixa alguém que pode ver a estação a funcionar mas não lhe pode tocar.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="135"/>
+        <source>Open files straight into the player</source>
+        <translation>Abrir ficheiros diretamente no leitor</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="136"/>
+        <source>Play a file from the disk without it being in the library.</source>
+        <translation>Tocar um ficheiro do disco sem que esteja na biblioteca.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="138"/>
+        <source>Change what is in the playlist</source>
+        <translation>Alterar o que está na playlist</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="139"/>
+        <source>Add, remove and reorder the running order.</source>
+        <translation>Adicionar, remover e reordenar o alinhamento.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="141"/>
+        <source>Load a playlist</source>
+        <translation>Carregar uma playlist</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="141"/>
+        <source>Replace the running order with a saved one.</source>
+        <translation>Substituir o alinhamento por um que esteja guardado.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="143"/>
+        <source>Save the playlist</source>
+        <translation>Guardar a playlist</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="143"/>
+        <source>Keep the running order for later.</source>
+        <translation>Guardar o alinhamento para mais tarde.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="145"/>
+        <source>Clear the playlist</source>
+        <translation>Limpar a playlist</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="145"/>
+        <source>Empty the running order in one go.</source>
+        <translation>Esvaziar o alinhamento de uma só vez.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="147"/>
+        <source>Cue tracks on the headphones</source>
+        <translation>Pré-escutar faixas nos auscultadores</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="148"/>
+        <source>Listen to a track on the cue output before it goes to air.</source>
+        <translation>Ouvir uma faixa na saída de pré-escuta antes de ir para o ar.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="150"/>
+        <source>Record voice tracks</source>
+        <translation>Gravar locuções</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="151"/>
+        <source>Record the link over a join and write the ducking.</source>
+        <translation>Gravar a ligação por cima de uma junção e escrever o ducking.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="153"/>
+        <source>Turn Auto Mode and Auto-mix on and off</source>
+        <translation>Ligar e desligar o Modo Automático e o Auto-mix</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="154"/>
+        <source>Hand the running order to XFB, or take it back.</source>
+        <translation>Entregar o alinhamento ao XFB, ou retomá-lo.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="156"/>
+        <source>Change the audio effects</source>
+        <translation>Alterar os efeitos de áudio</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="157"/>
+        <source>The equaliser, the compressor and the deck effects.</source>
+        <translation>O equalizador, o compressor e os efeitos dos pratos.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="161"/>
+        <source>Edit the rotation rules</source>
+        <translation>Editar as regras de rotação</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="162"/>
+        <source>Separation, categories, dayparts and seasonal windows.</source>
+        <translation>Separação, categorias, faixas horárias e janelas sazonais.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="164"/>
+        <source>Edit the hour clock</source>
+        <translation>Editar o relógio da hora</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="165"/>
+        <source>The shape of the hour Auto Mode fills in.</source>
+        <translation>A forma da hora que o Modo Automático preenche.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="167"/>
+        <source>Read the as-run log</source>
+        <translation>Consultar o registo de emissão</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="168"/>
+        <source>What actually went to air, and the advertiser report.</source>
+        <translation>O que foi mesmo para o ar, e o relatório para o anunciante.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="170"/>
+        <source>Run the listener request line</source>
+        <translation>Gerir a linha de pedidos dos ouvintes</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="171"/>
+        <source>The public page and the requests that arrive on it.</source>
+        <translation>A página pública e os pedidos que chegam por ela.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="173"/>
+        <source>Change the dead-air watchdog</source>
+        <translation>Alterar o vigilante do silêncio no ar</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="174"/>
+        <source>What XFB does when the station falls silent.</source>
+        <translation>O que o XFB faz quando a estação fica em silêncio.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="176"/>
+        <source>Record a new programme</source>
+        <translation>Gravar um novo programa</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="177"/>
+        <source>Record from the microphone into the programmes library.</source>
+        <translation>Gravar do microfone para a biblioteca de programas.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="179"/>
+        <source>Make a programme from this playlist</source>
+        <translation>Fazer um programa a partir desta playlist</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="180"/>
+        <source>Render the running order into one programme file.</source>
+        <translation>Transformar o alinhamento num único ficheiro de programa.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="184"/>
+        <source>Open the Options window</source>
+        <translation>Abrir a janela de Opções</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="185"/>
+        <source>Every station-wide setting: audio devices, paths, the server credentials, the language.</source>
+        <translation>Todas as definições da estação: dispositivos de áudio, caminhos, as credenciais do servidor, o idioma.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="188"/>
+        <source>Switch full screen on and off</source>
+        <translation>Ligar e desligar o ecrã inteiro</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="188"/>
+        <source>Cosmetic, and harmless.</source>
+        <translation>Cosmético, e inofensivo.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="190"/>
+        <source>Stream to Icecast</source>
+        <translation>Emitir para Icecast</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="191"/>
+        <source>Put this machine on the internet, or take it off.</source>
+        <translation>Pôr esta máquina na internet, ou tirá-la de lá.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="193"/>
+        <source>Pair a phone</source>
+        <translation>Emparelhar um telemóvel</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="194"/>
+        <source>Hand out a token that lets a phone read the library.</source>
+        <translation>Emitir um token que permite a um telemóvel ler a biblioteca.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="196"/>
+        <source>Set up broadcast redundancy</source>
+        <translation>Configurar a redundância de emissão</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="197"/>
+        <source>Pair the machine standing by as this one&apos;s backup.</source>
+        <translation>Emparelhar a máquina que está de reserva a esta.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="199"/>
+        <source>Set up a production computer</source>
+        <translation>Configurar um computador de produção</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="200"/>
+        <source>Pair a machine that is allowed to write to this library.</source>
+        <translation>Emparelhar uma máquina com permissão para escrever nesta biblioteca.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="202"/>
+        <source>Force an FTP check</source>
+        <translation>Forçar uma verificação FTP</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="202"/>
+        <source>Run the server exchange now.</source>
+        <translation>Executar agora a troca com o servidor.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="204"/>
+        <source>Force monitoring</source>
+        <translation>Forçar monitorização</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="204"/>
+        <source>Run the monitoring script now.</source>
+        <translation>Executar agora o script de monitorização.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="206"/>
+        <source>Update the dynamic server&apos;s IP</source>
+        <translation>Atualizar o IP dinâmico do servidor</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="207"/>
+        <source>Tell the dynamic DNS provider where the station is.</source>
+        <translation>Dizer ao fornecedor de DNS dinâmico onde está a estação.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="209"/>
+        <source>Check for updates</source>
+        <translation>Verificar atualizações</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="210"/>
+        <source>Look for a newer XFB and install it.</source>
+        <translation>Procurar um XFB mais recente e instalá-lo.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="212"/>
+        <source>Install the external tools</source>
+        <translation>Instalar as ferramentas externas</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="213"/>
+        <source>Fetch FFmpeg, yt-dlp and the rest onto this machine.</source>
+        <translation>Trazer o FFmpeg, o yt-dlp e os restantes para esta máquina.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="217"/>
+        <source>Add a song from an external source</source>
+        <translation>Adicionar uma música de uma fonte externa</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="218"/>
+        <source>Open the downloader and take a track from YouTube, Bandcamp, a Spotify or Apple Music listing, and the rest.</source>
+        <translation>Abrir o transferidor e tirar uma faixa do YouTube, do Bandcamp, de uma lista do Spotify ou da Apple Music, e dos restantes.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="221"/>
+        <source>Use the torrent search and downloads</source>
+        <translation>Usar a procura e as transferências de torrents</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="222"/>
+        <source>The torrent tab, when the feature is switched on at all.</source>
+        <translation>O separador de torrents, quando a funcionalidade estiver sequer ligada.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="226"/>
+        <source>Manage users and roles</source>
+        <translation>Gerir utilizadores e funções</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="227"/>
+        <source>Create accounts, change what each role may do, and turn the protection off. Give this only to somebody who would be allowed to reinstall XFB.</source>
+        <translation>Criar contas, alterar o que cada função pode fazer e desligar a proteção. Dê isto apenas a alguém que também teria autorização para reinstalar o XFB.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="267"/>
+        <source>Administrator</source>
+        <translation>Administrador</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="268"/>
+        <source>Everything, including who else may sign in. There is always at least one.</source>
+        <translation>Tudo, incluindo quem mais pode iniciar sessão. Há sempre pelo menos um.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="280"/>
+        <source>Producer</source>
+        <translation>Produtor</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="281"/>
+        <source>Prepares the programming: the library, the rotation, the clock. Cannot change the station&apos;s own settings or who signs in.</source>
+        <translation>Prepara a programação: a biblioteca, a rotação, o relógio. Não pode alterar as definições da estação nem quem inicia sessão.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="306"/>
+        <source>Presenter</source>
+        <translation>Apresentador</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="307"/>
+        <source>Drives the show: the playlist, the transport, the cue, voice tracks and the requests. Leaves the library as they found it.</source>
+        <translation>Conduz o programa: a playlist, o transporte, a pré-escuta, as locuções e os pedidos. Deixa a biblioteca como a encontrou.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="326"/>
+        <source>Guest</source>
+        <translation>Convidado</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="327"/>
+        <source>Watches the station run and can start and stop it. Changes nothing.</source>
+        <translation>Vê a estação a funcionar e pode arrancá-la e pará-la. Não altera nada.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="622"/>
+        <source>Somebody has to be able to manage the accounts. Leave at least one enabled account with a role that may manage users and roles.</source>
+        <translation>Alguém tem de poder gerir as contas. Deixe pelo menos uma conta ativa com uma função que possa gerir utilizadores e funções.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="644"/>
+        <source>This installation already has accounts.</source>
+        <translation>Esta instalação já tem contas.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="649"/>
+        <source>An account needs a user name.</source>
+        <translation>Uma conta precisa de um nome de utilizador.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="654"/>
+        <source>An account needs a password. Without one there is nothing to protect.</source>
+        <translation>Uma conta precisa de uma palavra-passe. Sem ela não há nada a proteger.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="688"/>
+        <source>Only an administrator can turn the protection off.</source>
+        <translation>Só um administrador pode desligar a proteção.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="713"/>
+        <source>Unprotected</source>
+        <translation>Sem proteção</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="715"/>
+        <source>Not signed in</source>
+        <translation>Sessão não iniciada</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="717"/>
+        <source>No role</source>
+        <translation>Sem função</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="735"/>
+        <source>That user name and password do not match an account.</source>
+        <translation>Esse nome de utilizador e essa palavra-passe não correspondem a nenhuma conta.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="749"/>
+        <source>That account has been switched off. An administrator can turn it back on.</source>
+        <translation>Essa conta foi desativada. Um administrador pode voltar a ativá-la.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="855"/>
+        <source>Not allowed</source>
+        <translation>Não permitido</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="856"/>
+        <source>%1 is not available to the %2 role.
+
+An administrator can allow it in Options ▸ Users and roles.</source>
+        <translation>%1 não está disponível para a função %2.
+
+Um administrador pode permiti-lo em Opções ▸ Utilizadores e funções.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="905"/>
+        <source>Not available to the %1 role.</source>
+        <translation>Não disponível para a função %1.</translation>
+    </message>
+</context>
+<context>
     <name>AccessibilityPreferencesDialog</name>
     <message>
         <location filename="dialogs/AccessibilityPreferencesDialog.ui" line="14"/>
@@ -1651,17 +2283,17 @@ Momento: %2</translation>
 <context>
     <name>BpmCellDelegate</name>
     <message>
-        <location filename="player.cpp" line="228"/>
+        <location filename="player.cpp" line="231"/>
         <source>no steady beat</source>
         <translation>sem batida constante</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="230"/>
+        <location filename="player.cpp" line="233"/>
         <source>not measured</source>
         <translation>não medido</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="262"/>
+        <location filename="player.cpp" line="265"/>
         <source>This track was analysed and holds no steady beat — usual for freely-played solo, live and jazz recordings. Auto Mode can still play it, it just will not tempo-match it.
 
 Double-click to type a tempo in yourself.</source>
@@ -1670,7 +2302,7 @@ Double-click to type a tempo in yourself.</source>
 Faça duplo clique para introduzir você mesmo um andamento.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="266"/>
+        <location filename="player.cpp" line="269"/>
         <source>This track has not been analysed yet. Run Database → Measure the BPM of all music tracks in the database.
 
 Double-click to type a tempo in yourself.</source>
@@ -5866,17 +6498,17 @@ A próxima obtenção vai copiar para aqui a discoteca inteira da estação, o q
 <context>
     <name>QObject</name>
     <message>
-        <location filename="player.cpp" line="9058"/>
+        <location filename="player.cpp" line="9422"/>
         <source>Not an XFB TakeOver file</source>
         <translation>Não é um ficheiro TakeOver do XFB</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="9175"/>
+        <location filename="player.cpp" line="9539"/>
         <source>Not an XFB returnTakeOver file</source>
         <translation>Não é um ficheiro returnTakeOver do XFB</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="10744"/>
+        <location filename="player.cpp" line="11114"/>
         <source>Not an XFB playlist file</source>
         <translation>Este ficheiro não é uma playlist do XFB</translation>
     </message>
@@ -5906,37 +6538,38 @@ A próxima obtenção vai copiar para aqui a discoteca inteira da estação, o q
         <translation>Estúdio (preto / âmbar)</translation>
     </message>
     <message>
-        <location filename="main.cpp" line="578"/>
+        <location filename="main.cpp" line="580"/>
         <source>Initializing...</source>
         <translation>A inicializar...</translation>
     </message>
     <message>
-        <location filename="main.cpp" line="581"/>
+        <location filename="main.cpp" line="583"/>
         <source>Loading configuration...</source>
         <translation>A carregar a configuração...</translation>
     </message>
     <message>
-        <location filename="main.cpp" line="587"/>
+        <location filename="main.cpp" line="589"/>
         <source>Configuration Error</source>
         <translation>Erro de configuração</translation>
     </message>
     <message>
-        <location filename="main.cpp" line="588"/>
+        <location filename="main.cpp" line="590"/>
         <source>Cannot find or create configuration directory.</source>
         <translation>Não é possível encontrar nem criar a pasta de configuração.</translation>
     </message>
     <message>
-        <location filename="main.cpp" line="629"/>
+        <location filename="main.cpp" line="631"/>
         <source>Applying theme...</source>
         <translation>A aplicar o tema...</translation>
     </message>
     <message>
-        <location filename="main.cpp" line="633"/>
+        <location filename="main.cpp" line="653"/>
+        <location filename="main.cpp" line="663"/>
         <source>Loading main window...</source>
         <translation>A carregar a janela principal...</translation>
     </message>
     <message>
-        <location filename="main.cpp" line="660"/>
+        <location filename="main.cpp" line="690"/>
         <source>XFB is Ready!</source>
         <translation>O XFB está pronto!</translation>
     </message>
@@ -6500,6 +7133,16 @@ Carrega em &apos;Permitir&apos; ou &apos;OK&apos; quando for pedido, para que as
         <location filename="services/StreamService.cpp" line="41"/>
         <source>Main stream</source>
         <translation>Emissão principal</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="41"/>
+        <source>Permissions</source>
+        <translation>Permissões</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="74"/>
+        <source> — allowed by the role</source>
+        <translation> — permitido pela função</translation>
     </message>
 </context>
 <context>
@@ -7659,6 +8302,102 @@ A página leva o que está no ar, o que tocou na última hora e — se o permiti
     </message>
 </context>
 <context>
+    <name>SignInDialog</name>
+    <message>
+        <location filename="dialogs/SignInDialog.cpp" line="26"/>
+        <source>Sign in to XFB</source>
+        <translation>Iniciar sessão no XFB</translation>
+    </message>
+    <message>
+        <location filename="dialogs/SignInDialog.cpp" line="26"/>
+        <source>XFB is locked</source>
+        <translation>O XFB está bloqueado</translation>
+    </message>
+    <message>
+        <location filename="dialogs/SignInDialog.cpp" line="40"/>
+        <source>This station asks who is at the desk.</source>
+        <translation>Esta estação pergunta quem está no posto.</translation>
+    </message>
+    <message>
+        <location filename="dialogs/SignInDialog.cpp" line="41"/>
+        <source>The station is still on air. Sign in to take the desk back — or sign in as somebody else to hand it over.</source>
+        <translation>A estação continua no ar. Inicie sessão para retomar o posto — ou inicie sessão como outra pessoa para o entregar.</translation>
+    </message>
+    <message>
+        <location filename="dialogs/SignInDialog.cpp" line="51"/>
+        <source>User name</source>
+        <translation>Nome de utilizador</translation>
+    </message>
+    <message>
+        <location filename="dialogs/SignInDialog.cpp" line="52"/>
+        <source>&amp;User name:</source>
+        <translation>Nome de &amp;utilizador:</translation>
+    </message>
+    <message>
+        <location filename="dialogs/SignInDialog.cpp" line="56"/>
+        <source>Password</source>
+        <translation>Palavra-passe</translation>
+    </message>
+    <message>
+        <location filename="dialogs/SignInDialog.cpp" line="57"/>
+        <source>&amp;Password:</source>
+        <translation>&amp;Palavra-passe:</translation>
+    </message>
+    <message>
+        <location filename="dialogs/SignInDialog.cpp" line="66"/>
+        <source>Sign-in status</source>
+        <translation>Estado do início de sessão</translation>
+    </message>
+    <message>
+        <location filename="dialogs/SignInDialog.cpp" line="70"/>
+        <source>Sign in</source>
+        <translation>Iniciar sessão</translation>
+    </message>
+    <message>
+        <location filename="dialogs/SignInDialog.cpp" line="72"/>
+        <source>Quit</source>
+        <translation>Sair</translation>
+    </message>
+    <message>
+        <location filename="dialogs/SignInDialog.cpp" line="73"/>
+        <source>Quit XFB</source>
+        <translation>Sair do XFB</translation>
+    </message>
+    <message>
+        <location filename="dialogs/SignInDialog.cpp" line="86"/>
+        <source>Quit XFB?</source>
+        <translation>Sair do XFB?</translation>
+    </message>
+    <message>
+        <location filename="dialogs/SignInDialog.cpp" line="87"/>
+        <source>XFB may still be on air. Quitting stops it.
+
+Quit anyway?</source>
+        <translation>O XFB pode ainda estar no ar. Sair interrompe-o.
+
+Sair mesmo assim?</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="dialogs/SignInDialog.cpp" line="135"/>
+        <source>%1
+
+Wait %n second(s) before trying again.</source>
+        <translation>
+            <numerusform>%1
+
+Espere %n segundo antes de tentar de novo.</numerusform>
+            <numerusform>%1
+
+Espere %n segundos antes de tentar de novo.</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location filename="dialogs/SignInDialog.cpp" line="144"/>
+        <source>You can try again.</source>
+        <translation>Pode tentar de novo.</translation>
+    </message>
+</context>
+<context>
     <name>StationSyncClient</name>
     <message>
         <location filename="services/StationSyncClient.cpp" line="241"/>
@@ -8498,6 +9237,507 @@ Configure isto nas duas máquinas: use a metade de cima na que está no ar e a m
         <location filename="services/UpdateCheckService.cpp" line="201"/>
         <source>No releases found.</source>
         <translation>Não foram encontradas versões.</translation>
+    </message>
+</context>
+<context>
+    <name>UserEditor</name>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="124"/>
+        <source>New account</source>
+        <translation>Nova conta</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="124"/>
+        <source>Edit account</source>
+        <translation>Editar conta</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="131"/>
+        <source>what they type to sign in</source>
+        <translation>o que escrevem para iniciar sessão</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="132"/>
+        <source>&amp;User name:</source>
+        <translation>Nome de &amp;utilizador:</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="135"/>
+        <source>as shown in the window title</source>
+        <translation>como aparece no título da janela</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="136"/>
+        <source>&amp;Name:</source>
+        <translation>&amp;Nome:</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="143"/>
+        <source>&amp;Role:</source>
+        <translation>&amp;Função:</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="148"/>
+        <source>&amp;Password:</source>
+        <translation>&amp;Palavra-passe:</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="152"/>
+        <source>Repeat pass&amp;word:</source>
+        <translation>Repetir a palavra-&amp;passe:</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="155"/>
+        <source>This account may sign in</source>
+        <translation>Esta conta pode iniciar sessão</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="157"/>
+        <source>Switching an account off keeps it, its role and its exceptions — for the presenter who is away for a season and back afterwards.</source>
+        <translation>Desativar uma conta mantém-na, com a sua função e as suas exceções — para o apresentador que está fora uma temporada e depois regressa.</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="164"/>
+        <source>What this person may do</source>
+        <translation>O que esta pessoa pode fazer</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="167"/>
+        <source>The ticks start as the role&apos;s. Change one here and it applies to this person only — and keeps applying even if the role changes later.</source>
+        <translation>As marcas começam por ser as da função. Altere uma aqui e passa a valer só para esta pessoa — e continua a valer mesmo que a função mude mais tarde.</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="226"/>
+        <source>An administrator has every permission, and cannot be given fewer.</source>
+        <translation>Um administrador tem todas as permissões, e não lhe podem ser dadas menos.</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="236"/>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="242"/>
+        <source>Nothing to sign in with</source>
+        <translation>Nada com que iniciar sessão</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="237"/>
+        <source>An account needs a user name.</source>
+        <translation>Uma conta precisa de um nome de utilizador.</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="243"/>
+        <source>An account needs a password.</source>
+        <translation>Uma conta precisa de uma palavra-passe.</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="247"/>
+        <source>The passwords differ</source>
+        <translation>As palavras-passe são diferentes</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="248"/>
+        <source>The two passwords are not the same. Type them again.</source>
+        <translation>As duas palavras-passe não são iguais. Escreva-as outra vez.</translation>
+    </message>
+</context>
+<context>
+    <name>UsersRolesDialog</name>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="302"/>
+        <source>Users and roles</source>
+        <translation>Utilizadores e funções</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="313"/>
+        <source>Save</source>
+        <translation>Guardar</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="314"/>
+        <source>Close</source>
+        <translation>Fechar</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="335"/>
+        <source>&lt;h3&gt;Nobody has to sign in to this XFB&lt;/h3&gt;</source>
+        <translation>&lt;h3&gt;Ninguém precisa de iniciar sessão neste XFB&lt;/h3&gt;</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="339"/>
+        <source>Anybody who can open XFB on this machine can do everything it does: empty the library, re-encode the catalogue overnight, change the stream credentials, hand out a pairing token.
+
+Creating the first account turns that off. From then on XFB asks who is at the desk, and what each person may do is decided by the role you give them — Producer, Presenter, Guest, or one of your own.
+
+The first account is an administrator, because somebody has to be able to create the second one.</source>
+        <translation>Qualquer pessoa que consiga abrir o XFB nesta máquina pode fazer tudo o que ele faz: esvaziar a biblioteca, recodificar o catálogo durante a noite, alterar as credenciais de emissão, emitir um token de emparelhamento.
+
+Criar a primeira conta acaba com isso. A partir daí o XFB pergunta quem está no posto, e o que cada pessoa pode fazer é decidido pela função que lhe der — Produtor, Apresentador, Convidado, ou uma sua.
+
+A primeira conta é de administrador, porque alguém tem de poder criar a segunda.</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="352"/>
+        <source>what you will type to sign in</source>
+        <translation>o que vai escrever para iniciar sessão</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="353"/>
+        <source>&amp;User name:</source>
+        <translation>Nome de &amp;utilizador:</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="356"/>
+        <source>your name, as the window title shows it</source>
+        <translation>o seu nome, como o título da janela o mostra</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="357"/>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="463"/>
+        <source>&amp;Name:</source>
+        <translation>&amp;Nome:</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="361"/>
+        <source>&amp;Password:</source>
+        <translation>&amp;Palavra-passe:</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="365"/>
+        <source>&amp;Repeat password:</source>
+        <translation>&amp;Repetir a palavra-passe:</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="369"/>
+        <source>Write this password down somewhere that is not this computer. XFB cannot recover it: the only way back into a station whose administrator password is lost is to delete the accounts file, which needs the operator&apos;s login on this machine.</source>
+        <translation>Aponte esta palavra-passe algures que não seja este computador. O XFB não a consegue recuperar: a única forma de voltar a entrar numa estação cuja palavra-passe de administrador se perdeu é apagar o ficheiro de contas, o que exige a sessão do operador nesta máquina.</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="377"/>
+        <source>Protect this installation</source>
+        <translation>Proteger esta instalação</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="388"/>
+        <source>Users</source>
+        <translation>Utilizadores</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="389"/>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="447"/>
+        <source>Roles</source>
+        <translation>Funções</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="390"/>
+        <source>Protection</source>
+        <translation>Proteção</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="400"/>
+        <source>User name</source>
+        <translation>Nome de utilizador</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="400"/>
+        <source>Name</source>
+        <translation>Nome</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="400"/>
+        <source>Role</source>
+        <translation>Função</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="401"/>
+        <source>Signs in</source>
+        <translation>Inicia sessão</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="401"/>
+        <source>Last signed in</source>
+        <translation>Última sessão</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="407"/>
+        <source>Accounts</source>
+        <translation>Contas</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="411"/>
+        <source>Add...</source>
+        <translation>Adicionar...</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="412"/>
+        <source>Edit...</source>
+        <translation>Editar...</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="413"/>
+        <source>Change password...</source>
+        <translation>Alterar a palavra-passe...</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="414"/>
+        <source>Remove</source>
+        <translation>Remover</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="451"/>
+        <source>New</source>
+        <translation>Nova</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="452"/>
+        <source>Duplicate</source>
+        <translation>Duplicar</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="453"/>
+        <source>Delete</source>
+        <translation>Eliminar</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="466"/>
+        <source>&amp;Description:</source>
+        <translation>&amp;Descrição:</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="509"/>
+        <source>Ask who is at the desk when XFB starts</source>
+        <translation>Perguntar quem está no posto quando o XFB arranca</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="510"/>
+        <source>Off means XFB comes up on its own after a power cut — as the account chosen below, with that account&apos;s permissions.</source>
+        <translation>Desligado significa que o XFB arranca sozinho depois de uma falha de energia — como a conta escolhida abaixo, com as permissões dessa conta.</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="517"/>
+        <source>&amp;Start as:</source>
+        <translation>&amp;Arrancar como:</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="521"/>
+        <source> minutes</source>
+        <translation> minutos</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="522"/>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="600"/>
+        <source>never</source>
+        <translation>nunca</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="523"/>
+        <source>Lock the screen when nobody has touched the desk for this long. The station stays on air behind the lock. Off by default: a machine that locks itself mid-show is the worse fault.</source>
+        <translation>Bloquear o ecrã quando ninguém tocar no posto durante este tempo. A estação fica no ar por trás do bloqueio. Desligado por omissão: uma máquina que se bloqueia a meio de um programa é a falha maior.</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="527"/>
+        <source>&amp;Lock the desk after:</source>
+        <translation>&amp;Bloquear o posto ao fim de:</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="532"/>
+        <source>What this protects, and what it does not</source>
+        <translation>O que isto protege, e o que não protege</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="535"/>
+        <source>This keeps the wrong menu from being opened on a live station. It is not a defence against somebody who owns the computer: the accounts live in a file readable only by the operator XFB runs as, and deleting that file returns this installation to having no accounts at all. Passwords themselves are not in it — only digests, so a copy of the file does not hand over a password that may be in use somewhere else.</source>
+        <translation>Isto impede que se abra o menu errado numa estação no ar. Não é uma defesa contra quem é dono do computador: as contas estão num ficheiro que só o operador com que o XFB corre consegue ler, e apagar esse ficheiro devolve esta instalação ao estado de não ter conta nenhuma. As palavras-passe em si não estão lá — só resumos, por isso uma cópia do ficheiro não entrega uma palavra-passe que possa estar a ser usada noutro sítio.</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="550"/>
+        <source>Turn the protection off...</source>
+        <translation>Desligar a proteção...</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="586"/>
+        <source>(no role)</source>
+        <translation>(sem função)</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="dialogs/UsersRolesDialog.cpp" line="596"/>
+        <source> (%n exception(s))</source>
+        <translation>
+            <numerusform> (%n exceção)</numerusform>
+            <numerusform> (%n exceções)</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="603"/>
+        <source>yes</source>
+        <translation>sim</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="603"/>
+        <source>no</source>
+        <translation>não</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="636"/>
+        <source>The accounts are kept in %1</source>
+        <translation>As contas são guardadas em %1</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="648"/>
+        <source>the account that can do least</source>
+        <translation>a conta que pode fazer menos</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="709"/>
+        <source>The Administrator role has every permission there is, including the ones a later version of XFB adds. It cannot be edited or deleted.</source>
+        <translation>A função Administrador tem todas as permissões que existem, incluindo as que uma versão futura do XFB vier a acrescentar. Não pode ser editada nem eliminada.</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="713"/>
+        <source>One of the roles XFB ships with. You can change what it may do; it cannot be deleted, so there is always somewhere to put a new account.</source>
+        <translation>Uma das funções que vêm com o XFB. Pode alterar o que ela permite; não pode ser eliminada, para haver sempre onde pôr uma conta nova.</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="743"/>
+        <source>New role</source>
+        <translation>Nova função</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="759"/>
+        <source>%1 (copy)</source>
+        <translation>%1 (cópia)</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="792"/>
+        <source>The role is in use</source>
+        <translation>A função está a ser usada</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="793"/>
+        <source>%1 still holds the %2 role. Give them another role first.</source>
+        <translation>%1 ainda tem a função %2. Dê-lhes primeiro outra função.</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="819"/>
+        <source>That name is taken</source>
+        <translation>Esse nome já está ocupado</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="820"/>
+        <source>There is already an account called %1.</source>
+        <translation>Já existe uma conta chamada %1.</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="828"/>
+        <source>Account %1 added.</source>
+        <translation>Conta %1 adicionada.</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="854"/>
+        <source>Password for %1</source>
+        <translation>Palavra-passe de %1</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="861"/>
+        <source>New &amp;password:</source>
+        <translation>Nova &amp;palavra-passe:</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="862"/>
+        <source>&amp;Repeat it:</source>
+        <translation>&amp;Repita-a:</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="872"/>
+        <source>Nothing to sign in with</source>
+        <translation>Nada com que iniciar sessão</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="873"/>
+        <source>An account needs a password.</source>
+        <translation>Uma conta precisa de uma palavra-passe.</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="877"/>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="913"/>
+        <source>The passwords differ</source>
+        <translation>As palavras-passe são diferentes</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="878"/>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="914"/>
+        <source>The two passwords are not the same. Type them again.</source>
+        <translation>As duas palavras-passe não são iguais. Escreva-as outra vez.</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="883"/>
+        <source>Password changed. Save to keep it.</source>
+        <translation>Palavra-passe alterada. Carregue em Guardar para a manter.</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="894"/>
+        <source>Remove %1?</source>
+        <translation>Remover %1?</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="895"/>
+        <source>The account and its exceptions go. If this person is only away for a while, switch the account off in Edit instead — it keeps everything.
+
+Remove it?</source>
+        <translation>A conta e as suas exceções desaparecem. Se esta pessoa está apenas ausente por algum tempo, desative antes a conta em Editar — assim fica tudo guardado.
+
+Remover?</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="921"/>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="965"/>
+        <source>Nothing was changed</source>
+        <translation>Nada foi alterado</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="928"/>
+        <source>This installation is protected. You are signed in as its administrator.</source>
+        <translation>Esta instalação está protegida. Iniciou sessão como administrador dela.</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="931"/>
+        <source>Protected</source>
+        <translation>Protegida</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="932"/>
+        <source>XFB will ask who is at the desk from now on, and you are signed in as its administrator.
+
+Add the rest of the station on the Users tab.</source>
+        <translation>O XFB passa a perguntar quem está no posto, e a sua sessão está iniciada como administrador.
+
+Acrescente o resto da estação no separador Utilizadores.</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="940"/>
+        <source>Nothing was saved</source>
+        <translation>Nada foi guardado</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="948"/>
+        <source>Users and roles saved.</source>
+        <translation>Utilizadores e funções guardados.</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="955"/>
+        <source>Turn the protection off?</source>
+        <translation>Desligar a proteção?</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="956"/>
+        <source>Every account and every role goes, and XFB returns to what it was before: anybody who can open it can do everything it does.
+
+Turn it off?</source>
+        <translation>Todas as contas e todas as funções desaparecem, e o XFB volta ao que era antes: quem o conseguir abrir pode fazer tudo o que ele faz.
+
+Desligar?</translation>
+    </message>
+    <message>
+        <location filename="dialogs/UsersRolesDialog.cpp" line="971"/>
+        <source>The protection is off. Nobody has to sign in.</source>
+        <translation>A proteção está desligada. Ninguém precisa de iniciar sessão.</translation>
     </message>
 </context>
 <context>
@@ -11022,14 +12262,14 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
     </message>
     <message>
         <location filename="player.ui" line="1986"/>
-        <location filename="player.cpp" line="1218"/>
-        <location filename="player.cpp" line="4347"/>
-        <location filename="player.cpp" line="4439"/>
-        <location filename="player.cpp" line="4450"/>
-        <location filename="player.cpp" line="4657"/>
-        <location filename="player.cpp" line="4690"/>
-        <location filename="player.cpp" line="6250"/>
-        <location filename="player.cpp" line="16149"/>
+        <location filename="player.cpp" line="1221"/>
+        <location filename="player.cpp" line="4455"/>
+        <location filename="player.cpp" line="4547"/>
+        <location filename="player.cpp" line="4558"/>
+        <location filename="player.cpp" line="4765"/>
+        <location filename="player.cpp" line="4798"/>
+        <location filename="player.cpp" line="6358"/>
+        <location filename="player.cpp" line="16561"/>
         <source>Play</source>
         <translation>Tocar</translation>
     </message>
@@ -11045,8 +12285,8 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
     </message>
     <message>
         <location filename="player.ui" line="2009"/>
-        <location filename="player.cpp" line="1785"/>
-        <location filename="player.cpp" line="6251"/>
+        <location filename="player.cpp" line="1788"/>
+        <location filename="player.cpp" line="6359"/>
         <source>Stop</source>
         <translation>Parar</translation>
     </message>
@@ -11156,14 +12396,14 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
     </message>
     <message>
         <location filename="player.ui" line="1413"/>
-        <location filename="player.cpp" line="2722"/>
+        <location filename="player.cpp" line="2737"/>
         <source>Torrents</source>
         <translation>Torrents</translation>
     </message>
     <message>
         <location filename="player.ui" line="1445"/>
-        <location filename="player.cpp" line="17272"/>
-        <location filename="player.cpp" line="17282"/>
+        <location filename="player.cpp" line="17684"/>
+        <location filename="player.cpp" line="17694"/>
         <source>Connect to Tor</source>
         <translation>Ligar ao Tor</translation>
     </message>
@@ -11174,20 +12414,20 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
     </message>
     <message>
         <location filename="player.ui" line="1469"/>
-        <location filename="player.cpp" line="17284"/>
+        <location filename="player.cpp" line="17696"/>
         <source>Status: Disconnected</source>
         <translation>Estado: desligado</translation>
     </message>
     <message>
         <location filename="player.ui" line="1479"/>
-        <location filename="player.cpp" line="17093"/>
+        <location filename="player.cpp" line="17505"/>
         <source>VPN: off</source>
         <translation>VPN: desligada</translation>
     </message>
     <message>
         <location filename="player.ui" line="1506"/>
-        <location filename="player.cpp" line="17332"/>
-        <location filename="player.cpp" line="17353"/>
+        <location filename="player.cpp" line="17744"/>
+        <location filename="player.cpp" line="17765"/>
         <source>Find 1337x.to Onion</source>
         <translation>Encontrar o Onion de 1337x.to</translation>
     </message>
@@ -11307,7 +12547,7 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
     </message>
     <message>
         <location filename="player.ui" line="1233"/>
-        <location filename="player.cpp" line="6285"/>
+        <location filename="player.cpp" line="6393"/>
         <source>Jingles</source>
         <translation>Jingles</translation>
     </message>
@@ -11318,7 +12558,7 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
     </message>
     <message>
         <location filename="player.ui" line="1359"/>
-        <location filename="player.cpp" line="6287"/>
+        <location filename="player.cpp" line="6395"/>
         <source>Programs</source>
         <translation>Programas</translation>
     </message>
@@ -11329,7 +12569,7 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
     </message>
     <message>
         <location filename="player.ui" line="2623"/>
-        <location filename="player.cpp" line="12562"/>
+        <location filename="player.cpp" line="12938"/>
         <source>Sound Converter</source>
         <translation>Conversor de som</translation>
     </message>
@@ -11411,15 +12651,15 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
         <location filename="player.ui" line="2975"/>
         <location filename="player.ui" line="3084"/>
         <location filename="player.ui" line="3129"/>
-        <location filename="player.cpp" line="996"/>
-        <location filename="player.cpp" line="1794"/>
-        <location filename="player.cpp" line="12452"/>
+        <location filename="player.cpp" line="999"/>
+        <location filename="player.cpp" line="1797"/>
+        <location filename="player.cpp" line="12828"/>
         <source>Stopped</source>
         <translation>Parado</translation>
     </message>
     <message>
         <location filename="player.ui" line="2748"/>
-        <location filename="player.cpp" line="6261"/>
+        <location filename="player.cpp" line="6369"/>
         <source>Play the stream</source>
         <translation>Reproduzir a emissão</translation>
     </message>
@@ -11430,7 +12670,7 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
     </message>
     <message>
         <location filename="player.ui" line="2781"/>
-        <location filename="player.cpp" line="6262"/>
+        <location filename="player.cpp" line="6370"/>
         <source>Stop the stream</source>
         <translation>Parar a emissão</translation>
     </message>
@@ -11481,8 +12721,8 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
     </message>
     <message>
         <location filename="player.ui" line="3036"/>
-        <location filename="player.cpp" line="1792"/>
-        <location filename="player.cpp" line="1799"/>
+        <location filename="player.cpp" line="1795"/>
+        <location filename="player.cpp" line="1802"/>
         <source>Share</source>
         <translation>Partilhar</translation>
     </message>
@@ -11503,15 +12743,15 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
     </message>
     <message>
         <location filename="player.ui" line="3100"/>
-        <location filename="player.cpp" line="10046"/>
-        <location filename="player.cpp" line="10070"/>
-        <location filename="player.cpp" line="15811"/>
-        <location filename="player.cpp" line="15837"/>
-        <location filename="player.cpp" line="15851"/>
-        <location filename="player.cpp" line="15874"/>
-        <location filename="player.cpp" line="15899"/>
-        <location filename="player.cpp" line="15964"/>
-        <location filename="player.cpp" line="15980"/>
+        <location filename="player.cpp" line="10410"/>
+        <location filename="player.cpp" line="10434"/>
+        <location filename="player.cpp" line="16223"/>
+        <location filename="player.cpp" line="16249"/>
+        <location filename="player.cpp" line="16263"/>
+        <location filename="player.cpp" line="16286"/>
+        <location filename="player.cpp" line="16311"/>
+        <location filename="player.cpp" line="16376"/>
+        <location filename="player.cpp" line="16392"/>
         <source>Broadcast LIVE</source>
         <translation>Transmitir ao vivo</translation>
     </message>
@@ -11604,8 +12844,8 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
     </message>
     <message>
         <location filename="player.ui" line="3836"/>
-        <location filename="player.cpp" line="1839"/>
-        <location filename="player.cpp" line="1844"/>
+        <location filename="player.cpp" line="1842"/>
+        <location filename="player.cpp" line="1847"/>
         <source>Check for updates</source>
         <translation>Verificar atualizações</translation>
     </message>
@@ -11671,11 +12911,11 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
     </message>
     <message>
         <location filename="player.ui" line="3450"/>
-        <location filename="player.cpp" line="7835"/>
-        <location filename="player.cpp" line="7982"/>
-        <location filename="player.cpp" line="8000"/>
-        <location filename="player.cpp" line="8017"/>
-        <location filename="player.cpp" line="8034"/>
+        <location filename="player.cpp" line="8191"/>
+        <location filename="player.cpp" line="8338"/>
+        <location filename="player.cpp" line="8356"/>
+        <location filename="player.cpp" line="8373"/>
+        <location filename="player.cpp" line="8390"/>
         <source>File</source>
         <translation>Ficheiro</translation>
     </message>
@@ -11772,42 +13012,42 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
         <translation>Adicionar Programa</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="4277"/>
-        <location filename="player.cpp" line="4289"/>
-        <location filename="player.cpp" line="7138"/>
+        <location filename="player.cpp" line="4385"/>
+        <location filename="player.cpp" line="4397"/>
+        <location filename="player.cpp" line="7494"/>
         <source>Play and Segue</source>
         <translation>Tocar e seguir</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="4296"/>
+        <location filename="player.cpp" line="4404"/>
         <source>Play and Stop</source>
         <translation>Tocar e Parar</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="4968"/>
-        <location filename="player.cpp" line="5127"/>
+        <location filename="player.cpp" line="5076"/>
+        <location filename="player.cpp" line="5235"/>
         <source> of </source>
         <translation>de </translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6611"/>
+        <location filename="player.cpp" line="6728"/>
         <source>Broadcast &amp;Redundancy...</source>
         <translation>&amp;Redundância de emissão...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="10719"/>
+        <location filename="player.cpp" line="11089"/>
         <source>Xml files(*.xml)</source>
         <translation>Ficheiros Xml (*.xml)</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="11259"/>
-        <location filename="player.cpp" line="11450"/>
+        <location filename="player.cpp" line="11629"/>
+        <location filename="player.cpp" line="11820"/>
         <source>Program name</source>
         <translation>Nome do Programa</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="11259"/>
-        <location filename="player.cpp" line="11450"/>
+        <location filename="player.cpp" line="11629"/>
+        <location filename="player.cpp" line="11820"/>
         <source>What is the program&apos;s name? 
 
 Format MUST be: NAME_YYYY-MM-DD 
@@ -11822,128 +13062,128 @@ Ex: programa_2016-02-07
 </translation>
     </message>
     <message>
-        <location filename="player.cpp" line="11259"/>
-        <location filename="player.cpp" line="11450"/>
+        <location filename="player.cpp" line="11629"/>
+        <location filename="player.cpp" line="11820"/>
         <source>Program_2016-02-07</source>
         <translation>Programa_2016-02-07</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="11273"/>
+        <location filename="player.cpp" line="11643"/>
         <source>Save Program?</source>
         <translation>Guardar Programa?</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="11273"/>
+        <location filename="player.cpp" line="11643"/>
         <source>Save this program?</source>
         <translation>Deseja guardar este programa?</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="11279"/>
+        <location filename="player.cpp" line="11649"/>
         <source>No program set or recorded</source>
         <translation>Não há nenhum programa gravado</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="11279"/>
+        <location filename="player.cpp" line="11649"/>
         <source>There is no program set or recorded to send</source>
         <translation>Não foi encontrado nenhum programa gravado para enviar</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="11295"/>
-        <location filename="player.cpp" line="11521"/>
+        <location filename="player.cpp" line="11665"/>
+        <location filename="player.cpp" line="11891"/>
         <source>Send to server?</source>
         <translation>Enviar para o servidor?</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="11295"/>
-        <location filename="player.cpp" line="11521"/>
+        <location filename="player.cpp" line="11665"/>
+        <location filename="player.cpp" line="11891"/>
         <source>Send programs to the server?</source>
         <translation>Enviar programas para o servidor?</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="11338"/>
-        <location filename="player.cpp" line="11611"/>
-        <location filename="player.cpp" line="11632"/>
+        <location filename="player.cpp" line="11708"/>
+        <location filename="player.cpp" line="11981"/>
+        <location filename="player.cpp" line="12002"/>
         <source>Delete local copy?</source>
         <translation>Apagar cópia local?</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="11338"/>
-        <location filename="player.cpp" line="11632"/>
+        <location filename="player.cpp" line="11708"/>
+        <location filename="player.cpp" line="12002"/>
         <source>Delete the local copy of the program?</source>
         <translation>Apagar a cópia local do programa?</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="11422"/>
+        <location filename="player.cpp" line="11792"/>
         <source>Ping Server</source>
         <translation>Pingar servidor</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="11422"/>
+        <location filename="player.cpp" line="11792"/>
         <source>Option not coded. Can you buy me a coffee? (Paypal: fred@netpack.pt ;))</source>
         <translation>Esta opção ainda não foi escrita. Poderia pagar-me um café? (Paypal: fred@netpack.pt ;-))</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="11471"/>
+        <location filename="player.cpp" line="11841"/>
         <source>File not in ogg...</source>
         <translation>Este ficheiro não é ogg...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="11596"/>
+        <location filename="player.cpp" line="11966"/>
         <source>Integrity verification failed!</source>
         <translation>Falhou a verificação de integridade!</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="11596"/>
+        <location filename="player.cpp" line="11966"/>
         <source>The file does not seem to have been sent to the server correctly since the size of the local file differs from the one on the FTP server. Please try to send the program again.</source>
         <translation>O ficheiro aparenta não ter sido corretamente transferido para o servidor, visto que os tamanhos de ambos diferem. Por favor tente novamente.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="11611"/>
+        <location filename="player.cpp" line="11981"/>
         <source>Delete the local copy of the program? (The program was successfully uploaded to the server)</source>
         <translation>Deseja apagar a cópia local do programa? (O programa foi corretamente enviado para o servidor)</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="12102"/>
+        <location filename="player.cpp" line="12478"/>
         <source>Enter a stream URL first (e.g. http://server:8000/stream)</source>
         <translation>Introduza primeiro um URL de emissão (por exemplo http://servidor:8000/stream)</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="12113"/>
+        <location filename="player.cpp" line="12489"/>
         <source>Invalid stream URL: %1</source>
         <translation>URL de emissão inválido: %1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="12139"/>
+        <location filename="player.cpp" line="12515"/>
         <source>Connecting to %1 ...</source>
         <translation>A ligar a %1 ...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="12147"/>
+        <location filename="player.cpp" line="12523"/>
         <source>Fetching playlist %1 ...</source>
         <translation>A obter a lista %1 ...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="12157"/>
+        <location filename="player.cpp" line="12533"/>
         <source>Could not fetch playlist: %1</source>
         <translation>Não foi possível obter a lista: %1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="12190"/>
+        <location filename="player.cpp" line="12566"/>
         <source>Playlist contains no playable stream URL</source>
         <translation>A lista não contém nenhum URL de emissão reproduzível</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="12377"/>
+        <location filename="player.cpp" line="12753"/>
         <source>ngrok not installed</source>
         <translation>ngrok não instalado</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="12379"/>
+        <location filename="player.cpp" line="12755"/>
         <source>The &apos;ngrok&apos; command was not found on this system.</source>
         <translation>O comando &apos;ngrok&apos; não foi encontrado neste sistema.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="12380"/>
+        <location filename="player.cpp" line="12756"/>
         <source>ngrok creates a public link to your streaming server without any router configuration.
 
 1) Download it from https://ngrok.com/download
@@ -11956,17 +13196,17 @@ Ex: programa_2016-02-07
 2) Reinicie o XFB e clique novamente em Configurar.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="12385"/>
+        <location filename="player.cpp" line="12761"/>
         <source>Open download page</source>
         <translation>Abrir a página de transferência</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="12394"/>
+        <location filename="player.cpp" line="12770"/>
         <source>ngrok account setup</source>
         <translation>Configuração da conta ngrok</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="12395"/>
+        <location filename="player.cpp" line="12771"/>
         <source>Connect your (free) ngrok account:
 
 1) Create an account at https://dashboard.ngrok.com
@@ -11981,32 +13221,32 @@ Ex: programa_2016-02-07
 </translation>
     </message>
     <message>
-        <location filename="player.cpp" line="12403"/>
+        <location filename="player.cpp" line="12779"/>
         <source>Saving authtoken...</source>
         <translation>A guardar o authtoken...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="12422"/>
+        <location filename="player.cpp" line="12798"/>
         <source>Invalid local port: %1</source>
         <translation>Porta local inválida: %1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="12432"/>
+        <location filename="player.cpp" line="12808"/>
         <source>Creating public link for localhost:%1 ...</source>
         <translation>A criar a ligação pública para localhost:%1 ...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="12440"/>
+        <location filename="player.cpp" line="12816"/>
         <source>No public link to copy yet — click Share first.</source>
         <translation>Ainda não há ligação pública para copiar — clique primeiro em Partilhar.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="12444"/>
+        <location filename="player.cpp" line="12820"/>
         <source>Public stream link copied to the clipboard</source>
         <translation>Ligação pública da emissão copiada para a área de transferência</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="12563"/>
+        <location filename="player.cpp" line="12939"/>
         <source>No audio converter application found.
 
 Recommended free options for macOS:
@@ -12023,38 +13263,38 @@ Opções gratuitas recomendadas para macOS:
 Também pode usar: ffmpeg -i entrada.ogg saida.mp3</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="12580"/>
+        <location filename="player.cpp" line="12956"/>
         <source>The Sound Converter lets you convert audio files between formats. It is provided by the &quot;soundconverter&quot; program.</source>
         <translation>O Sound Converter permite converter ficheiros de áudio entre formatos. É fornecido pelo programa &quot;soundconverter&quot;.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="12878"/>
+        <location filename="player.cpp" line="13272"/>
         <source>Sure?</source>
         <translation>Tem a certeza?</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="12878"/>
+        <location filename="player.cpp" line="13272"/>
         <source>Are you sure you want to delete all the selected track from the database?</source>
         <translation>Tem a certeza que deseja apagar todos os ficheiros selecionados da base de dados?</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="12884"/>
+        <location filename="player.cpp" line="13278"/>
         <source>Erase the files also?</source>
         <translation>Apagar os ficheiros também?</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="12884"/>
+        <location filename="player.cpp" line="13278"/>
         <source>Do you want to delete all the selected files from the hard drive also?</source>
         <translation>Deseja apagar todos os ficheiros selectionados do disco rigido também?</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="4185"/>
-        <location filename="player.cpp" line="12907"/>
+        <location filename="player.cpp" line="4293"/>
+        <location filename="player.cpp" line="13301"/>
         <source>Error</source>
         <translation>Erro</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="16912"/>
+        <location filename="player.cpp" line="17324"/>
         <source>XFB could not find the Tor program needed to connect.
 
 Install it with your package manager — &quot;tor&quot; on Linux and macOS, or the Tor Browser on Windows — and try again. XFB picks up a system install, a Tor Browser install, or a copy placed in its own &quot;tor&quot; folder.</source>
@@ -12063,286 +13303,286 @@ Install it with your package manager — &quot;tor&quot; on Linux and macOS, or 
 Instale-o com o seu gestor de pacotes — &quot;tor&quot; no Linux e no macOS, ou o Tor Browser no Windows — e tente de novo. O XFB reconhece uma instalação do sistema, uma instalação do Tor Browser, ou uma cópia colocada na sua própria pasta &quot;tor&quot;.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="16939"/>
+        <location filename="player.cpp" line="17351"/>
         <source>Connecting...</source>
         <translation>A ligar...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="16069"/>
-        <location filename="player.cpp" line="16071"/>
-        <location filename="player.cpp" line="16073"/>
+        <location filename="player.cpp" line="16481"/>
+        <location filename="player.cpp" line="16483"/>
+        <location filename="player.cpp" line="16485"/>
         <source>BROADCASTING LIVE!!!</source>
         <translation>A TRANSMITIR AO VIVO!!!</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="11347"/>
-        <location filename="player.cpp" line="11618"/>
-        <location filename="player.cpp" line="11639"/>
+        <location filename="player.cpp" line="11717"/>
+        <location filename="player.cpp" line="11988"/>
+        <location filename="player.cpp" line="12009"/>
         <source>Local file deleted</source>
         <translation>Ficheiro local apagado</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="358"/>
+        <location filename="player.cpp" line="361"/>
         <source>Player controls</source>
         <translation>Comandos do leitor</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="360"/>
+        <location filename="player.cpp" line="363"/>
         <source>Clock</source>
         <translation>Relógio</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="362"/>
+        <location filename="player.cpp" line="365"/>
         <source>Library</source>
         <translation>Biblioteca</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="378"/>
+        <location filename="player.cpp" line="381"/>
         <source>Side panel</source>
         <translation>Painel lateral</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="404"/>
+        <location filename="player.cpp" line="407"/>
         <source>Show or hide the side panel (Search, Filters, Extras, Playlist)</source>
         <translation>Mostrar ou ocultar o painel lateral (Procura, Filtros, Extras, Lista de reprodução)</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="422"/>
+        <location filename="player.cpp" line="425"/>
         <source>View</source>
         <translation>Ver</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="439"/>
+        <location filename="player.cpp" line="442"/>
         <source>Artwork</source>
         <translation>Capa</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="457"/>
+        <location filename="player.cpp" line="460"/>
         <source>Lock the layout</source>
         <translation>Bloquear a disposição</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="459"/>
+        <location filename="player.cpp" line="462"/>
         <source>Hide the panel title bars and prevent the panels from being moved or closed</source>
         <translation>Ocultar as barras de título dos painéis e impedir que sejam movidos ou fechados</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="468"/>
+        <location filename="player.cpp" line="471"/>
         <source>Reset the layout</source>
         <translation>Repor a disposição</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="556"/>
-        <location filename="player.cpp" line="6288"/>
+        <location filename="player.cpp" line="559"/>
+        <location filename="player.cpp" line="6396"/>
         <source>Playlist</source>
         <translation>Lista de reprodução</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="602"/>
+        <location filename="player.cpp" line="605"/>
         <source>Wave view</source>
         <translation>Vista de onda</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="604"/>
+        <location filename="player.cpp" line="607"/>
         <source>Show each track&apos;s sound wave and prepare crossfades: drag a track&apos;s wave left to start it before the previous track ends, use the round button to preview the transition.</source>
         <translation>Mostrar a onda sonora de cada faixa e preparar as sobreposições: arraste a onda de uma faixa para a esquerda para a iniciar antes de a anterior terminar; use o botão redondo para pré-ouvir a transição.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="616"/>
+        <location filename="player.cpp" line="619"/>
         <source>Max overlap:</source>
         <translation>Sobreposição máx.:</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="619"/>
+        <location filename="player.cpp" line="622"/>
         <source> s</source>
         <translation> s</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="620"/>
+        <location filename="player.cpp" line="623"/>
         <source>How early the next track can be dragged to start before the previous one ends. Increase this when a track has a long quiet tail you want the next one to start over.</source>
         <translation>Com quanta antecedência a faixa seguinte pode ser arrastada para começar antes de a anterior terminar. Aumente este valor quando uma faixa tiver uma cauda silenciosa longa sobre a qual queira iniciar a seguinte.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="669"/>
+        <location filename="player.cpp" line="672"/>
         <source>Auto-mix</source>
         <translation>Auto-mix</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="670"/>
+        <location filename="player.cpp" line="673"/>
         <source>Analyze every transition in the playlist and set the crossfade overlaps automatically: each track starts where the previous one goes quiet. Existing overlaps are recomputed.</source>
         <translation>Analisar todas as transições da lista de reprodução e definir automaticamente as sobreposições: cada faixa começa onde a anterior se torna silenciosa. As sobreposições existentes são recalculadas.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="696"/>
+        <location filename="player.cpp" line="699"/>
         <source>Auto-mix canceled — %1 transition(s) set</source>
         <translation>Auto-mix cancelado — %1 transição(ões) definida(s)</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="697"/>
+        <location filename="player.cpp" line="700"/>
         <source>Auto-mix: %1 transition(s) set, %2 skipped</source>
         <translation>Auto-mix: %1 transição(ões) definida(s), %2 ignorada(s)</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="992"/>
-        <location filename="player.cpp" line="6433"/>
+        <location filename="player.cpp" line="995"/>
+        <location filename="player.cpp" line="6546"/>
         <source>Playing: %1</source>
         <translation>A tocar: %1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="1002"/>
+        <location filename="player.cpp" line="1005"/>
         <source>Connecting / buffering...</source>
         <translation>A ligar / a colocar em memória...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="1004"/>
+        <location filename="player.cpp" line="1007"/>
         <source>Stream stalled — rebuffering...</source>
         <translation>Emissão parada — a recarregar a memória...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="1006"/>
+        <location filename="player.cpp" line="1009"/>
         <source>Invalid stream</source>
         <translation>Emissão inválida</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="1011"/>
+        <location filename="player.cpp" line="1014"/>
         <source>Stream error: %1</source>
         <translation>Erro da emissão: %1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="1117"/>
+        <location filename="player.cpp" line="1120"/>
         <source>Playback error: %1 — skipping track</source>
         <translation>Erro de reprodução: %1 — a saltar a faixa</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="1121"/>
+        <location filename="player.cpp" line="1124"/>
         <source>Playback error: %1</source>
         <translation>Erro de reprodução: %1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="1131"/>
+        <location filename="player.cpp" line="1134"/>
         <source>Invalid media file — skipping</source>
         <translation>Ficheiro multimédia inválido — a saltar</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="1136"/>
+        <location filename="player.cpp" line="1139"/>
         <source>Playback stalled — buffering...</source>
         <translation>Reprodução parada — a colocar em memória...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="1198"/>
+        <location filename="player.cpp" line="1201"/>
         <source>Playback stalled — recovering...</source>
         <translation>Reprodução parada — a recuperar...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="1558"/>
+        <location filename="player.cpp" line="1561"/>
         <source>Downloading audio needs FFmpeg (which also provides ffprobe). Installing it now means your first download won&apos;t have to wait.</source>
         <translation>A transferência de áudio requer o FFmpeg (que também fornece o ffprobe). Instalá-lo agora evita ter de esperar na primeira transferência.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="1729"/>
+        <location filename="player.cpp" line="1732"/>
         <source>Controls</source>
         <translation>Comandos</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="1787"/>
+        <location filename="player.cpp" line="1790"/>
         <source>Public link active! Share it with your listeners (they may need to append your mount point, e.g. /stream).</source>
         <translation>Ligação pública ativa! Partilhe-a com os seus ouvintes (poderão ter de acrescentar o seu ponto de montagem, por exemplo /stream).</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="1801"/>
+        <location filename="player.cpp" line="1804"/>
         <source>ngrok error: %1</source>
         <translation>Erro do ngrok: %1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="1840"/>
+        <location filename="player.cpp" line="1843"/>
         <source>You are running XFB %1 — this is the latest version.</source>
         <translation>Está a utilizar o XFB %1 — esta é a versão mais recente.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="1845"/>
+        <location filename="player.cpp" line="1848"/>
         <source>Could not check for updates:
 %1</source>
         <translation>Não foi possível verificar as atualizações:
 %1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="1866"/>
+        <location filename="player.cpp" line="1869"/>
         <source>Convert all musics in the database to 432 Hz tuning</source>
         <translation>Converter todas as músicas da base de dados para a afinação de 432 Hz</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="1875"/>
+        <location filename="player.cpp" line="1879"/>
         <source>Measure the BPM of all music tracks in the database</source>
         <translation>Medir o BPM de todas as faixas da base de dados</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="1876"/>
+        <location filename="player.cpp" line="1880"/>
         <source>Measure the tempo of every track that does not have one yet, so Auto Mode can follow a track with one at a similar tempo. Each track is decoded once; the result is stored in the database.</source>
         <translation>Medir o andamento de todas as faixas que ainda não o tenham, para que o Modo Automático possa seguir uma faixa com outra de andamento semelhante. Cada faixa é descodificada uma vez; o resultado é guardado na base de dados.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="1984"/>
-        <location filename="player.cpp" line="1985"/>
+        <location filename="player.cpp" line="1994"/>
+        <location filename="player.cpp" line="1995"/>
         <source>Grab the platter to scratch while playing</source>
         <translation>Agarre o prato para fazer scratch durante a reprodução</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="2062"/>
-        <location filename="player.cpp" line="2745"/>
+        <location filename="player.cpp" line="2072"/>
+        <location filename="player.cpp" line="2760"/>
         <source>Pads</source>
         <translation>Pads</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="2079"/>
-        <location filename="player.cpp" line="2764"/>
+        <location filename="player.cpp" line="2089"/>
+        <location filename="player.cpp" line="2779"/>
         <source>Audio FX</source>
         <translation>Audio FX</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="2391"/>
+        <location filename="player.cpp" line="2406"/>
         <source>Application Not Found</source>
         <translation>Aplicação não encontrada</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="2391"/>
+        <location filename="player.cpp" line="2406"/>
         <source>Could not find &apos;%1&apos; in your system&apos;s PATH, and could not open the file &apos;%2&apos; with the default application.</source>
         <translation>Não foi possível encontrar &apos;%1&apos; no PATH do seu sistema, nem abrir o ficheiro &apos;%2&apos; com a aplicação predefinida.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="2402"/>
+        <location filename="player.cpp" line="2417"/>
         <source>Launch Error</source>
         <translation>Erro ao iniciar</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="2402"/>
+        <location filename="player.cpp" line="2417"/>
         <source>Failed to launch &apos;%1&apos; with the specified file.</source>
         <translation>Não foi possível iniciar &apos;%1&apos; com o ficheiro indicado.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="2412"/>
+        <location filename="player.cpp" line="2427"/>
         <source>Reading a track&apos;s metadata uses the MediaInfo tool.</source>
         <translation>A leitura dos metadados de uma faixa usa a ferramenta MediaInfo.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="2436"/>
-        <location filename="player.cpp" line="2459"/>
+        <location filename="player.cpp" line="2451"/>
+        <location filename="player.cpp" line="2474"/>
         <source>Metadata Error</source>
         <translation>Erro de metadados</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="2436"/>
+        <location filename="player.cpp" line="2451"/>
         <source>Failed to get metadata using &apos;mediainfo&apos;.
 %1</source>
         <translation>Não foi possível obter os metadados com o &apos;mediainfo&apos;.
 %1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="2459"/>
+        <location filename="player.cpp" line="2474"/>
         <source>Could not parse the metadata received from &apos;mediainfo&apos;.</source>
         <translation>Não foi possível interpretar os metadados recebidos do &apos;mediainfo&apos;.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="2481"/>
+        <location filename="player.cpp" line="2496"/>
         <source>Artist: %1
 Song: %2
 Album: %3
@@ -12361,295 +13601,295 @@ Formato: %7
 Débito: %8</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="2486"/>
+        <location filename="player.cpp" line="2501"/>
         <source>Apply this info to the database?</source>
         <translation>Aplicar esta informação à base de dados?</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="2498"/>
+        <location filename="player.cpp" line="2513"/>
         <source>Nothing to Update</source>
         <translation>Nada a atualizar</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="2499"/>
+        <location filename="player.cpp" line="2514"/>
         <source>The file did not contain artist, title or genre tags to apply.</source>
         <translation>O ficheiro não continha etiquetas de artista, título ou género para aplicar.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="2511"/>
-        <location filename="player.cpp" line="3688"/>
-        <location filename="player.cpp" line="4049"/>
-        <location filename="player.cpp" line="17603"/>
-        <location filename="player.cpp" line="17610"/>
-        <location filename="player.cpp" line="17662"/>
-        <location filename="player.cpp" line="17836"/>
-        <location filename="player.cpp" line="17882"/>
-        <location filename="player.cpp" line="18013"/>
-        <location filename="player.cpp" line="18167"/>
+        <location filename="player.cpp" line="2526"/>
+        <location filename="player.cpp" line="3762"/>
+        <location filename="player.cpp" line="4148"/>
+        <location filename="player.cpp" line="18015"/>
+        <location filename="player.cpp" line="18022"/>
+        <location filename="player.cpp" line="18074"/>
+        <location filename="player.cpp" line="18254"/>
+        <location filename="player.cpp" line="18300"/>
+        <location filename="player.cpp" line="18431"/>
+        <location filename="player.cpp" line="18585"/>
         <source>Database Error</source>
         <translation>Erro da base de dados</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="2511"/>
+        <location filename="player.cpp" line="2526"/>
         <source>Failed to update metadata in the database.</source>
         <translation>Não foi possível atualizar os metadados na base de dados.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="2525"/>
+        <location filename="player.cpp" line="2540"/>
         <source>Process Error</source>
         <translation>Erro de processo</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="2525"/>
+        <location filename="player.cpp" line="2540"/>
         <source>Could not start the &apos;mediainfo&apos; process.</source>
         <translation>Não foi possível iniciar o processo &apos;mediainfo&apos;.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3405"/>
-        <location filename="player.cpp" line="3639"/>
-        <location filename="player.cpp" line="3992"/>
+        <location filename="player.cpp" line="3440"/>
+        <location filename="player.cpp" line="3701"/>
+        <location filename="player.cpp" line="4076"/>
         <source>Add to the bottom of playlist</source>
         <translation>Adicionar ao fim da playlist</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3406"/>
-        <location filename="player.cpp" line="3640"/>
-        <location filename="player.cpp" line="3993"/>
+        <location filename="player.cpp" line="3441"/>
+        <location filename="player.cpp" line="3702"/>
+        <location filename="player.cpp" line="4077"/>
         <source>Add to the top of the playlist</source>
         <translation>Adicionar ao topo da playlist</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3434"/>
+        <location filename="player.cpp" line="3469"/>
         <source>Batch Edit (%1 tracks)</source>
         <translation>Edição em lote (%1 faixas)</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3435"/>
+        <location filename="player.cpp" line="3470"/>
         <source>Set Genre 1...</source>
         <translation>Definir o Género 1...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3436"/>
+        <location filename="player.cpp" line="3471"/>
         <source>Set Genre 2...</source>
         <translation>Definir o Género 2...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3437"/>
+        <location filename="player.cpp" line="3472"/>
         <source>Set Artist...</source>
         <translation>Definir o artista...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3438"/>
+        <location filename="player.cpp" line="3473"/>
         <source>Set Country...</source>
         <translation>Definir o país...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3444"/>
+        <location filename="player.cpp" line="3479"/>
         <source>Retune %1 tracks to 432 Hz...</source>
         <translation>Reafinar %1 faixas para 432 Hz...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3445"/>
+        <location filename="player.cpp" line="3480"/>
         <source>Retune this track to 432 Hz...</source>
         <translation>Reafinar esta faixa para 432 Hz...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3452"/>
+        <location filename="player.cpp" line="3487"/>
         <source>Sync %1 tracks to the phone</source>
         <translation>Sincronizar %1 faixas com o telemóvel</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3453"/>
+        <location filename="player.cpp" line="3488"/>
         <source>Sync this track to the phone</source>
         <translation>Sincronizar esta faixa com o telemóvel</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3456"/>
+        <location filename="player.cpp" line="3491"/>
         <source>Sync the whole music list to the phone</source>
         <translation>Sincronizar toda a lista de músicas com o telemóvel</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3461"/>
+        <location filename="player.cpp" line="3496"/>
         <source>Clear what is marked for the phone (%1)</source>
         <translation>Limpar o que está marcado para o telemóvel (%1)</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3467"/>
+        <location filename="player.cpp" line="3502"/>
         <source>Delete %1 tracks from database</source>
         <translation>Eliminar %1 faixas da base de dados</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3468"/>
+        <location filename="player.cpp" line="3503"/>
         <source>Delete this track from database</source>
         <translation>Apagar esta faixa da base de dados</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3470"/>
-        <location filename="player.cpp" line="3642"/>
-        <location filename="player.cpp" line="3995"/>
+        <location filename="player.cpp" line="3505"/>
+        <location filename="player.cpp" line="3704"/>
+        <location filename="player.cpp" line="4079"/>
         <source>Open this in Audacity</source>
         <translation>Abrir com o Audacity</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3471"/>
+        <location filename="player.cpp" line="3506"/>
         <source>Retrieve metadata from file (mediainfo)</source>
         <translation>Obter os metadados do ficheiro (mediainfo)</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3520"/>
+        <location filename="player.cpp" line="3582"/>
         <source>Nothing is marked for the phone now.</source>
         <translation>Já não há nada marcado para o telemóvel.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3521"/>
+        <location filename="player.cpp" line="3583"/>
         <source>Cleared what was marked for the phone</source>
         <translation>Limpou-se o que estava marcado para o telemóvel</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3531"/>
+        <location filename="player.cpp" line="3593"/>
         <source>Set Genre 1</source>
         <translation>Definir o Género 1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3532"/>
+        <location filename="player.cpp" line="3594"/>
         <source>New Genre 1 for %1 tracks:</source>
         <translation>Novo Género 1 para %1 faixas:</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3546"/>
+        <location filename="player.cpp" line="3608"/>
         <source>Genre 1 set to &apos;%1&apos; for %2 tracks</source>
         <translation>Género 1 definido como &apos;%1&apos; em %2 faixas</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3551"/>
+        <location filename="player.cpp" line="3613"/>
         <source>Set Genre 2</source>
         <translation>Definir o Género 2</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3552"/>
+        <location filename="player.cpp" line="3614"/>
         <source>New Genre 2 for %1 tracks:</source>
         <translation>Novo Género 2 para %1 faixas:</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3562"/>
+        <location filename="player.cpp" line="3624"/>
         <source>Genre 2 set to &apos;%1&apos; for %2 tracks</source>
         <translation>Género 2 definido como &apos;%1&apos; em %2 faixas</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3567"/>
+        <location filename="player.cpp" line="3629"/>
         <source>Set Artist</source>
         <translation>Definir o artista</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3568"/>
+        <location filename="player.cpp" line="3630"/>
         <source>New Artist for %1 tracks:</source>
         <translation>Novo artista para %1 faixas:</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3578"/>
+        <location filename="player.cpp" line="3640"/>
         <source>Artist set to &apos;%1&apos; for %2 tracks</source>
         <translation>Artista definido como &apos;%1&apos; em %2 faixas</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3583"/>
+        <location filename="player.cpp" line="3645"/>
         <source>Set Country</source>
         <translation>Definir o país</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3584"/>
+        <location filename="player.cpp" line="3646"/>
         <source>New Country for %1 tracks:</source>
         <translation>Novo país para %1 faixas:</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3594"/>
+        <location filename="player.cpp" line="3656"/>
         <source>Country set to &apos;%1&apos; for %2 tracks</source>
         <translation>País definido como &apos;%1&apos; em %2 faixas</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3599"/>
-        <location filename="player.cpp" line="3676"/>
-        <location filename="player.cpp" line="4037"/>
+        <location filename="player.cpp" line="3661"/>
+        <location filename="player.cpp" line="3750"/>
+        <location filename="player.cpp" line="4136"/>
         <source>Confirm Deletion</source>
         <translation>Confirmar a eliminação</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3600"/>
+        <location filename="player.cpp" line="3662"/>
         <source>Are you sure you want to delete %1 track(s) from the database?</source>
         <translation>Tem a certeza de que pretende eliminar %1 faixa(s) da base de dados?</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3604"/>
+        <location filename="player.cpp" line="3666"/>
         <source>Delete Files?</source>
         <translation>Eliminar os ficheiros?</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3605"/>
+        <location filename="player.cpp" line="3667"/>
         <source>Also delete the %1 file(s) from the hard drive?</source>
         <translation>Eliminar também %1 ficheiro(s) do disco rígido?</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3621"/>
+        <location filename="player.cpp" line="3683"/>
         <source>Deleted %1 track(s)</source>
         <translation>Foram eliminadas %1 faixa(s)</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3641"/>
+        <location filename="player.cpp" line="3703"/>
         <source>Delete this jingle from the database</source>
         <translation>Apagar este jingle da base de dados</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3676"/>
+        <location filename="player.cpp" line="3750"/>
         <source>Are you sure you want to delete this jingle from the database?
 (File on disk will NOT be deleted)</source>
         <translation>Tem a certeza de que pretende eliminar este jingle da base de dados?
 (O ficheiro em disco NÃO será eliminado)</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3685"/>
+        <location filename="player.cpp" line="3759"/>
         <source>Jingle Removed</source>
         <translation>Jingle removido</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3685"/>
+        <location filename="player.cpp" line="3759"/>
         <source>The jingle was removed from the database.</source>
         <translation>O jingle foi removido da base de dados.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3688"/>
+        <location filename="player.cpp" line="3762"/>
         <source>Failed to remove the jingle from the database:
 %1</source>
         <translation>Não foi possível remover o jingle da base de dados:
 %1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3852"/>
-        <location filename="player.cpp" line="3921"/>
-        <location filename="player.cpp" line="11313"/>
-        <location filename="player.cpp" line="11537"/>
-        <location filename="player.cpp" line="15891"/>
-        <location filename="player.cpp" line="16018"/>
+        <location filename="player.cpp" line="3936"/>
+        <location filename="player.cpp" line="4005"/>
+        <location filename="player.cpp" line="11683"/>
+        <location filename="player.cpp" line="11907"/>
+        <location filename="player.cpp" line="16303"/>
+        <location filename="player.cpp" line="16430"/>
         <source>Script Error</source>
         <translation>Erro de script</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3853"/>
+        <location filename="player.cpp" line="3937"/>
         <source>The required check script &apos;%1&apos; was not found.
 Install it under the application data directory (e.g. share/xfb/scripts) or set ServerScriptsPath in xfb.conf.</source>
         <translation>O script de verificação necessário &apos;%1&apos; não foi encontrado.
 Instale-o na pasta de dados da aplicação (por exemplo share/xfb/scripts) ou defina ServerScriptsPath no xfb.conf.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3857"/>
-        <location filename="player.cpp" line="3927"/>
-        <location filename="player.cpp" line="15894"/>
-        <location filename="player.cpp" line="16023"/>
+        <location filename="player.cpp" line="3941"/>
+        <location filename="player.cpp" line="4011"/>
+        <location filename="player.cpp" line="16306"/>
+        <location filename="player.cpp" line="16435"/>
         <source>Script Not Configured</source>
         <translation>Script não configurado</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3858"/>
-        <location filename="player.cpp" line="3928"/>
-        <location filename="player.cpp" line="15895"/>
+        <location filename="player.cpp" line="3942"/>
+        <location filename="player.cpp" line="4012"/>
+        <location filename="player.cpp" line="16307"/>
         <source>The script &apos;%1&apos; still contains the [IP]/[PORT] placeholders.
 Edit it with your server&apos;s address and port:
 %2</source>
@@ -12658,55 +13898,55 @@ Edite-o com o endereço e a porta do seu servidor:
 %2</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3862"/>
+        <location filename="player.cpp" line="3946"/>
         <source>Checking server...</source>
         <translation>A verificar o servidor...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3862"/>
-        <location filename="player.cpp" line="3933"/>
-        <location filename="player.cpp" line="5587"/>
-        <location filename="player.cpp" line="5630"/>
-        <location filename="player.cpp" line="5777"/>
-        <location filename="player.cpp" line="6014"/>
-        <location filename="player.cpp" line="11209"/>
-        <location filename="player.cpp" line="17688"/>
-        <location filename="player.cpp" line="18052"/>
+        <location filename="player.cpp" line="3946"/>
+        <location filename="player.cpp" line="4017"/>
+        <location filename="player.cpp" line="5695"/>
+        <location filename="player.cpp" line="5738"/>
+        <location filename="player.cpp" line="5885"/>
+        <location filename="player.cpp" line="6122"/>
+        <location filename="player.cpp" line="11579"/>
+        <location filename="player.cpp" line="18100"/>
+        <location filename="player.cpp" line="18470"/>
         <source>Cancel</source>
         <translation>Cancelar</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3895"/>
+        <location filename="player.cpp" line="3979"/>
         <source>Check Successful</source>
         <translation>Verificação bem-sucedida</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3897"/>
+        <location filename="player.cpp" line="3981"/>
         <source>Check Failed</source>
         <translation>A verificação falhou</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3922"/>
-        <location filename="player.cpp" line="11314"/>
-        <location filename="player.cpp" line="11538"/>
-        <location filename="player.cpp" line="15892"/>
+        <location filename="player.cpp" line="4006"/>
+        <location filename="player.cpp" line="11684"/>
+        <location filename="player.cpp" line="11908"/>
+        <location filename="player.cpp" line="16304"/>
         <source>The required upload script &apos;%1&apos; was not found.
 Install it under the application data directory (e.g. share/xfb/scripts) or set ServerScriptsPath in xfb.conf.</source>
         <translation>O script de envio necessário &apos;%1&apos; não foi encontrado.
 Instale-o na pasta de dados da aplicação (por exemplo share/xfb/scripts) ou defina ServerScriptsPath no xfb.conf.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3933"/>
+        <location filename="player.cpp" line="4017"/>
         <source>Uploading to server...</source>
         <translation>A enviar para o servidor...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3966"/>
+        <location filename="player.cpp" line="4050"/>
         <source>Upload Successful</source>
         <translation>Envio bem-sucedido</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3969"/>
+        <location filename="player.cpp" line="4053"/>
         <source>
 Check ~/.netrc, script, network, server status.
 Output:
@@ -12719,107 +13959,107 @@ Saída:
 %2</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3994"/>
+        <location filename="player.cpp" line="4078"/>
         <source>Delete this program from the database</source>
         <translation>Apagar este programa da base de dados</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3996"/>
+        <location filename="player.cpp" line="4080"/>
         <source>(Re)Send this program to the server</source>
         <translation>(Re)Enviar este programa para o servidor</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3997"/>
+        <location filename="player.cpp" line="4081"/>
         <source>Verify that the program is in the server</source>
         <translation>Verificar se o programa está no servidor</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="4037"/>
+        <location filename="player.cpp" line="4136"/>
         <source>Are you sure you want to delete this program from the database?
 (File on disk will NOT be deleted)</source>
         <translation>Tem a certeza de que pretende eliminar este programa da base de dados?
 (O ficheiro em disco NÃO será eliminado)</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="4046"/>
+        <location filename="player.cpp" line="4145"/>
         <source>Program Removed</source>
         <translation>Programa removido</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="4046"/>
+        <location filename="player.cpp" line="4145"/>
         <source>The program was removed from the database.</source>
         <translation>O programa foi removido da base de dados.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="4049"/>
+        <location filename="player.cpp" line="4148"/>
         <source>Failed to remove the program from the database:
 %1</source>
         <translation>Não foi possível remover o programa da base de dados:
 %1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="4056"/>
+        <location filename="player.cpp" line="4155"/>
         <source>The program &apos;%1&apos; is present on the server!</source>
         <translation>O programa &apos;%1&apos; está presente no servidor!</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="4057"/>
+        <location filename="player.cpp" line="4156"/>
         <source>The program &apos;%1&apos; was NOT found on the server.</source>
         <translation>O programa &apos;%1&apos; NÃO foi encontrado no servidor.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="4068"/>
+        <location filename="player.cpp" line="4167"/>
         <source>Copy Error</source>
         <translation>Erro ao copiar</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="4068"/>
+        <location filename="player.cpp" line="4167"/>
         <source>Failed to copy the program file to the temporary upload folder.
 Check permissions for &apos;%1&apos;.</source>
         <translation>Não foi possível copiar o ficheiro do programa para a pasta temporária de envio.
 Verifique as permissões de &apos;%1&apos;.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="4075"/>
+        <location filename="player.cpp" line="4174"/>
         <source>Program &apos;%1&apos; uploaded successfully.</source>
         <translation>Programa &apos;%1&apos; enviado com sucesso.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="4076"/>
+        <location filename="player.cpp" line="4175"/>
         <source>Failed to upload program &apos;%1&apos;.</source>
         <translation>Não foi possível enviar o programa &apos;%1&apos;.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="4095"/>
-        <location filename="player.cpp" line="8406"/>
+        <location filename="player.cpp" line="4194"/>
+        <location filename="player.cpp" line="8762"/>
         <source>Download Torrent</source>
         <translation>Transferir o torrent</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="4096"/>
-        <location filename="player.cpp" line="8407"/>
+        <location filename="player.cpp" line="4195"/>
+        <location filename="player.cpp" line="8763"/>
         <source>Download and Stream</source>
         <translation>Transferir e emitir</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="4097"/>
-        <location filename="player.cpp" line="8409"/>
+        <location filename="player.cpp" line="4196"/>
+        <location filename="player.cpp" line="8765"/>
         <source>Copy Magnet Link</source>
         <translation>Copiar a ligação magnet</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="4098"/>
+        <location filename="player.cpp" line="4197"/>
         <source>View Details</source>
         <translation>Ver os detalhes</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="4126"/>
-        <location filename="player.cpp" line="8432"/>
+        <location filename="player.cpp" line="4234"/>
+        <location filename="player.cpp" line="8796"/>
         <source>Download Confirmation</source>
         <translation>Confirmação da transferência</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="4127"/>
+        <location filename="player.cpp" line="4235"/>
         <source>⚠️ LEGAL RESPONSIBILITY ⚠️
 
 You are about to download: %1
@@ -12846,22 +14086,22 @@ O XFB não é responsável por quaisquer transferências ilegais.
 Pretende continuar?</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="4146"/>
+        <location filename="player.cpp" line="4254"/>
         <source>Download Started</source>
         <translation>Transferência iniciada</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="4147"/>
+        <location filename="player.cpp" line="4255"/>
         <source>Download started for: %1</source>
         <translation>Transferência iniciada para: %1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="4153"/>
+        <location filename="player.cpp" line="4261"/>
         <source>Stream Confirmation</source>
         <translation>Confirmação da emissão</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="4154"/>
+        <location filename="player.cpp" line="4262"/>
         <source>⚠️ LEGAL RESPONSIBILITY ⚠️
 
 You are about to download and stream: %1
@@ -12888,34 +14128,34 @@ A emissão começará assim que houver dados suficientes transferidos.
 Pretende continuar?</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="4174"/>
+        <location filename="player.cpp" line="4282"/>
         <source>Streaming Started</source>
         <translation>Emissão iniciada</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="4175"/>
+        <location filename="player.cpp" line="4283"/>
         <source>Download and streaming started for: %1
 Playback will begin automatically once ready.</source>
         <translation>Transferência e emissão iniciadas para: %1
 A reprodução começará automaticamente quando estiver pronta.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="4183"/>
+        <location filename="player.cpp" line="4291"/>
         <source>Copied</source>
         <translation>Copiado</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="4183"/>
+        <location filename="player.cpp" line="4291"/>
         <source>Magnet link copied to clipboard.</source>
         <translation>Ligação magnet copiada para a área de transferência.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="4185"/>
+        <location filename="player.cpp" line="4293"/>
         <source>No magnet link available for this torrent.</source>
         <translation>Não há ligação magnet disponível para este torrent.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="4188"/>
+        <location filename="player.cpp" line="4296"/>
         <source>Torrent Details:
 
 Name: %1
@@ -12936,37 +14176,37 @@ Autor do envio: %6
 Categoria: %7</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="4204"/>
+        <location filename="player.cpp" line="4312"/>
         <source>Torrent Details</source>
         <translation>Detalhes do torrent</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="4262"/>
+        <location filename="player.cpp" line="4370"/>
         <source>Auto Mode has no track to play — the music library is empty.</source>
         <translation>O Modo Automático não tem nenhuma faixa para tocar — a biblioteca de música está vazia.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="4532"/>
+        <location filename="player.cpp" line="4640"/>
         <source>Now playing: %1</source>
         <translation>A tocar agora: %1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="5586"/>
+        <location filename="player.cpp" line="5694"/>
         <source>Auto-mix: analyzing waveforms...</source>
         <translation>Auto-mix: a analisar as formas de onda...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="5603"/>
+        <location filename="player.cpp" line="5711"/>
         <source>BPM analysis is already running</source>
         <translation>A análise de BPM já está em curso</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="5614"/>
+        <location filename="player.cpp" line="5722"/>
         <source>Analyze BPM</source>
         <translation>Analisar o BPM</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="5615"/>
+        <location filename="player.cpp" line="5723"/>
         <source>Every track in the database has already been measured.
 
 Measure them all again? This is worth doing after an update, and it is the way to refresh tracks whose tempo looks wrong. Any tempo you typed in by hand will be overwritten.</source>
@@ -12975,7 +14215,7 @@ Measure them all again? This is worth doing after an update, and it is the way t
 Medi-las novamente? Vale a pena fazê-lo depois de uma atualização, e é a forma de corrigir faixas cujo andamento pareça errado. Qualquer andamento que tenha introduzido manualmente será substituído.</translation>
     </message>
     <message numerus="yes">
-        <location filename="player.cpp" line="5628"/>
+        <location filename="player.cpp" line="5736"/>
         <source>Measuring the tempo of %n track(s)...</source>
         <translation>
             <numerusform>A medir o andamento de %n faixa...</numerusform>
@@ -12983,29 +14223,29 @@ Medi-las novamente? Vale a pena fazê-lo depois de uma atualização, e é a for
         </translation>
     </message>
     <message>
-        <location filename="player.cpp" line="5650"/>
+        <location filename="player.cpp" line="5758"/>
         <source>BPM analysis canceled — %1 track(s) measured</source>
         <translation>Análise de BPM cancelada — %1 faixa(s) medida(s)</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="5651"/>
+        <location filename="player.cpp" line="5759"/>
         <source>BPM analysis: %1 track(s) measured, %2 without a steady tempo</source>
         <translation>Análise de BPM: %1 faixa(s) medida(s), %2 sem andamento constante</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6180"/>
-        <location filename="player.cpp" line="6203"/>
+        <location filename="player.cpp" line="6288"/>
+        <location filename="player.cpp" line="6311"/>
         <source>No track selected</source>
         <translation>Nenhuma faixa selecionada</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6217"/>
-        <location filename="player.cpp" line="7781"/>
+        <location filename="player.cpp" line="6325"/>
+        <location filename="player.cpp" line="8137"/>
         <source>No file path for the selected track</source>
         <translation>Não há caminho de ficheiro para a faixa selecionada</translation>
     </message>
     <message numerus="yes">
-        <location filename="player.cpp" line="6234"/>
+        <location filename="player.cpp" line="6342"/>
         <source>%n tracks</source>
         <translation>
             <numerusform>%n faixa</numerusform>
@@ -13013,373 +14253,373 @@ Medi-las novamente? Vale a pena fazê-lo depois de uma atualização, e é a for
         </translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6235"/>
+        <location filename="player.cpp" line="6343"/>
         <source>Added %1 to the start of the playlist</source>
         <translation>%1 adicionada ao início da lista de reprodução</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6236"/>
+        <location filename="player.cpp" line="6344"/>
         <source>Added %1 to the playlist</source>
         <translation>%1 adicionada à lista de reprodução</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6250"/>
+        <location filename="player.cpp" line="6358"/>
         <source>Start playing the playlist</source>
         <translation>Começar a reproduzir a lista</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6251"/>
+        <location filename="player.cpp" line="6359"/>
         <source>Stop playback</source>
         <translation>Parar a reprodução</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6252"/>
+        <location filename="player.cpp" line="6360"/>
         <source>Play next</source>
         <translation>Tocar a seguinte</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6252"/>
+        <location filename="player.cpp" line="6360"/>
         <source>Skip to the next track in the playlist</source>
         <translation>Saltar para a faixa seguinte da lista de reprodução</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6253"/>
-        <location filename="player.cpp" line="7795"/>
+        <location filename="player.cpp" line="6361"/>
+        <location filename="player.cpp" line="8151"/>
         <source>Pause</source>
         <translation>Pausa</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6253"/>
+        <location filename="player.cpp" line="6361"/>
         <source>Pause or resume the track that is playing</source>
         <translation>Pausar ou retomar a faixa que está a tocar</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6254"/>
-        <location filename="player.cpp" line="7801"/>
+        <location filename="player.cpp" line="6362"/>
+        <location filename="player.cpp" line="8157"/>
         <source>Pause recording</source>
         <translation>Pausar a gravação</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6254"/>
+        <location filename="player.cpp" line="6362"/>
         <source>Pause or resume the recording</source>
         <translation>Pausar ou retomar a gravação</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6255"/>
+        <location filename="player.cpp" line="6363"/>
         <source>Deck 1: play</source>
         <translation>Prato 1: tocar</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6255"/>
+        <location filename="player.cpp" line="6363"/>
         <source>Play the file loaded in deck 1</source>
         <translation>Reproduzir o ficheiro carregado no prato 1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6256"/>
+        <location filename="player.cpp" line="6364"/>
         <source>Deck 1: stop</source>
         <translation>Prato 1: parar</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6256"/>
+        <location filename="player.cpp" line="6364"/>
         <source>Stop deck 1</source>
         <translation>Parar o prato 1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6257"/>
-        <location filename="player.cpp" line="7805"/>
+        <location filename="player.cpp" line="6365"/>
+        <location filename="player.cpp" line="8161"/>
         <source>Deck 1: pause</source>
         <translation>Prato 1: pausa</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6257"/>
+        <location filename="player.cpp" line="6365"/>
         <source>Pause or resume deck 1</source>
         <translation>Pausar ou retomar o prato 1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6258"/>
+        <location filename="player.cpp" line="6366"/>
         <source>Deck 2: play</source>
         <translation>Prato 2: tocar</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6258"/>
+        <location filename="player.cpp" line="6366"/>
         <source>Play the file loaded in deck 2</source>
         <translation>Reproduzir o ficheiro carregado no prato 2</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6259"/>
+        <location filename="player.cpp" line="6367"/>
         <source>Deck 2: stop</source>
         <translation>Prato 2: parar</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6259"/>
+        <location filename="player.cpp" line="6367"/>
         <source>Stop deck 2</source>
         <translation>Parar o prato 2</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6260"/>
-        <location filename="player.cpp" line="7808"/>
+        <location filename="player.cpp" line="6368"/>
+        <location filename="player.cpp" line="8164"/>
         <source>Deck 2: pause</source>
         <translation>Prato 2: pausa</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6260"/>
+        <location filename="player.cpp" line="6368"/>
         <source>Pause or resume deck 2</source>
         <translation>Pausar ou retomar o prato 2</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6261"/>
+        <location filename="player.cpp" line="6369"/>
         <source>Start playing the radio stream</source>
         <translation>Começar a reproduzir a emissão de rádio</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6262"/>
+        <location filename="player.cpp" line="6370"/>
         <source>Stop playing the radio stream</source>
         <translation>Parar a reprodução da emissão de rádio</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6263"/>
+        <location filename="player.cpp" line="6371"/>
         <source>Icecast server</source>
         <translation>Servidor Icecast</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6263"/>
+        <location filename="player.cpp" line="6371"/>
         <source>Start or stop the Icecast streaming server</source>
         <translation>Iniciar ou parar o servidor de emissão Icecast</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6264"/>
+        <location filename="player.cpp" line="6372"/>
         <source>BUTT broadcaster</source>
         <translation>Emissor BUTT</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6264"/>
+        <location filename="player.cpp" line="6372"/>
         <source>Start or stop the BUTT broadcasting tool</source>
         <translation>Iniciar ou parar a ferramenta de emissão BUTT</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6265"/>
+        <location filename="player.cpp" line="6373"/>
         <source>Update dynamic DNS</source>
         <translation>Atualizar o DNS dinâmico</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6265"/>
+        <location filename="player.cpp" line="6373"/>
         <source>Refresh the external address of this station</source>
         <translation>Atualizar o endereço externo desta estação</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6266"/>
+        <location filename="player.cpp" line="6374"/>
         <source>Test the streaming port</source>
         <translation>Testar a porta de emissão</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6266"/>
+        <location filename="player.cpp" line="6374"/>
         <source>Check whether the streaming port is reachable</source>
         <translation>Verificar se a porta de emissão está acessível</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6267"/>
+        <location filename="player.cpp" line="6375"/>
         <source>Add random songs</source>
         <translation>Adicionar músicas aleatórias</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6268"/>
+        <location filename="player.cpp" line="6376"/>
         <source>Add random songs of the selected genre to the playlist</source>
         <translation>Adicionar músicas aleatórias do género selecionado à lista de reprodução</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6269"/>
+        <location filename="player.cpp" line="6377"/>
         <source>Recording indicator</source>
         <translation>Indicador de gravação</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6269"/>
+        <location filename="player.cpp" line="6377"/>
         <source>Shows whether recording is active</source>
         <translation>Mostra se a gravação está ativa</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6284"/>
+        <location filename="player.cpp" line="6392"/>
         <source>Music library</source>
         <translation>Biblioteca de música</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6286"/>
+        <location filename="player.cpp" line="6394"/>
         <source>Adverts</source>
         <translation>Publicidade</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6289"/>
+        <location filename="player.cpp" line="6397"/>
         <source>Search the music library</source>
         <translation>Procurar na biblioteca de música</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6305"/>
+        <location filename="player.cpp" line="6413"/>
         <source>Press Enter to add the selected track to the playlist.</source>
         <translation>Prima Enter para adicionar a faixa selecionada à lista de reprodução.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6325"/>
+        <location filename="player.cpp" line="6433"/>
         <source>&amp;Playback</source>
         <translation>&amp;Reprodução</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6330"/>
+        <location filename="player.cpp" line="6438"/>
         <source>&amp;Play / Segue</source>
         <translation>&amp;Tocar / encadear</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6332"/>
+        <location filename="player.cpp" line="6440"/>
         <source>Pause / &amp;Resume</source>
         <translation>Pausa / &amp;retomar</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6334"/>
+        <location filename="player.cpp" line="6442"/>
         <source>&amp;Stop</source>
         <translation>&amp;Parar</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6336"/>
+        <location filename="player.cpp" line="6444"/>
         <source>&amp;Next track</source>
         <translation>Faixa &amp;seguinte</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6338"/>
+        <location filename="player.cpp" line="6446"/>
         <source>Pre&amp;vious track</source>
         <translation>Faixa &amp;anterior</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6357"/>
+        <location filename="player.cpp" line="6466"/>
         <source>Add selection to &amp;end of playlist</source>
         <translation>Adicionar a seleção ao &amp;fim da lista de reprodução</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6366"/>
+        <location filename="player.cpp" line="6476"/>
         <source>Add selection to &amp;start of playlist</source>
         <translation>Adicionar a seleção ao &amp;início da lista de reprodução</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6386"/>
+        <location filename="player.cpp" line="6497"/>
         <source>No playlist track is selected</source>
         <translation>Nenhuma faixa selecionada na lista de reprodução</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6391"/>
+        <location filename="player.cpp" line="6502"/>
         <source>Already at the top of the playlist</source>
         <translation>Já está no topo da lista de reprodução</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6392"/>
+        <location filename="player.cpp" line="6503"/>
         <source>Already at the bottom of the playlist</source>
         <translation>Já está no fim da lista de reprodução</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6400"/>
+        <location filename="player.cpp" line="6511"/>
         <source>%1 moved to position %2 of %3</source>
         <translation>%1 movida para a posição %2 de %3</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6407"/>
+        <location filename="player.cpp" line="6518"/>
         <source>Move playlist track &amp;up</source>
         <translation>Mover faixa da lista para &amp;cima</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6414"/>
+        <location filename="player.cpp" line="6526"/>
         <source>Move playlist track &amp;down</source>
         <translation>Mover faixa da lista para &amp;baixo</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6424"/>
+        <location filename="player.cpp" line="6537"/>
         <source>Announce &amp;what is playing</source>
         <translation>Anunciar o &amp;que está a tocar</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="5726"/>
-        <location filename="player.cpp" line="6430"/>
-        <location filename="player.cpp" line="7585"/>
+        <location filename="player.cpp" line="5834"/>
+        <location filename="player.cpp" line="6543"/>
+        <location filename="player.cpp" line="7941"/>
         <source>Nothing is playing</source>
         <translation>Não está nada a tocar</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="728"/>
+        <location filename="player.cpp" line="731"/>
         <source>Intro set to %1</source>
         <translation>Intro definida em %1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="735"/>
+        <location filename="player.cpp" line="738"/>
         <source>This track is not in the database, so its intro cannot be saved</source>
         <translation>Esta faixa não está na base de dados, por isso a sua intro não pode ser guardada</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="1890"/>
+        <location filename="player.cpp" line="1895"/>
         <source>Measure the intro and outro times of the database</source>
         <translation>Medir os tempos de intro e de fecho da base de dados</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="1891"/>
+        <location filename="player.cpp" line="1896"/>
         <source>Work out, for every music track that has not been measured yet, how long its intro runs before the vocal and how long its run-out is. This is a level heuristic, not vocal detection: correct anything it gets wrong by dragging the marker on the now-playing wave strip, and your value is kept the next time this runs.</source>
         <translation>Calcular, para cada faixa de música ainda não medida, quanto tempo a intro corre antes da voz e qual é a duração do fecho. Isto é uma heurística de nível, não deteção de voz: corrige o que estiver errado arrastando o marcador na tira de onda do que está a tocar, e o teu valor é mantido da próxima vez que isto correr.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="1911"/>
+        <location filename="player.cpp" line="1917"/>
         <source>Measure the loudness (EBU R128) of the database</source>
         <translation>Medir a intensidade sonora (EBU R128) da base de dados</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="1912"/>
+        <location filename="player.cpp" line="1918"/>
         <source>Measure the integrated loudness and true peak of every track, jingle, commercial and programme that has not been measured yet, so playback can put them all on air at the same level. Files are never modified. Anything whose file changed since it was measured is measured again.</source>
         <translation>Medir a intensidade sonora integrada e o pico real de cada faixa, jingle, publicidade e programa ainda não medido, para que a reprodução os possa pôr no ar todos ao mesmo nível. Os ficheiros nunca são modificados. Tudo o que tiver mudado de ficheiro desde que foi medido é medido outra vez.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="1931"/>
+        <location filename="player.cpp" line="1938"/>
         <source>Find the missing cover art…</source>
         <translation>Procurar as capas em falta…</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="1932"/>
+        <location filename="player.cpp" line="1939"/>
         <source>Look for a cover for every track in the library that has none, and — once you have seen what was found — write it into the file. Downloads from before XFB kept the cover have nothing to show on the deck, the phone&apos;s notification or the lock screen.</source>
         <translation>Procurar uma capa para cada faixa da biblioteca que não tenha nenhuma e — depois de veres o que foi encontrado — escrevê-la no ficheiro. As descargas anteriores a o XFB guardar a capa não têm nada para mostrar no prato, na notificação do telemóvel ou no ecrã bloqueado.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="1952"/>
+        <location filename="player.cpp" line="1960"/>
         <source>Watched folders…</source>
         <translation>Pastas vigiadas…</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="1954"/>
+        <location filename="player.cpp" line="1962"/>
         <source>Folders XFB keeps an eye on: anything new that lands in one is added to the music, jingles, publicities or programs library on its own.</source>
         <translation>Pastas que o XFB vigia: tudo o que aparecer de novo numa delas é adicionado sozinho à biblioteca de músicas, jingles, publicidades ou programas.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3413"/>
+        <location filename="player.cpp" line="3448"/>
         <source>Cue this track in the headphones</source>
         <translation>Pré-escutar esta faixa nos auscultadores</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3418"/>
+        <location filename="player.cpp" line="3453"/>
         <source>Cue this track in the headphones	%1</source>
         <translation>Pré-escutar esta faixa nos auscultadores	%1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3421"/>
+        <location filename="player.cpp" line="3456"/>
         <source>Listen to this track on the cue output only. It never reaches the on-air output.</source>
         <translation>Ouvir esta faixa apenas na saída de pré-escuta. Nunca chega à saída de emissão.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3643"/>
+        <location filename="player.cpp" line="3705"/>
         <source>Cue this jingle in the headphones</source>
         <translation>Pré-escutar este jingle nos auscultadores</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3998"/>
+        <location filename="player.cpp" line="4082"/>
         <source>Cue this program in the headphones</source>
         <translation>Pré-escutar este programa nos auscultadores</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="4535"/>
+        <location filename="player.cpp" line="4643"/>
         <source>%1. Intro %2</source>
         <translation>%1. Intro %2</translation>
     </message>
     <message numerus="yes">
-        <location filename="player.cpp" line="4779"/>
+        <location filename="player.cpp" line="4887"/>
         <source>%n second(s)</source>
         <comment>spoken countdown to the end of the on-air track</comment>
         <translation>
@@ -13388,94 +14628,94 @@ Medi-las novamente? Vale a pena fazê-lo depois de uma atualização, e é a for
         </translation>
     </message>
     <message>
-        <location filename="player.cpp" line="5432"/>
+        <location filename="player.cpp" line="5540"/>
         <source>A voice track sits between two tracks. Put at least two in the playlist first.</source>
         <translation>Uma locução fica entre duas faixas. Põe primeiro pelo menos duas na playlist.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="5435"/>
-        <location filename="player.cpp" line="5458"/>
-        <location filename="player.cpp" line="5507"/>
+        <location filename="player.cpp" line="5543"/>
+        <location filename="player.cpp" line="5566"/>
+        <location filename="player.cpp" line="5615"/>
         <source>Voice track</source>
         <translation>Locução</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="5447"/>
+        <location filename="player.cpp" line="5555"/>
         <source>The first join XFB can prepare is the one above track 2; moved there.</source>
         <translation>A primeira passagem que o XFB pode preparar é a que fica acima da faixa 2; movido para lá.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="5459"/>
+        <location filename="player.cpp" line="5567"/>
         <source>The sound-wave store is not available, so XFB cannot analyse the join.</source>
         <translation>O armazém de formas de onda não está disponível, por isso o XFB não consegue analisar a passagem.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="5474"/>
+        <location filename="player.cpp" line="5582"/>
         <source>Voice track over the join between %1 and %2.</source>
         <translation>Locução por cima da passagem entre %1 e %2.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="5482"/>
+        <location filename="player.cpp" line="5590"/>
         <source>Voice track discarded.</source>
         <translation>Locução descartada.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="5503"/>
+        <location filename="player.cpp" line="5611"/>
         <source>That join has already gone to air, so the link was not inserted. The recording is kept at %1.</source>
         <translation>Essa passagem já foi para o ar, por isso a locução não foi inserida. A gravação fica guardada em %1.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="5538"/>
+        <location filename="player.cpp" line="5646"/>
         <source>Voice track added at position %1, starting %2 seconds before %3 ends. The ducking was written onto both songs.</source>
         <translation>Locução adicionada na posição %1, a começar %2 segundos antes de %3 acabar. O ducking foi escrito nas duas músicas.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="5543"/>
+        <location filename="player.cpp" line="5651"/>
         <source>Voice track added at position %1. No ducking was written — no speech was found in the take.</source>
         <translation>Locução adicionada na posição %1. Não foi escrito ducking — não foi encontrada fala na gravação.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="5692"/>
+        <location filename="player.cpp" line="5800"/>
         <source>Intro %1</source>
         <translation>Intro %1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="5728"/>
+        <location filename="player.cpp" line="5836"/>
         <source>The intro of this track has not been measured</source>
         <translation>A intro desta faixa não foi medida</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="5730"/>
+        <location filename="player.cpp" line="5838"/>
         <source>No intro: this track starts straight in</source>
         <translation>Sem intro: esta faixa começa logo</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="5734"/>
+        <location filename="player.cpp" line="5842"/>
         <source>%1 of intro left, of %2</source>
         <translation>Faltam %1 de intro, de %2</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="5739"/>
+        <location filename="player.cpp" line="5847"/>
         <source>Intro %1, set by hand, already passed</source>
         <translation>Intro %1, definida à mão, já passou</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="5741"/>
+        <location filename="player.cpp" line="5849"/>
         <source>Intro %1, already passed</source>
         <translation>Intro %1, já passou</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="5753"/>
+        <location filename="player.cpp" line="5861"/>
         <source>Intro analysis is already running</source>
         <translation>A análise das intros já está a correr</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="5761"/>
+        <location filename="player.cpp" line="5869"/>
         <source>Measure intros</source>
         <translation>Medir intros</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="5762"/>
+        <location filename="player.cpp" line="5870"/>
         <source>Every track in the database already has an intro time.
 
 Measure them all again? Anything you corrected by hand is kept — only the values XFB worked out itself are replaced.</source>
@@ -13484,7 +14724,7 @@ Measure them all again? Anything you corrected by hand is kept — only the valu
 Medi-las todas outra vez? Tudo o que corrigiste à mão é mantido — só os valores que o XFB calculou sozinho são substituídos.</translation>
     </message>
     <message numerus="yes">
-        <location filename="player.cpp" line="5776"/>
+        <location filename="player.cpp" line="5884"/>
         <source>Measuring the intro of %n track(s)...</source>
         <translation>
             <numerusform>A medir a intro de %n faixa...</numerusform>
@@ -13492,33 +14732,33 @@ Medi-las todas outra vez? Tudo o que corrigiste à mão é mantido — só os va
         </translation>
     </message>
     <message>
-        <location filename="player.cpp" line="5797"/>
+        <location filename="player.cpp" line="5905"/>
         <source>Intro analysis canceled - %1 track(s) measured</source>
         <translation>Análise das intros cancelada - %1 faixa(s) medida(s)</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="5799"/>
+        <location filename="player.cpp" line="5907"/>
         <source>Intros: %1 track(s) measured, %2 left alone (set by hand, silent or unreadable)</source>
         <translation>Intros: %1 faixa(s) medida(s), %2 deixada(s) em paz (definidas à mão, em silêncio ou ilegíveis)</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="5802"/>
+        <location filename="player.cpp" line="5910"/>
         <source>Intros: %1 track(s) measured, %2 could not be measured</source>
         <translation>Intros: %1 faixa(s) medida(s), %2 não puderam ser medidas</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="5964"/>
+        <location filename="player.cpp" line="6072"/>
         <source>A loudness scan is already running</source>
         <translation>Já está a correr uma análise de intensidade sonora</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="5969"/>
-        <location filename="player.cpp" line="5980"/>
+        <location filename="player.cpp" line="6077"/>
+        <location filename="player.cpp" line="6088"/>
         <source>Measure loudness</source>
         <translation>Medir a intensidade sonora</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="5970"/>
+        <location filename="player.cpp" line="6078"/>
         <source>ffmpeg was not found, so loudness cannot be measured.
 
 Install ffmpeg and try again.</source>
@@ -13527,7 +14767,7 @@ Install ffmpeg and try again.</source>
 Instala o ffmpeg e tenta outra vez.</translation>
     </message>
     <message numerus="yes">
-        <location filename="player.cpp" line="5981"/>
+        <location filename="player.cpp" line="6089"/>
         <source>Everything in the database has already been measured (%n item(s)).
 
 Measure it all again?</source>
@@ -13541,7 +14781,7 @@ Medir tudo outra vez?</numerusform>
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="player.cpp" line="6013"/>
+        <location filename="player.cpp" line="6121"/>
         <source>Measuring the loudness of %n item(s)...</source>
         <translation>
             <numerusform>A medir a intensidade sonora de %n item...</numerusform>
@@ -13549,210 +14789,255 @@ Medir tudo outra vez?</numerusform>
         </translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6034"/>
+        <location filename="player.cpp" line="6142"/>
         <source>Loudness scan canceled — %1 item(s) measured</source>
         <translation>Análise de intensidade sonora cancelada — %1 item(s) medido(s)</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6035"/>
+        <location filename="player.cpp" line="6143"/>
         <source>Loudness: %1 item(s) measured, %2 skipped as unchanged, %3 could not be measured</source>
         <translation>Intensidade sonora: %1 item(s) medido(s), %2 saltado(s) por não terem mudado, %3 não puderam ser medidos</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6440"/>
+        <location filename="player.cpp" line="6553"/>
         <source>%1. %2</source>
         <translation>%1. %2</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6451"/>
+        <location filename="player.cpp" line="6564"/>
         <source>Announce time &amp;remaining</source>
         <translation>Anunciar o tempo &amp;restante</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6465"/>
+        <location filename="player.cpp" line="6578"/>
         <source>Announce the &amp;intro countdown</source>
         <translation>Anunciar a contagem da &amp;intro</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6468"/>
+        <location filename="player.cpp" line="6581"/>
         <source>Say how much of the intro is left before the vocal</source>
         <translation>Dizer quanto falta da intro antes da voz</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6481"/>
+        <location filename="player.cpp" line="6594"/>
         <source>&amp;Cue the selected track (headphones)</source>
         <translation>&amp;Pré-escutar a faixa selecionada (auscultadores)</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6484"/>
-        <location filename="player.cpp" line="7702"/>
+        <location filename="player.cpp" line="6597"/>
+        <location filename="player.cpp" line="8058"/>
         <source>Listen to the selected track in the cue headphones only</source>
         <translation>Ouvir a faixa selecionada apenas nos auscultadores de pré-escuta</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6493"/>
+        <location filename="player.cpp" line="6607"/>
         <source>&amp;Voice track over this join...</source>
         <translation>&amp;Locução por cima desta passagem...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6496"/>
+        <location filename="player.cpp" line="6610"/>
         <source>Record your link over the join above the selected playlist track; XFB writes the ducking</source>
         <translation>Grava a tua locução por cima da passagem acima da faixa selecionada da playlist; o XFB escreve o ducking</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6506"/>
+        <location filename="player.cpp" line="6621"/>
         <source>Stop the c&amp;ue</source>
         <translation>Parar a pré-esc&amp;uta</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6513"/>
-        <location filename="player.cpp" line="7742"/>
+        <location filename="player.cpp" line="6628"/>
+        <location filename="player.cpp" line="8098"/>
         <source>Cue stopped</source>
         <translation>Pré-escuta parada</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6528"/>
+        <location filename="player.cpp" line="6644"/>
         <source>&amp;Tutorial for Blind Users</source>
         <translation>&amp;Tutorial para utilizadores cegos</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6532"/>
+        <location filename="player.cpp" line="6648"/>
         <source>Learn how to run XFB with a screen reader and the keyboard</source>
         <translation>Aprenda a utilizar o XFB com um leitor de ecrã e o teclado</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6545"/>
+        <location filename="player.cpp" line="6661"/>
         <source>Tutorial for blind users opened</source>
         <translation>Tutorial para utilizadores cegos aberto</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6556"/>
+        <location filename="player.cpp" line="6672"/>
         <source>&amp;Accessibility Preferences...</source>
         <translation>Preferências de &amp;acessibilidade...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6567"/>
+        <location filename="player.cpp" line="6683"/>
         <source>Accessibility</source>
         <translation>Acessibilidade</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6568"/>
+        <location filename="player.cpp" line="6684"/>
         <source>The accessibility settings service is not available.</source>
         <translation>O serviço de definições de acessibilidade não está disponível.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6584"/>
+        <location filename="player.cpp" line="6700"/>
         <source>Sync to &amp;Phone...</source>
         <translation>Sincronizar com o &amp;telemóvel...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6632"/>
+        <location filename="player.cpp" line="6750"/>
         <source>Stream to &amp;Icecast...</source>
         <translation>Emitir para &amp;Icecast...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6656"/>
+        <location filename="player.cpp" line="6775"/>
         <source>&amp;Dead-Air Watchdog...</source>
         <translation>&amp;Vigia de silêncio no ar...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6658"/>
+        <location filename="player.cpp" line="6777"/>
         <source>What to do when the station goes quiet</source>
         <translation>O que fazer quando a estação fica em silêncio</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6682"/>
+        <location filename="player.cpp" line="6802"/>
         <source>As-Run &amp;Log...</source>
         <translation>&amp;Registo de emissão...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6686"/>
+        <location filename="player.cpp" line="6806"/>
         <source>What actually went to air, and when</source>
         <translation>O que foi mesmo para o ar, e quando</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6697"/>
+        <location filename="player.cpp" line="6817"/>
         <source>As-run log opened</source>
         <translation>Registo de emissão aberto</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6706"/>
+        <location filename="player.cpp" line="6827"/>
         <source>&amp;Rotation Rules...</source>
         <translation>&amp;Regras de rotação...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6712"/>
+        <location filename="player.cpp" line="6833"/>
         <source>Artist and title separation, categories, dayparts and seasonal dates</source>
         <translation>Separação de artistas e títulos, categorias, faixas horárias e datas sazonais</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6738"/>
+        <location filename="player.cpp" line="6859"/>
         <source>Rotation rules opened</source>
         <translation>Regras de rotação abertas</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6751"/>
+        <location filename="player.cpp" line="6873"/>
         <source>Hour &amp;Clocks...</source>
         <translation>&amp;Relógios da hora...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6756"/>
+        <location filename="player.cpp" line="6878"/>
         <source>Programme the hour as a clock: sweeps, ad breaks, jingles and fixed-time items</source>
         <translation>Programar a hora como um relógio: blocos musicais, intervalos publicitários, jingles e itens de hora fixa</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6778"/>
+        <location filename="player.cpp" line="6900"/>
         <source>Hour clocks opened</source>
         <translation>Relógios da hora abertos</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6788"/>
+        <location filename="player.cpp" line="6911"/>
         <source>Listener &amp;Requests...</source>
         <translation>&amp;Pedidos dos ouvintes...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6790"/>
+        <location filename="player.cpp" line="6913"/>
         <source>The public now-playing page, and what listeners have asked for</source>
         <translation>A página pública do que está a tocar, e o que os ouvintes pediram</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6807"/>
+        <location filename="player.cpp" line="6930"/>
         <source>Requested track added to the running order: %1</source>
         <translation>Faixa pedida adicionada ao alinhamento: %1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6814"/>
+        <location filename="player.cpp" line="6937"/>
         <source>Listener requests opened</source>
         <translation>Pedidos dos ouvintes abertos</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6848"/>
+        <location filename="player.cpp" line="6972"/>
         <source>&amp;Production Computers...</source>
         <translation>Computadores de &amp;produção...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6906"/>
-        <location filename="player.cpp" line="6910"/>
+        <location filename="player.cpp" line="7116"/>
+        <source>&amp;Users and roles...</source>
+        <translation>&amp;Utilizadores e funções...</translation>
+    </message>
+    <message>
+        <location filename="player.cpp" line="7118"/>
+        <source>Who may sign in to this XFB, and what each of them is allowed to do with it.</source>
+        <translation>Quem pode iniciar sessão neste XFB, e o que cada um está autorizado a fazer com ele.</translation>
+    </message>
+    <message>
+        <location filename="player.cpp" line="7142"/>
+        <source>&amp;Lock the desk</source>
+        <translation>&amp;Bloquear o posto</translation>
+    </message>
+    <message>
+        <location filename="player.cpp" line="7146"/>
+        <source>Ask for a password before the desk can be touched again. Whatever is on air stays on air.</source>
+        <translation>Pedir uma palavra-passe antes de se poder voltar a tocar no posto. O que estiver no ar continua no ar.</translation>
+    </message>
+    <message>
+        <location filename="player.cpp" line="7195"/>
+        <source> — nobody signed in</source>
+        <translation> — sem sessão iniciada</translation>
+    </message>
+    <message>
+        <location filename="player.cpp" line="7226"/>
+        <source>Nothing to lock</source>
+        <translation>Nada para bloquear</translation>
+    </message>
+    <message>
+        <location filename="player.cpp" line="7227"/>
+        <source>This installation has no accounts, so there is no password to ask for. Create one in Options ▸ Users and roles.</source>
+        <translation>Esta instalação não tem contas, por isso não há palavra-passe a pedir. Crie uma em Opções ▸ Utilizadores e funções.</translation>
+    </message>
+    <message>
+        <location filename="player.cpp" line="7240"/>
+        <source>The desk is locked. The station is still on air.</source>
+        <translation>O posto está bloqueado. A estação continua no ar.</translation>
+    </message>
+    <message>
+        <location filename="player.cpp" line="7251"/>
+        <source>Signed in as %1.</source>
+        <translation>Sessão iniciada como %1.</translation>
+    </message>
+    <message>
+        <location filename="player.cpp" line="7262"/>
+        <location filename="player.cpp" line="7266"/>
         <source>Station backup: %1</source>
         <translation>Reserva da estação: %1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6923"/>
+        <location filename="player.cpp" line="7279"/>
         <source>STUDIO DARK — %1</source>
         <translation>ESTÚDIO ÀS ESCURAS — %1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6924"/>
+        <location filename="player.cpp" line="7280"/>
         <source>Studio dark. %1</source>
         <translation>Estúdio às escuras. %1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6925"/>
+        <location filename="player.cpp" line="7281"/>
         <source>The studio is dark</source>
         <translation>O estúdio está às escuras</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6926"/>
+        <location filename="player.cpp" line="7282"/>
         <source>%1
 
 This machine is the backup. Nothing has been put on air automatically — check the studio, and use Take Over when you have decided to.</source>
@@ -13761,33 +15046,33 @@ This machine is the backup. Nothing has been put on air automatically — check 
 Esta máquina é a de reserva. Não foi posto nada no ar automaticamente — vê o estúdio, e usa Assumir quando tiveres decidido.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="6951"/>
-        <location filename="player.cpp" line="6958"/>
+        <location filename="player.cpp" line="7307"/>
+        <location filename="player.cpp" line="7314"/>
         <source>Production sync: %1</source>
         <translation>Sincronização de produção: %1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7051"/>
+        <location filename="player.cpp" line="7407"/>
         <source>%1 — fallback started: %2</source>
         <translation>%1 — recurso arrancado: %2</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7052"/>
+        <location filename="player.cpp" line="7408"/>
         <source>%1 — FALLBACK FAILED: %2</source>
         <translation>%1 — O RECURSO FALHOU: %2</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7102"/>
+        <location filename="player.cpp" line="7458"/>
         <source>Auto Mode picked %1 track(s) from the library</source>
         <translation>O Modo Automático escolheu %1 faixa(s) da biblioteca</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7112"/>
+        <location filename="player.cpp" line="7468"/>
         <source>no fallback playlist or folder is configured, and nothing else could be found to play</source>
         <translation>não há playlist nem pasta de recurso configurada, e não se encontrou mais nada para tocar</translation>
     </message>
     <message numerus="yes">
-        <location filename="player.cpp" line="7145"/>
+        <location filename="player.cpp" line="7501"/>
         <source>%n track(s) from %1</source>
         <translation>
             <numerusform>%n faixa de %1</numerusform>
@@ -13795,12 +15080,12 @@ Esta máquina é a de reserva. Não foi posto nada no ar automaticamente — vê
         </translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7146"/>
+        <location filename="player.cpp" line="7502"/>
         <source>the fallback material</source>
         <translation>o material de recurso</translation>
     </message>
     <message numerus="yes">
-        <location filename="player.cpp" line="7147"/>
+        <location filename="player.cpp" line="7503"/>
         <source>queued %n track(s) but the player did not start</source>
         <translation>
             <numerusform>%n faixa foi posta em fila mas o leitor não arrancou</numerusform>
@@ -13808,47 +15093,47 @@ Esta máquina é a de reserva. Não foi posto nada no ar automaticamente — vê
         </translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7309"/>
+        <location filename="player.cpp" line="7665"/>
         <source>Streaming: on air</source>
         <translation>Emissão: no ar</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7310"/>
+        <location filename="player.cpp" line="7666"/>
         <source>Streaming: off air</source>
         <translation>Emissão: fora do ar</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7445"/>
+        <location filename="player.cpp" line="7801"/>
         <source>Phone sync: %1</source>
         <translation>Sincronização com o telemóvel: %1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7454"/>
+        <location filename="player.cpp" line="7810"/>
         <source>%1 published %2</source>
         <translation>%1 publicou %2</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7455"/>
+        <location filename="player.cpp" line="7811"/>
         <source>%1 published %2 to this station</source>
         <translation>%1 publicou %2 nesta estação</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7467"/>
+        <location filename="player.cpp" line="7823"/>
         <source>%1 paired with XFB</source>
         <translation>%1 emparelhado com o XFB</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7505"/>
+        <location filename="player.cpp" line="7861"/>
         <source>There are no tracks to send to the phone.</source>
         <translation>Não há faixas para enviar para o telemóvel.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7522"/>
+        <location filename="player.cpp" line="7878"/>
         <source>Mark %1 tracks (%2) for the phone to download?</source>
         <translation>Marcar %1 faixas (%2) para o telemóvel descarregar?</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7526"/>
+        <location filename="player.cpp" line="7882"/>
         <source>
 
 %1 of them are missing from disk and will be skipped.</source>
@@ -13857,12 +15142,12 @@ Esta máquina é a de reserva. Não foi posto nada no ar automaticamente — vê
 %1 delas não estão no disco e vão ser ignoradas.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7528"/>
+        <location filename="player.cpp" line="7884"/>
         <source>Sync to Phone</source>
         <translation>Sincronizar com o telemóvel</translation>
     </message>
     <message numerus="yes">
-        <location filename="player.cpp" line="7539"/>
+        <location filename="player.cpp" line="7895"/>
         <source>Already marked for the phone; %n track(s) waiting.</source>
         <translation>
             <numerusform>Já estava marcado para o telemóvel; %n faixa à espera.</numerusform>
@@ -13870,7 +15155,7 @@ Esta máquina é a de reserva. Não foi posto nada no ar automaticamente — vê
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="player.cpp" line="7540"/>
+        <location filename="player.cpp" line="7896"/>
         <source>%n track(s) marked for the phone.</source>
         <translation>
             <numerusform>%n faixa marcada para o telemóvel.</numerusform>
@@ -13878,22 +15163,22 @@ Esta máquina é a de reserva. Não foi posto nada no ar automaticamente — vê
         </translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7546"/>
+        <location filename="player.cpp" line="7902"/>
         <source> Now serving on port %1 — open XFB on the phone and download &quot;Marked for this phone&quot;.</source>
         <translation> A servir agora na porta %1 — abra o XFB no telemóvel e descarregue «Marcado para este telemóvel».</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7549"/>
+        <location filename="player.cpp" line="7905"/>
         <source> Could not start serving; check Options &gt; Sync to Phone.</source>
         <translation> Não foi possível começar a servir; veja Opções &gt; Sincronizar com o telemóvel.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7552"/>
+        <location filename="player.cpp" line="7908"/>
         <source> Open XFB on the phone and download &quot;Marked for this phone&quot;.</source>
         <translation> Abra o XFB no telemóvel e descarregue «Marcado para este telemóvel».</translation>
     </message>
     <message numerus="yes">
-        <location filename="player.cpp" line="7571"/>
+        <location filename="player.cpp" line="7927"/>
         <source>%n hour(s)</source>
         <comment>spoken duration</comment>
         <translation>
@@ -13902,7 +15187,7 @@ Esta máquina é a de reserva. Não foi posto nada no ar automaticamente — vê
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="player.cpp" line="7573"/>
+        <location filename="player.cpp" line="7929"/>
         <source>%n minute(s)</source>
         <comment>spoken duration</comment>
         <translation>
@@ -13911,7 +15196,7 @@ Esta máquina é a de reserva. Não foi posto nada no ar automaticamente — vê
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="player.cpp" line="7577"/>
+        <location filename="player.cpp" line="7933"/>
         <source>%n second(s)</source>
         <comment>spoken duration</comment>
         <translation>
@@ -13920,196 +15205,196 @@ Esta máquina é a de reserva. Não foi posto nada no ar automaticamente — vê
         </translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7590"/>
+        <location filename="player.cpp" line="7946"/>
         <source>The length of this track is not known</source>
         <translation>A duração desta faixa não é conhecida</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7594"/>
+        <location filename="player.cpp" line="7950"/>
         <source>Less than a second remaining</source>
         <translation>Falta menos de um segundo</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7596"/>
+        <location filename="player.cpp" line="7952"/>
         <source>%1 remaining</source>
         <translation>Tempo restante: %1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7651"/>
+        <location filename="player.cpp" line="8007"/>
         <source>Cue monitor</source>
         <translation>Monitor de pré-escuta</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7652"/>
+        <location filename="player.cpp" line="8008"/>
         <source>What is playing in the cue headphones. Cue audio never reaches the on-air output.</source>
         <translation>O que está a tocar nos auscultadores de pré-escuta. O áudio de pré-escuta nunca chega à saída de emissão.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7712"/>
+        <location filename="player.cpp" line="8068"/>
         <source>CUE: %1</source>
         <translation>PRÉ-ESCUTA: %1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7716"/>
+        <location filename="player.cpp" line="8072"/>
         <source>Cue monitor: %1 is playing in the cue headphones</source>
         <translation>Monitor de pré-escuta: %1 está a tocar nos auscultadores de pré-escuta</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7723"/>
+        <location filename="player.cpp" line="8079"/>
         <source>Cue monitor: nothing is being cued</source>
         <translation>Monitor de pré-escuta: não está nada em pré-escuta</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7735"/>
+        <location filename="player.cpp" line="8091"/>
         <source>There is nothing to cue</source>
         <translation>Não há nada para pré-escutar</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7744"/>
+        <location filename="player.cpp" line="8100"/>
         <source>Cueing %1 in the headphones</source>
         <translation>A pré-escutar %1 nos auscultadores</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7760"/>
+        <location filename="player.cpp" line="8116"/>
         <source>Select a track in the library or the playlist first</source>
         <translation>Seleciona primeiro uma faixa na biblioteca ou na playlist</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7765"/>
+        <location filename="player.cpp" line="8121"/>
         <source>No track is selected</source>
         <translation>Não está nenhuma faixa selecionada</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7794"/>
+        <location filename="player.cpp" line="8150"/>
         <source>Resume (paused)</source>
         <translation>Retomar (em pausa)</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7796"/>
+        <location filename="player.cpp" line="8152"/>
         <source>Paused — click to resume</source>
         <translation>Em pausa — clique para retomar</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7797"/>
+        <location filename="player.cpp" line="8153"/>
         <source>Pause the track that is playing</source>
         <translation>Pausar a faixa que está a tocar</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7800"/>
+        <location filename="player.cpp" line="8156"/>
         <source>Resume recording (paused)</source>
         <translation>Retomar a gravação (em pausa)</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7804"/>
+        <location filename="player.cpp" line="8160"/>
         <source>Deck 1: resume (paused)</source>
         <translation>Prato 1: retomar (em pausa)</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7807"/>
+        <location filename="player.cpp" line="8163"/>
         <source>Deck 2: resume (paused)</source>
         <translation>Prato 2: retomar (em pausa)</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7829"/>
+        <location filename="player.cpp" line="8185"/>
         <source>Artist</source>
         <translation>Artista</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7830"/>
+        <location filename="player.cpp" line="8186"/>
         <source>Song</source>
         <translation>Música</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7831"/>
+        <location filename="player.cpp" line="8187"/>
         <source>Genre 1</source>
         <translation>Género 1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7832"/>
+        <location filename="player.cpp" line="8188"/>
         <source>Genre 2</source>
         <translation>Género 2</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7833"/>
+        <location filename="player.cpp" line="8189"/>
         <source>Country</source>
         <translation>País</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7834"/>
+        <location filename="player.cpp" line="8190"/>
         <source>Published</source>
         <translation>Publicado</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7836"/>
+        <location filename="player.cpp" line="8192"/>
         <source>Time</source>
         <translation>Duração</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7837"/>
+        <location filename="player.cpp" line="8193"/>
         <source>Plays</source>
         <translation>Reproduções</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7838"/>
+        <location filename="player.cpp" line="8194"/>
         <source>Last Played</source>
         <translation>Última reprodução</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7839"/>
+        <location filename="player.cpp" line="8195"/>
         <source>BPM</source>
         <translation>BPM</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7852"/>
+        <location filename="player.cpp" line="8208"/>
         <source>Measured tempo. &quot;no steady beat&quot; means the track was analysed and holds no fixed tempo, which is usual for freely-played solo, live and jazz recordings; those tracks still play, they are just not tempo-matched. &quot;not measured&quot; means it has not been analysed yet (Database menu). Double-click a cell to set a tempo by hand.</source>
         <translation>Andamento medido. &quot;sem batida constante&quot; significa que a faixa foi analisada e não tem andamento fixo, o que é habitual em gravações a solo, ao vivo e de jazz tocadas com liberdade rítmica; essas faixas continuam a ser reproduzidas, apenas não são ajustadas ao andamento. &quot;não medido&quot; significa que ainda não foi analisada (menu Base de Dados). Faça duplo clique numa célula para definir manualmente um andamento.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7917"/>
+        <location filename="player.cpp" line="8273"/>
         <source>Updated the duration of %1 library tracks.</source>
         <translation>Foi atualizada a duração de %1 faixas da biblioteca.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="7981"/>
-        <location filename="player.cpp" line="7999"/>
-        <location filename="player.cpp" line="8016"/>
-        <location filename="player.cpp" line="8033"/>
+        <location filename="player.cpp" line="8337"/>
+        <location filename="player.cpp" line="8355"/>
+        <location filename="player.cpp" line="8372"/>
+        <location filename="player.cpp" line="8389"/>
         <source>Name</source>
         <translation>Nome</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="8035"/>
+        <location filename="player.cpp" line="8391"/>
         <source>Size</source>
         <translation>Tamanho</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="8036"/>
+        <location filename="player.cpp" line="8392"/>
         <source>Added</source>
         <translation>Adicionado</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="8037"/>
+        <location filename="player.cpp" line="8393"/>
         <source>Status</source>
         <translation>Estado</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="8417"/>
-        <location filename="player.cpp" line="8424"/>
+        <location filename="player.cpp" line="8781"/>
+        <location filename="player.cpp" line="8788"/>
         <source>Magnet link copied to clipboard</source>
         <translation>Ligação magnet copiada para a área de transferência</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="8420"/>
+        <location filename="player.cpp" line="8784"/>
         <source>Fetching magnet link...</source>
         <translation>A obter a ligação magnet...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="8426"/>
+        <location filename="player.cpp" line="8790"/>
         <source>Could not retrieve magnet link</source>
         <translation>Não foi possível obter a ligação magnet</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="8433"/>
+        <location filename="player.cpp" line="8797"/>
         <source>You are about to download: %1
 
 By proceeding, you confirm that you have the legal right to download this content.
@@ -14122,76 +15407,76 @@ Ao continuar, confirma que tem o direito legal de transferir este conteúdo.
 Continuar?</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="8456"/>
-        <location filename="player.cpp" line="8478"/>
+        <location filename="player.cpp" line="8820"/>
+        <location filename="player.cpp" line="8842"/>
         <source>Download started: %1</source>
         <translation>Transferência iniciada: %1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="8458"/>
-        <location filename="player.cpp" line="8468"/>
-        <location filename="player.cpp" line="8480"/>
+        <location filename="player.cpp" line="8822"/>
+        <location filename="player.cpp" line="8832"/>
+        <location filename="player.cpp" line="8844"/>
         <source>Download Error</source>
         <translation>Erro de transferência</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="8459"/>
-        <location filename="player.cpp" line="8481"/>
+        <location filename="player.cpp" line="8823"/>
+        <location filename="player.cpp" line="8845"/>
         <source>Failed to start download.</source>
         <translation>Não foi possível iniciar a transferência.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="8463"/>
+        <location filename="player.cpp" line="8827"/>
         <source>Fetching magnet link for: %1</source>
         <translation>A obter a ligação magnet de: %1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="8469"/>
+        <location filename="player.cpp" line="8833"/>
         <source>Could not retrieve magnet link for this torrent.</source>
         <translation>Não foi possível obter a ligação magnet deste torrent.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="8470"/>
+        <location filename="player.cpp" line="8834"/>
         <source>Failed to get magnet link</source>
         <translation>Não foi possível obter a ligação magnet</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="8692"/>
+        <location filename="player.cpp" line="9056"/>
         <source>tempo-matched, genre %1</source>
         <translation>andamento a condizer, género %1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="8694"/>
+        <location filename="player.cpp" line="9058"/>
         <source>tempo-matched</source>
         <translation>andamento a condizer</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="8696"/>
+        <location filename="player.cpp" line="9060"/>
         <source>genre %1</source>
         <translation>género %1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="8698"/>
+        <location filename="player.cpp" line="9062"/>
         <source>whole library</source>
         <translation>biblioteca inteira</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="8935"/>
+        <location filename="player.cpp" line="9299"/>
         <source>%1 is due now but there is no audio for it.</source>
         <translation>%1 está na hora mas não tem áudio.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="8945"/>
+        <location filename="player.cpp" line="9309"/>
         <source>%1 is due at %2 past the hour and is next in the running order.</source>
         <translation>%1 está marcado para os %2 depois da hora e é o próximo do alinhamento.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="10433"/>
+        <location filename="player.cpp" line="10803"/>
         <source>Measure the BPM of the library?</source>
         <translation>Medir o BPM da biblioteca?</translation>
     </message>
     <message numerus="yes">
-        <location filename="player.cpp" line="10434"/>
+        <location filename="player.cpp" line="10804"/>
         <source>Auto Mode can only follow a track with one at a similar tempo once the tempo of each track has been measured. %n track(s) have not been measured yet, and stay out of the matching until they are.
 
 Measure them now? Each track is decoded once, in the background; you can also start this later from the Database menu.</source>
@@ -14205,137 +15490,137 @@ Medi-las agora? Cada faixa é descodificada uma vez, em segundo plano; também p
         </translation>
     </message>
     <message>
-        <location filename="player.cpp" line="10473"/>
+        <location filename="player.cpp" line="10843"/>
         <source>yt-dlp needs FFmpeg to extract and convert the downloaded audio to a playable format (mp3/ogg).</source>
         <translation>O yt-dlp precisa do FFmpeg para extrair e converter o áudio transferido para um formato reproduzível (mp3/ogg).</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="10480"/>
+        <location filename="player.cpp" line="10850"/>
         <source>YouTube downloads need a JavaScript runtime (Node.js) so yt-dlp can reliably extract the available audio formats.</source>
         <translation>As transferências do YouTube precisam de um ambiente de execução JavaScript (Node.js) para que o yt-dlp consiga extrair de forma fiável os formatos de áudio disponíveis.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="10485"/>
+        <location filename="player.cpp" line="10855"/>
         <source>ExifTool is used to read the track&apos;s duration when adding it to your music library.</source>
         <translation>O ExifTool é usado para ler a duração da faixa ao adicioná-la à sua biblioteca de música.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="10627"/>
+        <location filename="player.cpp" line="10997"/>
         <source>Refreshing tables...</source>
         <translation>A atualizar as tabelas...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="10629"/>
+        <location filename="player.cpp" line="10999"/>
         <source>Tables updated successfully</source>
         <translation>Tabelas atualizadas com sucesso</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="10868"/>
-        <location filename="player.cpp" line="10869"/>
+        <location filename="player.cpp" line="11238"/>
+        <location filename="player.cpp" line="11239"/>
         <source>Recording problem: nothing is being recorded</source>
         <translation>Problema na gravação: não está a ser gravado nada</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="10870"/>
+        <location filename="player.cpp" line="11240"/>
         <source>Warning: the recording is empty — check the input device</source>
         <translation>Aviso: a gravação está vazia — verifique o dispositivo de entrada</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="10874"/>
+        <location filename="player.cpp" line="11244"/>
         <source>Recording</source>
         <translation>A gravar</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="10875"/>
+        <location filename="player.cpp" line="11245"/>
         <source>Recording is running</source>
         <translation>A gravação está em curso</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="10886"/>
+        <location filename="player.cpp" line="11256"/>
         <source>Recording starting</source>
         <translation>Gravação a iniciar</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="10887"/>
+        <location filename="player.cpp" line="11257"/>
         <source>Recording is starting</source>
         <translation>A gravação está a iniciar</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="11019"/>
+        <location filename="player.cpp" line="11389"/>
         <source>Recording Error</source>
         <translation>Erro de gravação</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="11100"/>
+        <location filename="player.cpp" line="11470"/>
         <source>Update available</source>
         <translation>Atualização disponível</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="11102"/>
+        <location filename="player.cpp" line="11472"/>
         <source>XFB %1 is available — you are running %2.</source>
         <translation>O XFB %1 está disponível — está a utilizar a versão %2.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="11104"/>
+        <location filename="player.cpp" line="11474"/>
         <source>&quot;Install now&quot; downloads the update and opens the installer; XFB will then close so you can relaunch the new version.</source>
         <translation>&quot;Instalar agora&quot; transfere a atualização e abre o instalador; o XFB fecha-se em seguida para que possa abrir a nova versão.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="11106"/>
+        <location filename="player.cpp" line="11476"/>
         <source>Install now</source>
         <translation>Instalar agora</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="11107"/>
+        <location filename="player.cpp" line="11477"/>
         <source>Release notes</source>
         <translation>Notas da versão</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="11108"/>
+        <location filename="player.cpp" line="11478"/>
         <source>Skip this version</source>
         <translation>Ignorar esta versão</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="11109"/>
+        <location filename="player.cpp" line="11479"/>
         <source>Later</source>
         <translation>Mais tarde</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="11135"/>
+        <location filename="player.cpp" line="11505"/>
         <source>Upgrading XFB with Homebrew...</source>
         <translation>A atualizar o XFB com o Homebrew...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="11148"/>
+        <location filename="player.cpp" line="11518"/>
         <source>Update installed</source>
         <translation>Atualização instalada</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="11149"/>
+        <location filename="player.cpp" line="11519"/>
         <source>XFB %1 was installed. XFB will now close — launch it again to run the new version.</source>
         <translation>O XFB %1 foi instalado. O XFB vai fechar-se — abra-o novamente para utilizar a nova versão.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="11153"/>
-        <location filename="player.cpp" line="11232"/>
-        <location filename="player.cpp" line="11240"/>
+        <location filename="player.cpp" line="11523"/>
+        <location filename="player.cpp" line="11602"/>
+        <location filename="player.cpp" line="11610"/>
         <source>Update failed</source>
         <translation>A atualização falhou</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="11154"/>
+        <location filename="player.cpp" line="11524"/>
         <source>Homebrew could not upgrade XFB:
 %1</source>
         <translation>O Homebrew não conseguiu atualizar o XFB:
 %1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="11173"/>
+        <location filename="player.cpp" line="11543"/>
         <source>Update with your package manager</source>
         <translation>Atualizar com o teu gestor de pacotes</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="11174"/>
+        <location filename="player.cpp" line="11544"/>
         <source>This copy of XFB is managed by pacman, so the update comes from the AUR. Run your AUR helper, for example:
 
     yay -Syu xfb
@@ -14348,29 +15633,29 @@ then launch XFB again to run version %1.</source>
 e volta a lançar o XFB para correres a versão %1.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="11208"/>
+        <location filename="player.cpp" line="11578"/>
         <source>Downloading XFB %1 ...</source>
         <translation>A transferir o XFB %1 ...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="11233"/>
+        <location filename="player.cpp" line="11603"/>
         <source>Could not download the update:
 %1</source>
         <translation>Não foi possível transferir a atualização:
 %1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="11241"/>
+        <location filename="player.cpp" line="11611"/>
         <source>Could not save the update to %1</source>
         <translation>Não foi possível guardar a atualização em %1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="11247"/>
+        <location filename="player.cpp" line="11617"/>
         <source>Update downloaded</source>
         <translation>Atualização transferida</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="11248"/>
+        <location filename="player.cpp" line="11618"/>
         <source>XFB %1 was downloaded to:
 %2
 
@@ -14381,76 +15666,76 @@ The installer will open now. XFB will close — install the update and launch XF
 O instalador vai abrir-se agora. O XFB fecha-se — instale a atualização e abra novamente o XFB.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="11347"/>
-        <location filename="player.cpp" line="11618"/>
-        <location filename="player.cpp" line="11639"/>
+        <location filename="player.cpp" line="11717"/>
+        <location filename="player.cpp" line="11988"/>
+        <location filename="player.cpp" line="12009"/>
         <source>The local copy of the file was deleted.</source>
         <translation>A cópia local do ficheiro foi corretamente apagada.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="15632"/>
-        <location filename="player.cpp" line="15835"/>
+        <location filename="player.cpp" line="16044"/>
+        <location filename="player.cpp" line="16247"/>
         <source>Missing IP</source>
         <translation>Falta o IP</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="15632"/>
+        <location filename="player.cpp" line="16044"/>
         <source>Could not determine the external IP address. Please update DDNS first.</source>
         <translation>Não foi possível determinar o endereço IP externo. Atualize primeiro o DDNS.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="15701"/>
+        <location filename="player.cpp" line="16113"/>
         <source>Connection Refused: Port is likely closed or not listening.</source>
         <translation>Ligação recusada: a porta está provavelmente fechada ou sem serviço à escuta.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="15704"/>
+        <location filename="player.cpp" line="16116"/>
         <source>Connection Closed Unexpectedly.</source>
         <translation>A ligação foi fechada inesperadamente.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="15707"/>
+        <location filename="player.cpp" line="16119"/>
         <source>Host Not Found: The IP address might be incorrect or unreachable.</source>
         <translation>Anfitrião não encontrado: o endereço IP pode estar incorreto ou inacessível.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="15710"/>
+        <location filename="player.cpp" line="16122"/>
         <source>Connection Timed Out (Socket Error).</source>
         <translation>Tempo de ligação esgotado (erro de socket).</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="15713"/>
+        <location filename="player.cpp" line="16125"/>
         <source>Network Error: Check your connection or firewall.</source>
         <translation>Erro de rede: verifique a sua ligação ou a firewall.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="15716"/>
+        <location filename="player.cpp" line="16128"/>
         <source>Connection Failed: %1</source>
         <translation>A ligação falhou: %1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="15722"/>
+        <location filename="player.cpp" line="16134"/>
         <source>Port Check Failed</source>
         <translation>A verificação da porta falhou</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="15722"/>
+        <location filename="player.cpp" line="16134"/>
         <source>Ensure the service (e.g., Icecast) is running locally and the port is correctly forwarded in your router/firewall.</source>
         <translation>Certifique-se de que o serviço (por exemplo, o Icecast) está a correr localmente e de que a porta está corretamente encaminhada no seu router/firewall.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="15724"/>
-        <location filename="player.cpp" line="15738"/>
+        <location filename="player.cpp" line="16136"/>
+        <location filename="player.cpp" line="16150"/>
         <source>N/A</source>
         <translation>N/D</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="15736"/>
+        <location filename="player.cpp" line="16148"/>
         <source>Port Check Timed Out</source>
         <translation>Tempo esgotado na verificação da porta</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="15736"/>
+        <location filename="player.cpp" line="16148"/>
         <source>Could not connect to the server within the time limit.
 
 Check if the server is running, the IP address is correct, and the port is open/forwarded. Network latency or firewalls could also be the cause.</source>
@@ -14459,27 +15744,27 @@ Check if the server is running, the IP address is correct, and the port is open/
 Verifique se o servidor está a correr, se o endereço IP está correto e se a porta está aberta/encaminhada. A latência da rede ou as firewalls também podem ser a causa.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="15821"/>
+        <location filename="player.cpp" line="16233"/>
         <source>Processing...</source>
         <translation>A processar...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="15835"/>
+        <location filename="player.cpp" line="16247"/>
         <source>Cannot initiate takeover without a valid external IP address. Please update DDNS first.</source>
         <translation>Não é possível iniciar a tomada de antena sem um endereço IP externo válido. Atualize primeiro o DDNS.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="15905"/>
+        <location filename="player.cpp" line="16317"/>
         <source>Uploading...</source>
         <translation>A enviar...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="15945"/>
+        <location filename="player.cpp" line="16357"/>
         <source>Verifying...</source>
         <translation>A verificar...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="15960"/>
+        <location filename="player.cpp" line="16372"/>
         <source>Failed to upload the takeover file to the server or confirmation was not received.
 Please check ~/.netrc, script permissions, network connection, and server status.
 
@@ -14494,7 +15779,7 @@ Saída do script (se existir):
 %2</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="16019"/>
+        <location filename="player.cpp" line="16431"/>
         <source>The required check script &apos;%1&apos; was not found.
 Install it under the application data directory (e.g. share/xfb/scripts) or set ServerScriptsPath in xfb.conf.
 
@@ -14505,7 +15790,7 @@ Instale-o na pasta de dados da aplicação (por exemplo share/xfb/scripts) ou de
 A verificação da tomada de antena foi interrompida.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="16024"/>
+        <location filename="player.cpp" line="16436"/>
         <source>The script &apos;%1&apos; still contains the [IP]/[PORT] placeholders.
 Edit it with your server&apos;s address and port:
 %2
@@ -14518,96 +15803,96 @@ Edite-o com o endereço e a porta do seu servidor:
 A verificação da tomada de antena foi interrompida.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="16312"/>
+        <location filename="player.cpp" line="16724"/>
         <source>Recovery Error</source>
         <translation>Erro de recuperação</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="16312"/>
+        <location filename="player.cpp" line="16724"/>
         <source>The recovery stream URL is not configured. Cannot proceed.</source>
         <translation>O URL da emissão de recuperação não está configurado. Não é possível continuar.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="16332"/>
+        <location filename="player.cpp" line="16744"/>
         <source>Dependency Error</source>
         <translation>Erro de dependência</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="16332"/>
+        <location filename="player.cpp" line="16744"/>
         <source>&apos;mplayer&apos; command not found. Please install mplayer and ensure it is in your PATH.</source>
         <translation>O comando &apos;mplayer&apos; não foi encontrado. Instale o mplayer e certifique-se de que está no seu PATH.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="16354"/>
+        <location filename="player.cpp" line="16766"/>
         <source>Playback Error</source>
         <translation>Erro de reprodução</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="16354"/>
+        <location filename="player.cpp" line="16766"/>
         <source>Failed to start the recovery stream player (mplayer).
 Error: %1</source>
         <translation>Não foi possível iniciar o leitor da emissão de recuperação (mplayer).
 Erro: %1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="16419"/>
+        <location filename="player.cpp" line="16831"/>
         <source>Recording paused</source>
         <translation>Gravação em pausa</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="16427"/>
+        <location filename="player.cpp" line="16839"/>
         <source>Recording resumed</source>
         <translation>Gravação retomada</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="16441"/>
+        <location filename="player.cpp" line="16853"/>
         <source>Paused</source>
         <translation>Em pausa</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="16448"/>
+        <location filename="player.cpp" line="16860"/>
         <source>Resumed</source>
         <translation>Retomado</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="16473"/>
+        <location filename="player.cpp" line="16885"/>
         <source>Click the selected tab again to collapse or expand this panel</source>
         <translation>Clique novamente no separador selecionado para recolher ou expandir este painel</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="16876"/>
+        <location filename="player.cpp" line="17288"/>
         <source>Downloading torrents requires a torrent client. XFB can use aria2 (recommended) or transmission-cli to fetch the files.</source>
         <translation>A transferência de torrents requer um cliente de torrents. O XFB pode usar o aria2 (recomendado) ou o transmission-cli para obter os ficheiros.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="16884"/>
-        <location filename="player.cpp" line="16889"/>
-        <location filename="player.cpp" line="16923"/>
+        <location filename="player.cpp" line="17296"/>
+        <location filename="player.cpp" line="17301"/>
+        <location filename="player.cpp" line="17335"/>
         <source>Tor Connection</source>
         <translation>Ligação Tor</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="16884"/>
+        <location filename="player.cpp" line="17296"/>
         <source>Tor network service is not available.</source>
         <translation>O serviço da rede Tor não está disponível.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="16889"/>
+        <location filename="player.cpp" line="17301"/>
         <source>Tor is already connected.</source>
         <translation>O Tor já está ligado.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="16904"/>
+        <location filename="player.cpp" line="17316"/>
         <source>XFB uses the Tor network to anonymously search for and reach .onion torrent mirrors. The &quot;tor&quot; program provides this connection.</source>
         <translation>O XFB usa a rede Tor para pesquisar e aceder anonimamente a espelhos .onion de torrents. O programa &quot;tor&quot; fornece esta ligação.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="16911"/>
+        <location filename="player.cpp" line="17323"/>
         <source>Tor Not Available</source>
         <translation>Tor indisponível</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="16924"/>
+        <location filename="player.cpp" line="17336"/>
         <source>⚠️ SECURITY NOTICE ⚠️
 
 You are about to connect to the Tor network. This will:
@@ -14628,27 +15913,27 @@ Está prestes a ligar-se à rede Tor. Isto irá:
 Pretende ligar-se ao Tor?</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="16942"/>
+        <location filename="player.cpp" line="17354"/>
         <source>Status: Connecting...</source>
         <translation>Estado: a ligar...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="16949"/>
+        <location filename="player.cpp" line="17361"/>
         <source>Connection Error</source>
         <translation>Erro de ligação</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="16950"/>
+        <location filename="player.cpp" line="17362"/>
         <source>Failed to start Tor connection. Please check if Tor is installed.</source>
         <translation>Não foi possível iniciar a ligação Tor. Verifique se o Tor está instalado.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="16962"/>
+        <location filename="player.cpp" line="17374"/>
         <source>Disconnect Tor</source>
         <translation>Desligar o Tor</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="16963"/>
+        <location filename="player.cpp" line="17375"/>
         <source>Are you sure you want to disconnect from Tor?
 
 This will disable torrent searching and stop all secure connections.</source>
@@ -14657,49 +15942,49 @@ This will disable torrent searching and stop all secure connections.</source>
 Isto desativará a pesquisa de torrents e interromperá todas as ligações seguras.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="16976"/>
-        <location filename="player.cpp" line="16993"/>
-        <location filename="player.cpp" line="17424"/>
+        <location filename="player.cpp" line="17388"/>
+        <location filename="player.cpp" line="17405"/>
+        <location filename="player.cpp" line="17836"/>
         <source>Tor Required</source>
         <translation>Tor necessário</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="16977"/>
+        <location filename="player.cpp" line="17389"/>
         <source>Please connect to Tor first before searching for onion mirrors.</source>
         <translation>Ligue-se primeiro ao Tor antes de procurar espelhos onion.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="16983"/>
+        <location filename="player.cpp" line="17395"/>
         <source>Searching...</source>
         <translation>A pesquisar...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="16994"/>
+        <location filename="player.cpp" line="17406"/>
         <source>Please connect to Tor first.</source>
         <translation>Ligue-se primeiro ao Tor.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17000"/>
+        <location filename="player.cpp" line="17412"/>
         <source>No Search Query</source>
         <translation>Sem termo de pesquisa</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17001"/>
+        <location filename="player.cpp" line="17413"/>
         <source>Please enter a search query first.</source>
         <translation>Introduza primeiro um termo de pesquisa.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17067"/>
+        <location filename="player.cpp" line="17479"/>
         <source>No VPN detected</source>
         <translation>Nenhuma VPN detetada</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17068"/>
+        <location filename="player.cpp" line="17480"/>
         <source>You are about to download a torrent without a VPN.</source>
         <translation>Está prestes a transferir um torrent sem VPN.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17069"/>
+        <location filename="player.cpp" line="17481"/>
         <source>BitTorrent transfers cannot be routed through Tor. Without a VPN, your real IP address is visible to the tracker and to the other peers sharing this file.
 
 For more privacy, connect a VPN that allows peer-to-peer traffic and then start the download again.
@@ -14712,72 +15997,72 @@ Para mais privacidade, ligue uma VPN que permita tráfego ponto a ponto e inicie
 Transferir mesmo assim?</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17076"/>
+        <location filename="player.cpp" line="17488"/>
         <source>Download anyway</source>
         <translation>Transferir mesmo assim</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17089"/>
+        <location filename="player.cpp" line="17501"/>
         <source>VPN: on (%1)</source>
         <translation>VPN: ligada (%1)</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17091"/>
+        <location filename="player.cpp" line="17503"/>
         <source>A VPN tunnel is active — torrent downloads egress through it.</source>
         <translation>Está ativo um túnel VPN — as transferências de torrents saem por ele.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17095"/>
+        <location filename="player.cpp" line="17507"/>
         <source>No VPN detected. Downloading exposes your real IP to peers; connect a VPN that allows P2P for more privacy.</source>
         <translation>Nenhuma VPN detetada. Transferir expõe o seu IP real aos pares; ligue uma VPN que permita P2P para mais privacidade.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17174"/>
+        <location filename="player.cpp" line="17586"/>
         <source>Download error: %1</source>
         <translation>Erro de transferência: %1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17200"/>
+        <location filename="player.cpp" line="17612"/>
         <source>Download cancelled</source>
         <translation>Transferência cancelada</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17206"/>
+        <location filename="player.cpp" line="17618"/>
         <source>All downloads cancelled</source>
         <translation>Todas as transferências foram canceladas</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17222"/>
+        <location filename="player.cpp" line="17634"/>
         <source>Retrying download...</source>
         <translation>A tentar novamente a transferência...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17224"/>
+        <location filename="player.cpp" line="17636"/>
         <source>Cannot retry this download</source>
         <translation>Não é possível tentar novamente esta transferência</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17275"/>
+        <location filename="player.cpp" line="17687"/>
         <source>Status: Search anonymised via Tor — downloads are NOT anonymous</source>
         <translation>Estado: pesquisa anonimizada via Tor — as transferências NÃO são anónimas</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17279"/>
+        <location filename="player.cpp" line="17691"/>
         <source>⚠️ Search is routed through Tor. Downloading is NOT: while a download runs your real IP is visible to the tracker and peers. Only download content you are legally entitled to.</source>
         <translation>⚠️ A pesquisa é encaminhada pelo Tor. A transferência NÃO é: enquanto uma transferência decorre, o seu IP real fica visível para o tracker e para os pares. Transfira apenas conteúdo a que tenha direito legal.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17288"/>
+        <location filename="player.cpp" line="17700"/>
         <source>⚠️ Only download content you are legally entitled to. Click &quot;Connect to Tor&quot; to anonymise searching (note: downloading is never anonymous).</source>
         <translation>⚠️ Transfira apenas conteúdo a que tenha direito legal. Clique em &quot;Ligar ao Tor&quot; para anonimizar a pesquisa (nota: a transferência nunca é anónima).</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17296"/>
+        <location filename="player.cpp" line="17708"/>
         <source>Tor Connected</source>
         <translation>Tor ligado</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17297"/>
+        <location filename="player.cpp" line="17709"/>
         <source>Connected to the Tor network. Your torrent SEARCHES are now anonymised.
 
 Downloading a torrent is still not anonymous — during the transfer your real IP is visible to the tracker and peers.</source>
@@ -14786,27 +16071,27 @@ Downloading a torrent is still not anonymous — during the transfer your real I
 Transferir um torrent continua a não ser anónimo — durante a transferência, o seu IP real fica visível para o tracker e para os pares.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17305"/>
+        <location filename="player.cpp" line="17717"/>
         <source>Disconnected from Tor network</source>
         <translation>Desligado da rede Tor</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17322"/>
+        <location filename="player.cpp" line="17734"/>
         <source>Tor Connection Error</source>
         <translation>Erro de ligação ao Tor</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17323"/>
+        <location filename="player.cpp" line="17735"/>
         <source>Tor connection failed: %1</source>
         <translation>A ligação ao Tor falhou: %1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17335"/>
+        <location filename="player.cpp" line="17747"/>
         <source>Onion Mirror Found</source>
         <translation>Espelho onion encontrado</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17336"/>
+        <location filename="player.cpp" line="17748"/>
         <source>Found working onion mirror:
 %1
 
@@ -14817,17 +16102,17 @@ This will be used for secure searches.</source>
 Será utilizado nas pesquisas seguras.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17343"/>
+        <location filename="player.cpp" line="17755"/>
         <source>Searching for secure onion mirror...</source>
         <translation>À procura de um espelho onion seguro...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17357"/>
+        <location filename="player.cpp" line="17769"/>
         <source>Onion Mirror Unavailable</source>
         <translation>Espelho onion indisponível</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17359"/>
+        <location filename="player.cpp" line="17771"/>
         <source>Could not find a working .onion mirror for 1337x.to.
 
 The onion site may be temporarily down or the address may have changed.</source>
@@ -14836,7 +16121,7 @@ The onion site may be temporarily down or the address may have changed.</source>
 O site onion pode estar temporariamente inacessível ou o endereço pode ter mudado.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17361"/>
+        <location filename="player.cpp" line="17773"/>
         <source>Would you like to use the main site (1337x.to) through Tor instead?
 
 Your search traffic will still be routed through the Tor network, but will exit through a Tor exit node to reach the clearnet site. (Downloading remains non-anonymous either way.)</source>
@@ -14845,33 +16130,33 @@ Your search traffic will still be routed through the Tor network, but will exit 
 O tráfego da sua pesquisa continuará a ser encaminhado pela rede Tor, mas sairá por um nó de saída Tor para alcançar o site na clearnet. (De qualquer forma, a transferência continua a não ser anónima.)</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17366"/>
-        <location filename="player.cpp" line="17396"/>
+        <location filename="player.cpp" line="17778"/>
+        <location filename="player.cpp" line="17808"/>
         <source>Use Main Site via Tor</source>
         <translation>Usar o site principal via Tor</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17367"/>
+        <location filename="player.cpp" line="17779"/>
         <source>Retry Onion</source>
         <translation>Tentar o onion novamente</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17376"/>
+        <location filename="player.cpp" line="17788"/>
         <source>Clearnet fallback enabled — searches will use 1337x.to through Tor</source>
         <translation>Alternativa clearnet ativada — as pesquisas usarão 1337x.to através do Tor</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17389"/>
+        <location filename="player.cpp" line="17801"/>
         <source>Onion Sites Unavailable</source>
         <translation>Sites onion indisponíveis</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17391"/>
+        <location filename="player.cpp" line="17803"/>
         <source>The .onion mirror for 1337x could not be reached.</source>
         <translation>Não foi possível alcançar o espelho .onion do 1337x.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17392"/>
+        <location filename="player.cpp" line="17804"/>
         <source>Would you like to search using the main site (1337x.to) through Tor?
 
 Your connection will still be anonymous (routed through Tor), but will use a Tor exit node instead of staying within the onion network.</source>
@@ -14880,27 +16165,27 @@ Your connection will still be anonymous (routed through Tor), but will use a Tor
 A sua ligação continuará anónima (encaminhada pelo Tor), mas usará um nó de saída Tor em vez de se manter dentro da rede onion.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17397"/>
+        <location filename="player.cpp" line="17809"/>
         <source>Cancel Search</source>
         <translation>Cancelar a pesquisa</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17410"/>
+        <location filename="player.cpp" line="17822"/>
         <source>Searching 1337x.to through Tor...</source>
         <translation>A pesquisar em 1337x.to através do Tor...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17419"/>
+        <location filename="player.cpp" line="17831"/>
         <source>Torrent Search</source>
         <translation>Pesquisa de torrents</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17419"/>
+        <location filename="player.cpp" line="17831"/>
         <source>Torrent search service is not available.</source>
         <translation>O serviço de pesquisa de torrents não está disponível.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17425"/>
+        <location filename="player.cpp" line="17837"/>
         <source>Please connect to Tor first before searching for torrents.
 
 Click the &quot;Connect to Tor&quot; button to establish a secure connection.</source>
@@ -14909,23 +16194,23 @@ Click the &quot;Connect to Tor&quot; button to establish a secure connection.</s
 Clique no botão &quot;Ligar ao Tor&quot; para estabelecer uma ligação segura.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17432"/>
-        <location filename="player.cpp" line="17485"/>
+        <location filename="player.cpp" line="17844"/>
+        <location filename="player.cpp" line="17897"/>
         <source>Search Error</source>
         <translation>Erro de pesquisa</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17432"/>
+        <location filename="player.cpp" line="17844"/>
         <source>Please enter a search query.</source>
         <translation>Introduza um termo de pesquisa.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17438"/>
+        <location filename="player.cpp" line="17850"/>
         <source>Legal Notice</source>
         <translation>Aviso legal</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17439"/>
+        <location filename="player.cpp" line="17851"/>
         <source>⚠️ IMPORTANT LEGAL NOTICE ⚠️
 
 You are about to search for torrents. Please ensure you only download content that:
@@ -14948,70 +16233,70 @@ O XFB não é responsável por qualquer utilização ilegal desta funcionalidade
 Compreende e concorda em utilizar esta funcionalidade de forma responsável?</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17475"/>
+        <location filename="player.cpp" line="17887"/>
         <source>Search Results</source>
         <translation>Resultados da pesquisa</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17476"/>
+        <location filename="player.cpp" line="17888"/>
         <source>No audio torrents found for your search query.</source>
         <translation>Não foram encontrados torrents de áudio para o seu termo de pesquisa.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17478"/>
+        <location filename="player.cpp" line="17890"/>
         <source>Found %1 audio torrent(s) matching your search.</source>
         <translation>Foram encontrados %1 torrent(s) de áudio correspondentes à sua pesquisa.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17486"/>
+        <location filename="player.cpp" line="17898"/>
         <source>Torrent search failed: %1</source>
         <translation>A pesquisa de torrents falhou: %1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17541"/>
+        <location filename="player.cpp" line="17953"/>
         <source>Downloaded %1 audio file(s) — %2 added to music library.</source>
         <translation>Foram transferidos %1 ficheiro(s) de áudio — %2 adicionados à biblioteca de música.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17543"/>
+        <location filename="player.cpp" line="17955"/>
         <source>Download Complete</source>
         <translation>Transferência concluída</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17564"/>
+        <location filename="player.cpp" line="17976"/>
         <source>Streaming started for: %1</source>
         <translation>Emissão iniciada para: %1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17603"/>
-        <location filename="player.cpp" line="17837"/>
+        <location filename="player.cpp" line="18015"/>
+        <location filename="player.cpp" line="18255"/>
         <source>Database connection is not open.</source>
         <translation>A ligação à base de dados não está aberta.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17611"/>
+        <location filename="player.cpp" line="18023"/>
         <source>Failed to query the musics table: %1</source>
         <translation>Não foi possível consultar a tabela de músicas: %1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17623"/>
-        <location filename="player.cpp" line="17638"/>
-        <location filename="player.cpp" line="17818"/>
+        <location filename="player.cpp" line="18035"/>
+        <location filename="player.cpp" line="18050"/>
+        <location filename="player.cpp" line="18230"/>
         <source>Convert to 432 Hz</source>
         <translation>Converter para 432 Hz</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17623"/>
+        <location filename="player.cpp" line="18035"/>
         <source>No tracks to convert.</source>
         <translation>Não há faixas para converter.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17629"/>
+        <location filename="player.cpp" line="18041"/>
         <source>Missing Dependency</source>
         <translation>Dependência em falta</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17630"/>
+        <location filename="player.cpp" line="18042"/>
         <source>The &apos;ffmpeg&apos; command is required for audio conversion but was not found.
 
 Please install ffmpeg and ensure it&apos;s accessible.</source>
@@ -15020,7 +16305,7 @@ Please install ffmpeg and ensure it&apos;s accessible.</source>
 Instale o ffmpeg e certifique-se de que está acessível.</translation>
     </message>
     <message numerus="yes">
-        <location filename="player.cpp" line="17640"/>
+        <location filename="player.cpp" line="18052"/>
         <source>Retune %n track(s) from A=440 Hz to A=432 Hz?</source>
         <translation>
             <numerusform>Reafinar %n faixa de Lá=440 Hz para Lá=432 Hz?</numerusform>
@@ -15028,7 +16313,7 @@ Instale o ffmpeg e certifique-se de que está acessível.</translation>
         </translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17641"/>
+        <location filename="player.cpp" line="18053"/>
         <source>&quot;Replace originals&quot; overwrites the audio files in place (the database stays unchanged).
 
 &quot;Keep originals&quot; writes new files with a &quot;_432Hz&quot; suffix and points the database at them, leaving the original files untouched.
@@ -15045,34 +16330,34 @@ Os ficheiros já reafinados pelo XFB são detetados (através de uma etiqueta in
 Sugestão: para uma alternativa não destrutiva, ative antes a reprodução a 432 Hz em tempo real nas Opções.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17649"/>
+        <location filename="player.cpp" line="18061"/>
         <source>Replace originals</source>
         <translation>Substituir os originais</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17650"/>
+        <location filename="player.cpp" line="18062"/>
         <source>Keep originals (make _432Hz copies)</source>
         <translation>Manter os originais (criar cópias _432Hz)</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17663"/>
+        <location filename="player.cpp" line="18075"/>
         <source>Failed to prepare the database update query.</source>
         <translation>Não foi possível preparar a consulta de atualização da base de dados.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17688"/>
+        <location filename="player.cpp" line="18100"/>
         <source>Retuning tracks to 432 Hz...</source>
         <translation>A reafinar as faixas para 432 Hz...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17703"/>
+        <location filename="player.cpp" line="18115"/>
         <source>Retuning %1 of %2:
 %3</source>
         <translation>A reafinar %1 de %2:
 %3</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17814"/>
+        <location filename="player.cpp" line="18226"/>
         <source>432 Hz conversion finished.
 
 Converted: %1
@@ -15083,41 +16368,41 @@ Convertidas: %1
 Falharam: %2</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17817"/>
+        <location filename="player.cpp" line="18229"/>
         <source>
 Skipped (already 432 Hz): %1</source>
         <translation>
 Ignoradas (já em 432 Hz): %1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17883"/>
+        <location filename="player.cpp" line="18301"/>
         <source>Failed to read the musics table.</source>
         <translation>Não foi possível ler a tabela de músicas.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17952"/>
-        <location filename="player.cpp" line="17983"/>
-        <location filename="player.cpp" line="18187"/>
+        <location filename="player.cpp" line="18370"/>
+        <location filename="player.cpp" line="18401"/>
+        <location filename="player.cpp" line="18605"/>
         <source>Remove Duplicates</source>
         <translation>Remover duplicados</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17953"/>
+        <location filename="player.cpp" line="18371"/>
         <source>No duplicates found — every artist and song name in the database appears exactly once.</source>
         <translation>Não foram encontrados duplicados — cada artista e nome de música da base de dados aparece exatamente uma vez.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17968"/>
+        <location filename="player.cpp" line="18386"/>
         <source>keep</source>
         <translation>manter</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="17972"/>
+        <location filename="player.cpp" line="18390"/>
         <source>drop</source>
         <translation>deitar fora</translation>
     </message>
     <message numerus="yes">
-        <location filename="player.cpp" line="17977"/>
+        <location filename="player.cpp" line="18395"/>
         <source>… and %n more song(s), all of them listed in xfb.log.</source>
         <translation>
             <numerusform>… e mais %n música, listada no xfb.log.</numerusform>
@@ -15125,7 +16410,7 @@ Ignoradas (já em 432 Hz): %1</translation>
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="player.cpp" line="17984"/>
+        <location filename="player.cpp" line="18402"/>
         <source>%n song(s) appear more than once in the database.</source>
         <translation>
             <numerusform>%n música aparece mais do que uma vez na base de dados.</numerusform>
@@ -15133,7 +16418,7 @@ Ignoradas (já em 432 Hz): %1</translation>
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="player.cpp" line="17987"/>
+        <location filename="player.cpp" line="18405"/>
         <source>Remove %n duplicate record(s), keeping one of each song?
 
 Play counts and any measured BPM, loudness and intro times are merged onto the record that stays. The audio files themselves are not deleted — only the database records.</source>
@@ -15147,17 +16432,17 @@ As contagens de reproduções e quaisquer BPM, intensidade sonora e tempos de in
         </translation>
     </message>
     <message>
-        <location filename="player.cpp" line="18014"/>
+        <location filename="player.cpp" line="18432"/>
         <source>Failed to prepare the database queries.</source>
         <translation>Não foi possível preparar as consultas à base de dados.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="18052"/>
+        <location filename="player.cpp" line="18470"/>
         <source>Removing duplicate songs…</source>
         <translation>A remover músicas duplicadas…</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="18168"/>
+        <location filename="player.cpp" line="18586"/>
         <source>The duplicates could not be removed — the database was left untouched.
 
 %1</source>
@@ -15166,7 +16451,7 @@ As contagens de reproduções e quaisquer BPM, intensidade sonora e tempos de in
 %1</translation>
     </message>
     <message numerus="yes">
-        <location filename="player.cpp" line="18177"/>
+        <location filename="player.cpp" line="18595"/>
         <source>Removed %n duplicate record(s).</source>
         <translation>
             <numerusform>Foi removido %n registo duplicado.</numerusform>
@@ -15174,32 +16459,32 @@ As contagens de reproduções e quaisquer BPM, intensidade sonora e tempos de in
         </translation>
     </message>
     <message>
-        <location filename="player.cpp" line="18179"/>
+        <location filename="player.cpp" line="18597"/>
         <source>Songs merged: %1</source>
         <translation>Músicas fundidas: %1</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="18181"/>
+        <location filename="player.cpp" line="18599"/>
         <source>Failed: %1 (see xfb.log)</source>
         <translation>Falhou: %1 (vê o xfb.log)</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="18183"/>
+        <location filename="player.cpp" line="18601"/>
         <source>Cancelled — the rest were left alone.</source>
         <translation>Cancelado — os restantes ficaram intactos.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="18184"/>
+        <location filename="player.cpp" line="18602"/>
         <source>No audio files were deleted.</source>
         <translation>Não foi apagado nenhum ficheiro de áudio.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="11381"/>
+        <location filename="player.cpp" line="11751"/>
         <source>Cannot Send</source>
         <translation>Impossível enviar</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="11381"/>
+        <location filename="player.cpp" line="11751"/>
         <source>It&apos;s not possible to send the Program to the server if XFB role is set to Server</source>
         <translation>Não é possível enviar ficheiros para o servidor se o XFB está no modo Server</translation>
     </message>
@@ -15207,112 +16492,112 @@ As contagens de reproduções e quaisquer BPM, intensidade sonora e tempos de in
 <context>
     <name>void::player</name>
     <message>
-        <location filename="player.cpp" line="3286"/>
+        <location filename="player.cpp" line="3301"/>
         <source>Remove this track from the playlist</source>
         <translation>Remover esta música da playlist</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3287"/>
+        <location filename="player.cpp" line="3302"/>
         <source>Send this track to the top of the playlist</source>
         <translation>Enviar esta música para o topo da playlist</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3288"/>
+        <location filename="player.cpp" line="3303"/>
         <source>Send this track to the bottom of the playlist</source>
         <translation>Enviar esta música para o fundo da playlist</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3289"/>
+        <location filename="player.cpp" line="3304"/>
         <source>Add a volume line</source>
         <translation>Adicionar uma linha de volume</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3290"/>
+        <location filename="player.cpp" line="3305"/>
         <source>Reset the volume line</source>
         <translation>Repor a linha de volume</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3291"/>
+        <location filename="player.cpp" line="3306"/>
         <source>Remove the volume line</source>
         <translation>Remover a linha de volume</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3292"/>
+        <location filename="player.cpp" line="3307"/>
         <source>Auto-mix the transition into this track</source>
         <translation>Fazer o auto-mix da transição para esta faixa</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3293"/>
+        <location filename="player.cpp" line="3308"/>
         <source>Cue this track in the headphones</source>
         <translation>Pré-escutar esta faixa nos auscultadores</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3312"/>
+        <location filename="player.cpp" line="3336"/>
         <source>A volume line controls the track&apos;s volume over time: double-click the line to add points, drag points (or the line between them) to shape the volume, double-click a point to reset it to 0 dB, right-click a point to remove it.</source>
         <translation>Uma linha de volume controla o volume da faixa ao longo do tempo: faça duplo clique na linha para adicionar pontos, arraste os pontos (ou a linha entre eles) para moldar o volume, faça duplo clique num ponto para o repor em 0 dB e clique com o botão direito num ponto para o remover.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3322"/>
+        <location filename="player.cpp" line="3346"/>
         <source>Compute this track&apos;s crossfade overlap from the sound waves: it will start where the previous track goes quiet.</source>
         <translation>Calcular a sobreposição desta faixa a partir das ondas sonoras: começará onde a faixa anterior se torna silenciosa.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3325"/>
+        <location filename="player.cpp" line="3349"/>
         <source>Voice track over the join above this track...</source>
         <translation>Locução por cima da passagem acima desta faixa...</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3327"/>
+        <location filename="player.cpp" line="3351"/>
         <source>Record your link across this join. XFB writes the ducking onto both songs as an ordinary volume line you can then edit by hand.</source>
         <translation>Grava a tua locução por cima desta passagem. O XFB escreve o ducking nas duas músicas como uma linha de volume normal que podes depois editar à mão.</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3700"/>
+        <location filename="player.cpp" line="3774"/>
         <source>Add to the bottom of playlist</source>
         <translation>Adicionar ao fundo da playlist</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3701"/>
+        <location filename="player.cpp" line="3775"/>
         <source>Add to the top of the playlist</source>
         <translation>Adicionar ao topo da playlist</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3703"/>
+        <location filename="player.cpp" line="3777"/>
         <source>Open this in Audacity</source>
         <translation>Abrir com o Audacity</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3704"/>
+        <location filename="player.cpp" line="3778"/>
         <source>Cue this advert in the headphones</source>
         <translation>Pré-escutar esta publicidade nos auscultadores</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3738"/>
+        <location filename="player.cpp" line="3822"/>
         <source>Sure?</source>
         <translation>Tem a certeza?</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3748"/>
+        <location filename="player.cpp" line="3832"/>
         <source>Error</source>
         <translation>Erro</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3745"/>
+        <location filename="player.cpp" line="3829"/>
         <source>Jingle removed</source>
         <translation>Jingle apagado</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3702"/>
+        <location filename="player.cpp" line="3776"/>
         <source>Delete this pub from the database</source>
         <translation>Apagar esta publicidade da base de dados</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3738"/>
+        <location filename="player.cpp" line="3822"/>
         <source>Are you sure you want to delete this pub from the database?</source>
         <translation>Tem a certeza que deseja apagar esta publicidade da base de dados?</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="3745"/>
+        <location filename="player.cpp" line="3829"/>
         <source>The pub was removed from the database!</source>
         <translation>A publicidade foi apagada da base de dados!</translation>
     </message>
