@@ -17,6 +17,7 @@ Q_IMPORT_PLUGIN(QDarwinMicrophonePermissionPlugin)
 #include <QStandardPaths>
 #include <QDir>
 #include <QFile>
+#include <QLocale>
 #include <QTranslator>
 #include <QDebug>
 #include <QSplashScreen>
@@ -421,6 +422,25 @@ static bool setupTranslator(QApplication& app, QTranslator& translator, const QS
 
     if (!translationFile.isEmpty() && translator.load(translationFile)) {
         app.installTranslator(&translator);
+
+        // Installing the catalogue translates the strings XFB wrote; it does
+        // nothing to the ones Qt formats for us. QLocale defaults to the
+        // *system* locale, which on a Mac set to English in Portugal is
+        // en_PT — Portuguese number separators and English month names. So
+        // "Registo de emissão" was printing "1 September 2026", on the very
+        // reports a station hands to a client or a regulator. Every display
+        // use of QLocale in XFB (the as-run and advertiser reports, the music
+        // quota report, the hour-clock weekday names) wants the language the
+        // operator chose, so say so once, here.
+        //
+        // Only when a catalogue was actually installed: leaving English on
+        // the system locale is what every existing installation already does,
+        // and a station running XFB in English in Portugal has been reading
+        // its own region's number formats all along.
+        QLocale::setDefault(language == "pt"
+                                ? QLocale(QLocale::Portuguese, QLocale::Portugal)
+                                : QLocale(QLocale::French, QLocale::France));
+
         qDebug() << "Installed translator for:" << language;
         return true;
     }
