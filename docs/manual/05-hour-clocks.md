@@ -1,6 +1,8 @@
-# 5. Hour clocks
+# 5. Hour clocks and time signals
 
-**Options → Hour Clocks…**, or **Ctrl+Shift+K**
+**Options → Hour Clocks…** (Ctrl+Shift+K) and **Options → Time Signals…** (Ctrl+Shift+T)
+
+Two windows, and the difference between them is worth a sentence before either: a **clock** shapes a whole hour and hands Auto Mode the shape; a **time signal** puts one piece of audio on one second of it. The first half of this chapter is the clock. [The second](#time-signals) is the pips.
 
 ## Why a clock and not a grid
 
@@ -175,3 +177,135 @@ If a programmed item comes due and its table has nothing in it, XFB says so once
 | "…is due now but there is no audio for it" | The table that type draws from is empty |
 | The hour is marked overfull | Something hard-timed is starting before the floating slots ahead of it can finish. Shorten them, or float what does not need to be fixed |
 | A clock runs in the wrong hours | The **Week** tab; check the day columns as well as the hours |
+
+
+---
+
+# Time signals
+
+**Options → Time Signals…**, or **Ctrl+Shift+T**
+
+## What this is for
+
+A station says the time. Sometimes that is the pips at :00; more often it is a
+recorded line — *"it's ten o'clock, and you're listening to…"* — and the whole
+point of that one is that it **names the hour it plays in**.
+
+The hour clock can fire an ident, and for a station whose ident is the same all
+day that is enough. It is the wrong tool for a time signal, for three reasons:
+
+- a clock is assigned **per hour**, so twenty-four different lines means
+  twenty-four clocks;
+- a clock only fires while **Auto Mode** is driving; and
+- a clock slot whose name matches nothing plays a **random jingle**, which for
+  audio whose job is to say "it's three o'clock" is the one wrong answer.
+
+This window fixes all three. A time signal carries its own hours and days, it
+fires with an operator at the desk, and if the audio it wants is not there it
+plays **nothing** and says so.
+
+## One signal, start to finish
+
+1. **Database → Add a jingle**: add the audio and give it a name — `Pips`.
+2. **Options → Time Signals… → Add**.
+3. Name it, set **At** to `0 min 0 s`, and under **What plays** pick
+   *A jingle, by name* → `Pips`. That box lists every jingle in the library,
+   and you can type a name into it instead of picking one.
+4. Leave every day and every hour ticked, or narrow them (below).
+5. Choose a **Placement** (below — this is the decision that matters).
+6. **Save signal**.
+7. On the **Settings and preview** tab, tick **Put time signals to air** and
+   press **Apply**.
+
+Nothing fires until that last step. The feature ships off.
+
+## The hour ident, without twenty-four of anything
+
+Record your twenty-four lines and add them to the jingles table with names that
+differ only by the hour — `Hour 00`, `Hour 01`, … `Hour 23`. Then make **one**
+signal, set **What plays** to *One jingle per hour, by pattern*, and pick a
+pattern from the drop-down — or type your own over it:
+
+```
+Hour %H
+```
+
+| Token | Becomes | At 9am | At 10pm |
+|---|---|---|---|
+| `%H` | hour, two digits | `09` | `22` |
+| `%h` | hour, no padding | `9` | `22` |
+| `%I` | twelve-hour clock | `9` | `10` |
+| `%p` | am / pm | `am` | `pm` |
+| `%%` | a literal `%` | | |
+
+So `It is %I %p` looks for `It is 9 am` and `It is 10 pm`.
+
+Every box in XFB that names a jingle, an advert or a programme works the same
+way — this one, and the **Item** box on the hour clock. The drop-down lists what
+the library actually holds, and you can type a name over it. Typing one never
+adds it to the list: the list is what exists.
+
+The line under the box tells you, as you type, what the pattern finds right now
+**and which hours have no jingle yet**. That list is the point of the field:
+a gap shows up there, in the afternoon, rather than as silence at three in the
+morning.
+
+## Placement — the decision that matters
+
+A time signal that plays two and a half minutes late is not a time signal.
+Everything else XFB schedules only ever *queues*, which means "after whatever
+is playing". A signal chooses instead:
+
+| Placement | What happens | Costs you |
+|---|---|---|
+| **Next in the running order** | Top of the playlist | Up to a whole track late. Never interrupts |
+| **Interrupt what is playing** | The deck stops and the signal plays; the running order carries on with the next item | You lose the end of the record |
+| **Over the top, music ducked** | Its own output, music continuing underneath at the level you set | Nothing — but you need a signal that works over music |
+
+For pips, use **Over the top** or **Interrupt**. For an hour ident on a music
+station, **Next** is often what a programmer actually wants.
+
+**Music ducks to** only applies to the over-the-top placement, and the control
+greys out for the other two rather than pretending otherwise. The level rides
+along with the volume slider and the track's volume line, so moving the slider
+while a signal is over the top moves the ducked level — it does not cancel the
+duck halfway through the pips.
+
+## Hours, days and lateness
+
+- **On these days** — seven boxes, and the *Every day* / *Monday to Friday* /
+  *Weekend* buttons.
+- **In these hours** — twenty-four boxes, plus a **From / to** range. The range
+  may wrap midnight: `23` to `5` is the overnight, and it is honoured.
+- **At** — minutes *and seconds* past the hour. `59 min 55 s` is a pre-roll into
+  the news; `0 min 0 s` is the top of the hour.
+- **Still counts for** — how late is still on time. A signal that has not gone
+  out within this many seconds is **skipped for that hour** rather than played
+  at the wrong minute. Twenty seconds by default.
+
+Each signal fires **once** per day, hour and position, so a twenty-second window
+checked every second cannot play the pips twenty times.
+
+## Settings and preview
+
+| Setting | What it does |
+|---|---|
+| **Put time signals to air** | The master switch. Off by default |
+| **Also when an operator is driving** | Fires with Auto Mode off. On by default — a station's pips are the station's whoever is at the desk. Turn it off and this behaves like the hour clock |
+| **Check the clock every** | How closely a signal can hit its second. One second is right for the pips |
+
+**What happens next** lists the coming firings and the file each has resolved
+to. A row that says *"nothing — no jingle called Hour 03"* is a hole you can
+still fix. **Test now** puts the selected signal to air by exactly the route it
+would take on the hour, using the audio for the hour it is now.
+
+## If a signal is not doing what you expect
+
+| Symptom | Look at |
+|---|---|
+| Nothing fires at all | **Put time signals to air** on the Settings tab |
+| Nothing fires unless XFB is driving | **Also when an operator is driving** |
+| "…is due now, but there is no audio called X" | That name is not in the jingles table. Check the **preview** for which hours are missing |
+| The ident is always late | The placement is *Next*. Nothing else will change that — a queued item plays when the record ends |
+| It fired at :00:14 rather than :00:00 | **Check the clock every** is coarse, or something held the application up. **Still counts for** is what decides whether a late signal goes out at all |
+| The music never comes back up | Only possible if the signal never finishes; the level is restored when it ends or errors |

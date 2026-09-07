@@ -99,6 +99,7 @@ own.
 | Setting | Where |
 |---|---|
 | Hour clocks, and whether Auto Mode follows them | **Options → Hour Clocks…** ([chapter 5](05-hour-clocks.md)) |
+| Time signals: the hours, the second past the hour, the placement | **Options → Time Signals…** ([chapter 5](05-hour-clocks.md#time-signals)) |
 | Rotation rules, per-track categories and dayparts | **Options → Rotation Rules…** |
 | Dead-air thresholds and fallback | **Options → Dead-Air Watchdog…** |
 | How long the as-run log is kept | **Options → As-Run Log…** |

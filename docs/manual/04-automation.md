@@ -52,7 +52,9 @@ On the playlist panel:
 
 - **Random Jingle every N songs** — after every N music tracks, XFB drops a
   jingle from the Jingles table into the top of the running order. Set N to 0
-  and the option switches itself off.
+  and the option switches itself off. It counts *records*, not minutes: for a
+  jingle that has to land at a particular time — the pips, an ident that names
+  the hour — use [time signals](05-hour-clocks.md#time-signals) instead.
 - **Randomly add N songs** from a chosen genre — a one-shot button that tips a
   handful of tracks from one genre into the running order. Useful for
   hand-building a themed hour.

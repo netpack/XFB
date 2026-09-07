@@ -50,6 +50,8 @@ set(SOURCES
     dialogs/QuotaDialog.cpp
     # Hour clock editor: the wheel, its accessible text twin, the week grid
     dialogs/HourClockDialog.cpp
+    # Time signals: the pips and the hour ident, and how they reach the air
+    dialogs/TimeSignalDialog.cpp
     dialogs/DeadAirDialog.cpp
     # Folders XFB watches, so material dropped in one files itself
     dialogs/WatchedFoldersDialog.cpp
@@ -94,6 +96,8 @@ set(SOURCES
     services/MusicQuota.cpp
     # The hour clock: the format as an ordered, timed hour of slots
     services/HourClock.cpp
+    # Time signals: one row per signal, with its own hours, days and placement
+    services/TimeSignal.cpp
     services/DeadAirWatchdog.cpp
     services/LibraryWatcher.cpp
     # Operator accounts, roles, and the permission behind every menu entry
@@ -201,6 +205,7 @@ set(HEADERS
     dialogs/RotationDialog.h
     dialogs/QuotaDialog.h
     dialogs/HourClockDialog.h
+    dialogs/TimeSignalDialog.h
     dialogs/DeadAirDialog.h
     dialogs/WatchedFoldersDialog.h
     dialogs/RequestTrayDialog.h
@@ -223,6 +228,7 @@ set(HEADERS
     services/RotationRules.h
     services/MusicQuota.h
     services/HourClock.h
+    services/TimeSignal.h
     services/DeadAirWatchdog.h
     services/LibraryWatcher.h
     services/AccessControl.h

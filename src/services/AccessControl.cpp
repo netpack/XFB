@@ -163,6 +163,10 @@ const QVector<AccessControl::Permission> &AccessControl::catalogue()
             {QStringLiteral("programming.hourclock"), programming,
              tr("Edit the hour clock"),
              tr("The shape of the hour Auto Mode fills in.")},
+            {QStringLiteral("programming.timesignal"), programming,
+             tr("Edit the time signals"),
+             tr("The pips and the hour ident: what plays on the hour, in "
+                "which hours, and whether it interrupts.")},
             {QStringLiteral("programming.airlog"), programming,
              tr("Read the as-run log"),
              tr("What actually went to air, and the advertiser report.")},

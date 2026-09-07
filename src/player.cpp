@@ -147,6 +147,8 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include "dialogs/RotationDialog.h"
 #include "services/HourClock.h"
 #include "dialogs/HourClockDialog.h"
+#include "services/TimeSignal.h"
+#include "dialogs/TimeSignalDialog.h"
 #include "services/MobileSyncServer.h"
 #include "services/RequestLine.h"
 #include "services/ProductionSyncClient.h"
@@ -1315,6 +1317,7 @@ checkDbOpen();
     // The hour clock's fixed-item timer. Does nothing at all unless the
     // station has switched the feature on in the Hour Clocks window.
     setupHourClock();
+    setupTimeSignals();
 
     /*Populate jingles table with an editable table field on double-click*/
     if (dbAvailable) {
@@ -3111,6 +3114,9 @@ bool player::checkDbOpen() {
     // next launch. Three empty tables are all a station that never opens the
     // feature ever has: nothing reads them until HourClock/Enabled is set.
     HourClock::ensureSchema(adb);
+    // The pips and the hour ident. One empty table until the operator adds a
+    // signal; nothing reads it until TimeSignal/Enabled is set.
+    TimeSignal::ensureSchema(adb);
 
     // musics.id is a plain INTEGER, not a primary key, and every importer in
     // XFB inserts with an explicit NULL for it — so tracks added through the
@@ -4642,7 +4648,7 @@ void player::playNextSong(){
                 // instants don't play at the previous track's envelope level
                 if (XplayerOutput) {
                     const double base = ui->sliderVolume->value() / 100.0;
-                    XplayerOutput->setVolume(float(base
+                    XplayerOutput->setVolume(float(base * m_timeSignalDuck
                         * PlaylistWaveView::envelopeGainAt(m_activeEnvelope, 0)));
                     m_envelopeApplied = !m_activeEnvelope.isEmpty();
                 }
@@ -4845,7 +4851,10 @@ void player::on_sliderProgress_sliderReleased()
 void player::on_sliderVolume_sliderMoved(int position)
 {
     //qDebug()<<"volume slider mooved "<<position;
-    XplayerOutput->setVolume(position / 100.0);
+    // m_timeSignalDuck is 1.0 unless a time signal is playing over the top:
+    // moving the slider under one should move the ducked level, not cancel
+    // the duck and come back up in the middle of the pips.
+    XplayerOutput->setVolume(float(position / 100.0 * m_timeSignalDuck));
 
 }
 
@@ -4873,13 +4882,16 @@ void player::onPositionChanged(qint64 position)
             && Xplayer->source().toLocalFile() == m_activeEnvelopePath) {
         const double base = ui->sliderVolume->value() / 100.0;
         const double gain = PlaylistWaveView::envelopeGainAt(m_activeEnvelope, position);
-        XplayerOutput->setVolume(float(base * gain));
+        // The duck rides in the same sum: this runs ten times a second, so a
+        // duck applied anywhere else would last one tick.
+        XplayerOutput->setVolume(float(base * gain * m_timeSignalDuck));
         m_envelopeApplied = true;
     } else if (m_envelopeApplied) {
         // The line no longer applies (new track without one): restore
         m_envelopeApplied = false;
         if (XplayerOutput)
-            XplayerOutput->setVolume(ui->sliderVolume->value() / 100.0);
+            XplayerOutput->setVolume(float(ui->sliderVolume->value() / 100.0
+                                           * m_timeSignalDuck));
     }
 
     // Guard against division by zero (duration may not be known yet for some formats)
@@ -6962,6 +6974,58 @@ void player::setupPlaybackShortcuts()
         ui->menuXFB->addAction(hourClock);
         addAction(hourClock);
         AccessControl::instance().guard(hourClock, QStringLiteral("programming.hourclock"));
+
+        // Time signals. Under the hour clock because a reader looking for
+        // "the thing that says the time" will look at the clock first, and
+        // this is the entry that tells them it is its own window: the clock
+        // shapes an hour, this puts one piece of audio on one second of it.
+        // Not chronometer.png: that already marks the three analysis passes
+        // in the Database menu, and an icon that says two different things is
+        // worse than none.
+        QAction *timeSignals = new QAction(QIcon(":/icons/view-time-schedule.png"),
+                                           tr("&Time Signals..."), this);
+        timeSignals->setMenuRole(QAction::NoRole);
+        // Ctrl+Shift+T: T for time, and free on every platform XFB ships to.
+        timeSignals->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_T));
+        timeSignals->setShortcutContext(Qt::ApplicationShortcut);
+        timeSignals->setStatusTip(tr("The pips and the hour ident: what plays "
+                                     "on the hour, in which hours, and how it "
+                                     "reaches the air"));
+        connect(timeSignals, &QAction::triggered, this, [this]() {
+            if (!m_timeSignalDialog) {
+                m_timeSignalDialog = new TimeSignalDialog(this);
+                m_timeSignalDialog->setAttribute(Qt::WA_DeleteOnClose, false);
+                connect(m_timeSignalDialog, &TimeSignalDialog::announcementRequested,
+                        this, &player::announceAccessible);
+                // A signal or a setting changed: forget what has already fired
+                // this hour, so a time the operator has just moved is not held
+                // back by a key recorded against the old one.
+                connect(m_timeSignalDialog, &TimeSignalDialog::signalsChanged,
+                        this, [this]() {
+                            m_timeSignalFired.clear();
+                            setupTimeSignals();
+                        });
+                // "Test now" goes to air by exactly the route the signal
+                // asks for. A test that played somewhere else would prove
+                // nothing about the thing being tested.
+                connect(m_timeSignalDialog, &TimeSignalDialog::testRequested,
+                        this, [this](const TimeSignal::Signal &signal) {
+                            const int hour = QTime::currentTime().hour();
+                            const QString path = TimeSignal::mediaPathFor(signal, hour);
+                            if (!path.isEmpty())
+                                fireTimeSignal(signal, path);
+                        });
+            } else {
+                m_timeSignalDialog->reload();
+            }
+            m_timeSignalDialog->show();
+            m_timeSignalDialog->raise();
+            m_timeSignalDialog->activateWindow();
+            announceAccessible(tr("Time signals opened"));
+        });
+        ui->menuXFB->addAction(timeSignals);
+        addAction(timeSignals);
+        AccessControl::instance().guard(timeSignals, QStringLiteral("programming.timesignal"));
 
         // Listener requests, and the switch that puts the public page on the
         // network at all. Same shelf as the rest: it is a property of this
@@ -9395,6 +9459,238 @@ void player::hourClockTick()
     // station left running for a month accumulate.
     if (m_hourClockFired.size() > 512)
         m_hourClockFired.clear();
+}
+
+// ---------------------------------------------------------------------------
+// Time signals
+//
+// The pips, and the ident that names the hour. The hour clock could fire an
+// ident, but only under Auto Mode, only one clock to an hour (so a different
+// line for each hour of the day means twenty-four clocks), and it falls back
+// to a *random* jingle when the name matches nothing — which for audio whose
+// whole job is to say "it's ten o'clock" is the one wrong answer.
+//
+// So this is its own thing, and the three differences are the point: the days
+// and hours ride on the signal itself, it fires with an operator at the desk,
+// and it can reach the air three ways instead of only the queue.
+// ---------------------------------------------------------------------------
+
+void player::setupTimeSignals()
+{
+    const TimeSignal::Settings settings = TimeSignal::settings();
+    if (!settings.enabled) {
+        if (m_timeSignalTimer)
+            m_timeSignalTimer->stop();
+        qInfo() << "Time signals: off; nothing is fired";
+        return;
+    }
+    if (!m_timeSignalTimer) {
+        m_timeSignalTimer = new QTimer(this);
+        connect(m_timeSignalTimer, &QTimer::timeout, this, &player::timeSignalTick);
+    }
+    // The tick *is* the accuracy: a signal cannot land closer to its second
+    // than the interval it is looked for on.
+    m_timeSignalTimer->setInterval(settings.tickMs);
+    if (!m_timeSignalTimer->isActive())
+        m_timeSignalTimer->start();
+    qInfo() << "Time signals: on, checked every" << settings.tickMs
+            << "ms;" << (settings.whenLive ? "with an operator driving too"
+                                           : "under Auto Mode only");
+}
+
+void player::timeSignalTick()
+{
+    const TimeSignal::Settings settings = TimeSignal::settings();
+    if (!settings.enabled)
+        return;
+    // Unlike the hour clock, this does not insist on Auto Mode — a station's
+    // pips are the station's whoever is at the desk — but the operator can
+    // still say otherwise.
+    if (!settings.whenLive && autoMode != 1)
+        return;
+    if (!ui || !ui->playlist)
+        return;
+
+    const QDateTime now = QDateTime::currentDateTime();
+    const int day    = now.date().dayOfWeek();
+    const int hour   = now.time().hour();
+    const int second = now.time().minute() * 60 + now.time().second();
+
+    const QList<TimeSignal::Signal> due = TimeSignal::allSignals();
+    for (const TimeSignal::Signal &signal : due) {
+        if (!TimeSignal::isDue(signal, day, hour, second))
+            continue;
+
+        const QString key = QStringLiteral("%1/%2/%3")
+                                .arg(now.date().toString(Qt::ISODate))
+                                .arg(hour)
+                                .arg(signal.id);
+        if (m_timeSignalFired.contains(key))
+            continue;
+        m_timeSignalFired.insert(key);
+
+        const QString what = signal.label.isEmpty() ? tr("The time signal")
+                                                    : signal.label;
+        const QString path = TimeSignal::mediaPathFor(signal, hour);
+        if (path.isEmpty()) {
+            // Said once, and not retried every second. A hole is bad; a
+            // random jingle claiming the wrong hour is worse, so nothing
+            // else is played in its place.
+            qWarning() << "Time signals:" << what << "is due but nothing is called"
+                       << TimeSignal::referenceFor(signal, hour);
+            announceAccessible(tr("%1 is due now, but there is no audio called \"%2\".")
+                                   .arg(what, TimeSignal::referenceFor(signal, hour)));
+            continue;
+        }
+        fireTimeSignal(signal, path);
+    }
+
+    // The key set only ever grows within a day. Bound it rather than let a
+    // station left running for a month accumulate.
+    if (m_timeSignalFired.size() > 512)
+        m_timeSignalFired.clear();
+}
+
+void player::fireTimeSignal(const TimeSignal::Signal &signal, const QString &path)
+{
+    const QString what = signal.label.isEmpty() ? tr("The time signal") : signal.label;
+
+    switch (signal.placement) {
+
+    case TimeSignal::Placement::Next:
+        // The old behaviour, and still the right one for an ident on a music
+        // station that would rather not chop a record: next, not last.
+        ui->playlist->insertItem(0, path);
+        calculate_playlist_total_time();
+        qInfo() << "Time signals: queued" << what << "next —" << path;
+        announceAccessible(tr("%1 is next in the running order.").arg(what));
+        return;
+
+    case TimeSignal::Placement::Interrupt: {
+        ui->playlist->insertItem(0, path);
+        calculate_playlist_total_time();
+
+        // With the deck stopped there is nothing to interrupt, and
+        // playNextSong() would refuse the advance anyway ("there's nothing to
+        // play"), leaving the signal sitting in the running order while the
+        // log claimed it had gone out. A station that is off air is off air:
+        // the signal waits at the top of the order, and says so.
+        const bool onAir = Xplayer
+                        && Xplayer->playbackState() == QMediaPlayer::PlayingState;
+        if (!onAir) {
+            qInfo() << "Time signals: nothing was playing, so" << what
+                    << "is next in the running order instead —" << path;
+            announceAccessible(tr("%1 is next in the running order: nothing was "
+                                  "playing to interrupt.").arg(what));
+            return;
+        }
+
+        // Straight through playNextSong(), which is the path the skip button
+        // and the segue already take: the as-run row for what was playing is
+        // closed with a reason of its own, and the running order carries on
+        // from the item after this one.
+        m_airEndReason = QStringLiteral("time signal");
+        m_manualAdvancing = true;
+        playNextSong();
+        m_airEndReason.clear();
+        QTimer::singleShot(200, this, [this]() { m_manualAdvancing = false; });
+        qInfo() << "Time signals: interrupted the deck for" << what << "—" << path;
+        announceAccessible(tr("%1 is on air now.").arg(what));
+        return;
+    }
+
+    case TimeSignal::Placement::OverTheTop:
+        break;   // the long one, below
+    }
+
+    // --- over the top ---
+    // Its own player on the on-air device, so the music underneath is left
+    // exactly as it is and only its level moves.
+    if (!m_timeSignalPlayer) {
+        m_timeSignalOutput = new QAudioOutput(this);
+        if (!m_mainOutputDeviceId.isEmpty()) {
+            bool fellBack = false;
+            const QAudioDevice device =
+                AudioDeviceRouter::resolve(m_mainOutputDeviceId, &fellBack);
+            if (fellBack)
+                qWarning() << "Time signals: the on-air device is gone, using the default";
+            if (!device.isNull())
+                m_timeSignalOutput->setDevice(device);
+        }
+        m_timeSignalPlayer = new QMediaPlayer(this);
+        m_timeSignalPlayer->setAudioOutput(m_timeSignalOutput);
+
+        connect(m_timeSignalPlayer, &QMediaPlayer::mediaStatusChanged, this,
+                [this](QMediaPlayer::MediaStatus status) {
+                    if (status == QMediaPlayer::EndOfMedia)
+                        endTimeSignalDuck();
+                });
+        connect(m_timeSignalPlayer, &QMediaPlayer::errorOccurred, this,
+                [this, what](QMediaPlayer::Error, const QString &message) {
+                    qWarning() << "Time signals: could not play it:" << message;
+                    endTimeSignalDuck();
+                });
+        connect(m_timeSignalPlayer, &QMediaPlayer::positionChanged, this,
+                [this](qint64 position) {
+                    if (m_timeSignalAirHandle > 0)
+                        AirLog::instance()->heartbeat(m_timeSignalAirHandle, position);
+                });
+    }
+
+    // A signal that arrives while the last one is still going: the new one
+    // wins, and the duck is not applied twice.
+    if (m_timeSignalPlayer->playbackState() != QMediaPlayer::StoppedState) {
+        m_timeSignalPlayer->stop();
+        endTimeSignalDuck();
+    }
+
+    m_timeSignalDuck = qBound(0, signal.duckPercent, 100) / 100.0;
+    if (XplayerOutput) {
+        // Push the new factor through the same sum the envelope uses, so the
+        // next position tick does not undo it.
+        const double base = ui->sliderVolume->value() / 100.0;
+        const double gain = m_activeEnvelope.isEmpty()
+                                ? 1.0
+                                : PlaylistWaveView::envelopeGainAt(m_activeEnvelope,
+                                                                  m_airPosition);
+        XplayerOutput->setVolume(float(base * gain * m_timeSignalDuck));
+    }
+
+    m_timeSignalOutput->setVolume(float(qBound(0, signal.volumePercent, 100) / 100.0));
+    m_timeSignalPlayer->setSource(QUrl::fromLocalFile(path));
+    m_timeSignalPlayer->play();
+
+    // It went out, so it goes in the as-run log like anything else that did.
+    m_timeSignalAirHandle = AirLog::instance()->openPath(path, autoMode == 1);
+
+    qInfo() << "Time signals:" << what << "over the top, music at"
+            << signal.duckPercent << "% —" << path;
+    announceAccessible(tr("%1 is playing over the music.").arg(what));
+}
+
+void player::endTimeSignalDuck()
+{
+    if (m_timeSignalAirHandle > 0) {
+        AirLog::instance()->close(m_timeSignalAirHandle,
+                                  m_timeSignalPlayer ? m_timeSignalPlayer->position() : 0,
+                                  QStringLiteral("end"));
+        m_timeSignalAirHandle = 0;
+    }
+
+    if (qFuzzyCompare(m_timeSignalDuck, 1.0))
+        return;
+    m_timeSignalDuck = 1.0;
+
+    // Put the music back where the slider and the envelope say it should be,
+    // rather than at whatever the duck left it at.
+    if (XplayerOutput) {
+        const double base = ui->sliderVolume->value() / 100.0;
+        const double gain = m_activeEnvelope.isEmpty()
+                                ? 1.0
+                                : PlaylistWaveView::envelopeGainAt(m_activeEnvelope,
+                                                                  m_airPosition);
+        XplayerOutput->setVolume(float(base * gain));
+    }
 }
 
 void player::on_actionAdd_a_single_song_triggered()

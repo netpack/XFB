@@ -72,6 +72,8 @@ class PadBoardWidget;
 #include "services/TorrentTypes.h"
 // For MobileSyncServer::NowPlaying, the struct publicNowPlaying() returns.
 #include "services/MobileSyncServer.h"
+// For TimeSignal::Signal, which fireTimeSignal() takes whole.
+#include "services/TimeSignal.h"
 #include "audio/FxPlayer.h"
 
 namespace Ui {
@@ -738,6 +740,38 @@ private slots:
     QString hourClockGenreNow() const;
     /** Closes the open as-run row, if any. playedMs < 0: use m_airPosition. */
     void closeAirLogEntry(const QString &reason, qint64 playedMs = -1);
+
+    // --- time signals -------------------------------------------------
+    // The pips and the hour ident. Separate from the hour clock on purpose:
+    // a clock is assigned per hour, so an ident that names its own hour would
+    // need twenty-four of them, and a clock only fires under Auto Mode. A
+    // time signal carries its own hours and days, fires with the operator at
+    // the desk, and can go to air three ways. See services/TimeSignal.h.
+    QPointer<class TimeSignalDialog> m_timeSignalDialog;
+    /** Ticks at the resolution the operator asked for; only while the
+     *  feature is on. */
+    QTimer *m_timeSignalTimer = nullptr;
+    /** "date/hour/signal" keys already fired, so a one-second tick inside a
+     *  twenty-second grace window cannot play the pips twenty times. */
+    QSet<QString> m_timeSignalFired;
+    /** The over-the-top output: its own player, on the on-air device, so the
+     *  music underneath is untouched. Created the first time one is needed. */
+    QMediaPlayer *m_timeSignalPlayer = nullptr;
+    QAudioOutput *m_timeSignalOutput = nullptr;
+    qint64 m_timeSignalAirHandle = 0;
+    /** 0..1, multiplied into the on-air level wherever it is set. 1.0 unless
+     *  a signal is playing over the top with ducking asked for. The envelope
+     *  rewrites XplayerOutput ten times a second, so a duck that was not a
+     *  factor in that sum would last one position tick. */
+    double m_timeSignalDuck = 1.0;
+
+    void setupTimeSignals();
+    void timeSignalTick();
+    /** Puts one signal to air by whichever route it asks for. @a path has
+     *  already been resolved, so this never plays "something else". */
+    void fireTimeSignal(const TimeSignal::Signal &signal, const QString &path);
+    /** Restores the music after an over-the-top signal, however it ended. */
+    void endTimeSignalDuck();
     
     // Watchdog timer to detect stalled playback
     QTimer *m_playbackWatchdog = nullptr;
