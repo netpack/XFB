@@ -140,9 +140,13 @@ public:
     struct Settings
     {
         bool enabled       = false;  ///< off by default: the old hour grid rules
-        bool fireHardTimed = true;   ///< put hard-timed items on air on time
-        /** How close to a hard-timed item's nominal start counts as "now",
-         *  in seconds. The check runs once a minute, so this is a minute. */
+        /** Put the clock's non-music items on air at the time the timeline
+         *  gives them — pinned for a hard-timed item, computed for a
+         *  floating one. Stored as FireHardTimed, which is what it was
+         *  called when only hard-timed items were fired. */
+        bool fireHardTimed = true;
+        /** How close to an item's start counts as "now", in seconds. The
+         *  check runs once a minute, so this is a minute. */
         int  fireWindowSeconds = 60;
     };
 

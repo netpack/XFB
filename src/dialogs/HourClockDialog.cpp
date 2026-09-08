@@ -388,9 +388,14 @@ QWidget *HourClockDialog::buildAutoModeTab()
            "hour's genre"));
     outer->addWidget(m_enabled);
 
-    m_fireHard = new QCheckBox(tr("Put &fixed-time items on air at their time"), page);
+    // The stored key is still FireHardTimed — it predates floating items
+    // being fired — but the switch has always meant "let the clock put its
+    // own items on air", and that is what it now says.
+    m_fireHard = new QCheckBox(tr("Put the clock's &items on air at their time"), page);
     m_fireHard->setAccessibleName(
-        tr("News, ad breaks and jingles marked fixed are queued when they are due"));
+        tr("News, ad breaks, jingles and programmes are queued when they are "
+           "due: a fixed item at the time it is pinned to, a floating one "
+           "where the hour lands it"));
     outer->addWidget(m_fireHard);
 
     auto *form = new QFormLayout;
@@ -398,7 +403,7 @@ QWidget *HourClockDialog::buildAutoModeTab()
     m_fireWindow->setRange(10, 300);
     m_fireWindow->setSuffix(tr(" s"));
     m_fireWindow->setAccessibleName(
-        tr("How close to its time a fixed item counts as due"));
+        tr("How close to its time an item counts as due"));
     form->addRow(tr("Fi&ring window:"), m_fireWindow);
     outer->addLayout(form);
 
@@ -1171,7 +1176,7 @@ void HourClockDialog::applyAutoModeSettings()
 
     const QString message =
         s.enabled
-            ? tr("Auto Mode now follows the hour clock, and fixed items %1.")
+            ? tr("Auto Mode now follows the hour clock, and its items %1.")
                   .arg(s.fireHardTimed ? tr("go on air at their time")
                                        : tr("are left to the operator"))
             : tr("Auto Mode is back on the plain hour grid. Nothing about the "

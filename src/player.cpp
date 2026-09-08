@@ -9363,9 +9363,15 @@ checkDbOpen();
 //
 // Two jobs, and only two. hourClockGenreNow() tells Auto Mode what kind of
 // music the clock wants filled at this second of the hour, and hourClockTick()
-// puts the hour's hard-timed items — the news, the ad break at :20 — into the
-// running order when they come due. Everything else about a clock is editing,
-// and editing lives in HourClockDialog.
+// puts the hour's non-music items — the news, the ad break at :20, the jingle
+// between two sweeps — into the running order when they come due. Everything
+// else about a clock is editing, and editing lives in HourClockDialog.
+//
+// "When they come due" is the timeline's answer, not the slot's: a hard-timed
+// item is due at the second it is pinned to, and a floating one at the second
+// the arithmetic lands it on. The difference between the two kinds is which
+// of them the hour is allowed to push around, and that is settled in
+// HourClock::resolve() before this ever sees it.
 //
 // Both are inert until HourClock/Enabled is set. That is deliberate: a station
 // that never opens the feature must behave byte for byte as it did before, and
@@ -9433,8 +9439,15 @@ void player::hourClockTick()
     for (const HourClock::ResolvedSlot &r : timeline.items) {
         // Music sweeps are filled by Auto Mode, not fired: there is no one
         // file that *is* a sweep.
-        if (!r.slot.hardTimed || r.slot.isMusic())
+        if (r.slot.isMusic())
             continue;
+        // Everything else in the hour is fired at the time the timeline puts
+        // it at — which for a hard-timed item is the time it is pinned to
+        // (resolve() never moves those), and for a floating one is where it
+        // lands after the items before it. A floating ad break is still an ad
+        // break: it was written into the hour to go on air, and only firing
+        // the pinned ones left every unpinned item as a drawing of an hour
+        // that never played.
         if (second < r.start || second >= r.start + settings.fireWindowSeconds)
             continue;
 
