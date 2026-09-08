@@ -3690,18 +3690,18 @@ La station est hors antenne jusqu&apos;à ce que quelqu&apos;un intervienne.</tr
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="391"/>
-        <source>Put &amp;fixed-time items on air at their time</source>
-        <translation>Mettre les éléments à heure &amp;fixe à l&apos;antenne à leur heure</translation>
+        <source>Put the clock&apos;s &amp;items on air at their time</source>
+        <translation>Mettre les éléments de l&apos;horloge à l&apos;&amp;antenne à leur heure</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="393"/>
-        <source>News, ad breaks and jingles marked fixed are queued when they are due</source>
-        <translation>Les informations, pauses publicitaires et jingles marqués fixes sont mis en file au moment voulu</translation>
+        <source>News, ad breaks, jingles and programmes are queued when they are due: a fixed item at the time it is pinned to, a floating one where the hour lands it</source>
+        <translation>Les informations, pauses publicitaires, jingles et émissions sont mis en file au moment voulu : un élément fixe à l&apos;heure à laquelle il est épinglé, un élément flottant là où l&apos;heure le place</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="401"/>
-        <source>How close to its time a fixed item counts as due</source>
-        <translation>À quel point un élément fixe doit être proche de son heure pour être déclenché</translation>
+        <source>How close to its time an item counts as due</source>
+        <translation>À quel point un élément doit être proche de son heure pour être déclenché</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="402"/>
@@ -3998,8 +3998,8 @@ La station est hors antenne jusqu&apos;à ce que quelqu&apos;un intervienne.</tr
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="1174"/>
-        <source>Auto Mode now follows the hour clock, and fixed items %1.</source>
-        <translation>Le Mode Automatique suit désormais l&apos;horloge horaire, et les éléments à heure fixe %1.</translation>
+        <source>Auto Mode now follows the hour clock, and its items %1.</source>
+        <translation>Le Mode Automatique suit désormais l&apos;horloge horaire, et ses éléments %1.</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="1175"/>
@@ -5084,6 +5084,11 @@ expire dans %2 s</translation>
 </context>
 <context>
     <name>NowPlayingWaveStrip</name>
+    <message>
+        <location filename="PlaylistWaveView.cpp"/>
+        <source>Seek to %1</source>
+        <translation>Aller à %1</translation>
+    </message>
     <message>
         <location filename="PlaylistWaveView.cpp" line="1241"/>
         <source>Intro %1, set by hand. Drag the marker to change it; right-click to measure it again.</source>
@@ -14255,6 +14260,11 @@ Activer la fonction Torrents en ayant compris ces limites ?</translation>
 </context>
 <context>
     <name>player</name>
+    <message>
+        <location filename="player.cpp"/>
+        <source>Seek to %1</source>
+        <translation>Aller à %1</translation>
+    </message>
     <message>
         <location filename="player.ui" line="20"/>
         <source>XFB</source>

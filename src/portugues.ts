@@ -3690,18 +3690,18 @@ A estação está fora do ar até alguém agir.</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="391"/>
-        <source>Put &amp;fixed-time items on air at their time</source>
-        <translation>Pôr os itens de hora &amp;fixa no ar à sua hora</translation>
+        <source>Put the clock&apos;s &amp;items on air at their time</source>
+        <translation>Pôr os &amp;itens do relógio no ar à sua hora</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="393"/>
-        <source>News, ad breaks and jingles marked fixed are queued when they are due</source>
-        <translation>Notícias, intervalos publicitários e jingles marcados como fixos entram na fila quando chega a sua hora</translation>
+        <source>News, ad breaks, jingles and programmes are queued when they are due: a fixed item at the time it is pinned to, a floating one where the hour lands it</source>
+        <translation>Notícias, intervalos publicitários, jingles e programas entram na fila quando chega a sua hora: um item fixo à hora a que está preso, um item flutuante onde a hora o coloca</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="401"/>
-        <source>How close to its time a fixed item counts as due</source>
-        <translation>Quão perto da sua hora um item fixo conta como devido</translation>
+        <source>How close to its time an item counts as due</source>
+        <translation>Quão perto da sua hora um item conta como devido</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="402"/>
@@ -3998,8 +3998,8 @@ A estação está fora do ar até alguém agir.</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="1174"/>
-        <source>Auto Mode now follows the hour clock, and fixed items %1.</source>
-        <translation>O Modo Automático passa a seguir o relógio da hora, e os itens de hora fixa %1.</translation>
+        <source>Auto Mode now follows the hour clock, and its items %1.</source>
+        <translation>O Modo Automático passa a seguir o relógio da hora, e os seus itens %1.</translation>
     </message>
     <message>
         <location filename="dialogs/HourClockDialog.cpp" line="1175"/>
@@ -5084,6 +5084,11 @@ expira em %2 s</translation>
 </context>
 <context>
     <name>NowPlayingWaveStrip</name>
+    <message>
+        <location filename="PlaylistWaveView.cpp"/>
+        <source>Seek to %1</source>
+        <translation>Saltar para %1</translation>
+    </message>
     <message>
         <location filename="PlaylistWaveView.cpp" line="1241"/>
         <source>Intro %1, set by hand. Drag the marker to change it; right-click to measure it again.</source>
@@ -14252,6 +14257,11 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
 </context>
 <context>
     <name>player</name>
+    <message>
+        <location filename="player.cpp"/>
+        <source>Seek to %1</source>
+        <translation>Saltar para %1</translation>
+    </message>
     <message>
         <location filename="player.ui" line="20"/>
         <source>XFB</source>
