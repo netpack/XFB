@@ -744,6 +744,18 @@ player::player(QWidget *parent) :
             }
         });
 
+        // Seeking from the strip. Wave view hides the seek slider (the strip
+        // draws the playhead instead), so without this there is no way to
+        // move through the track on air at all while the view is on.
+        connect(m_nowPlayingWave, &NowPlayingWaveStrip::seekRequested,
+                this, [this](qint64 positionMs) {
+            if (disableSeekBar || !Xplayer)
+                return;
+            Xplayer->setPosition(positionMs);
+            ui->sliderProgress->setValue(int(positionMs)); // it is only hidden
+            announceAccessible(tr("Seek to %1").arg(spokenDuration(positionMs)));
+        });
+
         connect(m_nowPlayingWave, &NowPlayingWaveStrip::introResetRequested,
                 this, [this]() {
             const QString path = m_nowPlayingWave->track();
@@ -2698,6 +2710,11 @@ void player::updateConfig() {
         ui->sliderProgress->setEnabled(true);
         qDebug() << "Disable Seek bar setting: false";
     }
+    // The wave strip's playhead is the seek control while wave view is on,
+    // so the same switch has to reach it — otherwise turning the seek bar
+    // off would leave the track scrubbable from the strip anyway.
+    if (m_nowPlayingWave)
+        m_nowPlayingWave->setSeekEnabled(!disableSeekBar);
 
     if (Disable_Volume) {
         ui->sliderVolume->setEnabled(false);

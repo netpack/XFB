@@ -215,6 +215,16 @@ public:
     void setPlayhead(qint64 positionMs);
 
     /**
+     * Whether the playhead can be dragged to seek. The wave view hides the
+     * seek slider (the strip draws the playhead instead), so this strip is
+     * the only place left to scrub from — and it therefore has to obey the
+     * same Options switch the slider does. Off = the handle is not drawn
+     * and the playhead cannot be grabbed.
+     */
+    void setSeekEnabled(bool on);
+    bool seekEnabled() const { return m_seekEnabled; }
+
+    /**
      * The intro (ramp) and outro of the track on air, as measured by
      * IntroDetector and kept in the musics table.
      *
@@ -237,6 +247,11 @@ signals:
     /** "Measure this again" from the strip's context menu: drop the
      *  hand-set flag and let the detector have another go. */
     void introResetRequested();
+    /** The operator dragged the playhead: seek the on-air player here.
+     *  Emitted once, on release — a seek per pixel would restart the
+     *  decoder dozens of times across one drag, exactly as it did on the
+     *  slider before on_sliderProgress_sliderReleased() stopped doing it. */
+    void seekRequested(qint64 positionMs);
 
 protected:
     void paintEvent(QPaintEvent *event) override;
@@ -252,6 +267,11 @@ private:
     qint64 durationMs() const;
     /** x of the intro marker, or -1 when there is nothing to draw. */
     int introMarkerX(const QRect &waveRect, qint64 durationMs) const;
+    /** x of the playhead. */
+    int playheadX(const QRect &waveRect, qint64 durationMs) const;
+    /** Where the playhead is drawn: the dragged position while the
+     *  operator is scrubbing, the player's own otherwise. */
+    qint64 shownPositionMs() const { return m_seekDragging ? m_seekMs : m_positionMs; }
     /** "INTRO 0:14", plus the live countdown while the ramp is running. */
     QString introBadgeText(qint64 durationMs) const;
 
@@ -266,6 +286,13 @@ private:
     bool m_introLocked = false;
     bool m_introDragging = false;
     bool m_introHover = false;
+
+    // Scrubbing the playhead
+    bool m_seekEnabled = true;
+    bool m_seekDragging = false;
+    bool m_seekMoved = false;
+    bool m_seekHover = false;
+    qint64 m_seekMs = 0;
 
     int m_dragNode = -1;
     int m_hoverNode = -1;

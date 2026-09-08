@@ -59,6 +59,15 @@ QString formatCountdown(qint64 ms)
 // How close to the intro marker a press has to land to grab it.
 constexpr int kIntroGrabPx = 4;
 
+// The same, for the playhead. Wider than the intro marker's: with the
+// slider hidden this is the only seek control there is, and it is a moving
+// target. The intro marker's own handle is drawn at the TOP of the wave
+// and is grabbed there first, so the two never fight over a press even
+// while the playhead is running through the ramp.
+constexpr int kSeekGrabPx = 5;
+// Height of the grab triangles at either end of the wave.
+constexpr int kHandlePx = 6;
+
 // Volume-line coordinate mapping over the full-track waveform rect
 double envNodeX(const QRect &waveRect, qint64 durationMs, double ms)
 {
@@ -1200,6 +1209,10 @@ void NowPlayingWaveStrip::setTrack(const QString &filePath)
     m_introLocked = false;
     m_introDragging = false;
     m_introHover = false;
+    m_seekDragging = false;
+    m_seekMoved = false;
+    m_seekHover = false;
+    m_seekMs = 0;
     m_dragNode = -1;
     m_hoverNode = -1;
     m_segFirst = -1;
@@ -1221,8 +1234,23 @@ void NowPlayingWaveStrip::setPlayhead(qint64 positionMs)
     if (m_positionMs == positionMs)
         return;
     m_positionMs = positionMs;
-    if (isVisible())
+    // While the operator is holding the playhead, the player's ten-a-second
+    // updates must not yank it back out from under them — the same rule
+    // onPositionChanged() applies to the seek slider.
+    if (isVisible() && !m_seekDragging)
         update();
+}
+
+void NowPlayingWaveStrip::setSeekEnabled(bool on)
+{
+    if (m_seekEnabled == on)
+        return;
+    m_seekEnabled = on;
+    if (!on) {
+        m_seekDragging = false;
+        m_seekHover = false;
+    }
+    update();
 }
 
 void NowPlayingWaveStrip::setIntro(qint64 introMs, qint64 outroMs, bool locked)
@@ -1253,6 +1281,14 @@ int NowPlayingWaveStrip::introMarkerX(const QRect &waveRect, qint64 duration) co
     return waveRect.left()
            + int(double(waveRect.width()) * double(qBound<qint64>(0, m_introMs, duration))
                  / double(duration));
+}
+
+int NowPlayingWaveStrip::playheadX(const QRect &waveRect, qint64 duration) const
+{
+    return waveRect.left()
+           + int(double(waveRect.width())
+                 * double(qBound<qint64>(0, shownPositionMs(), qMax<qint64>(0, duration)))
+                 / double(qMax<qint64>(1, duration)));
 }
 
 QString NowPlayingWaveStrip::introBadgeText(qint64 duration) const
@@ -1304,8 +1340,11 @@ void NowPlayingWaveStrip::paintEvent(QPaintEvent *)
     titleFont.setBold(true);
     painter.setFont(titleFont);
     const QRect textR(kMargin, kMargin, width() - 2 * kMargin, kTextHeight);
+    // While scrubbing, the clock reads where the playhead is being dropped,
+    // not where the player still is: that number is the whole point of the
+    // drag.
     const QString timeText = ready
-        ? formatDuration(m_positionMs) + QStringLiteral(" / ")
+        ? formatDuration(shownPositionMs()) + QStringLiteral(" / ")
               + formatDuration(data->durationMs)
         : QString();
     const int timeW = timeText.isEmpty() ? 0
@@ -1376,12 +1415,25 @@ void NowPlayingWaveStrip::paintEvent(QPaintEvent *)
                       m_dragNode >= 0 ? m_dragNode : m_hoverNode,
                       pal.text().color());
 
-        // Playhead
-        const int x = r.left()
-            + int(double(r.width()) * m_positionMs
-                  / double(qMax<qint64>(1, data->durationMs)));
-        painter.setPen(QPen(QColor(230, 60, 60), 1));
+        // Playhead. When seeking is allowed it is also a control, so it
+        // gets a grab handle — at the BOTTOM, where the intro marker's
+        // triangle at the top cannot be confused with it.
+        const int x = playheadX(r, data->durationMs);
+        const bool seekHot = m_seekDragging || m_seekHover;
+        const QColor playheadInk(230, 60, 60);
+        painter.setPen(QPen(playheadInk, seekHot ? 2 : 1));
         painter.drawLine(x, r.top(), x, r.bottom());
+        if (m_seekEnabled) {
+            QPolygonF handle;
+            handle << QPointF(x - 4.5, r.bottom())
+                   << QPointF(x + 4.5, r.bottom())
+                   << QPointF(x, r.bottom() - double(kHandlePx));
+            painter.setRenderHint(QPainter::Antialiasing, true);
+            painter.setBrush(QBrush(playheadInk));
+            painter.drawPolygon(handle);
+            painter.setBrush(Qt::NoBrush);
+            painter.setRenderHint(QPainter::Antialiasing, false);
+        }
     } else {
         painter.setFont(font());
         painter.setPen(subtleText);
@@ -1406,6 +1458,14 @@ void NowPlayingWaveStrip::mousePressEvent(QMouseEvent *event)
     // the intro marker (a 4 px column), then the envelope line (4 px in y
     // but the full width of the strip, so it would otherwise swallow every
     // attempt to grab the marker where the two cross).
+    //
+    // The playhead sits between the two halves of the intro marker's test.
+    // Every track runs its playhead straight through the ramp, so for a few
+    // seconds of every track the two lines are within a grab of each other;
+    // the marker's own triangle, at the top of the wave, always wins there,
+    // and the rest of the column loses to the playhead. That way neither
+    // control ever becomes ungrabbable, and which one a press means is
+    // decided by where in the strip's height it lands.
     const int idx = m_env.isEmpty() ? -1 : envelopeNodeHit(m_env, r, dur, pos);
     if (idx >= 0) {
         m_dragNode = idx;
@@ -1414,7 +1474,26 @@ void NowPlayingWaveStrip::mousePressEvent(QMouseEvent *event)
     }
 
     const int introX = introMarkerX(r, dur);
-    if (introX >= 0 && qAbs(pos.x() - introX) <= kIntroGrabPx) {
+    const bool onIntro = introX >= 0 && qAbs(pos.x() - introX) <= kIntroGrabPx;
+    if (onIntro && pos.y() <= r.top() + kHandlePx) {
+        m_introDragging = true;
+        m_introHover = true;
+        setCursor(Qt::SizeHorCursor);
+        update();
+        return;
+    }
+
+    if (m_seekEnabled && qAbs(pos.x() - playheadX(r, dur)) <= kSeekGrabPx) {
+        m_seekDragging = true;
+        m_seekMoved = false;
+        m_seekHover = true;
+        m_seekMs = m_positionMs;
+        setCursor(Qt::SizeHorCursor);
+        update();
+        return;
+    }
+
+    if (onIntro) {
         m_introDragging = true;
         m_introHover = true;
         setCursor(Qt::SizeHorCursor);
@@ -1441,6 +1520,18 @@ void NowPlayingWaveStrip::mouseMoveEvent(QMouseEvent *event)
     const QRect r = waveRect();
     const QPoint pos = event->position().toPoint();
 
+    if (m_seekDragging && (event->buttons() & Qt::LeftButton)) {
+        if (dur > 0) {
+            const qint64 ms = qint64(double(pos.x() - r.left())
+                                     / qMax(1, r.width()) * double(dur));
+            m_seekMs = qBound<qint64>(0, ms, dur);
+            m_seekMoved = true;
+            QToolTip::showText(event->globalPosition().toPoint(),
+                               tr("Seek to %1").arg(formatDuration(m_seekMs)), this);
+            update();
+        }
+        return; // seekRequested() is emitted on release, not once per pixel
+    }
     if (m_introDragging && (event->buttons() & Qt::LeftButton)) {
         if (dur > 0) {
             const qint64 ms = qint64(double(pos.x() - r.left())
@@ -1496,15 +1587,28 @@ void NowPlayingWaveStrip::mouseMoveEvent(QMouseEvent *event)
     // Hover feedback
     const int oldHover = m_hoverNode;
     const bool oldIntroHover = m_introHover;
+    const bool oldSeekHover = m_seekHover;
     m_hoverNode = -1;
     m_introHover = false;
+    m_seekHover = false;
     if (dur > 0 && r.contains(pos)) {
+        // Same order the press uses, so what lights up under the mouse is
+        // what a click would actually grab.
         const int idx = m_env.isEmpty() ? -1 : envelopeNodeHit(m_env, r, dur, pos);
         const int introX = introMarkerX(r, dur);
+        const bool onIntro = introX >= 0 && qAbs(pos.x() - introX) <= kIntroGrabPx;
+        const bool onPlayhead = m_seekEnabled
+                                && qAbs(pos.x() - playheadX(r, dur)) <= kSeekGrabPx;
         if (idx >= 0) {
             m_hoverNode = idx;
             setCursor(Qt::PointingHandCursor);
-        } else if (introX >= 0 && qAbs(pos.x() - introX) <= kIntroGrabPx) {
+        } else if (onIntro && pos.y() <= r.top() + kHandlePx) {
+            m_introHover = true;
+            setCursor(Qt::SizeHorCursor);
+        } else if (onPlayhead) {
+            m_seekHover = true;
+            setCursor(Qt::SizeHorCursor);
+        } else if (onIntro) {
             m_introHover = true;
             setCursor(Qt::SizeHorCursor);
         } else if (!m_env.isEmpty()
@@ -1516,13 +1620,30 @@ void NowPlayingWaveStrip::mouseMoveEvent(QMouseEvent *event)
     } else {
         unsetCursor();
     }
-    if (oldHover != m_hoverNode || oldIntroHover != m_introHover)
+    if (oldHover != m_hoverNode || oldIntroHover != m_introHover
+        || oldSeekHover != m_seekHover)
         update();
 }
 
 void NowPlayingWaveStrip::mouseReleaseEvent(QMouseEvent *event)
 {
     Q_UNUSED(event);
+    if (m_seekDragging) {
+        const bool moved = m_seekMoved;
+        m_seekDragging = false;
+        m_seekMoved = false;
+        unsetCursor();
+        // A press that never moved is not a seek. Emitting one anyway would
+        // restart the decoder on the track that is on air every time the
+        // operator so much as touched the playhead.
+        if (moved) {
+            // The player answers with a positionChanged of its own; until it
+            // does, the strip keeps drawing where the operator let go rather
+            // than snapping back to the old position for a frame.
+            m_positionMs = m_seekMs;
+            emit seekRequested(m_seekMs);
+        }
+    }
     if (m_introDragging) {
         m_introDragging = false;
         unsetCursor();
@@ -1549,8 +1670,11 @@ void NowPlayingWaveStrip::mouseDoubleClickEvent(QMouseEvent *event)
 
     // On the intro marker a double-click is two grabs, not a request for a
     // volume node under the marker where it could never be grabbed again.
+    // The playhead is the same case.
     const int markerX = introMarkerX(r, dur);
     if (markerX >= 0 && qAbs(pos.x() - markerX) <= kIntroGrabPx)
+        return;
+    if (m_seekEnabled && qAbs(pos.x() - playheadX(r, dur)) <= kSeekGrabPx)
         return;
 
     if (!m_env.isEmpty()) {
@@ -1631,6 +1755,7 @@ void NowPlayingWaveStrip::leaveEvent(QEvent *event)
     Q_UNUSED(event);
     m_hoverNode = -1;
     m_introHover = false;
+    m_seekHover = false;
     unsetCursor();
     update();
 }
