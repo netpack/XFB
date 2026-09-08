@@ -38,6 +38,9 @@ DependencyChecker::DependencyChecker(QObject *parent)
         {"ExifTool",         "exiftool",         "exiftool",         "libimage-exiftool-perl", "perl-image-exiftool", "OliverBetz.ExifTool", false},
         // MediaInfo: used by the music table's "Get media info" action.
         {"MediaInfo",        "mediainfo",        "mediainfo",        "mediainfo",        "mediainfo",        "MediaArea.MediaInfo",    false},
+        // SoX: used by the silence-trimming actions (the Auto-Trim menu entry
+        // and the two "Trim Silence…" entries of the "With the Selected…" box).
+        {"SoX",              "sox",              "sox",              "sox",              "sox",              "ChrisBagwell.SoX",       false},
         // Node.js: JavaScript runtime used by yt-dlp for YouTube extraction.
         // deno is yt-dlp's default but is not available in apt; node is and is
         // fully supported via "--js-runtimes node".

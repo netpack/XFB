@@ -15583,6 +15583,17 @@ Instale-o com o seu gestor de pacotes — &quot;tor&quot; no Linux e no macOS, o
         <translation>A leitura dos metadados de uma faixa usa a ferramenta MediaInfo.</translation>
     </message>
     <message>
+        <location filename="player.cpp" line="13364"/>
+        <source>Trimming the silence from the start and the end of every track in the database is done by SoX (Sound eXchange).</source>
+        <translation>Cortar o silêncio do início e do fim de todas as faixas da base de dados é feito pelo SoX (Sound eXchange).</translation>
+    </message>
+    <message>
+        <location filename="player.cpp" line="14256"/>
+        <location filename="player.cpp" line="14481"/>
+        <source>Trimming the silence from the start and the end of the selected tracks is done by SoX (Sound eXchange).</source>
+        <translation>Cortar o silêncio do início e do fim das faixas selecionadas é feito pelo SoX (Sound eXchange).</translation>
+    </message>
+    <message>
         <location filename="player.cpp" line="2456"/>
         <location filename="player.cpp" line="2479"/>
         <source>Metadata Error</source>

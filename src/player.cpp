@@ -13357,17 +13357,20 @@ void player::on_actionAutoTrim_the_silence_from_the_start_and_the_end_of_all_mus
         return;
     }
 
-    // --- Check for SOX executable ---
-    QString soxPath = QStandardPaths::findExecutable("sox");
+    // --- SoX: install it on first use, with the user's consent ---
+    QString soxPath = DependencyChecker::resolveExecutable("sox");
     if (soxPath.isEmpty()) {
-        qWarning() << "'sox' command not found in system PATH.";
-        QMessageBox::critical(this, "Missing Dependency",
-                              "The 'sox' command (Sound eXchange) is required for this feature "
-                              "but was not found in the system's PATH.\n\nPlease install SoX and ensure it's accessible.");
-        return;
+        DependencyChecker depChecker;
+        if (!depChecker.ensureDependency("sox", tr("Trimming the silence from the start and the end of every "
+                  "track in the database is done by SoX (Sound eXchange)."), this)) {
+            return;
+        }
+        soxPath = DependencyChecker::resolveExecutable("sox");
+        if (soxPath.isEmpty())
+            return;
     }
     qInfo() << "Found sox executable at:" << soxPath;
-    // --- End SOX check ---
+    // --- End SoX check ---
 
     QMessageBox::StandardButton run = QMessageBox::question(this, "Confirm Auto-Trim",
                                                             "This will attempt to trim silence (below 1% threshold) from the start and end of every track in the database using 'sox'.\n\n"
@@ -14246,17 +14249,20 @@ void player::on_bt_apply_multi_selection_clicked()
 
        //trim
 
-       // --- Check for SOX executable ---
-          QString soxPath = QStandardPaths::findExecutable("sox");
+          // --- SoX: install it on first use, with the user's consent ---
+          QString soxPath = DependencyChecker::resolveExecutable("sox");
           if (soxPath.isEmpty()) {
-              qWarning() << "'sox' command not found in system PATH.";
-              QMessageBox::critical(this, "Missing Dependency",
-                                    "The 'sox' command (Sound eXchange) is required for this feature "
-                                    "but was not found in the system's PATH.\n\nPlease install SoX and ensure it's accessible.");
-              return;
+              DependencyChecker depChecker;
+              if (!depChecker.ensureDependency("sox", tr("Trimming the silence from the start and the end of the "
+                            "selected tracks is done by SoX (Sound eXchange)."), this)) {
+                  return;
+              }
+              soxPath = DependencyChecker::resolveExecutable("sox");
+              if (soxPath.isEmpty())
+                  return;
           }
           qInfo() << "Found sox executable at:" << soxPath;
-          // --- End SOX check ---
+          // --- End SoX check ---
 
           // --- Get Selected Files ---
           QItemSelectionModel *selectionModel = ui->musicView->selectionModel();
@@ -14468,17 +14474,20 @@ void player::on_bt_apply_multi_selection_clicked()
    if(accao==6){
 
        //trim eXtreme 1
-       // --- Check for SOX executable ---
-          QString soxPath = QStandardPaths::findExecutable("sox");
+          // --- SoX: install it on first use, with the user's consent ---
+          QString soxPath = DependencyChecker::resolveExecutable("sox");
           if (soxPath.isEmpty()) {
-              qWarning() << "'sox' command not found in system PATH.";
-              QMessageBox::critical(this, "Missing Dependency",
-                                    "The 'sox' command (Sound eXchange) is required for this feature "
-                                    "but was not found in the system's PATH.\n\nPlease install SoX and ensure it's accessible.");
-              return;
+              DependencyChecker depChecker;
+              if (!depChecker.ensureDependency("sox", tr("Trimming the silence from the start and the end of the "
+                            "selected tracks is done by SoX (Sound eXchange)."), this)) {
+                  return;
+              }
+              soxPath = DependencyChecker::resolveExecutable("sox");
+              if (soxPath.isEmpty())
+                  return;
           }
           qInfo() << "Found sox executable at:" << soxPath;
-          // --- End SOX check ---
+          // --- End SoX check ---
 
           // --- Get Selected Files ---
           QItemSelectionModel *selectionModel = ui->musicView->selectionModel();

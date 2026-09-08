@@ -15598,6 +15598,17 @@ Installez-le avec votre gestionnaire de paquets — « tor » sous Linux et macO
         <translation>La lecture des métadonnées d&apos;un morceau utilise l&apos;outil MediaInfo.</translation>
     </message>
     <message>
+        <location filename="player.cpp" line="13364"/>
+        <source>Trimming the silence from the start and the end of every track in the database is done by SoX (Sound eXchange).</source>
+        <translation>Le rognage du silence au début et à la fin de toutes les pistes de la base de données est assuré par SoX (Sound eXchange).</translation>
+    </message>
+    <message>
+        <location filename="player.cpp" line="14256"/>
+        <location filename="player.cpp" line="14481"/>
+        <source>Trimming the silence from the start and the end of the selected tracks is done by SoX (Sound eXchange).</source>
+        <translation>Le rognage du silence au début et à la fin des pistes sélectionnées est assuré par SoX (Sound eXchange).</translation>
+    </message>
+    <message>
         <location filename="player.cpp" line="2456"/>
         <location filename="player.cpp" line="2479"/>
         <source>Metadata Error</source>
