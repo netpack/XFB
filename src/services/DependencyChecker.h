@@ -14,6 +14,20 @@ struct DependencyInfo {
     QString pacmanPackage;  // pacman package name (Arch)
     QString wingetPackage;  // winget package name (Windows)
     bool required;          // true = block without it, false = optional
+    /**
+     * True for a tool that is fetched only when the feature that uses it is
+     * actually used — never by a sweep, never at startup, not even by
+     * "Install all dependencies".
+     *
+     * These are the download tools: Tor, aria2 (or transmission-cli) and
+     * yt-dlp. They belong to features most desks do not have switched on at
+     * all (see AccessControl's reserved permissions), so installing them in
+     * advance would put a Tor daemon and a BitTorrent client on a machine
+     * whose operator has never seen either mentioned. checkDependencies()
+     * leaves them out; lookup() still knows them, so ensureDependency() and
+     * ensureAnyOf() install them the moment the feature asks.
+     */
+    bool onDemandOnly = false;
 };
 
 class DependencyChecker : public QObject
@@ -23,7 +37,9 @@ class DependencyChecker : public QObject
 public:
     explicit DependencyChecker(QObject *parent = nullptr);
 
-    // Check all dependencies, returns list of missing ones
+    // Check all dependencies, returns list of missing ones. The on-demand-only
+    // tools (see DependencyInfo::onDemandOnly) are not in it: they are not
+    // missing until something asks for them.
     QList<DependencyInfo> checkDependencies();
 
     // Install missing dependencies (returns true if all installed successfully)

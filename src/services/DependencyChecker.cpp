@@ -19,11 +19,15 @@ DependencyChecker::DependencyChecker(QObject *parent)
     // Define all external dependencies XFB can use. These are installed
     // on-demand (with the user's consent) the first time a feature needs them,
     // never automatically at startup.
-    //          name                 executable          brew                apt                 pacman              winget                    required
+    // The last column marks the tools nothing may fetch in advance: Tor, a
+    // torrent client and yt-dlp arrive the first time somebody actually uses
+    // the feature that needs them, and on a desk where those features are not
+    // switched on they are never installed at all.
+    //          name                 executable          brew                apt                 pacman              winget                    required  on-demand only
     m_dependencies = {
-        {"aria2",            "aria2c",           "aria2",            "aria2",            "aria2",            "aria2.aria2",            false},
-        {"Tor",              "tor",              "tor",              "tor",              "tor",              "TorProject.TorBrowser",  false},
-        {"transmission-cli", "transmission-cli", "transmission-cli", "transmission-cli", "transmission-cli", "",                       false},
+        {"aria2",            "aria2c",           "aria2",            "aria2",            "aria2",            "aria2.aria2",            false,    true},
+        {"Tor",              "tor",              "tor",              "tor",              "tor",              "TorProject.TorBrowser",  false,    true},
+        {"transmission-cli", "transmission-cli", "transmission-cli", "transmission-cli", "transmission-cli", "",                       false,    true},
 #ifdef Q_OS_LINUX
         // SoundConverter is a Linux GTK app; on macOS/Windows the converter
         // button launches native apps (XLD, Switch, ...) instead, so it must
@@ -31,7 +35,7 @@ DependencyChecker::DependencyChecker(QObject *parent)
         {"SoundConverter",   "soundconverter",   "",                 "soundconverter",   "soundconverter",   "",                       false},
 #endif
         {"Audacity",         "audacity",         "audacity",         "audacity",         "audacity",         "Audacity.Audacity",      false},
-        {"yt-dlp",           "yt-dlp",           "yt-dlp",           "yt-dlp",           "yt-dlp",           "yt-dlp.yt-dlp",          false},
+        {"yt-dlp",           "yt-dlp",           "yt-dlp",           "yt-dlp",           "yt-dlp",           "yt-dlp.yt-dlp",          false,    true},
         {"FFmpeg",           "ffmpeg",           "ffmpeg",           "ffmpeg",           "ffmpeg",           "Gyan.FFmpeg",            false},
         // ExifTool: used to read media duration/metadata. The apt and pacman
         // package names differ from the executable name.
@@ -101,6 +105,9 @@ QList<DependencyInfo> DependencyChecker::checkDependencies()
 {
     QList<DependencyInfo> missing;
     for (const DependencyInfo &dep : m_dependencies) {
+        // Not missing until something asks: see DependencyInfo::onDemandOnly.
+        if (dep.onDemandOnly)
+            continue;
         if (!isAvailable(dep.executable)) {
             missing.append(dep);
             ErrorHandler::logMessage(ErrorHandler::ErrorSeverity::Info, "DependencyChecker",

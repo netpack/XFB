@@ -325,18 +325,22 @@ apt, pacman or winget). Nothing is installed at startup, and nothing is
 installed without you agreeing to it — so a station that never touches, say,
 the Torrents tab never gets a Tor client.
 
+Three of them go further and are fetched **only** at the moment the feature is
+first used: `tor`, `aria2c` (or `transmission-cli`) and `yt-dlp`. Nothing else
+pulls them in — not startup, not the sweep below — because the features they
+belong to are switched on per operator and most desks do not have them at all.
+
 | Tool | Needed for |
 |------|------------|
 | `ffmpeg` | The FX engine, waveforms, BPM detection, 432 Hz playback, format conversion (bundled on Windows and macOS) |
-| `tor` | Anonymous torrent search via onion sites |
-| `aria2c` (or `transmission-cli`) | Torrent downloading |
-| `yt-dlp` (with `node`) | Downloading media from online sources |
 | `exiftool` | Automatic track duration detection |
 | `mediainfo` | The music table's "Get media info" action |
 | `audacity` | The "Open this in Audacity" action |
 
-Options → **Install all dependencies** fetches the lot in one go if you would
-rather have everything ready in advance.
+Options → **Install all dependencies** fetches the rest in one go if you would
+rather have them ready in advance. It deliberately leaves out the three
+on-demand tools above: a Tor daemon and a BitTorrent client are not something
+to install on a machine that has not asked for them.
 
 `orca` is different: it is the Linux screen reader *you* run, not something XFB
 launches. XFB speaks through whichever screen reader is already running — ORCA

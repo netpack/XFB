@@ -42,6 +42,9 @@ private slots:
     void exceptionsOverrideTheRole();
     void guardBeatsALaterSetEnabled();
     void guardFollowsTheSession();
+    void theSwitchedOnFeaturesBelongToNobodyByDefault();
+    void aHiddenGuardTakesTheEntryAway();
+    void theReservedPermissionsAnswerToOneOperator();
     void theLastAdministratorCannotBeRemoved();
     void nothingSurvivesInPlaintext();
 
@@ -74,6 +77,7 @@ void TestAccessControl::reset()
             {QStringLiteral("admin"), QStringLiteral("first pass")},
             {QStringLiteral("admin"), QStringLiteral("hunter2 was here")},
             {QStringLiteral("anna"), QStringLiteral("mic check")},
+            {QStringLiteral("f"), QStringLiteral("the desk is mine")},
         };
         for (const auto &credentials : known) {
             if (access().isAdministrator())
@@ -103,8 +107,16 @@ void TestAccessControl::anUnprotectedInstallationGrantsEverything()
     QVERIFY(!access().isProtected());
     QVERIFY(!access().signInRequired());
     QVERIFY(access().isAdministrator());
-    for (const AccessControl::Permission &permission : AccessControl::catalogue())
+    for (const AccessControl::Permission &permission : AccessControl::catalogue()) {
+        // ...except the reserved ones, which nobody has switched on here
+        // because there is nobody here to have switched them on.
+        if (AccessControl::isReserved(permission.key)) {
+            QVERIFY2(!access().allows(permission.key), qPrintable(permission.key));
+            continue;
+        }
         QVERIFY2(access().allows(permission.key), qPrintable(permission.key));
+    }
+    QVERIFY(!access().mayAdministerReserved());
 }
 
 void TestAccessControl::passwordsAreSaltedAndNotRecoverable()
@@ -292,6 +304,119 @@ void TestAccessControl::guardFollowsTheSession()
     QVERIFY(access().signIn(QStringLiteral("admin"), QStringLiteral("first pass"), &reason));
     QVERIFY(action.isEnabled());
     QCOMPARE(action.toolTip(), QStringLiteral("Empty the library"));
+}
+
+void TestAccessControl::theSwitchedOnFeaturesBelongToNobodyByDefault()
+{
+    // The downloader and the torrent tab are not merely permitted, they are
+    // switched on: a station that never takes music off the internet should
+    // find them nowhere until somebody deliberately hands them out. So no
+    // shipped role carries them except the administrator, who has everything.
+    for (const AccessControl::Role &role : AccessControl::defaultRoles()) {
+        if (role.id == QLatin1String("admin")) {
+            QVERIFY(role.everything);
+            continue;
+        }
+        QVERIFY2(!role.permissions.contains(QStringLiteral("downloads.external")),
+                 qPrintable(role.id));
+        QVERIFY2(!role.permissions.contains(QStringLiteral("downloads.torrents")),
+                 qPrintable(role.id));
+    }
+
+    // And they are still permissions the editor can list and name.
+    QVERIFY(AccessControl::labelFor(QStringLiteral("downloads.external"))
+            != QLatin1String("downloads.external"));
+    QVERIFY(AccessControl::labelFor(QStringLiteral("downloads.torrents"))
+            != QLatin1String("downloads.torrents"));
+}
+
+void TestAccessControl::aHiddenGuardTakesTheEntryAway()
+{
+    QString reason;
+    QVERIFY(access().createInitialAdministrator(QStringLiteral("admin"), QString(),
+                                                QStringLiteral("first pass"), &reason));
+    QList<AccessControl::User> users = access().users();
+    AccessControl::User anna;
+    anna.username = QStringLiteral("anna");
+    anna.roleId = QStringLiteral("producer");
+    anna.secret = AccessControl::hashPassword(QStringLiteral("mic check"));
+    users.append(anna);
+    QVERIFY(access().save(access().roles(), users, &reason));
+
+    QAction entry;
+    access().guard(&entry, QStringLiteral("downloads.external"),
+                   AccessControl::WhenDenied::Hide);
+    // Not even for the administrator signed in right now: this one is reserved,
+    // and having everything is not having it.
+    QVERIFY(!entry.isVisible());
+    QVERIFY(!entry.isEnabled());
+
+    // A producer prepares the whole week's programming and still does not have
+    // it either.
+    QVERIFY(access().signIn(QStringLiteral("anna"), QStringLiteral("mic check"), &reason));
+    QVERIFY(!entry.isVisible());
+    // Disabled as well, because a hidden action still answers its shortcut.
+    QVERIFY(!entry.isEnabled());
+
+    // Same argument as guardBeatsALaterSetEnabled: whatever else shows it, the
+    // permission wins.
+    entry.setVisible(true);
+    QVERIFY(!entry.isVisible());
+
+    // Granted to her alone, the entry is simply there.
+    QVERIFY(access().signIn(QStringLiteral("admin"), QStringLiteral("first pass"), &reason));
+    users = access().users();
+    for (AccessControl::User &user : users) {
+        if (user.username == QLatin1String("anna"))
+            user.granted = {QStringLiteral("downloads.external")};
+    }
+    QVERIFY(access().save(access().roles(), users, &reason));
+    QVERIFY(access().signIn(QStringLiteral("anna"), QStringLiteral("mic check"), &reason));
+    QVERIFY(entry.isVisible());
+    QVERIFY(entry.isEnabled());
+}
+
+void TestAccessControl::theReservedPermissionsAnswerToOneOperator()
+{
+    QString reason;
+    // An administrator by any other name has everything *except* these.
+    QVERIFY(access().createInitialAdministrator(QStringLiteral("admin"), QString(),
+                                                QStringLiteral("first pass"), &reason));
+    QVERIFY(access().isAdministrator());
+    QVERIFY(!access().allows(QStringLiteral("downloads.external")));
+    QVERIFY(!access().allows(QStringLiteral("downloads.torrents")));
+    QVERIFY(!access().mayAdministerReserved());
+
+    // The one operator they answer to, with the same Administrator role, has
+    // them without being handed them.
+    QList<AccessControl::User> users = access().users();
+    AccessControl::User owner;
+    owner.username = QStringLiteral("F");   // matched the way signing in matches
+    owner.roleId = QStringLiteral("admin");
+    owner.secret = AccessControl::hashPassword(QStringLiteral("the desk is mine"));
+    users.append(owner);
+    QVERIFY2(access().save(access().roles(), users, &reason), qPrintable(reason));
+
+    QVERIFY(access().signIn(QStringLiteral("f"), QStringLiteral("the desk is mine"), &reason));
+    QVERIFY(access().allows(QStringLiteral("downloads.external")));
+    QVERIFY(access().allows(QStringLiteral("downloads.torrents")));
+    QVERIFY(access().mayAdministerReserved());
+
+    // And what he hands out is honoured for whoever holds it — that is what
+    // handing it out means.
+    users = access().users();
+    AccessControl::User anna;
+    anna.username = QStringLiteral("anna");
+    anna.roleId = QStringLiteral("presenter");
+    anna.secret = AccessControl::hashPassword(QStringLiteral("mic check"));
+    anna.granted = {QStringLiteral("downloads.external")};
+    users.append(anna);
+    QVERIFY(access().save(access().roles(), users, &reason));
+
+    QVERIFY(access().signIn(QStringLiteral("anna"), QStringLiteral("mic check"), &reason));
+    QVERIFY(access().allows(QStringLiteral("downloads.external")));
+    QVERIFY(!access().allows(QStringLiteral("downloads.torrents")));
+    QVERIFY(!access().mayAdministerReserved());   // holding one is not granting it
 }
 
 void TestAccessControl::theLastAdministratorCannotBeRemoved()

@@ -60,7 +60,7 @@ class QWidget;
  *
  * ### Refusing an action
  *
- * A blocked action is *disabled and explained*, never hidden. A presenter who
+ * A blocked action is *disabled and explained*, not hidden. A presenter who
  * cannot find "Add a jingle" at all will phone somebody; a presenter who sees
  * it greyed out with "not available to the Presenter role" knows both that it
  * exists and why it will not open. Disabled entries also keep their place in
@@ -69,6 +69,24 @@ class QWidget;
  * makes that happen, and it keeps holding: an action bound to a permission is
  * pushed back to disabled even if some other part of the application enables
  * it later.
+ *
+ * The exception is the handful of features a station *switches on* rather than
+ * merely allows — the external downloader and the torrent tab. Those are off
+ * for every role until they are ticked, so on the great majority of desks a
+ * greyed-out entry would be advertising something the station has decided not
+ * to have. Those are guarded with WhenDenied::Hide and are simply not there.
+ *
+ * ### Reserved permissions
+ *
+ * Those same two are further *reserved*: the rows for them appear in the
+ * administration window only for the operator named in kReservedOperator, and
+ * an administrator does not inherit them from having everything. An
+ * installation nobody has protected — which is every station that has not
+ * created an account — does not have them at all, which is the one place the
+ * unprotected-grants-everything rule does not hold. The effect is that these
+ * two features exist only where that one operator has deliberately switched
+ * them on, and are invisible everywhere else rather than merely refused.
+ * isReserved() names them; mayAdministerReserved() is who may see them.
  */
 class AccessControl : public QObject
 {
@@ -122,6 +140,19 @@ public:
 
     /** Every permission XFB knows about, in the order the editor lists them. */
     static const QVector<Permission> &catalogue();
+    /**
+     * True for a permission that is not an ordinary administrator's to hand
+     * out — see the note about reserved permissions above. It is still a
+     * permission like any other once granted; what is reserved is the ability
+     * to grant it and to see that it exists.
+     */
+    static bool isReserved(const QString &key);
+    /** True when @p user is the one operator the reserved permissions answer
+     *  to. Matched on the user name, case-insensitively, like signing in. */
+    static bool isReservedOperator(const User &user);
+    /** True when this session may see the reserved permissions in the
+     *  administration window, and hand them out there. */
+    bool mayAdministerReserved() const;
     /** The category headings, in catalogue order, without repeats. */
     static QStringList categories();
     /** The label for a key, or the key itself when it is from a newer XFB. */
@@ -183,6 +214,21 @@ public:
     /** What an administrator has effectively given @p user. */
     QSet<QString> effectivePermissions(const User &user) const;
 
+    /** What a guarded action does when the session may not use it. */
+    enum class WhenDenied
+    {
+        /** Greyed out, with a tooltip saying which role it belongs to. The
+         *  default, and what every ordinary menu entry wants: see the note
+         *  about refusing an action above. */
+        Disable,
+        /** Taken out of the menu altogether. Reserved for the few features an
+         *  administrator switches on for the station rather than merely
+         *  allows — the external downloader, the torrent tab. Those are off
+         *  for everybody until somebody ticks them, so a permanently greyed
+         *  entry would be clutter on most desks rather than a clue. */
+        Hide,
+    };
+
     /**
      * Bind a menu entry (or any other action) to a permission.
      *
@@ -191,9 +237,11 @@ public:
      * action is re-checked when somebody signs in or out, and pushed back to
      * disabled if other code enables it — a lot of XFB's actions are enabled
      * and disabled by the state of the playlist, and a permission has to win
-     * every one of those arguments.
+     * every one of those arguments. WhenDenied::Hide keeps the entry out of
+     * sight instead, and holds it there the same way.
      */
-    void guard(QAction *action, const QString &permission);
+    void guard(QAction *action, const QString &permission,
+               WhenDenied whenDenied = WhenDenied::Disable);
     /** Re-check every guarded action. Called on every session change. */
     void reapplyGuards();
 
@@ -245,6 +293,7 @@ private:
         QString permission;
         QString originalTip;     ///< restored when the permission is granted
         QString blockedTip;      ///< the sentence currently standing in for it
+        WhenDenied whenDenied = WhenDenied::Disable;
         bool applying = false;   ///< re-entry guard for QAction::changed
     };
 

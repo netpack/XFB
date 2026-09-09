@@ -56,8 +56,17 @@ void fillPermissionTree(QTreeWidget *tree, const QSet<QString> &checked, bool ed
 {
     tree->clear();
 
+    // The reserved permissions are not shown at all unless this is the one
+    // operator they answer to: not greyed, not empty-categoried, absent. The
+    // heading is created with its first row, so a category whose every row is
+    // skipped never appears either.
+    const bool showReserved = AccessControl::instance().mayAdministerReserved();
+
     QHash<QString, QTreeWidgetItem *> headings;
     for (const AccessControl::Permission &permission : AccessControl::catalogue()) {
+        if (!showReserved && AccessControl::isReserved(permission.key))
+            continue;
+
         QTreeWidgetItem *heading = headings.value(permission.category);
         if (!heading) {
             heading = new QTreeWidgetItem(tree, {permission.category});
@@ -84,17 +93,31 @@ void fillPermissionTree(QTreeWidget *tree, const QSet<QString> &checked, bool ed
     tree->expandAll();
 }
 
-/** What the operator has ticked. */
-QSet<QString> checkedPermissions(const QTreeWidget *tree)
+/**
+ * What the operator has ticked.
+ *
+ * @param previous what the tree was filled from. A permission the tree does
+ *                 not list — a reserved one, on every desk but one — keeps the
+ *                 state it had: saving a role must never quietly withdraw
+ *                 something the window was not allowed to show.
+ */
+QSet<QString> checkedPermissions(const QTreeWidget *tree, const QSet<QString> &previous)
 {
     QSet<QString> keys;
+    QSet<QString> listed;
     for (int i = 0; i < tree->topLevelItemCount(); ++i) {
         const QTreeWidgetItem *heading = tree->topLevelItem(i);
         for (int j = 0; j < heading->childCount(); ++j) {
             const QTreeWidgetItem *item = heading->child(j);
+            const QString key = item->data(0, kPermissionKeyRole).toString();
+            listed.insert(key);
             if (item->checkState(0) == Qt::Checked)
-                keys.insert(item->data(0, kPermissionKeyRole).toString());
+                keys.insert(key);
         }
+    }
+    for (const QString &key : previous) {
+        if (!listed.contains(key))
+            keys.insert(key);
     }
     return keys;
 }
@@ -204,8 +227,14 @@ private:
         if (!role.everything)
             return role.permissions;
         QSet<QString> everything;
-        for (const AccessControl::Permission &permission : AccessControl::catalogue())
+        for (const AccessControl::Permission &permission : AccessControl::catalogue()) {
+            // Same rule as AccessControl::effectivePermissions(): having
+            // everything is not having the reserved permissions.
+            if (AccessControl::isReserved(permission.key)
+                && !AccessControl::isReservedOperator(m_user))
+                continue;
             everything.insert(permission.key);
+        }
         return everything;
     }
 
@@ -263,7 +292,10 @@ private:
         // Store only what differs from the role, so an exception disappears on
         // its own the day the role is changed to agree with it.
         const QSet<QString> baseline = roleBaseline();
-        const QSet<QString> wanted = checkedPermissions(m_permissions);
+        QSet<QString> effective = roleBaseline();
+        effective.unite(m_user.granted);
+        effective.subtract(m_user.revoked);
+        const QSet<QString> wanted = checkedPermissions(m_permissions, effective);
         m_result.granted = wanted;
         m_result.granted.subtract(baseline);
         m_result.revoked = baseline;
@@ -719,8 +751,15 @@ void UsersRolesDialog::roleSelected()
 
     QSet<QString> permissions = role.permissions;
     if (role.everything) {
-        for (const AccessControl::Permission &permission : AccessControl::catalogue())
+        for (const AccessControl::Permission &permission : AccessControl::catalogue()) {
+            // Not part of what "everything" means — see AccessControl. The one
+            // operator they answer to does have them through it, and is also
+            // the only one this tree shows them to.
+            if (AccessControl::isReserved(permission.key)
+                && !AccessControl::instance().mayAdministerReserved())
+                continue;
             permissions.insert(permission.key);
+        }
     }
     fillPermissionTree(m_permissions, permissions, !locked);
     m_loading = false;
@@ -731,7 +770,8 @@ void UsersRolesDialog::permissionToggled()
     const int index = selectedRoleIndex();
     if (index < 0 || m_loading)
         return;
-    m_roles[index].permissions = checkedPermissions(m_permissions);
+    m_roles[index].permissions = checkedPermissions(m_permissions,
+                                                    m_roles[index].permissions);
 }
 
 void UsersRolesDialog::addRole()

@@ -1544,49 +1544,14 @@ checkDbOpen();
                }
            }
 
-           // Proactively provision the core download toolchain (yt-dlp + ffmpeg)
-           // shortly after startup, so the FIRST download doesn't stall waiting
-           // for an install. We defer with a single-shot timer so the main
-           // window is visible before any consent dialog appears (running the
-           // modal prompts in the constructor would block before the UI shows).
-           //
-           // This is done once (guarded by a config flag): if the tools are
-           // already present it's a no-op, and if the user declines we don't
-           // nag on every launch — the on-demand prompts (opening the downloader
-           // or starting a download) still cover them.
-           {
-               const QString cfgPath =
-                   QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
-                   + "/xfb.conf";
-               QSettings depSettings(cfgPath, QSettings::IniFormat);
-               const bool alreadyPrompted =
-                   depSettings.value("StartupDepsProvisioned", false).toBool();
-
-               const bool haveFfmpeg = DependencyChecker::isAvailable("ffmpeg");
-               const bool haveYtdlp =
-                   QFileInfo(DependencyChecker::localYtDlpPath()).isExecutable() ||
-                   DependencyChecker::isAvailable("yt-dlp");
-
-               if (!alreadyPrompted && !(haveFfmpeg && haveYtdlp)) {
-                   QTimer::singleShot(1500, this, [this]() {
-                       DependencyChecker depChecker;
-                       // Self-updating yt-dlp in ~/.local/bin (no admin needed).
-                       depChecker.ensureYtDlp(this);
-                       // ffmpeg also provides ffprobe; on macOS this bootstraps
-                       // Homebrew first if it isn't installed.
-                       depChecker.ensureDependency("ffmpeg",
-                           tr("Downloading audio needs FFmpeg (which also provides ffprobe). "
-                              "Installing it now means your first download won't have to wait."),
-                           this);
-
-                       const QString cfgPath =
-                           QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
-                           + "/xfb.conf";
-                       QSettings s(cfgPath, QSettings::IniFormat);
-                       s.setValue("StartupDepsProvisioned", true);
-                   });
-               }
-           }
+           // Nothing is provisioned in advance any more. XFB used to fetch
+           // yt-dlp and FFmpeg a second and a half after startup so the first
+           // download would not have to wait; that put a download toolchain on
+           // every desk, including the great majority whose operators cannot
+           // see the downloader at all. Every path that needs a tool asks for
+           // it where it is needed — ensureYtDlp() when the downloader opens,
+           // ensureDependency("ffmpeg" / "sox" / "tor" / …) at the feature
+           // that uses it — which is both later and honest about why.
 
            // Bring the Tor/torrent services up only when the feature is
            // enabled. A disabled feature creates no services, opens no ports
@@ -1596,7 +1561,13 @@ checkDbOpen();
            {
                QSettings torCfg(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
                                     + "/xfb.conf", QSettings::IniFormat);
-               if (torCfg.value("EnableTorrents", false).toBool())
+               // The role at the desk counts too: an operator without
+               // "Support .torrent files" has no tab and must have no Tor
+               // process either, or the kill-switch is only a hidden tab.
+               // A later sign-in that does have it brings them up
+               // (applyTorrentTabVisibility).
+               if (torCfg.value("EnableTorrents", false).toBool()
+                   && AccessControl::instance().allows(QStringLiteral("downloads.torrents")))
                    ensureTorrentServices();
            }
        } catch (const std::exception& e) {
@@ -2743,32 +2714,10 @@ void player::updateConfig() {
     qDebug() << "ProgramsPath:" << ProgramsPath;
     // ... log other variables as needed ...
 
-    // Show or hide the Torrents tab based on the EnableTorrents setting
-    if (ui && ui->pubWidget) {
-        int torrentsTabIndex = ui->pubWidget->indexOf(ui->tabTorrents);
-        // The one-time privacy disclosure is handled where the user actually
-        // turns the feature on (optionsDialog::on_checkBox_enableTorrents_clicked),
-        // not here — updateConfig runs on every startup and must never prompt.
-        if (enableTorrents) {
-            // Bring the services up on demand (idempotent). ensureTorrentServices
-            // is what actually creates them — the tab is just the entry point.
-            ensureTorrentServices();
-            // Re-add the tab if it was previously removed
-            if (torrentsTabIndex == -1) {
-                ui->pubWidget->addTab(ui->tabTorrents,
-                    QIcon(":/icons/flat/pirate-32.png"), tr("Torrents"));
-            }
-        } else {
-            // Turning the feature off is a real kill-switch: stop any Tor
-            // connection and running downloads before hiding the tab.
-            shutdownTorrentActivity();
-            // Remove the tab (widget is not deleted, just hidden from the tab bar)
-            if (torrentsTabIndex != -1) {
-                ui->pubWidget->removeTab(torrentsTabIndex);
-            }
-        }
-        qDebug() << "EnableTorrents setting:" << enableTorrents;
-    }
+    // Show or hide the Torrents tab based on the EnableTorrents setting and on
+    // whether this operator's role supports .torrent files at all.
+    applyTorrentTabVisibility();
+    qDebug() << "EnableTorrents setting:" << enableTorrents;
 
     // Show or hide the Pads tab (next to the DJ tab). Hiding it does not
     // discard anything: the pads stay in xfb.conf and come back with the tab.
@@ -7218,7 +7167,6 @@ void player::setupAccessControl()
         {ui->actionLoad_Playlist,             "playlist.load"},
         {ui->actionClear_Playlist,            "playlist.clear"},
         {ui->actionAdd_a_single_song,         "library.add.single"},
-        {ui->actionAdd_a_song_from_Youtube_or_Other, "downloads.external"},
         {ui->actionAdd_all_songs_in_a_folder, "library.add.folder"},
         {ui->actionAdd_Jingle,                "library.add.jingle"},
         {ui->actionAdd_a_publicity,           "library.add.publicity"},
@@ -7245,6 +7193,13 @@ void player::setupAccessControl()
     };
     for (const auto &binding : bindings)
         access.guard(binding.action, QLatin1String(binding.permission));
+
+    // The downloader is not merely allowed, it is switched on: no role has it
+    // until an administrator ticks "Allow adding sources from external
+    // sources", and a station that never takes music off the internet should
+    // not carry the entry at all. Hidden rather than greyed out, therefore.
+    access.guard(ui->actionAdd_a_song_from_Youtube_or_Other,
+                 QStringLiteral("downloads.external"), AccessControl::WhenDenied::Hide);
 
     // Help and the accessibility preferences are deliberately not in that
     // list. A station that can lock somebody out of the screen reader
@@ -7340,6 +7295,45 @@ void player::refreshOperatorInTitle()
     setWindowTitle(title);
 }
 
+void player::applyTorrentTabVisibility()
+{
+    if (!ui || !ui->pubWidget)
+        return;
+
+    // Two switches, both of which have to be on: the station has enabled the
+    // feature in Options, and the role at the desk supports .torrent files.
+    // Signing in as somebody without the permission takes the tab away for as
+    // long as they are there, and stops whatever it was doing.
+    QString configFilePath = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
+                             + "/xfb.conf";
+    QSettings settings(configFilePath, QSettings::IniFormat);
+    const bool wanted = settings.value("EnableTorrents", false).toBool()
+                        && AccessControl::instance().allows(QStringLiteral("downloads.torrents"));
+
+    const int torrentsTabIndex = ui->pubWidget->indexOf(ui->tabTorrents);
+    // The one-time privacy disclosure is handled where the user actually turns
+    // the feature on (optionsDialog::on_checkBox_enableTorrents_clicked), not
+    // here — this runs on every startup and must never prompt.
+    if (wanted) {
+        // Bring the services up on demand (idempotent). ensureTorrentServices
+        // is what actually creates them — the tab is just the entry point.
+        ensureTorrentServices();
+        // Re-add the tab if it was previously removed
+        if (torrentsTabIndex == -1) {
+            ui->pubWidget->addTab(ui->tabTorrents,
+                QIcon(":/icons/flat/pirate-32.png"), tr("Torrents"));
+        }
+    } else {
+        // Turning the feature off is a real kill-switch: stop any Tor
+        // connection and running downloads before hiding the tab.
+        shutdownTorrentActivity();
+        // Remove the tab (widget is not deleted, just hidden from the tab bar)
+        if (torrentsTabIndex != -1) {
+            ui->pubWidget->removeTab(torrentsTabIndex);
+        }
+    }
+}
+
 void player::applyAccessToControls()
 {
     // Everything else this feature touches is a menu entry, which guard()
@@ -7357,6 +7351,10 @@ void player::applyAccessToControls()
     const bool mayAutoMix = AccessControl::instance().allows(QStringLiteral("playback.automix"));
     if (ui->bt_autoMode)
         ui->bt_autoMode->setEnabled(mayAutoMix);
+
+    // A whole tab rather than one button, and hidden rather than disabled: see
+    // the note on WhenDenied::Hide.
+    applyTorrentTabVisibility();
 }
 
 void player::lockDesk()

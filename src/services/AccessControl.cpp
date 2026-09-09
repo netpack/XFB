@@ -29,6 +29,19 @@ QString accountsPath()
  *  else's. Stored per digest, so raising it later leaves old accounts working. */
 constexpr int kPbkdf2Iterations = 120000;
 
+/**
+ * The one operator the reserved permissions answer to.
+ *
+ * The external downloader and the torrent tab are not features a station is
+ * simply allowed to use: they are switched on for one desk, deliberately, by
+ * the person whose desk it is. Every other installation — including one with
+ * no accounts at all, which is the ordinary case — does not show them, cannot
+ * grant them, and does not list them among the permissions an administrator
+ * ticks through. Matched against the user name case-insensitively, the same
+ * way signing in matches it.
+ */
+constexpr char kReservedOperator[] = "f";
+
 QString setToString(const QSet<QString> &keys)
 {
     QStringList sorted(keys.cbegin(), keys.cend());
@@ -221,13 +234,20 @@ const QVector<AccessControl::Permission> &AccessControl::catalogue()
              tr("Fetch FFmpeg, yt-dlp and the rest onto this machine.")},
 
             // -- Downloads -------------------------------------------------
+            // Both of these are off for every role until an administrator
+            // ticks them, and what they gate is *hidden* rather than greyed
+            // out — a station that does not download from the internet should
+            // not have to look at the entries that do.
             {QStringLiteral("downloads.external"), downloads,
-             tr("Add a song from an external source"),
-             tr("Open the downloader and take a track from YouTube, Bandcamp, a "
-                "Spotify or Apple Music listing, and the rest.")},
+             tr("Allow adding sources from external sources"),
+             tr("Show \"Add a song from an external source\" in the menu, and the "
+                "downloader it opens: YouTube, Bandcamp, a Spotify or Apple Music "
+                "listing, and the rest. Without it the entry is not there.")},
             {QStringLiteral("downloads.torrents"), downloads,
-             tr("Use the torrent search and downloads"),
-             tr("The torrent tab, when the feature is switched on at all.")},
+             tr("Support .torrent files"),
+             tr("Show the XFB Torrents switch in the Options window, and — once it "
+                "is switched on — the Torrents tab with the searches and downloads "
+                "made from it. Without it neither is there.")},
 
             // -- Administration --------------------------------------------
             {QStringLiteral("admin.users"), admin,
@@ -249,6 +269,27 @@ QStringList AccessControl::categories()
             names.append(permission.category);
     }
     return names;
+}
+
+bool AccessControl::isReserved(const QString &key)
+{
+    // The Downloads category, whole. Both entries in it are the same kind of
+    // thing — a way of taking music off the internet — and a station that has
+    // one has the other.
+    return key.startsWith(QLatin1String("downloads."));
+}
+
+bool AccessControl::isReservedOperator(const User &user)
+{
+    return !user.username.isEmpty()
+           && user.username.compare(QLatin1String(kReservedOperator), Qt::CaseInsensitive) == 0;
+}
+
+bool AccessControl::mayAdministerReserved() const
+{
+    // Protected and signed in as that operator: an installation with no
+    // accounts has nobody to be him, so it never shows these.
+    return isProtected() && m_signedIn && isReservedOperator(m_current);
 }
 
 QString AccessControl::labelFor(const QString &key)
@@ -301,7 +342,10 @@ QList<AccessControl::Role> AccessControl::defaultRoles()
             || permission.key == QLatin1String("library.purge")
             || permission.key == QLatin1String("library.convert")
             || permission.key == QLatin1String("library.retune")
-            || permission.key == QLatin1String("library.autotrim"))
+            || permission.key == QLatin1String("library.autotrim")
+            // The two switched-on-by-the-station features: an administrator
+            // hands these out deliberately, per role, or nobody has them.
+            || permission.key.startsWith(QLatin1String("downloads.")))
             continue;
         producer.permissions.insert(permission.key);
     }
@@ -591,8 +635,15 @@ QSet<QString> AccessControl::effectivePermissions(const User &user) const
 
     QSet<QString> keys;
     if (userRole.everything) {
-        for (const Permission &permission : catalogue())
+        for (const Permission &permission : catalogue()) {
+            // "Everything" is everything this XFB and every later one can do —
+            // except the reserved permissions, which are not part of the set an
+            // administrator is administrator of. Only the one operator they
+            // answer to has them without being handed them.
+            if (isReserved(permission.key) && !isReservedOperator(user))
+                continue;
             keys.insert(permission.key);
+        }
     } else {
         keys = userRole.permissions;
     }
@@ -847,8 +898,13 @@ void AccessControl::refreshCurrentFromStore()
 
 bool AccessControl::allows(const QString &permission) const
 {
-    if (!isProtected())
-        return true;
+    if (!isProtected()) {
+        // The one exception to unprotected-grants-everything. A station that
+        // has never created an account has nobody who could have switched
+        // these on, so they are not there — which is the whole point of
+        // reserving them.
+        return !isReserved(permission);
+    }
     if (!m_signedIn)
         return false;
     return effectivePermissions(m_current).contains(permission);
@@ -867,7 +923,7 @@ bool AccessControl::demand(const QString &permission, QWidget *parent)
     return false;
 }
 
-void AccessControl::guard(QAction *action, const QString &permission)
+void AccessControl::guard(QAction *action, const QString &permission, WhenDenied whenDenied)
 {
     if (!action)
         return;
@@ -875,6 +931,7 @@ void AccessControl::guard(QAction *action, const QString &permission)
     auto *guarded = new GuardedAction;
     guarded->action = action;
     guarded->permission = permission;
+    guarded->whenDenied = whenDenied;
     m_guards.append(guarded);
 
     // XFB enables and disables a great many of its actions from the state of
@@ -884,7 +941,11 @@ void AccessControl::guard(QAction *action, const QString &permission)
     connect(action, &QAction::changed, this, [this, guarded]() {
         if (guarded->applying || !guarded->action)
             return;
-        if (guarded->action->isEnabled() && !allows(guarded->permission))
+        if (allows(guarded->permission))
+            return;
+        const bool showing = guarded->whenDenied == WhenDenied::Hide
+                             && guarded->action->isVisible();
+        if (guarded->action->isEnabled() || showing)
             applyGuard(guarded);
     });
 
@@ -899,6 +960,17 @@ void AccessControl::applyGuard(GuardedAction *guarded)
     const bool allowed = allows(guarded->permission);
 
     guarded->applying = true;
+
+    if (guarded->whenDenied == WhenDenied::Hide) {
+        // Nothing to explain and nothing to restore: the entry is either part
+        // of this station or it is not. Disabled as well as hidden, because an
+        // action still answers its keyboard shortcut while it is out of sight.
+        guarded->action->setVisible(allowed);
+        guarded->action->setEnabled(allowed);
+        guarded->applying = false;
+        return;
+    }
+
     if (allowed) {
         guarded->action->setEnabled(true);
         if (!guarded->blockedTip.isEmpty()

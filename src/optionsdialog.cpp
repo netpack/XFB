@@ -11,6 +11,7 @@
 #include "audio/CueBus.h"
 #include "audio/FxParams.h"
 #include "ThemeManager.h"
+#include "services/AccessControl.h"
 #include <QDebug>
 #include "player.h"
 #include <QAudio>
@@ -96,6 +97,30 @@ optionsDialog::optionsDialog(QWidget *parent) :
     connect(ui->combo_theme, qOverload<int>(&QComboBox::currentIndexChanged),
             this, [this](int) { updateAccentButton(); });
     ui->checkBox_enableTorrents->setChecked(settings.value("EnableTorrents", false).toBool());
+    // The torrent feature is one an administrator hands out per role rather
+    // than one every operator may switch on. Without "Support .torrent files"
+    // the switch is not shown at all — a station that does not do this should
+    // not have to explain a greyed-out box to its presenters. The value itself
+    // is left alone and written back untouched on OK, so an operator who
+    // cannot see the switch cannot turn the station's setting off either.
+    ui->checkBox_enableTorrents->setVisible(
+        AccessControl::instance().allows(QStringLiteral("downloads.torrents")));
+
+    // The same for the whole Downloads tab: it is nothing but settings for the
+    // downloader — the audio format it produces, where yt-dlp keeps itself — so
+    // on a desk that does not have the downloader it is a tab of settings for a
+    // feature the operator cannot reach. Removed rather than disabled; the page
+    // is not deleted, so it comes back with the permission.
+    if (!AccessControl::instance().allows(QStringLiteral("downloads.external"))) {
+        const int ytdlpTabIndex = ui->SystemResouces->indexOf(ui->tab_ytdlp);
+        if (ytdlpTabIndex != -1) {
+            ui->SystemResouces->removeTab(ytdlpTabIndex);
+            // removeTab() leaves the page parentless — hand it back to the
+            // dialog so it is owned (and destroyed) with it.
+            ui->tab_ytdlp->setParent(this);
+            ui->tab_ytdlp->hide();
+        }
+    }
     ui->checkBox_showFxTab->setChecked(settings.value("ShowFxTab", true).toBool());
     ui->checkBox_showPadsTab->setChecked(settings.value("ShowPadsTab", true).toBool());
     ui->checkBox_autoAutoMix->setChecked(settings.value("AutoAutoMix", false).toBool());

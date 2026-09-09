@@ -514,24 +514,24 @@
         <translation>Trazer o FFmpeg, o yt-dlp e os restantes para esta máquina.</translation>
     </message>
     <message>
-        <location filename="services/AccessControl.cpp" line="225"/>
-        <source>Add a song from an external source</source>
-        <translation>Adicionar uma música de uma fonte externa</translation>
-    </message>
-    <message>
-        <location filename="services/AccessControl.cpp" line="226"/>
-        <source>Open the downloader and take a track from YouTube, Bandcamp, a Spotify or Apple Music listing, and the rest.</source>
-        <translation>Abrir o transferidor e tirar uma faixa do YouTube, do Bandcamp, de uma lista do Spotify ou da Apple Music, e dos restantes.</translation>
-    </message>
-    <message>
         <location filename="services/AccessControl.cpp" line="229"/>
-        <source>Use the torrent search and downloads</source>
-        <translation>Usar a procura e as transferências de torrents</translation>
+        <source>Allow adding sources from external sources</source>
+        <translation>Permitir adicionar músicas de fontes externas</translation>
     </message>
     <message>
         <location filename="services/AccessControl.cpp" line="230"/>
-        <source>The torrent tab, when the feature is switched on at all.</source>
-        <translation>O separador de torrents, quando a funcionalidade estiver sequer ligada.</translation>
+        <source>Show &quot;Add a song from an external source&quot; in the menu, and the downloader it opens: YouTube, Bandcamp, a Spotify or Apple Music listing, and the rest. Without it the entry is not there.</source>
+        <translation>Mostrar «Adicionar uma música de uma fonte externa» no menu, e o transferidor que ele abre: YouTube, Bandcamp, uma lista do Spotify ou da Apple Music, e os restantes. Sem esta permissão a entrada não aparece.</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="234"/>
+        <source>Support .torrent files</source>
+        <translation>Suportar ficheiros .torrent</translation>
+    </message>
+    <message>
+        <location filename="services/AccessControl.cpp" line="235"/>
+        <source>Show the XFB Torrents switch in the Options window, and — once it is switched on — the Torrents tab with the searches and downloads made from it. Without it neither is there.</source>
+        <translation>Mostrar a opção XFB Torrents na janela das Opções e — depois de estar ligada — o separador de Torrents com as procuras e as transferências feitas a partir dele. Sem esta permissão não aparece nenhum dos dois.</translation>
     </message>
     <message>
         <location filename="services/AccessControl.cpp" line="234"/>

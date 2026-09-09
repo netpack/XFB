@@ -884,6 +884,10 @@ private slots:
     /** Disables the controls that are not menu entries — the transport
      *  buttons — for a session that may not use them. */
     void applyAccessToControls();
+    /** Adds or removes the Torrents tab. It is there only when the station has
+     *  enabled the feature in Options *and* the role at the desk supports
+     *  .torrent files; removing it stops whatever the feature was doing. */
+    void applyTorrentTabVisibility();
     /** Blanks the desk behind a sign-in question. Playback is untouched:
      *  a locked studio machine is still on air. */
     void lockDesk();
