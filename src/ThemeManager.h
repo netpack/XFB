@@ -16,8 +16,10 @@ class QApplication;
  * panels of the main window.
  *
  * Available themes: "system" (follows the OS light/dark preference),
- * "light", "dark", "midnight" (deep blue) and "studio" (near-black with
- * amber accents). The accent color of any theme can be overridden.
+ * "light", "dark", "midnight" (deep blue), "studio" (near-black with amber
+ * accents), "hacker" (phosphor green on black) and "nature" (paper, moss
+ * and bark, the second light theme). The accent color of any theme can be
+ * overridden.
  *
  * Settings (xfb.conf):
  *   Theme       — theme id; when absent, migrated from the legacy DarkMode

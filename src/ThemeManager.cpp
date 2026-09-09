@@ -47,7 +47,8 @@ QStringList ThemeManager::themeIds()
 {
     return {QStringLiteral("system"), QStringLiteral("light"),
             QStringLiteral("dark"), QStringLiteral("midnight"),
-            QStringLiteral("studio")};
+            QStringLiteral("studio"), QStringLiteral("hacker"),
+            QStringLiteral("nature")};
 }
 
 QString ThemeManager::themeName(const QString &id)
@@ -57,6 +58,8 @@ QString ThemeManager::themeName(const QString &id)
     if (id == QLatin1String("dark"))     return QObject::tr("Dark");
     if (id == QLatin1String("midnight")) return QObject::tr("Midnight (deep blue)");
     if (id == QLatin1String("studio"))   return QObject::tr("Studio (black / amber)");
+    if (id == QLatin1String("hacker"))   return QObject::tr("Hacker (green on black)");
+    if (id == QLatin1String("nature"))   return QObject::tr("Nature (leaf and bark)");
     return id;
 }
 
@@ -64,6 +67,8 @@ QColor ThemeManager::themeAccent(const QString &id)
 {
     if (id == QLatin1String("midnight")) return QColor(0x4f, 0xc3, 0xf7);
     if (id == QLatin1String("studio"))   return QColor(0xff, 0xb3, 0x00);
+    if (id == QLatin1String("hacker"))   return QColor(0x39, 0xff, 0x14);
+    if (id == QLatin1String("nature"))   return QColor(0x4f, 0x82, 0x3a);
     // system/light/dark share the XFB periwinkle
     return QColor(0x7c, 0x7c, 0xba);
 }
@@ -138,6 +143,35 @@ ThemeManager::Spec ThemeManager::resolveSpec(const QString &id, const QColor &ac
         s.button  = QColor(0x2a, 0x2a, 0x2a);
         s.hover   = QColor(0x38, 0x38, 0x38);
         s.pressed = QColor(0x20, 0x20, 0x20);
+    } else if (effective == QLatin1String("hacker")) {
+        // The phosphor terminal: black ground, green type. The text is a
+        // step softer than the accent on purpose — a whole running order in
+        // #39ff14 is unreadable after ten minutes, and the accent still has
+        // to jump off the page as the selection.
+        s.dark = true;
+        s.window  = QColor(0x0a, 0x0f, 0x0a);
+        s.base    = QColor(0x04, 0x07, 0x04);
+        s.alt     = QColor(0x10, 0x1a, 0x10);
+        s.text    = QColor(0x7c, 0xe8, 0x7c);
+        s.subText = QColor(0x4c, 0x9c, 0x55);
+        s.border  = QColor(0x1d, 0x3d, 0x1d);
+        s.button  = QColor(0x11, 0x1e, 0x11);
+        s.hover   = QColor(0x1a, 0x33, 0x1a);
+        s.pressed = QColor(0x0b, 0x16, 0x0b);
+    } else if (effective == QLatin1String("nature")) {
+        // Daylight rather than a screen: paper, moss and bark. The only
+        // light theme here besides "light" itself, and the warm ground is
+        // what stops it from reading as the same one tinted green.
+        s.dark = false;
+        s.window  = QColor(0xf1, 0xf2, 0xe7);
+        s.base    = QColor(0xfb, 0xfc, 0xf5);
+        s.alt     = QColor(0xe3, 0xe8, 0xd6);
+        s.text    = QColor(0x2c, 0x33, 0x25);
+        s.subText = QColor(0x6b, 0x74, 0x59);
+        s.border  = QColor(0xc3, 0xcc, 0xb1);
+        s.button  = QColor(0xe7, 0xec, 0xda);
+        s.hover   = QColor(0xd9, 0xe1, 0xc7);
+        s.pressed = QColor(0xc8, 0xd2, 0xb3);
     } else { // dark (default)
         s.dark = true;
         s.window  = QColor(0x35, 0x35, 0x35);

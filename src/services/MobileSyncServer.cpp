@@ -132,6 +132,8 @@ PublicSkin publicSkin()
     if (accent.isEmpty()) {
         if (theme == QLatin1String("midnight"))    accent = QStringLiteral("#4fc3f7");
         else if (theme == QLatin1String("studio")) accent = QStringLiteral("#ffb300");
+        else if (theme == QLatin1String("hacker")) accent = QStringLiteral("#39ff14");
+        else if (theme == QLatin1String("nature")) accent = QStringLiteral("#4f823a");
         else                                       accent = QStringLiteral("#7c7cba");
     }
 
@@ -144,7 +146,7 @@ PublicSkin publicSkin()
                          ? QStringLiteral("#000000") : QStringLiteral("#ffffff");
 
     skin.dark = (theme == QLatin1String("dark") || theme == QLatin1String("midnight")
-                 || theme == QLatin1String("studio"));
+                 || theme == QLatin1String("studio") || theme == QLatin1String("hacker"));
     skin.followSystem = (theme == QLatin1String("system") || theme.isEmpty());
     return skin;
 }
