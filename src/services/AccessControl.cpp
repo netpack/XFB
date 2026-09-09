@@ -183,6 +183,10 @@ const QVector<AccessControl::Permission> &AccessControl::catalogue()
             {QStringLiteral("programming.airlog"), programming,
              tr("Read the as-run log"),
              tr("What actually went to air, and the advertiser report.")},
+            {QStringLiteral("programming.schedule"), programming,
+             tr("Read the schedule"),
+             tr("What is booked to go on air and when, and which bookings XFB "
+                "cannot honour. It reads the diary; it does not change it.")},
             {QStringLiteral("programming.quota"), programming,
              tr("Mark and report the music quota"),
              tr("Say which tracks count as national music, and measure what "
@@ -366,7 +370,8 @@ QList<AccessControl::Role> AccessControl::defaultRoles()
         QStringLiteral("playlist.save"),      QStringLiteral("playlist.clear"),
         QStringLiteral("playback.cue"),       QStringLiteral("playback.voicetrack"),
         QStringLiteral("playback.automix"),   QStringLiteral("playback.fx"),
-        QStringLiteral("programming.airlog"), QStringLiteral("programming.requests"),
+        QStringLiteral("programming.airlog"), QStringLiteral("programming.schedule"),
+        QStringLiteral("programming.requests"),
         QStringLiteral("station.fullscreen"),
     };
     roles.append(presenter);

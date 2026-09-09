@@ -129,6 +129,8 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include "services/BrailleDisplayService.h"
 #include "dialogs/AccessibilityPreferencesDialog.h"
 #include "dialogs/AirLogDialog.h"
+#include "dialogs/ScheduleDialog.h"
+#include "services/ProgrammeSchedule.h"
 #include "dialogs/QuotaDialog.h"
 #include "dialogs/DeadAirDialog.h"
 #include "dialogs/RequestTrayDialog.h"
@@ -6826,6 +6828,34 @@ void player::setupPlaybackShortcuts()
         addAction(airLog);
         AccessControl::instance().guard(airLog, QStringLiteral("programming.airlog"));
 
+        // The same question asked forwards. The scheduler table has been
+        // written by "Add a publicity" and "Add a program" since the first
+        // version and never once read back, so "what is on tomorrow?" had no
+        // answer anywhere in XFB — and a booking whose file had moved aired
+        // nothing without saying so. Next to the as-run log because they are
+        // the same window in the two directions.
+        QAction *schedule = new QAction(QIcon(":/icons/flat/Tasks-48.png"),
+                                        tr("What Is &Scheduled..."), this);
+        schedule->setMenuRole(QAction::NoRole);
+        schedule->setShortcut(QKeySequence(Qt::CTRL | Qt::ALT | Qt::Key_S));
+        schedule->setShortcutContext(Qt::ApplicationShortcut);
+        schedule->setStatusTip(tr("What is booked to go to air, and when"));
+        connect(schedule, &QAction::triggered, this, [this]() {
+            if (!m_scheduleDialog) {
+                m_scheduleDialog = new ScheduleDialog(this);
+                m_scheduleDialog->setAttribute(Qt::WA_DeleteOnClose, false);
+                connect(m_scheduleDialog, &ScheduleDialog::announcementRequested,
+                        this, &player::announceAccessible);
+            }
+            m_scheduleDialog->show();
+            m_scheduleDialog->raise();
+            m_scheduleDialog->activateWindow();
+            announceAccessible(tr("Schedule opened"));
+        });
+        ui->menuXFB->addAction(schedule);
+        addAction(schedule);
+        AccessControl::instance().guard(schedule, QStringLiteral("programming.schedule"));
+
         // Rotation rules. Next to the as-run log on purpose: the log is where
         // an operator notices the same artist coming round too often, and this
         // is where they do something about it.
@@ -10991,49 +11021,41 @@ if(sched_qry.exec()){
         }
 
         if(tipo=="2"){
-            int dia = QDate::currentDate().dayOfWeek();
 
-            QString dw;
-            if(dia == 1) dw = "Monday";
-            if(dia == 2) dw = "Tuesday";
-            if(dia == 3) dw = "Wednesday";
-            if(dia == 4) dw = "Thursday";
-            if(dia == 5) dw = "Friday";
-            if(dia == 6) dw = "Saturday";
-            if(dia == 7) dw = "Sunday";
+            /* The day of the week, resolved rather than string-compared.
+             *
+             * This used to build today's name from English literals and
+             * compare it with `==` against whatever the column held — and the
+             * column held the *displayed* text of the combo box in "Add a
+             * publicity" / "Add a program", which on a Portuguese or French
+             * installation is "Segunda" or "Lundi". So every weekly booking
+             * made in a translated XFB silently never went on air, with
+             * nothing anywhere to say so. ProgrammeSchedule::weekDayFor()
+             * understands both, so those bookings now fire; new rows are
+             * written with the English name (see add_pub.cpp).
+             *
+             * The hour and minute are compared as numbers for the same class
+             * of reason: "08" and "8" are the same time and were not the same
+             * string. */
 
-            //qDebug()<<"Today it's "<< dw << "!";
+            const QString is_program = sched_qry.value(14).toString();
 
+            const int today = QDate::currentDate().dayOfWeek();
+            const int scheduledDay =
+                ProgrammeSchedule::weekDayFor(sched_qry.value(7).toString());
+            const QTime nowTime = QTime::currentTime();
 
-            QString is_program = sched_qry.value(14).toString();
+            // A day nothing recognises is skipped in silence: this runs every
+            // minute, and the schedule window is where an operator is told
+            // about a booking that will never air. An empty hour or minute is
+            // skipped for the same reason, and so that it does not read as
+            // midnight now that these are compared as numbers.
+            const bool hasTime = !sched_qry.value(4).isNull()
+                                 && !sched_qry.value(5).isNull();
 
-
-
-            QDateTime now = QDateTime::currentDateTime();
-
-            QString hora1 = now.toString("h");
-            QString min1 = now.toString("m");
-
-
-
-            QString dw2 = sched_qry.value(7).toString();
-            QString hora2 = sched_qry.value(4).toString();
-            QString min2 = sched_qry.value(5).toString();
-
-
-
-            //so:
-            //
-            //dw has today's day of the week
-            //hora1 has the current hour
-            //min1 has the current minute
-            //dw2 has the scheduled day of the week
-            //hora2 has the scheduled hour
-            //min2 has the scheduled minute
-            //
-            // /////////////// //
-
-            if((dw==dw2)&&(hora1==hora2)&&(min1==min2)){
+            if((scheduledDay != 0) && hasTime && (scheduledDay == today)
+               && (nowTime.hour() == sched_qry.value(4).toInt())
+               && (nowTime.minute() == sched_qry.value(5).toInt())){
                 qDebug() << "Scheduled event now fired (type 2)!";
                 QString schId = sched_qry.value(0).toString();
 

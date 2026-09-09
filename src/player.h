@@ -711,6 +711,9 @@ private slots:
     qint64  m_airPosition = 0;   ///< last position reported for that row
     QString m_airEndReason;      ///< empty means the track simply ran out
     QPointer<class AirLogDialog> m_airLogDialog;
+    /** The other side of the as-run log: what is booked to go on air, and
+     *  which of those bookings XFB cannot honour. */
+    QPointer<class ScheduleDialog> m_scheduleDialog;
     /** The rotation editor and the "why did it pick that?" view. */
     QPointer<class RotationDialog> m_rotationDialog;
     /** Marking the library for the national music quota, and the report that

@@ -22,6 +22,7 @@
 #include <QListWidgetItem>
 #include "add_program.h"
 #include "audioformats.h"
+#include "services/ProgrammeSchedule.h"
 #include "ui_add_program.h"
 
 
@@ -57,6 +58,22 @@ add_program::add_program(QWidget *parent) :
     QSqlQuery qry(db);
     qry.prepare("insert into programs (name,path) values('Default','Default')");
     qry.exec();
+
+    // The day of the week goes into the database as its English name, never
+    // as the text on screen. The combo box is filled from the .ui file, so its
+    // items read "Segunda" or "Lundi" on a translated installation, and rules
+    // saved with that text never fired — see player::run_scheduler(). The
+    // items are Monday..Sunday in order; the guard is there so a day added to
+    // the .ui without one added here fails loudly rather than silently
+    // mislabelling every rule after it.
+    if (ui->cbox_dayOfTheWeek->count() == 7) {
+        for (int day = 1; day <= 7; ++day)
+            ui->cbox_dayOfTheWeek->setItemData(day - 1,
+                                               ProgrammeSchedule::englishDayName(day));
+    } else {
+        qWarning() << "The day-of-the-week list is not seven days long;"
+                   << "weekly schedules cannot be saved reliably.";
+    }
 
     QDate now = QDate::currentDate();
     qDebug()<<"Current day: "<<now.day() << " ; Current month: "<<now.month()<< " ; Current year: "<<now.year();
@@ -212,7 +229,11 @@ void add_program::on_pushButton_6_clicked()
 {
     /*add new date and time with type 2 (dayOfTheWeek+houre+min)*/
 
-    QString dayOfTheWeek = ui->cbox_dayOfTheWeek->currentText();
+    // What the operator reads, and — separately — what the scheduler reads.
+    const QString dayOnScreen = ui->cbox_dayOfTheWeek->currentText();
+    const QString dayOfTheWeek = ui->cbox_dayOfTheWeek->currentData().toString().isEmpty()
+                                     ? dayOnScreen
+                                     : ui->cbox_dayOfTheWeek->currentData().toString();
     qDebug()<< "Value of dayOfTheWeek is "<<dayOfTheWeek;
 
     QString hourMinute = ui->hourMinute->text();
@@ -242,7 +263,7 @@ void add_program::on_pushButton_6_clicked()
     Qr_add.addBindValue(dayOfTheWeek);
     Qr_add.exec();
     qDebug()<<"Last Query: "<<Qr_add.lastQuery();
-    QString str = dayOfTheWeek + " at " + hourMinute;
+    QString str = dayOnScreen + " at " + hourMinute;
     addScheduleLine(str, Qr_add.lastInsertId());
 
 }

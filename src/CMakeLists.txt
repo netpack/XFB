@@ -44,6 +44,8 @@ set(SOURCES
     dialogs/MobileSyncDialog.cpp
     # As-run log viewer + advertiser report
     dialogs/AirLogDialog.cpp
+    # The other half of the same question: what is booked to go on air
+    dialogs/ScheduleDialog.cpp
     # Rotation editor + the "why did it pick this?" view
     dialogs/RotationDialog.cpp
     # Music quota: marking the library, and the report off the as-run log
@@ -90,6 +92,8 @@ set(SOURCES
     services/MusicCache.cpp
     # As-run log: one row per item that actually went to air
     services/AirLog.cpp
+    # The scheduler table read back: bookings, and the airings they come to
+    services/ProgrammeSchedule.cpp
     # Rotation rules: separation, categories, dayparts, seasonal windows
     services/RotationRules.cpp
     # National music quota: the per-track marks and the figures off the log
@@ -202,6 +206,7 @@ set(HEADERS
     dialogs/ProductionSyncDialog.h
     dialogs/StreamDialog.h
     dialogs/AirLogDialog.h
+    dialogs/ScheduleDialog.h
     dialogs/RotationDialog.h
     dialogs/QuotaDialog.h
     dialogs/HourClockDialog.h
@@ -225,6 +230,7 @@ set(HEADERS
     services/DatabaseOptimizer.h
     services/MusicCache.h
     services/AirLog.h
+    services/ProgrammeSchedule.h
     services/RotationRules.h
     services/MusicQuota.h
     services/HourClock.h
