@@ -150,6 +150,37 @@
               </layout>
              </item>
              <item>
+              <layout class="QHBoxLayout" name="layout_iconTheme">
+               <item>
+                <widget class="QLabel" name="label_iconTheme">
+                 <property name="text">
+                  <string>Icons:</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QComboBox" name="combo_iconTheme">
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;How the icons are drawn. "Classic" is the full-colour artwork; the others re-draw that same artwork in one colour — the theme's text colour, or its accent — and "High contrast" draws it as heavily as it can, which is the one to reach for on a screen seen from across the studio. Applies immediately on Save.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="hspacer_iconTheme">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </item>
+             <item>
               <widget class="QCheckBox" name="checkBox_enableTorrents">
                <property name="toolTip">
                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Show the Torrents tab. Searching is anonymised through Tor; downloading over BitTorrent is not anonymous (your IP is visible to peers). You will be asked to confirm this the first time you enable it.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>

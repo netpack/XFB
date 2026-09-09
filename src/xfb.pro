@@ -27,6 +27,7 @@ SOURCES += \
     LevelMeter.cpp \
     ArtworkStore.cpp \
     ThemeManager.cpp \
+    IconTheme.cpp \
     dialogs/AudioFxDialog.cpp \
     dialogs/MobileSyncDialog.cpp \
     dialogs/StationSyncDialog.cpp \
@@ -99,6 +100,7 @@ HEADERS += \
     LevelMeter.h \
     ArtworkStore.h \
     ThemeManager.h \
+    IconTheme.h \
     dialogs/AudioFxDialog.h \
     dialogs/MobileSyncDialog.h \
     dialogs/StationSyncDialog.h \

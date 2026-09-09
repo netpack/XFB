@@ -2379,6 +2379,7 @@ QStringList MobileSyncServer::mirroredSettingKeys()
         QStringLiteral("ComHour"),
         QStringLiteral("Theme"),
         QStringLiteral("AccentColor"),
+        QStringLiteral("IconTheme"),
         QStringLiteral("Language"),
         QStringLiteral("ShowFxTab"),
         QStringLiteral("ShowPadsTab"),

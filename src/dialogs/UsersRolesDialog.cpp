@@ -1,5 +1,7 @@
 #include "UsersRolesDialog.h"
 
+#include "../IconTheme.h"
+
 #include <QAbstractItemView>
 #include <QBrush>
 #include <QCheckBox>
@@ -332,7 +334,7 @@ UsersRolesDialog::UsersRolesDialog(QWidget *parent)
 void UsersRolesDialog::buildUi()
 {
     setWindowTitle(tr("Users and roles"));
-    setWindowIcon(QIcon(QStringLiteral(":/icons/flat/Security Checked-48.png")));
+    setWindowIcon(IconTheme::icon(QStringLiteral(":/icons/flat/Security Checked-48.png")));
 
     auto *layout = new QVBoxLayout(this);
 

@@ -1,4 +1,5 @@
 #include "player.h"
+#include "IconTheme.h"
 #include "ThemeManager.h"
 #include "dialogs/SignInDialog.h"
 #include "services/AccessControl.h"
@@ -650,6 +651,9 @@ int main(int argc, char *argv[])
     // 9. Theme
     showSplashMessage(QObject::tr("Applying theme..."));
     ThemeManager::apply(&app);
+    // The derived icon themes take their ink from the palette the line above
+    // installs, so this reads the setting only once the theme is in force.
+    IconTheme::reload();
 
     // 9b. Who is at the desk
     //

@@ -78,6 +78,8 @@ set(SOURCES
     ArtworkStore.cpp
     # Theme support (palette + generated stylesheet)
     ThemeManager.cpp
+    # Icon style: one set of artwork re-drawn per icon theme
+    IconTheme.cpp
     # Essential service layer (working components only)
     services/IService.cpp
     services/ServiceContainer.cpp

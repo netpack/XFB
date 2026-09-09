@@ -32,6 +32,7 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include "PadBoard.h"
 #include "PlaylistWaveView.h"
 #include "LevelMeter.h"
+#include "IconTheme.h"
 #include "ThemeManager.h"
 #include "dialogs/AudioFxDialog.h"
 #include "secretstore.h"
@@ -439,12 +440,12 @@ player::player(QWidget *parent) :
         };
         for (const auto &entry : dockEntries) {
             QAction *toggle = entry.dock->toggleViewAction();
-            toggle->setIcon(QIcon(QLatin1String(entry.icon)));
+            toggle->setIcon(IconTheme::icon(QLatin1String(entry.icon)));
             viewMenu->addAction(toggle);
         }
         // The artwork panel lives inside the side panel; this toggle only
         // shows/hides it there (persisted separately from the dock state).
-        QAction *artworkAction = viewMenu->addAction(QIcon(":/icons/insert-image.png"),
+        QAction *artworkAction = viewMenu->addAction(IconTheme::icon(QStringLiteral(":/icons/insert-image.png")),
                                                      tr("Artwork"));
         artworkAction->setCheckable(true);
         {
@@ -462,7 +463,7 @@ player::player(QWidget *parent) :
             settings.setValue("ShowArtworkPanel", on);
         });
         viewMenu->addSeparator();
-        m_lockLayoutAction = viewMenu->addAction(QIcon(":/icons/lock.png"),
+        m_lockLayoutAction = viewMenu->addAction(IconTheme::icon(QStringLiteral(":/icons/lock.png")),
                                                  tr("Lock the layout"));
         m_lockLayoutAction->setCheckable(true);
         m_lockLayoutAction->setToolTip(tr("Hide the panel title bars and prevent the panels "
@@ -473,7 +474,7 @@ player::player(QWidget *parent) :
                                    + "/xfb.conf", QSettings::IniFormat);
             settings.setValue("LayoutLocked", locked);
         });
-        QAction *resetLayoutAction = viewMenu->addAction(QIcon(":/icons/document-revert.png"),
+        QAction *resetLayoutAction = viewMenu->addAction(IconTheme::icon(QStringLiteral(":/icons/document-revert.png")),
                                                          tr("Reset the layout"));
         connect(resetLayoutAction, &QAction::triggered,
                 this, &player::resetDockLayout);
@@ -561,7 +562,7 @@ player::player(QWidget *parent) :
             ui->frame_2->setMinimumWidth(0);
             ui->frame_2->setMaximumWidth(16777215);
             ui->page_FTP_Connection->addItem(ui->frame_2,
-                QIcon(QStringLiteral(":/icons/format-list-unordered.png")),
+                IconTheme::icon(QStringLiteral(":/icons/format-list-unordered.png")),
                 tr("Playlist"));
         }
 
@@ -1718,7 +1719,7 @@ checkDbOpen();
 
                // Insert Controls as the first page in the toolbox
                ui->page_FTP_Connection->insertItem(0, controlsPage,
-                   QIcon(QStringLiteral(":/icons/flat/Einstein-48.png")),
+                   IconTheme::icon(QStringLiteral(":/icons/flat/Einstein-48.png")),
                    tr("Controls"));
                ui->page_FTP_Connection->setCurrentIndex(0);
 
@@ -1855,7 +1856,7 @@ checkDbOpen();
    // 432 Hz conversion menu entry (the live EQ/compressor controls live in
    // the Audio FX tab next to the DJ tab)
    {
-       QAction *conv432All = new QAction(QIcon(":/icons/flat/tuning-fork-64.png"),
+       QAction *conv432All = new QAction(IconTheme::icon(QStringLiteral(":/icons/flat/tuning-fork-64.png")),
                                          tr("Convert all musics in the database to 432 Hz tuning"), this);
        ui->menuDatabase->addAction(conv432All);
        AccessControl::instance().guard(conv432All, QStringLiteral("library.retune"));
@@ -1865,7 +1866,7 @@ checkDbOpen();
    // Tempo analysis of the library, which is what auto mode's BPM matching
    // draws on. Only ever touches tracks that have never been measured.
    {
-       QAction *analyzeBpm = new QAction(QIcon(":/icons/chronometer.png"),
+       QAction *analyzeBpm = new QAction(IconTheme::icon(QStringLiteral(":/icons/chronometer.png")),
                                          tr("Measure the BPM of all music tracks in the database"), this);
        analyzeBpm->setToolTip(tr("Measure the tempo of every track that does not have one yet, "
                                  "so Auto Mode can follow a track with one at a similar tempo. "
@@ -1881,7 +1882,7 @@ checkDbOpen();
    // countdown on the now-playing strip and the spoken ramp, so a presenter
    // knows exactly when to stop talking.
    {
-       QAction *analyzeIntro = new QAction(QIcon(":/icons/chronometer.png"),
+       QAction *analyzeIntro = new QAction(IconTheme::icon(QStringLiteral(":/icons/chronometer.png")),
                                            tr("Measure the intro and outro times of the database"), this);
        analyzeIntro->setToolTip(tr("Work out, for every music track that has not been measured "
                                    "yet, how long its intro runs before the vocal and how long "
@@ -1903,7 +1904,7 @@ checkDbOpen();
        connect(m_loudnessScanner, &LoudnessScanner::measured,
                this, [this](const LoudnessMeasurement &m) { storeLoudness(m); });
 
-       QAction *scanLoudness = new QAction(QIcon(":/icons/chronometer.png"),
+       QAction *scanLoudness = new QAction(IconTheme::icon(QStringLiteral(":/icons/chronometer.png")),
                                           tr("Measure the loudness (EBU R128) of the database"), this);
        scanLoudness->setToolTip(tr("Measure the integrated loudness and true peak of every track, "
                                    "jingle, commercial and programme that has not been measured "
@@ -1924,7 +1925,7 @@ checkDbOpen();
    // sweeps above this one goes out to the internet and rewrites files, so it
    // is a window the operator drives rather than a sweep that just runs.
    {
-       QAction *findCovers = new QAction(QIcon(":/icons/insert-image.png"),
+       QAction *findCovers = new QAction(IconTheme::icon(QStringLiteral(":/icons/insert-image.png")),
                                          tr("Find the missing cover art…"), this);
        findCovers->setToolTip(tr("Look for a cover for every track in the library that has "
                                  "none, and — once you have seen what was found — write it "
@@ -1946,7 +1947,7 @@ checkDbOpen();
    // material gets in rather than with the station-wide settings: an operator
    // looking for "how do songs get into XFB" looks in this menu.
    {
-       QAction *watchedFolders = new QAction(QIcon(":/icons/flat/Import-48.png"),
+       QAction *watchedFolders = new QAction(IconTheme::icon(QStringLiteral(":/icons/flat/Import-48.png")),
                                              tr("Watched folders…"), this);
        watchedFolders->setMenuRole(QAction::NoRole);
        watchedFolders->setToolTip(tr("Folders XFB keeps an eye on: anything new that "
@@ -2058,7 +2059,7 @@ checkDbOpen();
        if (settings.value("ShowPadsTab", true).toBool()) {
            const int djIndex = ui->tabWidget_2->indexOf(ui->tab_dj);
            ui->tabWidget_2->insertTab(djIndex + 1, m_padBoardPage,
-                                      QIcon(":/icons/flat/Natural User Interface 2-48.png"),
+                                      IconTheme::icon(QStringLiteral(":/icons/flat/Natural User Interface 2-48.png")),
                                       tr("Pads"));
        }
    }
@@ -2076,7 +2077,7 @@ checkDbOpen();
                               + "/xfb.conf", QSettings::IniFormat);
        if (settings.value("ShowFxTab", true).toBool()) {
            ui->tabWidget_2->insertTab(djGroupInsertIndex(), m_fxTabPage,
-                                      QIcon(":/icons/flat/eq-fx-64.png"), tr("Audio FX"));
+                                      IconTheme::icon(QStringLiteral(":/icons/flat/eq-fx-64.png")), tr("Audio FX"));
        }
 
        // The same settings are editable from the menu dialog too — refresh
@@ -2591,6 +2592,12 @@ void player::updateConfig() {
     // changes take effect live; darkMode reflects the resolved theme.
     ThemeManager::apply(qobject_cast<QApplication *>(QApplication::instance()));
     darkMode = ThemeManager::currentIsDark();
+    // Same for the icons: the ink of a derived icon theme comes from the
+    // palette just installed, so the icons are re-read after the colours and
+    // then re-derived across the window — menus, toolbars, tabs and all —
+    // from the artwork each one was built with.
+    IconTheme::reload();
+    IconTheme::retheme(this);
     bool enableTorrents = settings.value("EnableTorrents", false).toBool();
 
     // Read recording info (description and potentially enum data)
@@ -2729,7 +2736,7 @@ void player::updateConfig() {
         if (showPadsTab && padsTabIndex == -1) {
             const int djIndex = ui->tabWidget_2->indexOf(ui->tab_dj);
             ui->tabWidget_2->insertTab(djIndex + 1, m_padBoardPage,
-                                       QIcon(":/icons/flat/Natural User Interface 2-48.png"),
+                                       IconTheme::icon(QStringLiteral(":/icons/flat/Natural User Interface 2-48.png")),
                                        tr("Pads"));
         } else if (!showPadsTab && padsTabIndex != -1) {
             // Nothing may keep playing out of a tab the operator just hid.
@@ -2749,7 +2756,7 @@ void player::updateConfig() {
         int fxTabIndex = ui->tabWidget_2->indexOf(m_fxTabPage);
         if (showFxTab && fxTabIndex == -1) {
             ui->tabWidget_2->insertTab(djGroupInsertIndex(), m_fxTabPage,
-                                       QIcon(":/icons/flat/eq-fx-64.png"), tr("Audio FX"));
+                                       IconTheme::icon(QStringLiteral(":/icons/flat/eq-fx-64.png")), tr("Audio FX"));
         } else if (!showFxTab && fxTabIndex != -1) {
             ui->tabWidget_2->removeTab(fxTabIndex);
         }
@@ -3428,7 +3435,7 @@ void player::musicViewContextMenu(const QPoint& pos) {
     // thing. Plays on the cue device alone (Options -> Cue and outputs).
     QAction *actCue = nullptr;
     if (!multiSelect) {
-        actCue = thisMenu.addAction(QIcon(":/icons/ic_launcher_voicedial.png"),
+        actCue = thisMenu.addAction(IconTheme::icon(QStringLiteral(":/icons/ic_launcher_voicedial.png")),
                                     tr("Cue this track in the headphones"));
         // The key is named in the label rather than set as a shortcut on this
         // action: the Playback menu already owns Ctrl+Shift+C application-wide,
@@ -3463,12 +3470,12 @@ void player::musicViewContextMenu(const QPoint& pos) {
     // operator reaches for while listening to something they have just
     // realised nobody has ever classified.
     QAction *actQuota = thisMenu.addAction(
-        QIcon(":/icons/flat/Music Transcript-48.png"),
+        IconTheme::icon(QStringLiteral(":/icons/flat/Music Transcript-48.png")),
         multiSelect ? tr("Mark %1 tracks for the music quota...").arg(count)
                     : tr("Mark this track for the music quota..."));
 
     QAction *actRetune432 = thisMenu.addAction(
-        QIcon(":/icons/flat/tuning-fork-64.png"),
+        IconTheme::icon(QStringLiteral(":/icons/flat/tuning-fork-64.png")),
         multiSelect ? tr("Retune %1 tracks to 432 Hz...").arg(count)
                     : tr("Retune this track to 432 Hz..."));
     thisMenu.addSeparator();
@@ -3476,16 +3483,16 @@ void player::musicViewContextMenu(const QPoint& pos) {
     // Sync to phone. The server cannot push to a phone, so these mark tracks
     // and the phone collects them as a playlist called "Marked for this phone".
     QAction *actSyncSelection = thisMenu.addAction(
-        QIcon(":/icons/flat/Upload to Cloud-48.png"),
+        IconTheme::icon(QStringLiteral(":/icons/flat/Upload to Cloud-48.png")),
         multiSelect ? tr("Sync %1 tracks to the phone").arg(count)
                     : tr("Sync this track to the phone"));
     QAction *actSyncAll = thisMenu.addAction(
-        QIcon(":/icons/flat/Connection Sync-48.png"),
+        IconTheme::icon(QStringLiteral(":/icons/flat/Connection Sync-48.png")),
         tr("Sync the whole music list to the phone"));
     QAction *actSyncClear = nullptr;
     if (m_mobileSyncServer && !m_mobileSyncServer->syncSet().isEmpty()) {
         actSyncClear = thisMenu.addAction(
-            QIcon(":/icons/sync_off.png"),
+            IconTheme::icon(QStringLiteral(":/icons/sync_off.png")),
             tr("Clear what is marked for the phone (%1)")
                 .arg(m_mobileSyncServer->syncSet().size()));
     }
@@ -6456,7 +6463,7 @@ void player::setupPlaybackShortcuts()
     };
 
     for (const auto &e : entries) {
-        QAction *action = playbackMenu->addAction(QIcon(QLatin1String(e.icon)), tr(e.text));
+        QAction *action = playbackMenu->addAction(IconTheme::icon(QLatin1String(e.icon)), tr(e.text));
         action->setShortcut(e.key);
         // Works no matter which panel currently holds focus.
         action->setShortcutContext(Qt::ApplicationShortcut);
@@ -6470,7 +6477,7 @@ void player::setupPlaybackShortcuts()
     // Getting a track into the running order is the most common task in the
     // app and had no keyboard route at all. Menu entries make it discoverable
     // as well as reachable.
-    QAction *addEnd = playbackMenu->addAction(QIcon(":/icons/align-vertical-bottom.png"),
+    QAction *addEnd = playbackMenu->addAction(IconTheme::icon(QStringLiteral(":/icons/align-vertical-bottom.png")),
                                               tr("Add selection to &end of playlist"));
     addEnd->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Return));
     addEnd->setShortcutContext(Qt::ApplicationShortcut);
@@ -6480,7 +6487,7 @@ void player::setupPlaybackShortcuts()
     addAction(addEnd);
     AccessControl::instance().guard(addEnd, QStringLiteral("playlist.edit"));
 
-    QAction *addTop = playbackMenu->addAction(QIcon(":/icons/align-vertical-top.png"),
+    QAction *addTop = playbackMenu->addAction(IconTheme::icon(QStringLiteral(":/icons/align-vertical-top.png")),
                                               tr("Add selection to &start of playlist"));
     addTop->setShortcut(QKeySequence(Qt::CTRL | Qt::ALT | Qt::Key_Return));
     addTop->setShortcutContext(Qt::ApplicationShortcut);
@@ -6522,7 +6529,7 @@ void player::setupPlaybackShortcuts()
                                .arg(ui->playlist->count()));
     };
 
-    QAction *moveUp = playbackMenu->addAction(QIcon(":/icons/align-vertical-top.png"),
+    QAction *moveUp = playbackMenu->addAction(IconTheme::icon(QStringLiteral(":/icons/align-vertical-top.png")),
                                               tr("Move playlist track &up"));
     moveUp->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Up));
     moveUp->setShortcutContext(Qt::ApplicationShortcut);
@@ -6530,7 +6537,7 @@ void player::setupPlaybackShortcuts()
     addAction(moveUp);
     AccessControl::instance().guard(moveUp, QStringLiteral("playlist.edit"));
 
-    QAction *moveDown = playbackMenu->addAction(QIcon(":/icons/align-vertical-bottom.png"),
+    QAction *moveDown = playbackMenu->addAction(IconTheme::icon(QStringLiteral(":/icons/align-vertical-bottom.png")),
                                                 tr("Move playlist track &down"));
     moveDown->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Down));
     moveDown->setShortcutContext(Qt::ApplicationShortcut);
@@ -6541,7 +6548,7 @@ void player::setupPlaybackShortcuts()
     playbackMenu->addSeparator();
 
     // "What is playing?" — the single most useful thing for a blind operator.
-    QAction *whatsPlaying = playbackMenu->addAction(QIcon(":/icons/ic_launcher_voicedial.png"),
+    QAction *whatsPlaying = playbackMenu->addAction(IconTheme::icon(QStringLiteral(":/icons/ic_launcher_voicedial.png")),
                                                     tr("Announce &what is playing"));
     whatsPlaying->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_W));
     whatsPlaying->setShortcutContext(Qt::ApplicationShortcut);
@@ -6568,7 +6575,7 @@ void player::setupPlaybackShortcuts()
     // gets a key of its own — the operator should not have to sit through the
     // track title to hear it, and it stays reachable when the combined
     // announcement above is switched off.
-    QAction *timeRemaining = playbackMenu->addAction(QIcon(":/icons/player-time.png"),
+    QAction *timeRemaining = playbackMenu->addAction(IconTheme::icon(QStringLiteral(":/icons/player-time.png")),
                                                      tr("Announce time &remaining"));
     timeRemaining->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_R));
     timeRemaining->setShortcutContext(Qt::ApplicationShortcut);
@@ -6582,7 +6589,7 @@ void player::setupPlaybackShortcuts()
     // at all to an operator working by ear, so it gets a key of its own.
     // Ctrl+Shift+I was the free one — L, P, S, N, B, W, H, R, A, T, Space,
     // Up, Down, Left, Right and Return are all already spoken for.
-    QAction *introCountdown = playbackMenu->addAction(QIcon(":/icons/player-time.png"),
+    QAction *introCountdown = playbackMenu->addAction(IconTheme::icon(QStringLiteral(":/icons/player-time.png")),
                                                       tr("Announce the &intro countdown"));
     introCountdown->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_I));
     introCountdown->setShortcutContext(Qt::ApplicationShortcut);
@@ -6598,7 +6605,7 @@ void player::setupPlaybackShortcuts()
     // Ctrl+Shift+C and Ctrl+Shift+X were the free pair; C for cue and X for
     // "cut it". Ctrl+Shift+ P, S, N, B, W, H, R, L, I, Up, Down, Return,
     // Space and Ctrl+Alt+ R, Return are all already spoken for.
-    m_cueAction = playbackMenu->addAction(QIcon(":/icons/ic_launcher_voicedial.png"),
+    m_cueAction = playbackMenu->addAction(IconTheme::icon(QStringLiteral(":/icons/ic_launcher_voicedial.png")),
                                           tr("&Cue the selected track (headphones)"));
     m_cueAction->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_C));
     m_cueAction->setShortcutContext(Qt::ApplicationShortcut);
@@ -6611,7 +6618,7 @@ void player::setupPlaybackShortcuts()
     // Ctrl+Shift+V: V for voice, and the last obvious free letter. Ctrl+Shift+
     // P, S, N, B, W, H, R, L, I, C, X, Up, Down, Return, Space and Ctrl+Alt+ R,
     // Return are all already spoken for.
-    QAction *voiceTrack = playbackMenu->addAction(QIcon(":/icons/ic_launcher_voicedial.png"),
+    QAction *voiceTrack = playbackMenu->addAction(IconTheme::icon(QStringLiteral(":/icons/ic_launcher_voicedial.png")),
                                                   tr("&Voice track over this join..."));
     voiceTrack->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_V));
     voiceTrack->setShortcutContext(Qt::ApplicationShortcut);
@@ -6625,7 +6632,7 @@ void player::setupPlaybackShortcuts()
     addAction(voiceTrack);
     AccessControl::instance().guard(voiceTrack, QStringLiteral("playback.voicetrack"));
 
-    m_cueStopAction = playbackMenu->addAction(QIcon(":/icons/flat/Stop Sign-32.png"),
+    m_cueStopAction = playbackMenu->addAction(IconTheme::icon(QStringLiteral(":/icons/flat/Stop Sign-32.png")),
                                               tr("Stop the c&ue"));
     m_cueStopAction->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_X));
     m_cueStopAction->setShortcutContext(Qt::ApplicationShortcut);
@@ -6648,7 +6655,7 @@ void player::setupPlaybackShortcuts()
     // looking for guidance will go first, and has its own shortcut so it can
     // be reached without hunting through the menus.
     if (ui->menuHelp) {
-        QAction *tutorial = new QAction(QIcon(":/icons/help-hint.png"),
+        QAction *tutorial = new QAction(IconTheme::icon(QStringLiteral(":/icons/help-hint.png")),
                                         tr("&Tutorial for Blind Users"), this);
         tutorial->setMenuRole(QAction::NoRole);
         tutorial->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_H));
@@ -6676,7 +6683,7 @@ void player::setupPlaybackShortcuts()
     // way in — no menu entry and no code path opened it — so the settings it
     // manages (verbosity, announcement timing) were unreachable.
     if (ui->menuXFB) {
-        QAction *a11yPrefs = new QAction(QIcon(":/icons/text-speak.png"),
+        QAction *a11yPrefs = new QAction(IconTheme::icon(QStringLiteral(":/icons/text-speak.png")),
                                          tr("&Accessibility Preferences..."), this);
         // Without this, Qt's macOS text heuristic sees "Preferences" and moves
         // the item into the application menu, away from the Options menu where
@@ -6705,7 +6712,7 @@ void player::setupPlaybackShortcuts()
     // is a property of this installation, not of the playlist on air.
     if (ui->menuXFB) {
         QAction *mobileSync = new QAction(
-            QIcon(":/icons/flat/Connection Sync-48.png"), tr("Sync to &Phone..."), this);
+            IconTheme::icon(QStringLiteral(":/icons/flat/Connection Sync-48.png")), tr("Sync to &Phone..."), this);
         mobileSync->setMenuRole(QAction::NoRole);
         connect(mobileSync, &QAction::triggered, this, [this]() {
             if (!m_mobileSyncDialog) {
@@ -6732,7 +6739,7 @@ void player::setupPlaybackShortcuts()
         // on air and on the one standing by, because when it is being set up
         // nobody yet knows which will turn out to be which.
         QAction *stationSync = new QAction(
-            QIcon(":/icons/flat/Connection Sync-48.png"),
+            IconTheme::icon(QStringLiteral(":/icons/flat/Connection Sync-48.png")),
             tr("Broadcast &Redundancy..."), this);
         stationSync->setMenuRole(QAction::NoRole);
         connect(stationSync, &QAction::triggered, this, [this]() {
@@ -6755,7 +6762,7 @@ void player::setupPlaybackShortcuts()
         // settings for the same reason the sync windows do: it is a property
         // of this installation, not of the playlist on air.
         QAction *streamAction = new QAction(
-            QIcon(":/icons/flat/Connection Sync-48.png"), tr("Stream to &Icecast..."), this);
+            IconTheme::icon(QStringLiteral(":/icons/flat/Connection Sync-48.png")), tr("Stream to &Icecast..."), this);
         streamAction->setMenuRole(QAction::NoRole);
         connect(streamAction, &QAction::triggered, this, [this]() {
             if (!m_streamDialog) {
@@ -6779,7 +6786,7 @@ void player::setupPlaybackShortcuts()
 
         // The dead-air watchdog. Same shelf as the rest: a property of this
         // installation, not of what is on air right now.
-        QAction *deadAir = new QAction(QIcon(":/icons/flat/Security Checked-48.png"),
+        QAction *deadAir = new QAction(IconTheme::icon(QStringLiteral(":/icons/flat/Security Checked-48.png")),
                                        tr("&Dead-Air Watchdog..."), this);
         deadAir->setMenuRole(QAction::NoRole);
         deadAir->setStatusTip(tr("What to do when the station goes quiet"));
@@ -6806,7 +6813,7 @@ void player::setupPlaybackShortcuts()
             deadAirWatchdog();
         // The as-run log. In the XFB menu with the other station-wide things:
         // it is a property of the installation, not of what is on air now.
-        QAction *airLog = new QAction(QIcon(":/icons/flat/Music Transcript-48.png"),
+        QAction *airLog = new QAction(IconTheme::icon(QStringLiteral(":/icons/flat/Music Transcript-48.png")),
                                       tr("As-Run &Log..."), this);
         airLog->setMenuRole(QAction::NoRole);
         airLog->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_L));
@@ -6834,7 +6841,7 @@ void player::setupPlaybackShortcuts()
         // answer anywhere in XFB — and a booking whose file had moved aired
         // nothing without saying so. Next to the as-run log because they are
         // the same window in the two directions.
-        QAction *schedule = new QAction(QIcon(":/icons/flat/Tasks-48.png"),
+        QAction *schedule = new QAction(IconTheme::icon(QStringLiteral(":/icons/flat/Tasks-48.png")),
                                         tr("What Is &Scheduled..."), this);
         schedule->setMenuRole(QAction::NoRole);
         schedule->setShortcut(QKeySequence(Qt::CTRL | Qt::ALT | Qt::Key_S));
@@ -6859,7 +6866,7 @@ void player::setupPlaybackShortcuts()
         // Rotation rules. Next to the as-run log on purpose: the log is where
         // an operator notices the same artist coming round too often, and this
         // is where they do something about it.
-        QAction *rotation = new QAction(QIcon(":/icons/flat/Shuffle-48.png"),
+        QAction *rotation = new QAction(IconTheme::icon(QStringLiteral(":/icons/flat/Shuffle-48.png")),
                                         tr("&Rotation Rules..."), this);
         rotation->setMenuRole(QAction::NoRole);
         // Ctrl+Shift+R is already the remaining-time toggle, so this takes the
@@ -6902,7 +6909,7 @@ void player::setupPlaybackShortcuts()
         // the same job seen from the other end: rotation decides what goes on
         // next, this says what the month has to add up to, and both are read
         // off the same as-run log.
-        QAction *quota = new QAction(QIcon(":/icons/flat/Music Transcript-48.png"),
+        QAction *quota = new QAction(IconTheme::icon(QStringLiteral(":/icons/flat/Music Transcript-48.png")),
                                      tr("Music &Quota..."), this);
         quota->setMenuRole(QAction::NoRole);
         // Ctrl+Shift+Q would be quit on a few desktops; Ctrl+Alt+Q is free.
@@ -6937,7 +6944,7 @@ void player::setupPlaybackShortcuts()
         // analysis passes in the Database menu, and an icon that says two
         // different things is worse than none. A clock *is* a pie read
         // clockwise, which is what the wheel in the window draws.
-        QAction *hourClock = new QAction(QIcon(":/icons/office-chart-pie.png"),
+        QAction *hourClock = new QAction(IconTheme::icon(QStringLiteral(":/icons/office-chart-pie.png")),
                                          tr("Hour &Clocks..."), this);
         hourClock->setMenuRole(QAction::NoRole);
         // Ctrl+Shift+K: the C, L and H of "clock" are all taken already.
@@ -6978,7 +6985,7 @@ void player::setupPlaybackShortcuts()
         // Not chronometer.png: that already marks the three analysis passes
         // in the Database menu, and an icon that says two different things is
         // worse than none.
-        QAction *timeSignals = new QAction(QIcon(":/icons/view-time-schedule.png"),
+        QAction *timeSignals = new QAction(IconTheme::icon(QStringLiteral(":/icons/view-time-schedule.png")),
                                            tr("&Time Signals..."), this);
         timeSignals->setMenuRole(QAction::NoRole);
         // Ctrl+Shift+T: T for time, and free on every platform XFB ships to.
@@ -7027,7 +7034,7 @@ void player::setupPlaybackShortcuts()
         // network at all. Same shelf as the rest: it is a property of this
         // installation, not of what is on air now. Opening the window is the
         // only way to turn the page on, and it ships off.
-        QAction *requests = new QAction(QIcon(":/icons/im-message-new.png"),
+        QAction *requests = new QAction(IconTheme::icon(QStringLiteral(":/icons/im-message-new.png")),
                                         tr("Listener &Requests..."), this);
         requests->setMenuRole(QAction::NoRole);
         requests->setStatusTip(tr("The public now-playing page, and what "
@@ -7089,7 +7096,7 @@ void player::setupPlaybackShortcuts()
         // the top half, the production machine points itself at the station
         // from the bottom half.
         QAction *productionSync = new QAction(
-            QIcon(":/icons/flat/Connection Sync-48.png"), tr("&Production Computers..."), this);
+            IconTheme::icon(QStringLiteral(":/icons/flat/Connection Sync-48.png")), tr("&Production Computers..."), this);
         productionSync->setMenuRole(QAction::NoRole);
         connect(productionSync, &QAction::triggered, this, [this]() {
             if (!m_productionSyncDialog) {
@@ -7238,7 +7245,7 @@ void player::setupAccessControl()
     if (ui->menuXFB) {
         ui->menuXFB->addSeparator();
 
-        QAction *usersRoles = new QAction(QIcon(":/icons/flat/Security Checked-48.png"),
+        QAction *usersRoles = new QAction(IconTheme::icon(QStringLiteral(":/icons/flat/Security Checked-48.png")),
                                           tr("&Users and roles..."), this);
         usersRoles->setMenuRole(QAction::NoRole);
         usersRoles->setToolTip(tr("Who may sign in to this XFB, and what each of "
@@ -7264,7 +7271,7 @@ void player::setupAccessControl()
         });
         usersRoles->setEnabled(!access.isProtected() || access.isAdministrator());
 
-        m_lockDeskAction = new QAction(QIcon(":/icons/lock.png"),
+        m_lockDeskAction = new QAction(IconTheme::icon(QStringLiteral(":/icons/lock.png")),
                                        tr("&Lock the desk"), this);
         m_lockDeskAction->setMenuRole(QAction::NoRole);
         m_lockDeskAction->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_L));
@@ -7351,7 +7358,7 @@ void player::applyTorrentTabVisibility()
         // Re-add the tab if it was previously removed
         if (torrentsTabIndex == -1) {
             ui->pubWidget->addTab(ui->tabTorrents,
-                QIcon(":/icons/flat/pirate-32.png"), tr("Torrents"));
+                IconTheme::icon(QStringLiteral(":/icons/flat/pirate-32.png")), tr("Torrents"));
         }
     } else {
         // Turning the feature off is a real kill-switch: stop any Tor

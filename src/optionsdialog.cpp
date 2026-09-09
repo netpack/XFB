@@ -10,6 +10,7 @@
 #include "secretstore.h"
 #include "audio/CueBus.h"
 #include "audio/FxParams.h"
+#include "IconTheme.h"
 #include "ThemeManager.h"
 #include "services/AccessControl.h"
 #include <QDebug>
@@ -96,6 +97,19 @@ optionsDialog::optionsDialog(QWidget *parent) :
     updateAccentButton();
     connect(ui->combo_theme, qOverload<int>(&QComboBox::currentIndexChanged),
             this, [this](int) { updateAccentButton(); });
+
+    // Icon style. One set of artwork, drawn several ways (IconTheme owns the
+    // recipes) — and each entry carries a sample drawn its own way, because
+    // "Accent tinted" says nothing until you have seen it.
+    ui->combo_iconTheme->clear();
+    const QStringList iconThemeIds = IconTheme::themeIds();
+    for (const QString &iconThemeId : iconThemeIds) {
+        ui->combo_iconTheme->addItem(
+            IconTheme::preview(iconThemeId, QStringLiteral(":/icons/flat/Radio-48.png")),
+            IconTheme::themeName(iconThemeId), iconThemeId);
+    }
+    const int iconThemeIndex = iconThemeIds.indexOf(IconTheme::configuredTheme());
+    ui->combo_iconTheme->setCurrentIndex(iconThemeIndex >= 0 ? iconThemeIndex : 0);
     ui->checkBox_enableTorrents->setChecked(settings.value("EnableTorrents", false).toBool());
     // The torrent feature is one an administrator hands out per role rather
     // than one every operator may switch on. Without "Support .torrent files"
@@ -503,6 +517,7 @@ void optionsDialog::saveSettings2Db()
     settings.setValue("Disable_Volume", ui->checkBox_disableVolume->isChecked());
     settings.setValue("FullScreen", ui->checkBox_fullScreen->isChecked());
     settings.setValue("Theme", ui->combo_theme->currentData().toString());
+    settings.setValue("IconTheme", ui->combo_iconTheme->currentData().toString());
     settings.setValue("AccentColor",
                       m_accentColor.isValid() ? m_accentColor.name(QColor::HexRgb)
                                               : QString());
@@ -649,8 +664,12 @@ void optionsDialog::saveSettings2Db()
     SecretStore::restrictFile(settings.fileName()); // config may hold credentials: owner-only
 
     // Re-theme the whole application now that Theme/AccentColor are saved,
-    // so Save gives instant visual feedback.
+    // so Save gives instant visual feedback. The dialog's own icons follow;
+    // the main window re-themes itself in updateConfig(), which the dialog's
+    // finished() signal reaches.
     ThemeManager::apply(qobject_cast<QApplication *>(QApplication::instance()));
+    IconTheme::reload();
+    IconTheme::retheme(this);
     qDebug() << "Settings save attempt finished for" << settings.fileName();
     if (settings.status() != QSettings::NoError) {
         qWarning() << "Error during QSettings sync:" << settings.status();

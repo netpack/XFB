@@ -1,5 +1,6 @@
 #include "SignInDialog.h"
 
+#include "../IconTheme.h"
 #include "../services/AccessControl.h"
 
 #include <QApplication>
@@ -24,7 +25,7 @@ SignInDialog::SignInDialog(Mode mode, QWidget *parent)
 void SignInDialog::buildUi()
 {
     setWindowTitle(m_mode == Mode::Startup ? tr("Sign in to XFB") : tr("XFB is locked"));
-    setWindowIcon(QIcon(QStringLiteral(":/icons/flat/Security Checked-48.png")));
+    setWindowIcon(IconTheme::icon(QStringLiteral(":/icons/flat/Security Checked-48.png")));
     setModal(true);
 
     // No close button: the window is answered or the application is quit.
