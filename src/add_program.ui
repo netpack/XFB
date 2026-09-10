@@ -292,9 +292,6 @@
     <property name="displayFormat">
      <string>hh:mm</string>
     </property>
-    <property name="timeSpec">
-     <enum>Qt::LocalTime</enum>
-    </property>
    </widget>
    <widget class="QPushButton" name="pushButton_6">
     <property name="enabled">

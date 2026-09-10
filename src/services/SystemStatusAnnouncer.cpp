@@ -803,6 +803,10 @@ void SystemStatusAnnouncer::processAnnouncement(const QueuedAnnouncement& announ
 
 QString SystemStatusAnnouncer::formatAnnouncementMessage(const QString& component, const QString& status, const QString& additionalInfo, ComponentType componentType, StatusType statusType) const
 {
+    // The wording is chosen by verbosity alone; the status kind is already
+    // carried by the status text itself.
+    Q_UNUSED(statusType);
+
     QString message;
     
     // Format based on verbosity level
@@ -991,26 +995,12 @@ void SystemStatusAnnouncer::sendToLiveRegionManager(const QString& message, Prio
         return;
     }
     
-    // Determine the appropriate live region update type
-    LiveRegionManager::UpdateType updateType;
-    switch (componentType) {
-        case ComponentType::Database:
-            updateType = LiveRegionManager::UpdateType::DatabaseProgress;
-            break;
-        case ComponentType::Network:
-        case ComponentType::Streamer:
-        case ComponentType::Recorder:
-            updateType = LiveRegionManager::UpdateType::SystemStatus;
-            break;
-        default:
-            if (priority >= Priority::Critical) {
-                updateType = LiveRegionManager::UpdateType::CriticalAlert;
-            } else {
-                updateType = LiveRegionManager::UpdateType::SystemStatus;
-            }
-            break;
-    }
-    
+    // The live region API reachable from here distinguishes only a critical
+    // alert from an ordinary status line, so the component only decides the
+    // wording, not the route. An UpdateType was once computed here from
+    // componentType and then never passed anywhere; it is gone.
+    Q_UNUSED(componentType);
+
     // Send to live region manager
     if (priority >= Priority::Critical) {
         m_liveRegionManager->announceCriticalAlert(message);

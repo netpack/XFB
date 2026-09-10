@@ -28,6 +28,11 @@ bool assetMatchesPlatform(const QString &name)
 {
     const QString lower = name.toLower();
 
+#if defined(Q_OS_MAC)
+    // A single universal/arm64 dmg is published, so the extension is enough.
+    // The architecture never has to be read here, so it is not computed.
+    return lower.endsWith(QLatin1String(".dmg"));
+#else
     // QSysInfo reports the architecture of the running build, which is what
     // matters here — an x86 build under emulation must keep getting x86.
     const QString arch = QSysInfo::buildCpuArchitecture();
@@ -36,16 +41,13 @@ bool assetMatchesPlatform(const QString &name)
     const bool assetIsArm64 = lower.contains(QLatin1String("arm64"))
                               || lower.contains(QLatin1String("aarch64"));
 
-#if defined(Q_OS_MAC)
-    // A single universal/arm64 dmg is published, so the extension is enough.
-    return lower.endsWith(QLatin1String(".dmg"));
-#elif defined(Q_OS_WIN)
+#if defined(Q_OS_WIN)
     if (!lower.endsWith(QLatin1String(".exe")))
         return false;
-    return wantArm64 == assetIsArm64;
 #else
     if (!lower.endsWith(QLatin1String(".deb")))
         return false;
+#endif
     return wantArm64 == assetIsArm64;
 #endif
 }

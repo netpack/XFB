@@ -429,6 +429,10 @@ void BrailleDisplayService::disconnectFromDevice()
 
 bool BrailleDisplayService::sendText(const QString& text, BrailleFormat format, BraillePriority priority)
 {
+    // Priority would order competing messages once a real display protocol is
+    // driven from here; nothing queues yet, so it is accepted and ignored.
+    Q_UNUSED(priority);
+
     if (!m_brailleEnabled) {
         return false;
     }

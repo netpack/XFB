@@ -4210,6 +4210,7 @@ void player::programsViewContextMenu(const QPoint& pos) {
                                tr("Failed to upload program '%1'.").arg(selectedFileName),
                                // Callback function after upload attempt:
                                [this, ftpTempPath](bool uploadSuccess) {
+                                    Q_UNUSED(uploadSuccess);
                                     // 3. Clean up temporary file
                                     qInfo() << "Cleaning up temporary FTP file:" << ftpTempPath;
                                     if (QFile::remove(ftpTempPath)) {
@@ -4542,7 +4543,7 @@ void player::playNextSong(){
     s_recursionDepth++;
     
     // Ensure cleanup on function exit
-    auto recursionGuard = [this]() { s_recursionDepth--; };
+    auto recursionGuard = []() { s_recursionDepth--; };
     QScopeGuard recursionScopeGuard(recursionGuard);
 
     // Validate UI components (no mutex needed for read-only checks)
@@ -10818,9 +10819,15 @@ void player::returnTakeOver(){
 
     if(returntakeOver == false){
 
+        // If the file cannot be written there is nothing for the upload script
+        // to send, and the XML writer would silently swallow every element.
+        if(!file.open(QIODevice::WriteOnly)){
+            qWarning() << "returnTakeOver: cannot write" << takeOverFile << "-" << file.errorString();
+            return;
+        }
+
         returntakeOver = true;
 
-        file.open(QIODevice::WriteOnly);
         QXmlStreamWriter xmlWriter(&file);
         xmlWriter.setAutoFormatting(true);
         xmlWriter.writeStartDocument();
@@ -11484,7 +11491,11 @@ void player::on_actionSave_Playlist_triggered()
         }
 
         QFile file(filename);
-        file.open(QIODevice::WriteOnly);
+        if(!file.open(QIODevice::WriteOnly)){
+            qWarning() << "Save Playlist: cannot write" << filename << "-" << file.errorString();
+            QMessageBox::information(this, tr("Cannot save"), tr("The playlist could not be written to that file.. sorry."));
+            return;
+        }
 
         QXmlStreamWriter xmlWriter(&file);
         xmlWriter.setAutoFormatting(true);
@@ -15673,7 +15684,6 @@ void player::on_bt_stop_streaming_clicked()
     QProcess killer_icecast;
     QString icecast_cmd;
     QStringList icecast_args;
-    bool kill_success_icecast = false;
 
 #ifdef Q_OS_WIN
     icecast_cmd = "taskkill";
@@ -15689,7 +15699,6 @@ void player::on_bt_stop_streaming_clicked()
     if (killer_icecast.waitForFinished(3000)) { // Wait up to 3 seconds
         if (killer_icecast.exitStatus() == QProcess::NormalExit && killer_icecast.exitCode() == 0) {
             qInfo() << "Icecast process killed successfully (or was not running).";
-            kill_success_icecast = true; // Assume success if command ran ok
         } else {
             qWarning() << "Kill command for icecast failed or process not found. Exit code:" << killer_icecast.exitCode();
             // Might log stderr: QString err = killer_icecast.readAllStandardError(); qDebug() << err;
@@ -15709,7 +15718,6 @@ void player::on_bt_stop_streaming_clicked()
     QProcess killer_butt;
     QString butt_cmd;
     QStringList butt_args;
-    bool kill_success_butt = false;
 
 #ifdef Q_OS_WIN
     butt_cmd = "taskkill";
@@ -15724,7 +15732,6 @@ void player::on_bt_stop_streaming_clicked()
     if (killer_butt.waitForFinished(3000)) { // Wait up to 3 seconds
         if (killer_butt.exitStatus() == QProcess::NormalExit && killer_butt.exitCode() == 0) {
             qInfo() << "Butt process killed successfully (or was not running).";
-            kill_success_butt = true;
         } else {
             qWarning() << "Kill command for butt failed or process not found. Exit code:" << killer_butt.exitCode();
         }
@@ -16538,7 +16545,7 @@ void player::on_bt_portTest_clicked()
     timeoutTimer->setSingleShot(true);
 
     // Lambda to handle cleanup for both success and failure
-    auto cleanup = [socket, timeoutTimer, this]() {
+    auto cleanup = [socket, timeoutTimer]() {
         // ui->bt_portTest->setEnabled(true); // Re-enable button
         if (timeoutTimer->isActive()) {
             timeoutTimer->stop();
@@ -16553,7 +16560,7 @@ void player::on_bt_portTest_clicked()
     };
 
     // Connection successful
-    connect(socket, &QTcpSocket::connected, this, [this, externalIpStr, portToCheck, cleanup]() {
+    connect(socket, &QTcpSocket::connected, this, [this, externalIpStr, cleanup]() {
         qInfo() << "Connection successful to" << externalIpStr << ":" << portToCheck;
         ui->lbl_port->setText("OPEN"); // Simplified from "OPEN IN + OUT"
         ui->lbl_port->setStyleSheet("color:green;");
@@ -17237,13 +17244,13 @@ void player::recoveryStreamTakeOverPlay() {
     });
 
     // Optionally connect started signal for logging confirmation
-     connect(&radio1, &QProcess::started, this, [this](){
+     connect(&radio1, &QProcess::started, this, [](){
          qInfo() << "mplayer process started successfully for recovery stream.";
      });
 
      // Optionally connect finished signal for cleanup or restart logic
      connect(&radio1, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-             this, [this](int exitCode, QProcess::ExitStatus exitStatus){
+             this, [](int exitCode, QProcess::ExitStatus exitStatus){
          qWarning() << "mplayer recovery stream finished unexpectedly. ExitCode:" << exitCode << "ExitStatus:" << exitStatus;
          // Decide what to do: retry? stop? Assume user interaction needed?
          // Maybe just log it if recoveryStreamTakeOverPlay is the only way to restart.

@@ -436,6 +436,16 @@ protected:
     bool filterAcceptsRow(int sourceRow, const QModelIndex& sourceParent) const override;
 
 private:
+    /**
+     * @brief Bracket a change to the filter members.
+     *
+     * Qt 6.10 replaced invalidateFilter() with a begin/end pair placed around
+     * the change itself. XFB still builds against Qt 6.4 on Debian, so both
+     * spellings have to survive; these two hide which one is in use.
+     */
+    void beginFilterUpdate();
+    void endFilterUpdate();
+
     int m_minPlayCount;
     QDate m_startDate;
     QDate m_endDate;

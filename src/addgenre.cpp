@@ -58,11 +58,10 @@ addgenre::addgenre(QWidget *parent) :
 QSqlDatabase db = QSqlDatabase::database("xfb_connection");
     QSqlQueryModel * model=new QSqlQueryModel();
 
-    QSqlQuery* qry=new QSqlQuery(db);
-
-    qry->prepare("select name from genres1 union select name from genres2 order by name");
-    qry->exec();
-    model->setQuery(*qry);
+    QSqlQuery qry(db);
+    qry.prepare("select name from genres1 union select name from genres2 order by name");
+    qry.exec();
+    model->setQuery(std::move(qry));
     ui->listGenres->setModel(model);
 
 
@@ -77,11 +76,10 @@ void addgenre::on_btShowGenre_clicked()
 {
     QSqlQueryModel * model=new QSqlQueryModel();
 QSqlDatabase db = QSqlDatabase::database("xfb_connection");
-    QSqlQuery* qry=new QSqlQuery(db);
-
-    qry->prepare("select name from genres1 union select name from genres2 order by name");
-    qry->exec();
-    model->setQuery(*qry);
+    QSqlQuery qry(db);
+    qry.prepare("select name from genres1 union select name from genres2 order by name");
+    qry.exec();
+    model->setQuery(std::move(qry));
     ui->listGenres->setModel(model);
 }
 

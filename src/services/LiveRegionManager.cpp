@@ -489,6 +489,10 @@ void LiveRegionManager::announceCountdown(int secondsRemaining, const QString& e
 
 void LiveRegionManager::requestTimeAnnouncement(bool includeRemaining)
 {
+    // The remaining time is already part of m_lastTimeInfo when it was
+    // announced with one, so the flag has nothing left to switch on here.
+    Q_UNUSED(includeRemaining);
+
     qint64 currentTime = QDateTime::currentMSecsSinceEpoch();
     
     // Throttle manual time requests (minimum 1 second between requests)
@@ -697,6 +701,10 @@ void LiveRegionManager::onTimeUpdateTimer()
 
 bool LiveRegionManager::shouldThrottleUpdate(QWidget* widget, UpdateType updateType, bool isCritical) const
 {
+    // Throttling is per widget and per elapsed time; the kind of update only
+    // matters through isCritical, which the caller has already resolved.
+    Q_UNUSED(updateType);
+
     if (isCritical && m_config.prioritizeCriticalUpdates) {
         return false;
     }

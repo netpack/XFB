@@ -570,7 +570,7 @@ void TorrentSearchService::fetchMagnetLink(const QString &torrentPagePath, std::
         return;
     }
 
-    connect(reply, &QNetworkReply::finished, this, [this, reply, callback]() {
+    connect(reply, &QNetworkReply::finished, this, [reply, callback]() {
         QString magnetLink;
         if (reply->error() == QNetworkReply::NoError) {
             QString html = QString::fromUtf8(reply->readAll());

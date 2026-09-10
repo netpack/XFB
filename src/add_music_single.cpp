@@ -56,10 +56,10 @@ add_music_single::add_music_single(QWidget *parent) :
  QList<QLocale> allLocales = QLocale::matchingLocales(
              QLocale::AnyLanguage,
              QLocale::AnyScript,
-             QLocale::AnyCountry);
+             QLocale::AnyTerritory);
 
  for(const QLocale &locale : allLocales) {
-     ui->cbox_country->addItem(QLocale::countryToString(locale.country()));
+     ui->cbox_country->addItem(QLocale::territoryToString(locale.territory()));
  }
 
 
@@ -74,16 +74,19 @@ QSqlDatabase db = QSqlDatabase::database("xfb_connection");
     QSqlQueryModel * model=new QSqlQueryModel();
     QSqlQueryModel * model2=new QSqlQueryModel();
 
-    QSqlQuery* qry=new QSqlQuery(db);
-
-    qry->prepare("select name from genres1");
-    qry->exec();
-    model->setQuery(*qry);
+    // A model takes the query by move and owns it from then on, so each combo
+    // needs a query of its own: they used to share one, and re-preparing it for
+    // the second model pulled the result out from under the first.
+    QSqlQuery qry1(db);
+    qry1.prepare("select name from genres1");
+    qry1.exec();
+    model->setQuery(std::move(qry1));
     ui->cbox_g1->setModel(model);
 
-    qry->prepare("select name from genres1");
-    qry->exec();
-    model2->setQuery(*qry);
+    QSqlQuery qry2(db);
+    qry2.prepare("select name from genres1");
+    qry2.exec();
+    model2->setQuery(std::move(qry2));
     ui->cbox_g2->setModel(model2);
 
 }

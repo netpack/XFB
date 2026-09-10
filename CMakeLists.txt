@@ -88,6 +88,14 @@ endif()
 # Compiler-specific options
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     add_compile_options(-Wall -Wextra -Wpedantic)
+    # Qt declares its categorised logging macros as qCInfo(category, ...), so
+    # the ordinary streaming call qCInfo(xfbAudio) << ... passes no variadic
+    # argument at all. -Wpedantic calls that a GNU extension. The usage is
+    # correct Qt and the warning is about Qt's header, not this code, so it is
+    # off; it would otherwise bury every real warning in ErrorHandler.cpp.
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        add_compile_options(-Wno-gnu-zero-variadic-macro-arguments)
+    endif()
 elseif(MSVC)
     add_compile_options(/W3 /utf-8)
     # Suppress specific MSVC warnings that are noisy with Qt

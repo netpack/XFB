@@ -22,11 +22,11 @@
 AccessibilityPreferencesDialog::AccessibilityPreferencesDialog(AccessibilitySettingsService* settingsService, BrailleDisplayService* brailleService, QWidget* parent)
     : QDialog(parent)
     , m_tabWidget(nullptr)
+    , m_brailleDetectionTimer(new QTimer(this))
     , m_settingsService(settingsService)
     , m_brailleService(brailleService)
     , m_settingsChanged(false)
     , m_loadingSettings(false)
-    , m_brailleDetectionTimer(new QTimer(this))
 {
     setWindowTitle(tr("Accessibility Preferences"));
     setWindowIcon(QApplication::style()->standardIcon(QStyle::SP_ComputerIcon));

@@ -427,6 +427,8 @@ add_executable(test_add_dialog_cancel
     ${CMAKE_SOURCE_DIR}/src/add_pub.cpp
     ${CMAKE_SOURCE_DIR}/src/add_program.cpp
     ${CMAKE_SOURCE_DIR}/src/audioformats.cpp
+    # Both dialogs name the weekday in English for the database
+    ${CMAKE_SOURCE_DIR}/src/services/ProgrammeSchedule.cpp
 )
 
 target_link_libraries(test_add_dialog_cancel

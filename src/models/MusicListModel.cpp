@@ -388,6 +388,7 @@ std::shared_ptr<MusicItem> MusicListModel::getMusicItem(const QModelIndex& index
 
 std::shared_ptr<MusicItem> MusicListModel::getMusicItemById(int musicId) const
 {
+    Q_UNUSED(musicId);
     // QCache doesn't support iteration, so we'll query the repository directly
     // This is a simplified implementation - in a real scenario, you might want
     // to maintain a separate index for ID-based lookups
@@ -443,6 +444,7 @@ void MusicListModel::onRepositoryDataChanged()
 
 void MusicListModel::onMusicItemAdded(const MusicItem& musicItem)
 {
+    Q_UNUSED(musicItem);
     // For now, just refresh the model
     // In a more sophisticated implementation, we could insert the item
     // at the correct position based on current sorting
@@ -451,6 +453,7 @@ void MusicListModel::onMusicItemAdded(const MusicItem& musicItem)
 
 void MusicListModel::onMusicItemUpdated(const MusicItem& musicItem)
 {
+    Q_UNUSED(musicItem);
     // QCache doesn't support iteration, so we'll need to refresh the model
     // In a real implementation, you'd maintain a separate index for ID-based lookups
     // For now, just refresh the entire model
@@ -463,6 +466,7 @@ void MusicListModel::onMusicItemUpdated(const MusicItem& musicItem)
 
 void MusicListModel::onMusicItemRemoved(int musicId)
 {
+    Q_UNUSED(musicId);
     // QCache doesn't support iteration, so we'll clear the cache and refresh
     // In a real implementation, you'd maintain a separate index for ID-based lookups
     m_itemCache.clear();
@@ -488,7 +492,6 @@ void MusicListModel::onDataLoadingFinished()
         }
         
         // Update loaded count
-        int oldLoadedCount = m_loadedCount;
         m_loadedCount += items.size();
         
         // Mark range as loaded
@@ -821,29 +824,48 @@ MusicFilterProxyModel::MusicFilterProxyModel(QObject* parent)
     setDynamicSortFilter(true);
 }
 
+void MusicFilterProxyModel::beginFilterUpdate()
+{
+#if QT_VERSION >= QT_VERSION_CHECK(6, 10, 0)
+    beginFilterChange();
+#endif
+}
+
+void MusicFilterProxyModel::endFilterUpdate()
+{
+#if QT_VERSION >= QT_VERSION_CHECK(6, 10, 0)
+    endFilterChange();
+#else
+    invalidateFilter();
+#endif
+}
+
 void MusicFilterProxyModel::setMinPlayCountFilter(int minPlayCount)
 {
     if (m_minPlayCount != minPlayCount) {
+        beginFilterUpdate();
         m_minPlayCount = minPlayCount;
-        invalidateFilter();
+        endFilterUpdate();
     }
 }
 
 void MusicFilterProxyModel::setDateRangeFilter(const QDate& startDate, const QDate& endDate)
 {
     if (m_startDate != startDate || m_endDate != endDate) {
+        beginFilterUpdate();
         m_startDate = startDate;
         m_endDate = endDate;
-        invalidateFilter();
+        endFilterUpdate();
     }
 }
 
 void MusicFilterProxyModel::setDurationRangeFilter(int minDuration, int maxDuration)
 {
     if (m_minDuration != minDuration || m_maxDuration != maxDuration) {
+        beginFilterUpdate();
         m_minDuration = minDuration;
         m_maxDuration = maxDuration;
-        invalidateFilter();
+        endFilterUpdate();
     }
 }
 

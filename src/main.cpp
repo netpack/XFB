@@ -699,7 +699,7 @@ int main(int argc, char *argv[])
 
     // Ensure Tor is stopped when the application quits (covers force-quit scenarios
     // where the destructor might not run)
-    QObject::connect(&app, &QCoreApplication::aboutToQuit, [&mainWindow]() {
+    QObject::connect(&app, &QCoreApplication::aboutToQuit, []() {
         qDebug() << "Application quitting, cleaning up...";
         g_mainWindow = nullptr; // prevent signal handler from using stale pointer
 #ifdef Q_OS_MAC

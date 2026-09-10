@@ -143,7 +143,10 @@ void ArtworkStore::finishJob(const QString &filePath, const QImage &image)
         // Remember the miss so the file is not probed again next session
         QDir().mkpath(QFileInfo(base).absolutePath());
         QFile marker(base + QLatin1String(".noart"));
-        marker.open(QIODevice::WriteOnly);
+        // Best effort: if the marker cannot be written the only cost is that
+        // this file gets probed again next session.
+        if (!marker.open(QIODevice::WriteOnly))
+            qWarning() << "ArtworkStore: could not write the no-art marker" << marker.fileName();
     } else if (!QFile::exists(base + QLatin1String(".png"))) {
         // Folder-image fallback: persist the scaled copy ourselves
         result.pixmap.save(base + QLatin1String(".png"));

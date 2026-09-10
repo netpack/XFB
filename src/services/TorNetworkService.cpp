@@ -20,9 +20,9 @@ TorNetworkService::TorNetworkService(QObject *parent)
     , m_networkManager(new QNetworkAccessManager(this))
     , m_connectionTimer(new QTimer(this))
     , m_torReady(false)
+    , m_autoConnect(false) // Don't auto-connect
     , m_socksPort(9050)
     , m_controlPort(9051)
-    , m_autoConnect(false) // Don't auto-connect
     , m_connectionRetries(0)
 {
     // Set up connection timer — retries every 5 seconds while Tor bootstraps
@@ -231,6 +231,7 @@ void TorNetworkService::onTorProcessStarted()
 
 void TorNetworkService::onTorProcessFinished(int exitCode, QProcess::ExitStatus exitStatus)
 {
+    Q_UNUSED(exitStatus);
     ErrorHandler::logMessage(ErrorHandler::ErrorSeverity::Info, "TorNetworkService", 
                      QString("Tor process finished with exit code: %1").arg(exitCode));
     m_torReady = false;
