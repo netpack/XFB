@@ -15,7 +15,7 @@
 
 set -e
 
-VERSION="${1:-3.1423}"
+VERSION="${1:-4.0}"
 REPO_DIR="debian-repo"
 HELPER_IMAGE="xfb-apt-repo:bookworm"
 

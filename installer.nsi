@@ -5,7 +5,7 @@
 !define COMPANYNAME "Netpack - Online Solutions"
 !define DESCRIPTION "XFB Radio Automation Software"
 !ifndef VERSION
-  !define VERSION "3.1423"
+  !define VERSION "4.0"
 !endif
 ; Windows' version resource wants four 16-bit integers, which the version does
 ; not fit. Same mapping the executable uses (see CMakeLists.txt): <major> then
@@ -13,7 +13,7 @@
 ; ordering matches the version's own. bump-version.sh keeps this in step with
 ; VERSION above.
 !ifndef VERSIONNUM
-  !define VERSIONNUM "3.1423.0.0"
+  !define VERSIONNUM "4.0.0.0"
 !endif
 ; Target architecture: "x64" (default) or "arm64". Passed by build-windows.bat
 ; via /DARCH=...; affects the output filename and the displayed name.
