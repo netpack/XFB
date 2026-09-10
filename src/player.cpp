@@ -1683,7 +1683,7 @@ checkDbOpen();
                ui->txt_playlistTotalTime->setParent(controlsPage);
                controlsLayout->addWidget(ui->txt_playlistTotalTime);
 
-               // Checkboxes and controls from frame_2's layoutWidget
+               // Checkboxes and controls from frame_2's playlistOptionsColumn
                ui->checkBox_sum_to_playlist_time->setParent(controlsPage);
                ui->checkBox_sum_to_playlist_time->setMaximumWidth(16777215);
                controlsLayout->addWidget(ui->checkBox_sum_to_playlist_time);
@@ -17490,7 +17490,7 @@ void player::relayoutPlayerFrame()
     // Row 2: the volume and progress sliders, full width — this is the row
     // that used to run off the right-hand edge.
     const int slidersY = (h >= 121) ? 66 : qBound(40, h - 55, 66);
-    place(ui->layoutWidget1, kMargin + 1, slidersY, w - 2 * (kMargin + 1), 27);
+    place(ui->volumeSliderRow, kMargin + 1, slidersY, w - 2 * (kMargin + 1), 27);
 
     // Row 3: the now-playing line, full width.
     const int nowPlayingY = qBound(slidersY + 28, (h >= 121) ? 90 : h - 31, qMax(1, h - 20));

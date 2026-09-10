@@ -236,7 +236,7 @@
                <string>Total time of the playlist: 00:00:00</string>
               </property>
              </widget>
-             <widget class="QWidget" name="layoutWidget">
+             <widget class="QWidget" name="playlistOptionsColumn">
               <property name="geometry">
                <rect>
                 <x>6</x>
@@ -2226,7 +2226,7 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
            <set>Qt::AlignmentFlag::AlignCenter</set>
           </property>
          </widget>
-         <widget class="QWidget" name="layoutWidget">
+         <widget class="QWidget" name="volumeSliderRow">
           <property name="geometry">
            <rect>
             <x>10</x>
@@ -2446,7 +2446,7 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
           <attribute name="label">
            <string>Search</string>
           </attribute>
-          <widget class="QWidget" name="layoutWidget">
+          <widget class="QWidget" name="searchRow">
            <property name="geometry">
             <rect>
              <x>10</x>
@@ -3371,9 +3371,6 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
         </property>
         <property name="openExternalLinks">
          <bool>false</bool>
-        </property>
-        <property name="buddy">
-         <cstring></cstring>
         </property>
        </widget>
       </item>
