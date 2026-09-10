@@ -7,13 +7,22 @@
 #
 # Produces: output/xfb-<version>-1.<dist>.<arch>.rpm
 #
-# BUILD EACH ARCHITECTURE ON ITS OWN. Only the native one works: an emulated
-# build gets part-way and then tar starts failing on an arbitrary scattering of
-# files with "Cannot open: Function not implemented", and once on rpmbuild's
-# own %prep even "Cannot mkdir". Nothing in the spec can work around that — it
-# is the emulation layer. On an Apple Silicon Mac that means aarch64 builds
-# here and x86_64 needs a real x86_64 Linux machine (or a CI runner, which is
-# x86_64 and can run this same Dockerfile natively).
+# BUILD EACH ARCHITECTURE ON ITS OWN. The native one is the one to trust; on
+# an Apple Silicon Mac that is aarch64, and x86_64 goes through qemu.
+#
+# Emulated x86_64 used to stop dead in rpmbuild's %prep with "Cannot open:
+# Function not implemented" on the first file out of the tarball. That is GNU
+# tar: under qemu it cannot extract at all, every openat() and mkdirat() it
+# makes returns ENOSYS. Only extraction — writing a tarball works, cp -a
+# works, an ordinary shell creating thousands of files works. bsdtar extracts
+# the same tarball without an error, so Dockerfile.fedora-build now points
+# rpm's %__rpmuncompress at a bsdtar shim and %prep gets through.
+#
+# With that shim in place an emulated x86_64 build runs all the way through:
+# xfb-4.0-1.fc44.x86_64.rpm was built this way on an M-series Mac on
+# 2026-09-10. It takes hours, so a real x86_64 Linux machine — the UTM Fedora
+# VM with ./build-rpm.sh, or a CI runner — is still the quicker route when one
+# is to hand.
 set -e
 
 ARCHES=("$@")

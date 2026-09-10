@@ -49,6 +49,20 @@ debian-repo/
 .git/
 .vscode/
 .kiro/
+# Qt Creator's clangd index. Already in .gitignore, and missing here: 6561 of
+# the 7522 files in the build context were this one cache, and all of them went
+# into the source tarball the RPM is built from. Nothing reads it and no
+# package ships it.
+.qtc_clangd/
+**/.qtc_clangd/
+.qtcreator/
+**/.qtcreator/
+# Gradle's own cache, next to the android/app/build/ that build-*/ already
+# catches. The companion APK the packages ship comes from
+# packaging/companion/, not from a Gradle output tree, so none of this is
+# needed to build.
+.gradle/
+**/.gradle/
 # Agent session state, and — the reason this matters — the git worktrees kept
 # under it: each one is a second copy of the whole source tree, which is most
 # of the build context and ends up inside the source tarball the RPM is built

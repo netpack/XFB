@@ -18,6 +18,7 @@ RUN dnf -y install \
         pkgconf-pkg-config \
         rpm-build \
         rpmdevtools \
+        bsdtar \
         desktop-file-utils \
         qt6-qtbase-devel \
         qt6-qtmultimedia-devel \
@@ -50,11 +51,10 @@ RUN set -eu; \
 # staged under that name rather than built in place. Anything that is not
 # source is left out: a build/ directory that slipped past .dockerignore would
 # otherwise be copied in and confuse cmake.
-# cp -a rather than a tar pipe. Emulated (non-native) builds fail part-way
-# through a tar of a tree this size — "Cannot open: Function not implemented"
-# on an arbitrary scattering of files — while cp comes through intact. The
-# excluded directories are removed after copying rather than filtered during
-# it, which is the same result and keeps this readable.
+# cp -a rather than a tar pipe, because under emulation tar is unreliable —
+# see the rpmuncompress shim below for what exactly breaks. The excluded
+# directories are removed after copying rather than filtered during it, which
+# is the same result and keeps this readable.
 RUN set -eu; \
     version="$(cat /src/.rpm-version)"; \
     rpmdev-setuptree; \
@@ -64,11 +64,38 @@ RUN set -eu; \
            "/tmp/xfb-$version/output" "/tmp/xfb-$version/pkg-root" \
            "/tmp/xfb-$version/build"; \
     rm -rf "/tmp/xfb-$version"/build-*; \
+    find "/tmp/xfb-$version" \( -name .qtc_clangd -o -name .qtcreator \
+                              -o -name .gradle \) -type d -prune -exec rm -rf {} +; \
     tar -czf "$HOME/rpmbuild/SOURCES/xfb-$version.tar.gz" -C /tmp "xfb-$version"
+
+# %prep is untarred by GNU tar, and GNU tar cannot extract under qemu: every
+# openat() and mkdirat() it makes comes back ENOSYS, so an emulated x86_64
+# build dies on the first file with "Cannot open: Function not implemented".
+# It is only that one direction — creating a tarball works, cp -a works, and
+# an ordinary shell creating thousands of files works, which is why the rest
+# of the build is fine. bsdtar (libarchive) extracts the same tarball without
+# a single error. Reproduce in one line on an Apple Silicon Mac:
+#
+#   docker run --rm --platform linux/amd64 fedora:44 sh -c \
+#     'mkdir /a /b; touch /a/f; tar -czf /t.tgz -C / a; tar -xzf /t.tgz -C /b'
+#
+# rpm 6 does not run tar from the spec, it runs %{__rpmuncompress} -x, so this
+# points that macro at a shim that hands extraction to bsdtar and passes
+# everything else (patches, which this spec has none of) to the real thing.
+# Applied on both architectures rather than only the emulated one: it is the
+# same tarball either way, and one code path is one thing to be wrong.
+RUN printf '%s\n' \
+        '#!/bin/sh' \
+        'if [ "$1" = "-x" ]; then shift; exec bsdtar -xf "$1"; fi' \
+        'exec /usr/lib/rpm/rpmuncompress "$@"' \
+        > /usr/local/bin/xfb-uncompress \
+    && chmod +x /usr/local/bin/xfb-uncompress
 
 RUN set -eu; \
     version="$(cat /src/.rpm-version)"; \
-    rpmbuild -bb --define "xfb_version $version" packaging/xfb.spec
+    rpmbuild -bb --define "xfb_version $version" \
+        --define "__rpmuncompress /usr/local/bin/xfb-uncompress" \
+        packaging/xfb.spec
 
 # The runner copies the finished package out.
 CMD ["/bin/sh", "-c", "mkdir -p /output && cp -v $HOME/rpmbuild/RPMS/*/*.rpm /output/"]
