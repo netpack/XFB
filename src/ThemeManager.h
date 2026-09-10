@@ -2,6 +2,7 @@
 #define THEMEMANAGER_H
 
 #include <QColor>
+#include <QFont>
 #include <QString>
 #include <QStringList>
 
@@ -24,6 +25,8 @@ class QApplication;
  * Settings (xfb.conf):
  *   Theme       — theme id; when absent, migrated from the legacy DarkMode
  *   AccentColor — "#rrggbb" accent override; empty uses the theme's own
+ *   NowPlayingClockFont — QFont::toString() of the elapsed-time clock on the
+ *                 player panel; empty means the one XFB ships with
  *
  * The legacy DarkMode bool is still written back on apply() so older code
  * paths (and the Windows installer defaults) keep working.
@@ -67,6 +70,33 @@ public:
     /** A color that reads over the current theme's item-view background,
      *  derived from `base` — for markers and overlays on custom widgets. */
     static QColor contrastingInk(const QColor &wanted);
+
+    // --- the now-playing elapsed-time clock -------------------------------
+    //
+    // The "0:01:23 of 0:03:45" line under the programme name. Its typeface is
+    // the operator's to choose (Options -> Appearance), because the desk it is
+    // read from may be a metre away. Only the size is not entirely theirs: the
+    // player panel gives the clock one row between the programme name and the
+    // sliders, so a size past what that row can grow to would push the clock
+    // over the transport.
+
+    /** The clock as XFB draws it out of the box: the application typeface,
+     *  bold, at 14 pt — the font the player panel was designed with. */
+    static QFont defaultNowPlayingClockFont();
+
+    /** The clock the operator chose, or the default when they chose none.
+     *  Always within the size range the player panel can show. */
+    static QFont nowPlayingClockFont();
+
+    /** `font` held to the size range the player panel can show. */
+    static QFont clampNowPlayingClockFont(QFont font);
+
+    /** The xfb.conf key the two above read — written by the options dialog. */
+    static const char *nowPlayingClockFontKey();
+
+    /** Smallest and largest clock size the player panel can lay out. */
+    static constexpr int kClockFontMinPt = 8;
+    static constexpr int kClockFontMaxPt = 28;
 
 private:
     struct Spec;

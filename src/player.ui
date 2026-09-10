@@ -2219,9 +2219,6 @@ font: 75 italic 20pt &quot;Noto Sans [monotype]&quot;;</string>
             <bold>true</bold>
            </font>
           </property>
-          <property name="styleSheet">
-           <string notr="true">color: rgb(0, 75, 167);</string>
-          </property>
           <property name="text">
            <string/>
           </property>

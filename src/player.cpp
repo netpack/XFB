@@ -43,6 +43,7 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include <QMessageBox>
 #include <QInputDialog>
 #include <QFileDialog>
+#include <QFontMetrics>
 #include <QFile>
 #include <QtSql>
 #include <QMediaPlayer>
@@ -82,6 +83,7 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include <QUrl>
 #include <QClipboard>
 #include <QHeaderView>
+#include <QTableView>
 #include <QApplication>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -2767,6 +2769,30 @@ void player::updateConfig() {
     bool waveView = settings.value("PlaylistWaveView", false).toBool();
     if (m_waveViewToggle && m_waveViewToggle->isChecked() != waveView)
         m_waveViewToggle->setChecked(waveView); // toggled() applies it
+    // The now-playing elapsed-time clock's typeface (Options -> Appearance).
+    // Set before the relayout below, which sizes the clock's row from it.
+    if (ui && ui->txtDuration)
+        ui->txtDuration->setFont(ThemeManager::nowPlayingClockFont());
+
+    // Row numbers down the side of the four library lists. Jingles was the
+    // only one of the four drawn with them — an accident of how the four views
+    // were set up rather than a decision — so each list now carries its own
+    // switch, and the defaults keep every list looking as it did.
+    if (ui) {
+        const struct { QTableView *view; const char *key; bool byDefault; } lists[] = {
+            { ui->musicView,    "RowNumbers/Music",    false },
+            { ui->jinglesView,  "RowNumbers/Jingles",  true  },
+            { ui->pubView,      "RowNumbers/Pub",      false },
+            { ui->programsView, "RowNumbers/Programs", false },
+        };
+        for (const auto &list : lists) {
+            if (list.view && list.view->verticalHeader()) {
+                list.view->verticalHeader()->setVisible(
+                    settings.value(list.key, list.byDefault).toBool());
+            }
+        }
+    }
+
     // Covers the case where the state did not change but the preference did.
     applyProgressBarVisibility();
     relayoutPlayerFrame();
@@ -17435,9 +17461,20 @@ void player::relayoutPlayerFrame()
     auto pw = [&](int designW) {
         return qMax(24, int(designW * programWidth / kProgramSpan));
     };
-    place(ui->txt_ProgramName, programLeft, 10, programWidth, 37);
-    place(ui->bt_ProgramStopandProcess, px(750), 10, pw(301), 34);
-    place(ui->txtDuration, programLeft, 45, programWidth, 20);
+    // The programme name and the elapsed-time clock share one 55 px band
+    // (y=10 to the sliders at y=65, the two overlapping by 2 px as designed).
+    // The clock's typeface is the operator's to choose, so it takes the height
+    // that font needs and the name gives it up — otherwise a large clock would
+    // be drawn clipped, or ride over the transport buttons below it.
+    const QFont clockFont = ui->txtDuration ? ui->txtDuration->font()
+                                            : ThemeManager::nowPlayingClockFont();
+    const int clockHeight = qBound(20, QFontMetrics(clockFont).height() + 2, 40);
+    const int programNameHeight = qMax(16, 57 - clockHeight);
+    place(ui->txt_ProgramName, programLeft, 10, programWidth, programNameHeight);
+    place(ui->bt_ProgramStopandProcess, px(750), 10, pw(301),
+          qMin(34, programNameHeight));
+    place(ui->txtDuration, programLeft, 10 + programNameHeight - 2, programWidth,
+          clockHeight);
     // Status banners, drawn over the program area while they are shown.
     place(ui->txt_uploadingPrograms, programLeft, 0, programWidth, 51);
     place(ui->txt_creatingPrograms, programLeft, 0, programWidth, 51);

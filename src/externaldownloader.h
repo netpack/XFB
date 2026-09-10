@@ -16,6 +16,15 @@ namespace Ui {
 class externaldownloader;
 }
 
+/**
+ * Where yt-dlp actually is on this machine, or an empty string when it is
+ * nowhere XFB knows to look. Preference order: the self-updating copy XFB
+ * keeps in ~/.local/bin, then PATH, then the usual install locations (a GUI
+ * app on macOS does not inherit the shell's PATH). Shared with the options
+ * dialog, which reports it under Diagnostics.
+ */
+QString findYtDlpExecutable();
+
 class externaldownloader : public QWidget
 {
     Q_OBJECT

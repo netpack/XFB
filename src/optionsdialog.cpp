@@ -15,6 +15,7 @@
 #include "services/AccessControl.h"
 #include <QDebug>
 #include "player.h"
+#include "externaldownloader.h"
 #include <QAudio>
 #include <QMediaRecorder>
 #include <QMediaDevices> // Qt6 replacement for QAudioDeviceInfo
@@ -29,7 +30,17 @@
 #include <QVBoxLayout>
 // QAudioDeviceInfo is deprecated in Qt6, already included QMediaDevices above
 #include <QAudioInput>
+#include <QClipboard>
 #include <QDateTime>
+#include <QDesktopServices>
+#include <QHostAddress>
+#include <QNetworkInterface>
+#include <QStorageInfo>
+#include <QHeaderView>
+#include <QStyle>
+#include <QTcpSocket>
+#include <QFontDialog>
+#include <QUrl>
 #include <QtWidgets>
 
 optionsDialog::optionsDialog(QWidget *parent) :
@@ -169,6 +180,18 @@ optionsDialog::optionsDialog(QWidget *parent) :
         ui->label_loudnessCeiling->setEnabled(on);
     });
 
+    // Row numbers down the side of the four library lists. Jingles is the only
+    // one that ever had them, so that is what the defaults say — anyone who
+    // never opens this page sees exactly what they saw before.
+    ui->checkBox_rowNumbersMusic->setChecked(
+        settings.value("RowNumbers/Music", false).toBool());
+    ui->checkBox_rowNumbersJingles->setChecked(
+        settings.value("RowNumbers/Jingles", true).toBool());
+    ui->checkBox_rowNumbersPub->setChecked(
+        settings.value("RowNumbers/Pub", false).toBool());
+    ui->checkBox_rowNumbersPrograms->setChecked(
+        settings.value("RowNumbers/Programs", false).toBool());
+
     ui->checkBox_levelMeter->setChecked(settings.value("ShowLevelMeter", false).toBool());
     ui->combo_levelMeterPos->setCurrentIndex(
         settings.value("LevelMeterPlacement", "volume").toString() == "side" ? 1 : 0);
@@ -187,9 +210,35 @@ optionsDialog::optionsDialog(QWidget *parent) :
         ui->spin_fontSize->setValue(fontSize);
     }
 
+    // The now-playing elapsed-time clock. Stored as QFont::toString(); an
+    // empty value means "whatever XFB ships with", which is why the custom
+    // flag is kept rather than comparing fonts.
+    {
+        const QString spec =
+            settings.value(ThemeManager::nowPlayingClockFontKey()).toString();
+        QFont picked;
+        m_clockFontCustom = !spec.isEmpty() && picked.fromString(spec);
+        m_clockFont = m_clockFontCustom
+                          ? ThemeManager::clampNowPlayingClockFont(picked)
+                          : ThemeManager::defaultNowPlayingClockFont();
+        ui->bt_clockFont->setAccessibleName(tr("Choose the now-playing clock typeface"));
+        ui->bt_clockFontReset->setAccessibleName(
+            tr("Use the default now-playing clock typeface"));
+        updateClockFontSample();
+    }
+
     // -- Database Tab --
-    txt_selected_db = settings.value("Database").toString(); // Load into member variable
-    ui->txt_selected_db->setText(txt_selected_db.isEmpty() ? "[NO DATABASE SET]" : txt_selected_db); // Display
+    // The file the open connection is actually using, not the "Database"
+    // setting: on installs that predate the current layout that setting still
+    // holds a relative path pointing at nothing, and an administrator reading
+    // this tab needs the file they would back up or hand to support.
+    txt_selected_db = databasePath();
+    if (txt_selected_db.isEmpty())
+        txt_selected_db = settings.value("Database").toString();
+    ui->txt_selected_db->setText(txt_selected_db.isEmpty() ? tr("[NO DATABASE SET]")
+                                                           : txt_selected_db);
+    ui->txt_selected_db->setToolTip(txt_selected_db);
+    ui->txt_selected_db->setTextInteractionFlags(Qt::TextSelectableByMouse);
 
     // -- Recording and Paths Tab --
     // Find and set saved device/codec/container
@@ -266,10 +315,44 @@ optionsDialog::optionsDialog(QWidget *parent) :
     ui->txt_spotifyClientSecret->setText(
         SecretStore::open(settings.value("SpotifyClientSecret").toString()));
 
+    // A QFormLayout label is not a buddy, so without these every path field
+    // and every "..." button announces itself as the group box it sits in.
+    const struct { QWidget *field; const char *name; } named[] = {
+        { ui->cboxRecDev,        QT_TR_NOOP("Recording device") },
+        { ui->comboBox_codec,    QT_TR_NOOP("Recording codec") },
+        { ui->comboBox_container,QT_TR_NOOP("Recording container") },
+        { ui->txt_savePath,      QT_TR_NOOP("Folder recordings are saved in") },
+        { ui->bt_browseSavePath, QT_TR_NOOP("Choose the folder recordings are saved in") },
+        { ui->txt_programsPath,  QT_TR_NOOP("Programmes folder") },
+        { ui->bt_browse_programPath, QT_TR_NOOP("Choose the programmes folder") },
+        { ui->txt_musicPath,     QT_TR_NOOP("Music folder") },
+        { ui->bt_browse_musicPath, QT_TR_NOOP("Choose the music folder") },
+        { ui->txt_jinglePath,    QT_TR_NOOP("Jingles folder") },
+        { ui->bt_browse_jinglePath, QT_TR_NOOP("Choose the jingles folder") },
+        { ui->txt_server,        QT_TR_NOOP("Station server URL") },
+        { ui->txt_port,          QT_TR_NOOP("Station server port") },
+        { ui->txt_user,          QT_TR_NOOP("Station server user") },
+        { ui->txt_password,      QT_TR_NOOP("Station server password") },
+        { ui->cbox_role,         QT_TR_NOOP("This desk's role") },
+        { ui->cboxComHour,       QT_TR_NOOP("Communications hour") },
+        { ui->txt_FTPlocalTempFolder, QT_TR_NOOP("FTP temporary folder") },
+        { ui->bt_browseFTPlocalFolder, QT_TR_NOOP("Choose the FTP temporary folder") },
+        { ui->txt_takeOverlocalTempFolder, QT_TR_NOOP("TakeOver temporary folder") },
+        { ui->bt_browseTakeOverlocalFolder, QT_TR_NOOP("Choose the TakeOver temporary folder") },
+        { ui->txt_terminal,      QT_TR_NOOP("Diagnostics output") },
+    };
+    for (const auto &entry : named)
+        entry.field->setAccessibleName(tr(entry.name));
+
     // Cue bus / output routing. Built in C++ rather than in the .ui file:
     // the device lists only exist at runtime anyway, and a .ui edit here
     // would mean regenerating ui_optionsdialog.h by hand.
     buildCueTab();
+
+    // The Database tab opens already showing what is in there, rather than
+    // making the operator press something to find out.
+    ui->tbl_dbCounts->setAccessibleName(tr("What the database holds"));
+    refreshDatabaseCounts();
 
     qDebug() << "Finished loading settings in options dialog.";
     // Dialog styling comes from the application-wide theme (ThemeManager)
@@ -436,7 +519,9 @@ void optionsDialog::buildCueTab()
     outer->addWidget(speechBox);
     outer->addStretch(1);
 
-    ui->SystemResouces->addTab(page, tr("Cue and outputs"));
+    // Third, right after Playback: it is where the sound comes out, not an
+    // afterthought behind the diagnostics.
+    ui->SystemResouces->insertTab(2, page, tr("Cue and outputs"));
     refreshCueWarning();
 }
 
@@ -463,6 +548,49 @@ void optionsDialog::updateAccentButton()
                        "border-radius: 3px;")
             .arg(effective.name(QColor::HexRgb)));
     ui->bt_accentReset->setEnabled(m_accentColor.isValid());
+}
+
+void optionsDialog::updateClockFontSample()
+{
+    // The sample is the clock itself: the same wording the player panel shows,
+    // drawn in the font about to be saved, so the choice is judged by eye
+    // rather than by the name of a typeface.
+    ui->lbl_clockFontSample->setFont(m_clockFont);
+    ui->lbl_clockFontSample->setText(tr("0:01:23 of 0:03:45"));
+
+    // macOS names its interface typeface ".AppleSystemUIFont", which is not a
+    // name to put in front of anyone; every platform's private families start
+    // with a dot the same way.
+    QString family = m_clockFont.family();
+    if (family.startsWith(QLatin1Char('.')) || family.isEmpty())
+        family = tr("System");
+    const QString name = QStringLiteral("%1 %2 pt").arg(family).arg(m_clockFont.pointSize());
+    ui->bt_clockFont->setText(m_clockFontCustom ? name : tr("Choose… (%1)").arg(name));
+    ui->bt_clockFontReset->setEnabled(m_clockFontCustom);
+    ui->lbl_clockFontSample->setAccessibleName(
+        tr("Now-playing clock sample, %1").arg(name));
+}
+
+void optionsDialog::on_bt_clockFont_clicked()
+{
+    bool accepted = false;
+    const QFont picked = QFontDialog::getFont(
+        &accepted, m_clockFont, this, tr("Pick the now-playing clock typeface"));
+    if (!accepted)
+        return;
+    // The player panel gives the clock one row; a size past what that row can
+    // grow to would ride over the transport buttons, so it is held back here
+    // rather than silently drawn wrong.
+    m_clockFont = ThemeManager::clampNowPlayingClockFont(picked);
+    m_clockFontCustom = true;
+    updateClockFontSample();
+}
+
+void optionsDialog::on_bt_clockFontReset_clicked()
+{
+    m_clockFont = ThemeManager::defaultNowPlayingClockFont();
+    m_clockFontCustom = false;
+    updateClockFontSample();
 }
 
 void optionsDialog::on_bt_accentColor_clicked()
@@ -532,6 +660,10 @@ void optionsDialog::saveSettings2Db()
     settings.setValue("LoudnessNormalize", ui->checkBox_loudnessNormalize->isChecked());
     settings.setValue("LoudnessTargetLufs", ui->spin_loudnessTarget->value());
     settings.setValue("LoudnessCeilingDbTp", ui->spin_loudnessCeiling->value());
+    settings.setValue("RowNumbers/Music", ui->checkBox_rowNumbersMusic->isChecked());
+    settings.setValue("RowNumbers/Jingles", ui->checkBox_rowNumbersJingles->isChecked());
+    settings.setValue("RowNumbers/Pub", ui->checkBox_rowNumbersPub->isChecked());
+    settings.setValue("RowNumbers/Programs", ui->checkBox_rowNumbersPrograms->isChecked());
     settings.setValue("ShowLevelMeter", ui->checkBox_levelMeter->isChecked());
     settings.setValue("LevelMeterPlacement",
                       ui->combo_levelMeterPos->currentIndex() == 1 ? "side" : "volume");
@@ -548,6 +680,11 @@ void optionsDialog::saveSettings2Db()
             qApp->setFont(appFont);
         }
     }
+
+    // The now-playing clock. Empty means the default, so an install that never
+    // touched it keeps following the application typeface.
+    settings.setValue(ThemeManager::nowPlayingClockFontKey(),
+                      m_clockFontCustom ? m_clockFont.toString() : QString());
 
     // Language — read the code from the item data, never from the shown text.
     const QString language = ui->cbox_lang->currentData().toString();
@@ -710,81 +847,493 @@ void optionsDialog::on_pushButton_2_clicked()
     this->reject(); // close without saving; finished still fires
 }
 
-void optionsDialog::on_bt_pwd_clicked()
+// ---------------------------------------------------------------------------
+// Diagnostics
+//
+// Everything an administrator standing at a desk that is misbehaving would
+// otherwise have to go and find: what this machine is, where XFB keeps its
+// things, which sound cards it can see, whether the station server answers.
+// Each button appends to the same output box, and the box can be copied or
+// saved whole — which is the form a problem report should arrive in.
+// ---------------------------------------------------------------------------
+
+void optionsDialog::reportSection(const QString &heading, const QStringList &lines)
 {
-    QProcess sh;
-#ifdef Q_OS_WIN
-    sh.start("cmd", QStringList() << "/c" << "cd");
-#else
-    sh.start("sh", QStringList() << "-c" << "pwd");
-#endif
-    sh.waitForFinished();
-    QByteArray output = sh.readAll();
-    qDebug() << output;
-    ui->txt_terminal->appendPlainText(output);
-    sh.close();
+    ui->txt_terminal->appendPlainText(QStringLiteral("── %1 ──").arg(heading));
+    for (const QString &line : lines)
+        ui->txt_terminal->appendPlainText(QStringLiteral("  ") + line);
+    ui->txt_terminal->appendPlainText(QString());
 }
 
-void optionsDialog::on_bt_uname_clicked()
+void optionsDialog::reportCommand(const QString &heading, const QString &command)
 {
     QProcess sh;
 #ifdef Q_OS_WIN
-    sh.start("cmd", QStringList() << "/c" << "systeminfo | findstr /B /C:\"OS\"");
+    sh.start(QStringLiteral("cmd"), QStringList() << QStringLiteral("/c") << command);
 #else
-    sh.start("sh", QStringList() << "-c" << "uname -a");
+    sh.start(QStringLiteral("sh"), QStringList() << QStringLiteral("-c") << command);
 #endif
-    sh.waitForFinished();
-    QByteArray output = sh.readAll();
-    ui->txt_terminal->appendPlainText(output);
-    sh.close();
+    // Bounded: a tool that never returns must not take the dialog with it.
+    if (!sh.waitForStarted(3000) || !sh.waitForFinished(10000)) {
+        sh.kill();
+        reportSection(heading, { tr("no answer") });
+        return;
+    }
+    const QString output = QString::fromLocal8Bit(sh.readAll()).trimmed();
+    reportSection(heading, output.isEmpty()
+                               ? QStringList{ tr("nothing to report") }
+                               : output.split(QLatin1Char('\n')));
+}
+
+namespace
+{
+/** "12,3 GB free of 465 GB", or why that could not be answered. */
+QString describeSpace(const QString &path)
+{
+    QStorageInfo storage(path);
+    if (!storage.isValid() || !storage.isReady())
+        return QObject::tr("free space unknown");
+    const auto gb = [](qint64 bytes) { return double(bytes) / (1024.0 * 1024.0 * 1024.0); };
+    return QObject::tr("%1 GB free of %2 GB")
+        .arg(gb(storage.bytesAvailable()), 0, 'f', 1)
+        .arg(gb(storage.bytesTotal()), 0, 'f', 1);
+}
+
+/** One line per configured path: where it is, and whether it is really there. */
+QString describePath(const QString &label, const QString &path, bool expectFile)
+{
+    if (path.isEmpty())
+        return QStringLiteral("%1: %2").arg(label, QObject::tr("not set"));
+    const QFileInfo info(path);
+    QString state;
+    if (!info.exists())
+        state = QObject::tr("MISSING");
+    else if (expectFile)
+        state = QObject::tr("%1 KB").arg(info.size() / 1024);
+    else if (!info.isDir())
+        state = QObject::tr("not a folder");
+    else
+        state = info.isWritable() ? describeSpace(path) : QObject::tr("READ-ONLY");
+    return QStringLiteral("%1: %2  [%3]").arg(label, path, state);
+}
+} // namespace
+
+void optionsDialog::on_bt_system_clicked()
+{
+    QStringList lines;
+    lines << tr("XFB %1").arg(QCoreApplication::applicationVersion())
+          << tr("Qt %1 (built against %2)").arg(qVersion(), QT_VERSION_STR)
+          << tr("%1 %2 (%3)").arg(QSysInfo::prettyProductName(),
+                                  QSysInfo::productVersion(),
+                                  QSysInfo::currentCpuArchitecture())
+          << tr("Host: %1").arg(QSysInfo::machineHostName())
+          << tr("Style: %1").arg(QApplication::style() ? QApplication::style()->name()
+                                                       : tr("unknown"))
+          << tr("Theme: %1, icons: %2").arg(ThemeManager::configuredTheme(),
+                                            IconTheme::configuredTheme())
+          << tr("Language: %1").arg(ui->cbox_lang->currentData().toString());
+
+    // The two programs every download goes through, looked up exactly the way
+    // the downloader itself looks them up.
+    const QString ytdlp = findYtDlpExecutable();
+    const QString ffmpeg = QStandardPaths::findExecutable(QStringLiteral("ffmpeg"));
+    lines << tr("yt-dlp: %1").arg(ytdlp.isEmpty() ? tr("not found") : ytdlp)
+          << tr("ffmpeg: %1").arg(ffmpeg.isEmpty() ? tr("not found") : ffmpeg);
+
+    reportSection(tr("System"), lines);
+}
+
+void optionsDialog::on_bt_folders_clicked()
+{
+    const QString config = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
+    QStringList lines;
+    lines << describePath(tr("Settings"), config + QStringLiteral("/xfb.conf"), true)
+          << describePath(tr("Log"), config + QStringLiteral("/xfb.log"), true)
+          << describePath(tr("Database"), databasePath(), true)
+          << describePath(tr("Music"), ui->txt_musicPath->text(), false)
+          << describePath(tr("Jingles"), ui->txt_jinglePath->text(), false)
+          << describePath(tr("Programmes"), ui->txt_programsPath->text(), false)
+          << describePath(tr("Recordings"), ui->txt_savePath->text(), false)
+          << describePath(tr("FTP temporary"), ui->txt_FTPlocalTempFolder->text(), false)
+          << describePath(tr("TakeOver temporary"), ui->txt_takeOverlocalTempFolder->text(), false);
+    reportSection(tr("Folders and files"), lines);
+}
+
+void optionsDialog::on_bt_memory_clicked()
+{
+    // free(1) is Linux-only; macOS answers the same question with vm_stat.
+#ifdef Q_OS_WIN
+    reportCommand(tr("Memory"),
+                  QStringLiteral("wmic OS get FreePhysicalMemory,TotalVisibleMemorySize /Value"));
+#else
+    reportCommand(tr("Memory"), QStringLiteral("free -mt 2>/dev/null || vm_stat"));
+#endif
+}
+
+void optionsDialog::on_bt_disk_clicked()
+{
+    // -T (print the filesystem type) is a GNU extension; BSD df rejects it.
+#ifdef Q_OS_WIN
+    reportCommand(tr("Disk space"),
+                  QStringLiteral("wmic logicaldisk get size,freespace,caption"));
+#else
+    reportCommand(tr("Disk space"), QStringLiteral("df -hT 2>/dev/null || df -h"));
+#endif
+}
+
+void optionsDialog::on_bt_audio_clicked()
+{
+    QStringList lines;
+    const QAudioDevice defaultOut = QMediaDevices::defaultAudioOutput();
+    lines << tr("Outputs:");
+    const QList<QAudioDevice> outputs = QMediaDevices::audioOutputs();
+    if (outputs.isEmpty())
+        lines << QStringLiteral("  ") + tr("none — this machine cannot make a sound");
+    for (const QAudioDevice &device : outputs) {
+        lines << QStringLiteral("  %1 (%2 ch)%3")
+                     .arg(device.description())
+                     .arg(device.maximumChannelCount())
+                     .arg(device.id() == defaultOut.id() ? tr("  ← system default")
+                                                         : QString());
+    }
+    lines << tr("Inputs:");
+    const QList<QAudioDevice> inputs = QMediaDevices::audioInputs();
+    if (inputs.isEmpty())
+        lines << QStringLiteral("  ") + tr("none — nothing can be recorded");
+    for (const QAudioDevice &device : inputs)
+        lines << QStringLiteral("  ") + device.description();
+
+    // What XFB is set to use, which is the half a device list never tells you.
+    const auto chosen = [&](QComboBox *combo, const QString &fallback) {
+        if (!combo)
+            return fallback;
+        return combo->currentData().toByteArray().isEmpty() ? fallback
+                                                            : combo->currentText();
+    };
+    lines << tr("On air: %1").arg(chosen(m_mainOutputCombo, tr("system default")))
+          << tr("Cue: %1").arg(chosen(m_cueOutputCombo, tr("off")))
+          << tr("Recording: %1").arg(ui->cboxRecDev->currentText());
+    reportSection(tr("Audio devices"), lines);
+}
+
+void optionsDialog::on_bt_network_clicked()
+{
+    QStringList lines;
+    lines << tr("Host: %1").arg(QSysInfo::machineHostName());
+    for (const QNetworkInterface &interface : QNetworkInterface::allInterfaces()) {
+        if (!interface.flags().testFlag(QNetworkInterface::IsUp)
+            || interface.flags().testFlag(QNetworkInterface::IsLoopBack))
+            continue;
+        for (const QNetworkAddressEntry &entry : interface.addressEntries()) {
+            const QHostAddress ip = entry.ip();
+            if (ip.protocol() == QAbstractSocket::IPv4Protocol)
+                lines << QStringLiteral("%1: %2").arg(interface.humanReadableName(),
+                                                      ip.toString());
+        }
+    }
+
+    if (!ui->cbox_enableNetworking->isChecked()) {
+        lines << tr("Station server: switched off");
+        reportSection(tr("Network"), lines);
+        return;
+    }
+
+    const QString host = QUrl(ui->txt_server->text()).host().isEmpty()
+                             ? ui->txt_server->text().trimmed()
+                             : QUrl(ui->txt_server->text()).host();
+    const quint16 port = quint16(ui->txt_port->text().toUInt());
+    lines << tr("Station server: %1:%2 as %3 (%4)")
+                 .arg(host).arg(port)
+                 .arg(ui->txt_user->text(), ui->cbox_role->currentText());
+    if (host.isEmpty()) {
+        lines << tr("No server address is set.");
+    } else {
+        // A three-second reach for the door. Blocking, like every other button
+        // on this tab, but bounded — an unreachable server must not hang XFB.
+        QTcpSocket socket;
+        socket.connectToHost(host, port ? port : 21);
+        lines << (socket.waitForConnected(3000)
+                      ? tr("It answers.")
+                      : tr("No answer: %1").arg(socket.errorString()));
+        socket.abort();
+    }
+    reportSection(tr("Network"), lines);
+}
+
+void optionsDialog::on_bt_openLog_clicked()
+{
+    // Where the log really is: next to xfb.conf, which is what users are asked
+    // for first when something goes wrong.
+    const QString path = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
+                         + QStringLiteral("/xfb.log");
+    if (!QFile::exists(path)) {
+        reportSection(tr("Log"), { tr("There is no log file yet."), path });
+        return;
+    }
+    reportSection(tr("Log"), { path, describePath(tr("size"), path, true) });
+    if (!QDesktopServices::openUrl(QUrl::fromLocalFile(path)))
+        ui->txt_terminal->appendPlainText(tr("Could not open the log in an editor."));
 }
 
 void optionsDialog::on_bt_edit_settings_clicked()
 {
-    QProcess process;
-#ifdef Q_OS_WIN
-    process.start("notepad", QStringList() << ":/xfb.conf");
-#elif defined(Q_OS_MACOS)
-    process.start("open", QStringList() << "-t" << ":/xfb.conf");
-#else
-    process.start("xdg-open", QStringList() << ":/xfb.conf");
-#endif
-    process.waitForFinished(-1);
+    // The settings live in the writable config location, which is where every
+    // other reader in XFB looks. This used to hand the editor ":/xfb.conf" —
+    // a Qt resource path, which no text editor can open — so the button did
+    // nothing at all.
+    const QString path = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
+                         + QStringLiteral("/xfb.conf");
+    if (!QFile::exists(path)) {
+        reportSection(tr("Settings"),
+                      { tr("No settings file yet — it is written the first time you save."),
+                        path });
+        return;
+    }
+    ui->txt_terminal->appendPlainText(path);
+    if (!QDesktopServices::openUrl(QUrl::fromLocalFile(path)))
+        ui->txt_terminal->appendPlainText(tr("Could not open the settings file in an editor."));
 }
 
-void optionsDialog::on_bt_free_clicked()
+void optionsDialog::on_bt_report_clicked()
 {
-    QProcess sh;
-#ifdef Q_OS_WIN
-    sh.start("cmd", QStringList() << "/c" << "wmic OS get FreePhysicalMemory,TotalVisibleMemorySize /Value");
-#else
-    sh.start("sh", QStringList() << "-c" << "free -mt");
-#endif
-    sh.waitForFinished();
-    QByteArray output = sh.readAll();
-    ui->txt_terminal->appendPlainText(output);
-    sh.close();
+    ui->txt_terminal->clear();
+    ui->txt_terminal->appendPlainText(
+        tr("XFB diagnostics — %1")
+            .arg(QDateTime::currentDateTime().toString(Qt::ISODate)));
+    ui->txt_terminal->appendPlainText(QString());
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    on_bt_system_clicked();
+    on_bt_folders_clicked();
+    on_bt_audio_clicked();
+    on_bt_network_clicked();
+    on_bt_memory_clicked();
+    on_bt_disk_clicked();
+    QApplication::restoreOverrideCursor();
+    ui->txt_terminal->appendPlainText(
+        tr("End of report. \"Copy\" or \"Save as…\" puts all of this where you "
+           "can send it."));
+    // Nothing above prints a password, but the server user and the machine's
+    // addresses are in there, so say so before it is mailed anywhere.
+    ui->txt_terminal->appendPlainText(
+        tr("It names this machine, its addresses and your folders — no passwords."));
 }
 
-void optionsDialog::on_bt_df_clicked()
+void optionsDialog::on_bt_copyOutput_clicked()
 {
-    QProcess sh;
-#ifdef Q_OS_WIN
-    sh.start("cmd", QStringList() << "/c" << "wmic logicaldisk get size,freespace,caption");
-#else
-    sh.start("sh", QStringList() << "-c" << "df -hT");
-#endif
-    sh.waitForFinished();
-    QByteArray output = sh.readAll();
-    ui->txt_terminal->appendPlainText(output);
-    sh.close();
+    if (QClipboard *clipboard = QApplication::clipboard())
+        clipboard->setText(ui->txt_terminal->toPlainText());
 }
 
-void optionsDialog::on_bt_update_youtubedl_clicked()
+void optionsDialog::on_bt_saveOutput_clicked()
 {
+    const QString suggestion =
+        QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)
+        + QStringLiteral("/xfb-diagnostics-")
+        + QDateTime::currentDateTime().toString(QStringLiteral("yyyyMMdd-HHmmss"))
+        + QStringLiteral(".txt");
+    const QString path = QFileDialog::getSaveFileName(
+        this, tr("Save the diagnostics"), suggestion, tr("Text files (*.txt)"));
+    if (path.isEmpty())
+        return;
+    QFile file(path);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QMessageBox::warning(this, tr("Could not save"), file.errorString());
+        return;
+    }
+    QTextStream out(&file);
+    out << ui->txt_terminal->toPlainText();
+    file.close();
+    ui->txt_terminal->appendPlainText(tr("Saved to %1").arg(path));
+}
 
-    ui->txt_terminal->appendPlainText("If you are having problems downloading from External try this on a terminal:");
-   ui->txt_terminal->appendPlainText("sudo easy_install -U youtube-dl");
+void optionsDialog::on_bt_clearOutput_clicked()
+{
+    ui->txt_terminal->clear();
+}
+
+// ---------------------------------------------------------------------------
+// Database tab
+// ---------------------------------------------------------------------------
+
+QString optionsDialog::databasePath() const
+{
+    // Ask the open connection rather than the "Database" setting: that setting
+    // still holds the relative path of a much older layout, while the
+    // connection knows the file XFB is really reading and writing.
+    const QSqlDatabase db = QSqlDatabase::database(QStringLiteral("xfb_connection"), false);
+    return db.isValid() ? db.databaseName() : QString();
+}
+
+void optionsDialog::refreshDatabaseCounts()
+{
+    ui->tbl_dbCounts->clearContents();
+    ui->tbl_dbCounts->setColumnCount(2);
+    ui->tbl_dbCounts->setHorizontalHeaderLabels({ tr("Table"), tr("Records") });
+    ui->tbl_dbCounts->setRowCount(0);
+
+    QSqlDatabase db = QSqlDatabase::database(QStringLiteral("xfb_connection"));
+    if (!db.isOpen()) {
+        ui->tbl_dbCounts->setRowCount(1);
+        ui->tbl_dbCounts->setItem(0, 0, new QTableWidgetItem(tr("No database is open")));
+        return;
+    }
+
+    // Whatever the database actually holds, rather than a list written here
+    // that goes stale the next time a table is added.
+    QSqlQuery tables(db);
+    tables.exec(QStringLiteral("select name from sqlite_master where type='table' "
+                               "and name not like 'sqlite_%' order by name"));
+    while (tables.next()) {
+        const QString name = tables.value(0).toString();
+        QSqlQuery count(db);
+        // The name comes from sqlite_master, so it is a real identifier; quote
+        // it anyway so a table named after a keyword still counts.
+        count.exec(QStringLiteral("select count(*) from \"%1\"")
+                       .arg(QString(name).replace(QLatin1Char('"'), QLatin1String("\"\""))));
+        const QString rows = count.next() ? QString::number(count.value(0).toLongLong())
+                                          : tr("?");
+        const int row = ui->tbl_dbCounts->rowCount();
+        ui->tbl_dbCounts->insertRow(row);
+        ui->tbl_dbCounts->setItem(row, 0, new QTableWidgetItem(name));
+        auto *value = new QTableWidgetItem(rows);
+        value->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
+        ui->tbl_dbCounts->setItem(row, 1, value);
+    }
+
+    const QFileInfo info(databasePath());
+    const int row = ui->tbl_dbCounts->rowCount();
+    ui->tbl_dbCounts->insertRow(row);
+    auto *label = new QTableWidgetItem(tr("File size"));
+    QFont bold = label->font();
+    bold.setBold(true);
+    label->setFont(bold);
+    ui->tbl_dbCounts->setItem(row, 0, label);
+    auto *size = new QTableWidgetItem(
+        info.exists() ? tr("%1 KB").arg(info.size() / 1024) : tr("unknown"));
+    size->setFont(bold);
+    size->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    ui->tbl_dbCounts->setItem(row, 1, size);
+
+    ui->tbl_dbCounts->horizontalHeader()->setStretchLastSection(false);
+    ui->tbl_dbCounts->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+    ui->tbl_dbCounts->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+}
+
+void optionsDialog::on_bt_dbRefresh_clicked()
+{
+    refreshDatabaseCounts();
+}
+
+void optionsDialog::on_bt_dbBackup_clicked()
+{
+    QSqlDatabase db = QSqlDatabase::database(QStringLiteral("xfb_connection"));
+    if (!db.isOpen()) {
+        QMessageBox::warning(this, tr("No database"),
+                             tr("There is no open database to back up."));
+        return;
+    }
+
+    const QString suggestion =
+        QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)
+        + QStringLiteral("/adb-")
+        + QDateTime::currentDateTime().toString(QStringLiteral("yyyyMMdd-HHmmss"))
+        + QStringLiteral(".db");
+    QString path = QFileDialog::getSaveFileName(this, tr("Back up the database"),
+                                                suggestion, tr("Database (*.db)"));
+    if (path.isEmpty())
+        return;
+    // VACUUM INTO refuses to overwrite, which is the behaviour we want for a
+    // backup — but the file dialog has already asked about replacing, so an
+    // existing file is one the operator chose to lose.
+    if (QFile::exists(path) && !QFile::remove(path)) {
+        QMessageBox::warning(this, tr("Could not back up"),
+                             tr("%1 is in the way and could not be removed.").arg(path));
+        return;
+    }
+
+    // Taken through SQLite rather than by copying the file: XFB runs in WAL
+    // mode, so the .db on disk is only part of the story at any moment and a
+    // plain copy of it can be a database with today's music missing.
+    QSqlQuery query(db);
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    const bool ok = query.exec(
+        QStringLiteral("VACUUM INTO '%1'")
+            .arg(QString(path).replace(QLatin1Char('\''), QLatin1String("''"))));
+    QApplication::restoreOverrideCursor();
+
+    if (!ok) {
+        QMessageBox::critical(this, tr("Could not back up"), query.lastError().text());
+        return;
+    }
+    QMessageBox::information(
+        this, tr("Backed up"),
+        tr("The database was copied to:\n%1\n\nIt is a complete database on its own — "
+           "point XFB at it to go back to how things were.").arg(path));
+}
+
+void optionsDialog::on_bt_dbCheck_clicked()
+{
+    QSqlDatabase db = QSqlDatabase::database(QStringLiteral("xfb_connection"));
+    if (!db.isOpen()) {
+        QMessageBox::warning(this, tr("No database"), tr("There is no open database."));
+        return;
+    }
+    QSqlQuery query(db);
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    const bool ok = query.exec(QStringLiteral("PRAGMA integrity_check"));
+    QStringList findings;
+    while (ok && query.next())
+        findings << query.value(0).toString();
+    QApplication::restoreOverrideCursor();
+
+    if (!ok) {
+        QMessageBox::critical(this, tr("Could not check"), query.lastError().text());
+        return;
+    }
+    if (findings.size() == 1 && findings.first().compare(QLatin1String("ok"),
+                                                         Qt::CaseInsensitive) == 0) {
+        QMessageBox::information(this, tr("The database is sound"),
+                                 tr("SQLite walked the whole file and found nothing wrong."));
+        return;
+    }
+    QMessageBox::warning(
+        this, tr("The database is damaged"),
+        tr("SQLite reported:\n\n%1\n\nRestore your most recent backup rather than "
+           "carrying on with this file.").arg(findings.join(QLatin1Char('\n'))));
+}
+
+void optionsDialog::on_bt_dbCompact_clicked()
+{
+    QSqlDatabase db = QSqlDatabase::database(QStringLiteral("xfb_connection"));
+    if (!db.isOpen()) {
+        QMessageBox::warning(this, tr("No database"), tr("There is no open database."));
+        return;
+    }
+    const qint64 before = QFileInfo(databasePath()).size();
+    QSqlQuery query(db);
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    const bool ok = query.exec(QStringLiteral("VACUUM"));
+    QApplication::restoreOverrideCursor();
+    if (!ok) {
+        QMessageBox::critical(this, tr("Could not compact"), query.lastError().text());
+        return;
+    }
+    const qint64 after = QFileInfo(databasePath()).size();
+    refreshDatabaseCounts();
+    QMessageBox::information(this, tr("Compacted"),
+                             tr("%1 KB became %2 KB. Nothing was lost.")
+                                 .arg(before / 1024).arg(after / 1024));
+}
+
+void optionsDialog::on_bt_dbShow_clicked()
+{
+    const QString path = databasePath();
+    if (path.isEmpty() || !QFile::exists(path)) {
+        QMessageBox::warning(this, tr("No database file"),
+                             tr("XFB could not work out where the database file is."));
+        return;
+    }
+    QDesktopServices::openUrl(QUrl::fromLocalFile(QFileInfo(path).absolutePath()));
 }
 
 void optionsDialog::on_pushButton_3_clicked()
@@ -852,10 +1401,9 @@ void optionsDialog::on_f_bt_del_pub_table_clicked()
 
 void optionsDialog::on_cbox_enableNetworking_toggled(bool checked)
 {
-    ui->txt_server->setEnabled(checked);
-    ui->txt_port->setEnabled(checked);
-    ui->txt_user->setEnabled(checked);
-    ui->txt_password->setEnabled(checked);
+    // The whole box, so its labels grey out with the fields rather than
+    // leaving "Server URL:" reading as live next to a dead field.
+    ui->grp_server->setEnabled(checked);
 }
 
 void optionsDialog::on_checkBox_enableTorrents_clicked(bool checked)

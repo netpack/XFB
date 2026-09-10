@@ -372,8 +372,9 @@ static QByteArray extractCoverPictureBlock(const QString &ffmpegPath,
 // Locate the yt-dlp executable. Prefer the self-updating binary XFB installs in
 // ~/.local/bin (it stays current via "yt-dlp -U"); then fall back to PATH and,
 // on macOS/Windows, to common install locations / filename variants. Shared by
-// the single-video and playlist download paths.
-static QString findYtDlpExecutable()
+// the single-video and playlist download paths, and by the options dialog's
+// Diagnostics tab (declared in externaldownloader.h).
+QString findYtDlpExecutable()
 {
     {
 #ifdef Q_OS_WIN

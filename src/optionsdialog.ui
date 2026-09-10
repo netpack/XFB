@@ -52,39 +52,15 @@
         </property>
         <widget class="QWidget" name="tab">
          <attribute name="title">
-          <string>General</string>
+          <string>Appearance</string>
          </attribute>
          <layout class="QVBoxLayout" name="tabLayout_tab">
           <item>
-           <widget class="QWidget" name="layoutWidgeto2">
-            <layout class="QVBoxLayout" name="verticalLayout">
-             <property name="spacing">
-              <number>8</number>
-             </property>
-             <item>
-              <widget class="QCheckBox" name="checkBox_disableSeekBar">
-               <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This will disable the track's seek bar so that the user is not able to seek through the song&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-               <property name="text">
-                <string>Disable the Seek Bar</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QCheckBox" name="checkBox_disableVolume">
-               <property name="text">
-                <string>Disable the Volume Slider</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QCheckBox" name="checkBox_fullScreen">
-               <property name="text">
-                <string>Start in FullScreen</string>
-               </property>
-              </widget>
-             </item>
+           <widget class="QGroupBox" name="grp_look">
+            <property name="title">
+             <string>Colours and icons</string>
+            </property>
+            <layout class="QVBoxLayout" name="layout_look">
              <item>
               <layout class="QHBoxLayout" name="layout_theme">
                <item>
@@ -180,13 +156,159 @@
                </item>
               </layout>
              </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QGroupBox" name="grp_text">
+            <property name="title">
+             <string>Text</string>
+            </property>
+            <layout class="QVBoxLayout" name="layout_text">
              <item>
-              <widget class="QCheckBox" name="checkBox_enableTorrents">
-               <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Show the Torrents tab. Searching is anonymised through Tor; downloading over BitTorrent is not anonymous (your IP is visible to peers). You will be asked to confirm this the first time you enable it.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
+              <layout class="QHBoxLayout" name="layout_fontSize">
+               <item>
+                <widget class="QLabel" name="label_fontSize">
+                 <property name="text">
+                  <string>Application font size:</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QSpinBox" name="spin_fontSize">
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Size of the text throughout XFB. Applies immediately on Save; a restart guarantees every view is updated.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="suffix">
+                  <string> pt</string>
+                 </property>
+                 <property name="minimum">
+                  <number>7</number>
+                 </property>
+                 <property name="maximum">
+                  <number>24</number>
+                 </property>
+                 <property name="value">
+                  <number>10</number>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="hspacer_fontSize">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="layout_clockFont">
+               <item>
+                <widget class="QLabel" name="label_clockFont">
+                 <property name="text">
+                  <string>Now-playing clock:</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="bt_clockFont">
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The typeface the elapsed time of the track on air is drawn in — the "0:01:23 of 0:03:45" line under the programme name. Family, weight, slant and size; the size is held to what the player panel can show. Applies immediately on Save.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>Choose…</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QToolButton" name="bt_clockFontReset">
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Go back to the clock XFB ships with.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>Default</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLabel" name="lbl_clockFontSample">
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;How the clock will look on the player panel.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>0:01:23 of 0:03:45</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="hspacer_clockFont">
+                 <property name="orientation">
+                  <enum>Qt::Orientation::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout">
+               <item>
+                <widget class="QLabel" name="label_5">
+                 <property name="text">
+                  <string>Language:</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QComboBox" name="cbox_lang">
+                 <property name="autoFillBackground">
+                  <bool>false</bool>
+                 </property>
+                 <property name="styleSheet">
+                  <string notr="true">selection-color: rgb(87, 118, 255);</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="hspacer_lang">
+                 <property name="orientation">
+                  <enum>Qt::Orientation::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QGroupBox" name="grp_panels">
+            <property name="title">
+             <string>Panels and tabs</string>
+            </property>
+            <layout class="QVBoxLayout" name="layout_panels">
+             <item>
+              <widget class="QCheckBox" name="checkBox_fullScreen">
                <property name="text">
-                <string>XFB Torrents</string>
+                <string>Start full screen</string>
                </property>
               </widget>
              </item>
@@ -196,7 +318,7 @@
                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Show the Audio FX tab (equalizer and compressor) next to the DJ tab. Hiding it removes access to the EQ and compressor controls.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
                <property name="text">
-                <string>Audio FX tab</string>
+                <string>Show the Audio FX tab</string>
                </property>
                <property name="checked">
                 <bool>true</bool>
@@ -209,7 +331,7 @@
                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Show the Pads tab next to the DJ tab: a grid of labelled, coloured pads that play a jingle, a stab or a bed the moment they are pressed — made for a touch screen. Hiding the tab keeps the pads; they come back with it.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
                <property name="text">
-                <string>Pads tab</string>
+                <string>Show the Pads tab</string>
                </property>
                <property name="checked">
                 <bool>true</bool>
@@ -217,15 +339,191 @@
               </widget>
              </item>
              <item>
-              <widget class="QCheckBox" name="checkBox_retune432">
+              <widget class="QCheckBox" name="checkBox_enableTorrents">
                <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Play all music retuned from A=440 Hz to A=432 Hz in real time — files are not modified and the tempo is preserved (track length and BPM stay the same). Applies to the main player and both LP decks. To permanently convert files instead, use Database → Convert to 432 Hz.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Show the Torrents tab. Searching is anonymised through Tor; downloading over BitTorrent is not anonymous (your IP is visible to peers). You will be asked to confirm this the first time you enable it.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
                <property name="text">
-                <string>432 Hz playback (all players)</string>
+                <string>Show the XFB Torrents tab</string>
                </property>
               </widget>
              </item>
+             <item>
+              <widget class="QCheckBox" name="checkBox_levelMeter">
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Show a stereo LED level meter next to the volume slider, indicating the player's current left/right output level. Levels are measured by the FX playback engine.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="text">
+                <string>Show the volume level meter (L/R LEDs)</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="layout_levelMeterPos">
+               <item>
+                <widget class="QLabel" name="label_levelMeterPos">
+                 <property name="text">
+                  <string>Level meter position:</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QComboBox" name="combo_levelMeterPos">
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Where the level meter is docked: as a horizontal strip next to the volume slider, or as a vertical bar beside the right-side panel.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <item>
+                  <property name="text">
+                   <string>Next to the volume slider (horizontal)</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Beside the right panel (vertical)</string>
+                  </property>
+                 </item>
+                </widget>
+               </item>
+               <item>
+                <spacer name="hspacer_levelMeterPos">
+                 <property name="orientation">
+                  <enum>Qt::Orientation::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QGroupBox" name="grp_rowNumbers">
+            <property name="title">
+             <string>Row numbers in the library lists</string>
+            </property>
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Number the rows down the left-hand side of each library list at the bottom of the window. Jingles came numbered and the other three did not; now each one is your choice.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+            <layout class="QVBoxLayout" name="layout_rowNumbers">
+             <item>
+              <layout class="QHBoxLayout" name="layout_rowNumbersRow">
+               <item>
+                <widget class="QCheckBox" name="checkBox_rowNumbersMusic">
+                 <property name="text">
+                  <string>Musics</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="checkBox_rowNumbersJingles">
+                 <property name="text">
+                  <string>Jingles</string>
+                 </property>
+                 <property name="checked">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="checkBox_rowNumbersPub">
+                 <property name="text">
+                  <string>Adverts</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="checkBox_rowNumbersPrograms">
+                 <property name="text">
+                  <string>Programmes</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="hspacer_rowNumbers">
+                 <property name="orientation">
+                  <enum>Qt::Orientation::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_3">
+            <property name="text">
+             <string>Some of these take effect the next time XFB starts; the rest apply as soon as you save.</string>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="spacer_1">
+            <property name="orientation">
+             <enum>Qt::Orientation::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="tab_playback">
+         <attribute name="title">
+          <string>Playback</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="tabLayout_playback">
+          <item>
+           <widget class="QGroupBox" name="grp_controls">
+            <property name="title">
+             <string>What the operator may touch</string>
+            </property>
+            <layout class="QVBoxLayout" name="layout_controls">
+             <item>
+              <widget class="QCheckBox" name="checkBox_disableSeekBar">
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This will disable the track's seek bar so that the user is not able to seek through the song&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="text">
+                <string>Disable the Seek Bar</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QCheckBox" name="checkBox_disableVolume">
+               <property name="text">
+                <string>Disable the Volume Slider</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QGroupBox" name="grp_mixing">
+            <property name="title">
+             <string>Automatic mixing</string>
+            </property>
+            <layout class="QVBoxLayout" name="layout_mixing">
              <item>
               <widget class="QCheckBox" name="checkBox_autoAutoMix">
                <property name="toolTip">
@@ -289,6 +587,15 @@
                </item>
               </layout>
              </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QGroupBox" name="grp_sound">
+            <property name="title">
+             <string>Sound</string>
+            </property>
+            <layout class="QVBoxLayout" name="layout_sound">
              <item>
               <widget class="QCheckBox" name="checkBox_loudnessNormalize">
                <property name="toolTip">
@@ -381,880 +688,119 @@
               </layout>
              </item>
              <item>
-              <widget class="QCheckBox" name="checkBox_levelMeter">
+              <widget class="QCheckBox" name="checkBox_retune432">
                <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Show a stereo LED level meter next to the volume slider, indicating the player's current left/right output level. Levels are measured by the FX playback engine.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Play all music retuned from A=440 Hz to A=432 Hz in real time — files are not modified and the tempo is preserved (track length and BPM stay the same). Applies to the main player and both LP decks. To permanently convert files instead, use Database → Convert to 432 Hz.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
                <property name="text">
-                <string>Show volume level meter (L/R LEDs)</string>
+                <string>432 Hz playback (all players)</string>
                </property>
               </widget>
              </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <spacer name="spacer_playback">
+            <property name="orientation">
+             <enum>Qt::Orientation::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="tab_ytdlp">
+         <attribute name="title">
+          <string>Downloads</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="tabLayout_tab_ytdlp">
+          <item>
+           <widget class="QGroupBox" name="grp_downloadAudio">
+            <property name="title">
+             <string>Downloaded audio</string>
+            </property>
+            <layout class="QVBoxLayout" name="layout_downloadAudio">
              <item>
-              <layout class="QHBoxLayout" name="layout_levelMeterPos">
+              <layout class="QHBoxLayout" name="tabLayout_17">
                <item>
-                <widget class="QLabel" name="label_levelMeterPos">
+                <widget class="QLabel" name="lbl_ytdlpFormat">
                  <property name="text">
-                  <string>Level meter position:</string>
+                  <string>Format:</string>
                  </property>
                 </widget>
                </item>
                <item>
-                <widget class="QComboBox" name="combo_levelMeterPos">
-                 <property name="toolTip">
-                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Where the level meter is docked: as a horizontal strip next to the volume slider, or as a vertical bar beside the right-side panel.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                 </property>
+                <widget class="QComboBox" name="cbox_ytdlpFormat">
                  <item>
                   <property name="text">
-                   <string>Next to the volume slider (horizontal)</string>
+                   <string>opus</string>
                   </property>
                  </item>
                  <item>
                   <property name="text">
-                   <string>Beside the right panel (vertical)</string>
+                   <string>ogg</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>mp3</string>
                   </property>
                  </item>
                 </widget>
                </item>
-              </layout>
-             </item>
-             <item>
-              <layout class="QHBoxLayout" name="layout_fontSize">
                <item>
-                <widget class="QLabel" name="label_fontSize">
-                 <property name="text">
-                  <string>Application font size:</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QSpinBox" name="spin_fontSize">
-                 <property name="toolTip">
-                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Size of the text throughout XFB. Applies immediately on Save; a restart guarantees every view is updated.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                 </property>
-                 <property name="suffix">
-                  <string> pt</string>
-                 </property>
-                 <property name="minimum">
-                  <number>7</number>
-                 </property>
-                 <property name="maximum">
-                  <number>24</number>
-                 </property>
-                 <property name="value">
-                  <number>10</number>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <spacer name="hspacer_fontSize">
+                <spacer name="spacer_11">
                  <property name="orientation">
-                  <enum>Qt::Horizontal</enum>
+                  <enum>Qt::Orientation::Horizontal</enum>
                  </property>
                  <property name="sizeHint" stdset="0">
                   <size>
-                   <width>40</width>
-                   <height>20</height>
+                   <width>20</width>
+                   <height>40</height>
                   </size>
                  </property>
                 </spacer>
                </item>
               </layout>
              </item>
-            </layout>
-           </widget>
-          </item>
-          <item>
-           <widget class="QWidget" name="layoutWidgeto1">
-            <layout class="QHBoxLayout" name="horizontalLayout">
              <item>
-              <widget class="QLabel" name="label_5">
+              <widget class="QCheckBox" name="checkBox_ytdlpKeepVideo">
                <property name="text">
-                <string>Language:</string>
+                <string>Keep the original downloaded video file (e.g. .mp4/.webm) alongside the audio</string>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QComboBox" name="cbox_lang">
-               <property name="autoFillBackground">
-                <bool>false</bool>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">selection-color: rgb(87, 118, 255);</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLabel" name="label_3">
-            <property name="text">
-             <string>Note: you need to restart XFB for some of the changes to take effect</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <spacer name="spacer_1">
-            <property name="orientation">
-             <enum>Qt::Orientation::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>40</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-         </layout>
-        </widget>
-        <widget class="QWidget" name="tab_2">
-         <attribute name="title">
-          <string>Database</string>
-         </attribute>
-         <layout class="QVBoxLayout" name="tabLayout_tab_2">
-          <item>
-           <layout class="QHBoxLayout" name="tabLayout_3">
-            <item>
-             <widget class="QLabel" name="label">
-              <property name="text">
-               <string>Selected database:</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLabel" name="txt_selected_db">
-              <property name="text">
-               <string>[NO DATABASE LOADED]</string>
-              </property>
-              <property name="wordWrap">
-               <bool>false</bool>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <spacer name="spacer_2">
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>20</width>
-                <height>40</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <widget class="QLabel" name="label_2">
-            <property name="text">
-             <string>Database Version: 1.0</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLabel" name="label_4">
-            <property name="font">
-             <font>
-              <pointsize>11</pointsize>
-              <bold>true</bold>
-             </font>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">color: rgb(255, 0, 4);</string>
-            </property>
-            <property name="text">
-             <string>Careful !</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <layout class="QHBoxLayout" name="tabLayout_4">
-            <item>
-             <widget class="QPushButton" name="pushButton_3">
-              <property name="text">
-               <string>Delete Music Table</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <spacer name="spacer_3">
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>20</width>
-                <height>40</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <layout class="QHBoxLayout" name="tabLayout_5">
-            <item>
-             <widget class="QPushButton" name="f_bt_del_jingles_table">
-              <property name="text">
-               <string>Delete Jingles Table</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <spacer name="spacer_4">
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>20</width>
-                <height>40</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <layout class="QHBoxLayout" name="tabLayout_6">
-            <item>
-             <widget class="QPushButton" name="f_bt_del_pub_table">
-              <property name="text">
-               <string>Delete Pub Table</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <spacer name="spacer_5">
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>20</width>
-                <height>40</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <spacer name="spacer_6">
-            <property name="orientation">
-             <enum>Qt::Orientation::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>40</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-         </layout>
-        </widget>
-        <widget class="QWidget" name="recording">
-         <attribute name="title">
-          <string>Recording and Paths</string>
-         </attribute>
-         <layout class="QVBoxLayout" name="tabLayout_recording">
-          <item>
-           <layout class="QHBoxLayout" name="tabLayout_8">
-            <item>
-             <widget class="QLabel" name="label_16">
-              <property name="text">
-               <string />
-              </property>
-              <property name="pixmap">
-               <pixmap resource="resources.qrc">:/icons/hardinfo.png</pixmap>
-              </property>
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignmentFlag::AlignHCenter|Qt::AlignmentFlag::AlignTop</set>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <layout class="QVBoxLayout" name="tabLayout_9">
-              <item>
-               <widget class="QWidget" name="layoutWidgeto3">
-                <layout class="QHBoxLayout" name="horizontalLayout_2">
-                 <item>
-                  <widget class="QLabel" name="label_11">
-                   <property name="text">
-                    <string>Default recording device:</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QComboBox" name="cboxRecDev">
-                   <property name="styleSheet">
-                    <string notr="true">selection-color: rgb(87, 118, 255);</string>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
-               </widget>
-              </item>
-              <item>
-               <widget class="QWidget" name="layoutWidgeto6">
-                <layout class="QHBoxLayout" name="horizontalLayout_9">
-                 <item>
-                  <widget class="QLabel" name="label_17">
-                   <property name="text">
-                    <string>Codec:</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QComboBox" name="comboBox_codec">
-                   <property name="styleSheet">
-                    <string notr="true">selection-color: rgb(87, 118, 255);</string>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
-               </widget>
-              </item>
-              <item>
-               <widget class="QWidget" name="layoutWidgeto7">
-                <layout class="QHBoxLayout" name="horizontalLayout_10">
-                 <item>
-                  <widget class="QLabel" name="label_18">
-                   <property name="text">
-                    <string>Container:</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QComboBox" name="comboBox_container">
-                   <property name="styleSheet">
-                    <string notr="true">selection-color: rgb(87, 118, 255);</string>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
-               </widget>
-              </item>
-             </layout>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <widget class="Line" name="line">
-            <property name="orientation">
-             <enum>Qt::Orientation::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <layout class="QHBoxLayout" name="tabLayout_10">
-            <item>
-             <widget class="QLabel" name="label_19">
-              <property name="text">
-               <string />
-              </property>
-              <property name="pixmap">
-               <pixmap resource="resources.qrc">:/icons/ic_menu_archive.png</pixmap>
-              </property>
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignmentFlag::AlignHCenter|Qt::AlignmentFlag::AlignTop</set>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <layout class="QVBoxLayout" name="tabLayout_11">
-              <item>
-               <widget class="QWidget" name="layoutWidgeto4">
-                <layout class="QHBoxLayout" name="horizontalLayout_3">
-                 <item>
-                  <widget class="QLabel" name="label_12">
-                   <property name="text">
-                    <string>Default recording path:</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QLineEdit" name="txt_savePath" />
-                 </item>
-                 <item>
-                  <widget class="QToolButton" name="bt_browseSavePath">
-                   <property name="text">
-                    <string>...</string>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
-               </widget>
-              </item>
-              <item>
-               <widget class="QWidget" name="layoutWidgeto5">
-                <layout class="QHBoxLayout" name="horizontalLayout_4">
-                 <item>
-                  <widget class="QLabel" name="label_13">
-                   <property name="text">
-                    <string>Default program path:  </string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QLineEdit" name="txt_programsPath" />
-                 </item>
-                 <item>
-                  <widget class="QToolButton" name="bt_browse_programPath">
-                   <property name="text">
-                    <string>...</string>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
-               </widget>
-              </item>
-              <item>
-               <widget class="QWidget" name="layoutWidget_2">
-                <layout class="QHBoxLayout" name="horizontalLayout_11">
-                 <item>
-                  <widget class="QLabel" name="label_20">
-                   <property name="text">
-                    <string>Default music path:       </string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QLineEdit" name="txt_musicPath" />
-                 </item>
-                 <item>
-                  <widget class="QToolButton" name="bt_browse_musicPath">
-                   <property name="text">
-                    <string>...</string>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
-               </widget>
-              </item>
-              <item>
-               <widget class="QWidget" name="layoutWidget_3">
-                <layout class="QHBoxLayout" name="horizontalLayout_12">
-                 <item>
-                  <widget class="QLabel" name="label_21">
-                   <property name="text">
-                    <string>Default Jingle path:        </string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QLineEdit" name="txt_jinglePath" />
-                 </item>
-                 <item>
-                  <widget class="QToolButton" name="bt_browse_jinglePath">
-                   <property name="text">
-                    <string>...</string>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
-               </widget>
-              </item>
-             </layout>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <spacer name="spacer_7">
-            <property name="orientation">
-             <enum>Qt::Orientation::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>40</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-         </layout>
-        </widget>
-        <widget class="QWidget" name="tab_4">
-         <attribute name="title">
-          <string>Network</string>
-         </attribute>
-         <layout class="QVBoxLayout" name="tabLayout_tab_4">
-          <item>
-           <widget class="QCheckBox" name="cbox_enableNetworking">
-            <property name="text">
-             <string>Enable Networking</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <layout class="QHBoxLayout" name="tabLayout_13">
-            <item>
-             <widget class="QWidget" name="layoutWidgetoo1">
-              <layout class="QFormLayout" name="formLayout">
-               <item row="0" column="0">
-                <widget class="QLabel" name="label_6">
-                 <property name="text">
-                  <string>Server URL:</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="0" column="1">
-                <widget class="QLineEdit" name="txt_server" />
-               </item>
-               <item row="1" column="0">
-                <widget class="QLabel" name="label_7">
-                 <property name="text">
-                  <string>Port:</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="1" column="1">
-                <widget class="QLineEdit" name="txt_port" />
-               </item>
-               <item row="2" column="0">
-                <widget class="QLabel" name="label_8">
-                 <property name="text">
-                  <string>User:</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="2" column="1">
-                <widget class="QLineEdit" name="txt_user" />
-               </item>
-               <item row="3" column="0">
-                <widget class="QLabel" name="label_9">
-                 <property name="text">
-                  <string>Password:</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="3" column="1">
-                <widget class="QLineEdit" name="txt_password">
-                 <property name="inputMethodHints">
-                  <set>Qt::InputMethodHint::ImhHiddenText|Qt::InputMethodHint::ImhNoAutoUppercase|Qt::InputMethodHint::ImhNoPredictiveText|Qt::InputMethodHint::ImhSensitiveData</set>
-                 </property>
-                 <property name="echoMode">
-                  <enum>QLineEdit::EchoMode::Password</enum>
-                 </property>
-                </widget>
-               </item>
-               <item row="4" column="0">
-                <widget class="QLabel" name="label_10">
-                 <property name="text">
-                  <string>Role:</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="4" column="1">
-                <widget class="QComboBox" name="cbox_role">
-                 <item>
-                  <property name="text">
-                   <string>Client</string>
-                  </property>
-                 </item>
-                 <item>
-                  <property name="text">
-                   <string>Server</string>
-                  </property>
-                 </item>
-                </widget>
-               </item>
-              </layout>
-             </widget>
-            </item>
-            <item>
-             <layout class="QVBoxLayout" name="tabLayout_14">
-              <item>
-               <widget class="QWidget" name="layoutWidgetoo3">
-                <layout class="QHBoxLayout" name="horizontalLayout_6">
-                 <item>
-                  <widget class="QLabel" name="label_15">
-                   <property name="text">
-                    <string>Communications hour:</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QTimeEdit" name="cboxComHour" />
-                 </item>
-                </layout>
-               </widget>
-              </item>
-              <item>
-               <spacer name="spacer_8">
-                <property name="orientation">
-                 <enum>Qt::Orientation::Vertical</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>20</width>
-                  <height>40</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
-             </layout>
-            </item>
-            <item>
-             <spacer name="spacer_9">
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>20</width>
-                <height>40</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <widget class="QWidget" name="layoutWidgetoo2">
-            <layout class="QHBoxLayout" name="horizontalLayout_5">
-             <item>
-              <widget class="QLabel" name="label_14">
+              <widget class="QCheckBox" name="checkBox_ytdlpEmbedThumbnail">
                <property name="text">
-                <string>FTP local temp folder </string>
+                <string>Embed the video thumbnail as cover art (when supported)</string>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QLineEdit" name="txt_FTPlocalTempFolder" />
+              <widget class="QCheckBox" name="checkBox_ytdlpEmbedMetadata">
+               <property name="text">
+                <string>Embed metadata (artist/title) into downloaded files</string>
+               </property>
+              </widget>
              </item>
              <item>
-              <widget class="QToolButton" name="bt_browseFTPlocalFolder">
+              <widget class="QLabel" name="lbl_ytdlpNote">
+               <property name="wordWrap">
+                <bool>true</bool>
+               </property>
                <property name="text">
-                <string>...</string>
+                <string>XFB downloads audio with yt-dlp. The chosen format is produced with ffmpeg; if the selected encoder is unavailable, XFB automatically falls back to the next best open format. yt-dlp is installed in your home folder and kept up to date automatically before each download.</string>
                </property>
               </widget>
              </item>
             </layout>
-           </widget>
-          </item>
-          <item>
-           <widget class="QWidget" name="layoutWidgetoo4">
-            <layout class="QHBoxLayout" name="horizontalLayout_13">
-             <item>
-              <widget class="QLabel" name="label_22">
-               <property name="text">
-                <string>TakeOver temp folder:</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLineEdit" name="txt_takeOverlocalTempFolder" />
-             </item>
-             <item>
-              <widget class="QToolButton" name="bt_browseTakeOverlocalFolder">
-               <property name="text">
-                <string>...</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </widget>
-          </item>
-          <item>
-           <spacer name="spacer_10">
-            <property name="orientation">
-             <enum>Qt::Orientation::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>40</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-         </layout>
-        </widget>
-        <widget class="QWidget" name="tab_3">
-         <attribute name="title">
-          <string>System Resources</string>
-         </attribute>
-         <layout class="QVBoxLayout" name="tabLayout_tab_3">
-          <item>
-           <widget class="QWidget" name="layoutWidgetoo5">
-            <layout class="QHBoxLayout" name="horizontalLayout_7">
-             <item>
-              <widget class="QPushButton" name="bt_uname">
-               <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Shows operating system information&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-               <property name="text">
-                <string>uname</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="bt_pwd">
-               <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Print working directory (in console)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-               <property name="text">
-                <string>pwd</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="bt_free">
-               <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Show the amount of free RAM resources (in MB)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-               <property name="text">
-                <string>free</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="bt_df">
-               <property name="toolTip">
-                <string>Shows the free/used HD space</string>
-               </property>
-               <property name="text">
-                <string>df</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </widget>
-          </item>
-          <item>
-           <widget class="QWidget" name="layoutWidgetoo6">
-            <layout class="QHBoxLayout" name="horizontalLayout_8">
-             <item>
-              <widget class="QPushButton" name="bt_update_youtubedl">
-               <property name="text">
-                <string>Troubleshoot</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="bt_edit_settings">
-               <property name="text">
-                <string>Manually edit settings.conf</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPlainTextEdit" name="txt_terminal">
-            <property name="font">
-             <font>
-              <family>Ubuntu</family>
-              <pointsize>11</pointsize>
-             </font>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">background-color: rgb(59, 59, 59);
-color: rgb(255, 255, 255);</string>
-            </property>
-            <property name="readOnly">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-        <widget class="QWidget" name="tab_ytdlp">
-         <attribute name="title">
-          <string>Downloads (yt-dlp)</string>
-         </attribute>
-         <layout class="QVBoxLayout" name="tabLayout_tab_ytdlp">
-          <item>
-           <layout class="QHBoxLayout" name="tabLayout_17">
-            <item>
-             <widget class="QLabel" name="lbl_ytdlpFormat">
-              <property name="text">
-               <string>Downloaded audio format:</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QComboBox" name="cbox_ytdlpFormat">
-              <item>
-               <property name="text">
-                <string>opus</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>ogg</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>mp3</string>
-               </property>
-              </item>
-             </widget>
-            </item>
-            <item>
-             <spacer name="spacer_11">
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>20</width>
-                <height>40</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <widget class="QCheckBox" name="checkBox_ytdlpKeepVideo">
-            <property name="text">
-             <string>Keep the original downloaded video file (e.g. .mp4/.webm) alongside the audio</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QCheckBox" name="checkBox_ytdlpEmbedThumbnail">
-            <property name="text">
-             <string>Embed the video thumbnail as cover art (when supported)</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QCheckBox" name="checkBox_ytdlpEmbedMetadata">
-            <property name="text">
-             <string>Embed metadata (artist/title) into downloaded files</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLabel" name="lbl_ytdlpNote">
-            <property name="wordWrap">
-             <bool>true</bool>
-            </property>
-            <property name="text">
-             <string>XFB downloads audio with yt-dlp. The chosen format is produced with ffmpeg; if the selected encoder is unavailable, XFB automatically falls back to the next best open format. yt-dlp is installed in your home folder and kept up to date automatically before each download.</string>
-            </property>
            </widget>
           </item>
           <item>
@@ -1328,6 +874,841 @@ color: rgb(255, 255, 255);</string>
           </item>
          </layout>
         </widget>
+        <widget class="QWidget" name="recording">
+         <attribute name="title">
+          <string>Recording and folders</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="tabLayout_recording">
+          <item>
+           <widget class="QGroupBox" name="grp_recording">
+            <property name="title">
+             <string>Recording</string>
+            </property>
+            <layout class="QVBoxLayout" name="layout_recording">
+             <item>
+              <layout class="QHBoxLayout" name="tabLayout_8">
+               <item>
+                <widget class="QLabel" name="label_16">
+                 <property name="text">
+                  <string />
+                 </property>
+                 <property name="pixmap">
+                  <pixmap resource="resources.qrc">:/icons/hardinfo.png</pixmap>
+                 </property>
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignmentFlag::AlignHCenter|Qt::AlignmentFlag::AlignTop</set>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <layout class="QFormLayout" name="layout_recordingForm">
+                 <property name="fieldGrowthPolicy">
+                  <enum>QFormLayout::FieldGrowthPolicy::ExpandingFieldsGrow</enum>
+                 </property>
+                 <item row="0" column="0">
+                  <widget class="QLabel" name="label_11">
+                   <property name="text">
+                    <string>Device:</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="1">
+                  <widget class="QComboBox" name="cboxRecDev">
+                   <property name="styleSheet">
+                    <string notr="true">selection-color: rgb(87, 118, 255);</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="0">
+                  <widget class="QLabel" name="label_17">
+                   <property name="text">
+                    <string>Codec:</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="1">
+                  <widget class="QComboBox" name="comboBox_codec">
+                   <property name="styleSheet">
+                    <string notr="true">selection-color: rgb(87, 118, 255);</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="0">
+                  <widget class="QLabel" name="label_18">
+                   <property name="text">
+                    <string>Container:</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="1">
+                  <widget class="QComboBox" name="comboBox_container">
+                   <property name="styleSheet">
+                    <string notr="true">selection-color: rgb(87, 118, 255);</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </item>
+              </layout>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QGroupBox" name="grp_folders">
+            <property name="title">
+             <string>Folders</string>
+            </property>
+            <layout class="QVBoxLayout" name="layout_foldersOuter">
+             <item>
+              <layout class="QHBoxLayout" name="layout_foldersRow">
+               <item>
+                <widget class="QLabel" name="label_19">
+                 <property name="text">
+                  <string />
+                 </property>
+                 <property name="pixmap">
+                  <pixmap resource="resources.qrc">:/icons/ic_menu_archive.png</pixmap>
+                 </property>
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignmentFlag::AlignHCenter|Qt::AlignmentFlag::AlignTop</set>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <layout class="QFormLayout" name="layout_folders">
+                 <property name="fieldGrowthPolicy">
+                  <enum>QFormLayout::FieldGrowthPolicy::ExpandingFieldsGrow</enum>
+                 </property>
+                 <item row="0" column="0">
+                  <widget class="QLabel" name="label_12">
+                   <property name="text">
+                    <string>Recordings:</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="1">
+                  <layout class="QHBoxLayout" name="horizontalLayout_3">
+                   <item>
+                    <widget class="QLineEdit" name="txt_savePath" />
+                   </item>
+                   <item>
+                    <widget class="QToolButton" name="bt_browseSavePath">
+                     <property name="text">
+                      <string>...</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </item>
+                 <item row="1" column="0">
+                  <widget class="QLabel" name="label_13">
+                   <property name="text">
+                    <string>Programmes:</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="1">
+                  <layout class="QHBoxLayout" name="horizontalLayout_4">
+                   <item>
+                    <widget class="QLineEdit" name="txt_programsPath" />
+                   </item>
+                   <item>
+                    <widget class="QToolButton" name="bt_browse_programPath">
+                     <property name="text">
+                      <string>...</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </item>
+                 <item row="2" column="0">
+                  <widget class="QLabel" name="label_20">
+                   <property name="text">
+                    <string>Music:</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="1">
+                  <layout class="QHBoxLayout" name="horizontalLayout_11">
+                   <item>
+                    <widget class="QLineEdit" name="txt_musicPath" />
+                   </item>
+                   <item>
+                    <widget class="QToolButton" name="bt_browse_musicPath">
+                     <property name="text">
+                      <string>...</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </item>
+                 <item row="3" column="0">
+                  <widget class="QLabel" name="label_21">
+                   <property name="text">
+                    <string>Jingles:</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="3" column="1">
+                  <layout class="QHBoxLayout" name="horizontalLayout_12">
+                   <item>
+                    <widget class="QLineEdit" name="txt_jinglePath" />
+                   </item>
+                   <item>
+                    <widget class="QToolButton" name="bt_browse_jinglePath">
+                     <property name="text">
+                      <string>...</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </item>
+                </layout>
+               </item>
+              </layout>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <spacer name="spacer_7">
+            <property name="orientation">
+             <enum>Qt::Orientation::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="tab_4">
+         <attribute name="title">
+          <string>Network</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="tabLayout_tab_4">
+          <item>
+           <widget class="QCheckBox" name="cbox_enableNetworking">
+            <property name="text">
+             <string>Talk to a station server</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QGroupBox" name="grp_server">
+            <property name="title">
+             <string>Station server</string>
+            </property>
+            <layout class="QVBoxLayout" name="layout_server">
+             <item>
+              <layout class="QFormLayout" name="formLayout">
+               <item row="0" column="0">
+                <widget class="QLabel" name="label_6">
+                 <property name="text">
+                  <string>Server URL:</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="1">
+                <widget class="QLineEdit" name="txt_server" />
+               </item>
+               <item row="1" column="0">
+                <widget class="QLabel" name="label_7">
+                 <property name="text">
+                  <string>Port:</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="QLineEdit" name="txt_port" />
+               </item>
+               <item row="2" column="0">
+                <widget class="QLabel" name="label_8">
+                 <property name="text">
+                  <string>User:</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="1">
+                <widget class="QLineEdit" name="txt_user" />
+               </item>
+               <item row="3" column="0">
+                <widget class="QLabel" name="label_9">
+                 <property name="text">
+                  <string>Password:</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="1">
+                <widget class="QLineEdit" name="txt_password">
+                 <property name="inputMethodHints">
+                  <set>Qt::InputMethodHint::ImhHiddenText|Qt::InputMethodHint::ImhNoAutoUppercase|Qt::InputMethodHint::ImhNoPredictiveText|Qt::InputMethodHint::ImhSensitiveData</set>
+                 </property>
+                 <property name="echoMode">
+                  <enum>QLineEdit::EchoMode::Password</enum>
+                 </property>
+                </widget>
+               </item>
+               <item row="4" column="0">
+                <widget class="QLabel" name="label_10">
+                 <property name="text">
+                  <string>Role:</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="4" column="1">
+                <widget class="QComboBox" name="cbox_role">
+                 <item>
+                  <property name="text">
+                   <string>Client</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Server</string>
+                  </property>
+                 </item>
+                </widget>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_6">
+               <item>
+                <widget class="QLabel" name="label_15">
+                 <property name="text">
+                  <string>Communications hour:</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QTimeEdit" name="cboxComHour" />
+               </item>
+               <item>
+                <spacer name="hspacer_comHour">
+                 <property name="orientation">
+                  <enum>Qt::Orientation::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QGroupBox" name="grp_transferFolders">
+            <property name="title">
+             <string>Transfer folders</string>
+            </property>
+            <layout class="QVBoxLayout" name="layout_transferFolders">
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_5">
+               <item>
+                <widget class="QLabel" name="label_14">
+                 <property name="text">
+                  <string>FTP temporary folder:</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLineEdit" name="txt_FTPlocalTempFolder" />
+               </item>
+               <item>
+                <widget class="QToolButton" name="bt_browseFTPlocalFolder">
+                 <property name="text">
+                  <string>...</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_13">
+               <item>
+                <widget class="QLabel" name="label_22">
+                 <property name="text">
+                  <string>TakeOver temporary folder:</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLineEdit" name="txt_takeOverlocalTempFolder" />
+               </item>
+               <item>
+                <widget class="QToolButton" name="bt_browseTakeOverlocalFolder">
+                 <property name="text">
+                  <string>...</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <spacer name="spacer_10">
+            <property name="orientation">
+             <enum>Qt::Orientation::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="tab_2">
+         <attribute name="title">
+          <string>Database</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="tabLayout_tab_2">
+          <item>
+           <layout class="QHBoxLayout" name="tabLayout_3">
+            <item>
+             <widget class="QLabel" name="label">
+              <property name="text">
+               <string>Selected database:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="txt_selected_db">
+              <property name="text">
+               <string>[NO DATABASE LOADED]</string>
+              </property>
+              <property name="wordWrap">
+               <bool>false</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="spacer_2">
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_2">
+            <property name="text">
+             <string>Database Version: 1.0</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QGroupBox" name="grp_dbContents">
+            <property name="title">
+             <string>What is in it</string>
+            </property>
+            <layout class="QVBoxLayout" name="layout_dbContents">
+             <item>
+              <widget class="QTableWidget" name="tbl_dbCounts">
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;How many records each table holds right now, and how much room the file takes.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="editTriggers">
+                <set>QAbstractItemView::EditTrigger::NoEditTriggers</set>
+               </property>
+               <property name="selectionMode">
+                <enum>QAbstractItemView::SelectionMode::NoSelection</enum>
+               </property>
+               <property name="alternatingRowColors">
+                <bool>true</bool>
+               </property>
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>150</height>
+                </size>
+               </property>
+               <attribute name="horizontalHeaderStretchLastSection">
+                <bool>true</bool>
+               </attribute>
+               <attribute name="verticalHeaderVisible">
+                <bool>false</bool>
+               </attribute>
+              </widget>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="layout_dbContentsButtons">
+               <item>
+                <widget class="QPushButton" name="bt_dbRefresh">
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Read the counts back out of the database.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>Count again</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="hspacer_dbContents">
+                 <property name="orientation">
+                  <enum>Qt::Orientation::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QGroupBox" name="grp_dbMaintenance">
+            <property name="title">
+             <string>Looking after it</string>
+            </property>
+            <layout class="QVBoxLayout" name="layout_dbMaintenance">
+             <item>
+              <layout class="QHBoxLayout" name="layout_dbMaintenanceButtons">
+               <item>
+                <widget class="QPushButton" name="bt_dbBackup">
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Write a complete, consistent copy of the database to a file you choose. Safe to do while XFB is running and while a show is on air — the copy is taken through SQLite itself, not by copying the file behind its back.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>Back up the database…</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="bt_dbCheck">
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Ask SQLite to walk the whole file and report any damage. Reads only; it changes nothing.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>Check it</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="bt_dbCompact">
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Rebuild the file so the space left behind by deleted records is given back to the disk. Nothing is lost.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>Compact it</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="bt_dbShow">
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Open the folder the database sits in.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>Show the file</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="hspacer_dbMaintenance">
+                 <property name="orientation">
+                  <enum>Qt::Orientation::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QGroupBox" name="grp_dbDanger">
+            <property name="title">
+             <string>Careful — emptying a table cannot be undone</string>
+            </property>
+            <layout class="QVBoxLayout" name="layout_dbDanger">
+             <item>
+              <layout class="QHBoxLayout" name="tabLayout_4">
+               <item>
+                <widget class="QPushButton" name="pushButton_3">
+                 <property name="text">
+                  <string>Delete the music table</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="spacer_3">
+                 <property name="orientation">
+                  <enum>Qt::Orientation::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>20</width>
+                   <height>40</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="tabLayout_5">
+               <item>
+                <widget class="QPushButton" name="f_bt_del_jingles_table">
+                 <property name="text">
+                  <string>Delete the jingles table</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="spacer_4">
+                 <property name="orientation">
+                  <enum>Qt::Orientation::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>20</width>
+                   <height>40</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="tabLayout_6">
+               <item>
+                <widget class="QPushButton" name="f_bt_del_pub_table">
+                 <property name="text">
+                  <string>Delete the adverts table</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="spacer_5">
+                 <property name="orientation">
+                  <enum>Qt::Orientation::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>20</width>
+                   <height>40</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <spacer name="spacer_6">
+            <property name="orientation">
+             <enum>Qt::Orientation::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="tab_3">
+         <attribute name="title">
+          <string>Diagnostics</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="tabLayout_tab_3">
+          <item>
+           <widget class="QWidget" name="layoutWidgetoo5">
+            <layout class="QHBoxLayout" name="horizontalLayout_7">
+             <item>
+              <widget class="QPushButton" name="bt_system">
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;XFB, Qt and the operating system this desk runs, and the tools XFB reaches for.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="text">
+                <string>System</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="bt_folders">
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Every folder and file XFB works with — settings, log, database, music, jingles, programmes, recordings — with whether each one is really there.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="text">
+                <string>Folders and files</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="bt_memory">
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;How much memory this machine has left.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="text">
+                <string>Memory</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="bt_disk">
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;How much room is left on every mounted disk.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="text">
+                <string>Disk space</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="bt_audio">
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Every sound card this machine offers, in and out, and which ones XFB is set to use for air and for cue.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="text">
+                <string>Audio devices</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="bt_network">
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This desk's name and addresses, whether the station server is configured, and whether it answers.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="text">
+                <string>Network</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QWidget" name="layoutWidgetoo6">
+            <layout class="QHBoxLayout" name="horizontalLayout_8">
+             <item>
+              <widget class="QPushButton" name="bt_openLog">
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Open xfb.log — the first thing to look at after a crash or a download that would not finish.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="text">
+                <string>Open the log</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="bt_edit_settings">
+               <property name="text">
+                <string>Open xfb.conf</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="bt_report">
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Run every check above one after another. This is what to send when you report a problem.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="text">
+                <string>Everything, as a report</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="bt_copyOutput">
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Put everything below on the clipboard.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="text">
+                <string>Copy</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="bt_saveOutput">
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Write everything below to a text file.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="text">
+                <string>Save as…</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="bt_clearOutput">
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Empty the output below.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="text">
+                <string>Clear</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPlainTextEdit" name="txt_terminal">
+            <property name="font">
+             <font>
+              <family>Ubuntu</family>
+              <pointsize>11</pointsize>
+             </font>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">background-color: rgb(59, 59, 59);
+color: rgb(255, 255, 255);</string>
+            </property>
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
        </widget>
       </item>
      </layout>
@@ -1336,21 +1717,21 @@ color: rgb(255, 255, 255);</string>
    <item row="1" column="4">
     <widget class="QPushButton" name="pushButton">
      <property name="text">
-      <string>Close (and save)</string>
+      <string>Save and close</string>
      </property>
     </widget>
    </item>
    <item row="1" column="3">
     <widget class="QPushButton" name="bt_save_settings">
      <property name="text">
-      <string>Save Settings</string>
+      <string>Apply</string>
      </property>
     </widget>
    </item>
    <item row="1" column="0">
     <widget class="QPushButton" name="pushButton_2">
      <property name="text">
-      <string>Close (without saving)</string>
+      <string>Close without saving</string>
      </property>
     </widget>
    </item>

@@ -194,6 +194,34 @@ void WatchedFoldersDialog::loadInto(const LibraryWatcher::Config &config)
     m_table->horizontalHeader()->setSectionResizeMode(ColPath, QHeaderView::Stretch);
 }
 
+namespace
+{
+// A checkbox dropped into a table cell sits hard against its left edge, under
+// a header that is centred over the column — so the tick never lines up with
+// the thing it belongs to. Wrapping it centres it, and the wrapper is
+// transparent so the row's own background (selected or not) shows through.
+QWidget *centred(QCheckBox *box)
+{
+    auto *host = new QWidget;
+    host->setAttribute(Qt::WA_TranslucentBackground);
+    auto *layout = new QHBoxLayout(host);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->addWidget(box, 0, Qt::AlignCenter);
+    return host;
+}
+
+// ...which means the checkbox a cell holds is no longer the widget the table
+// hands back. Everything that reads a row goes through here instead.
+QCheckBox *boxIn(QWidget *cell)
+{
+    if (!cell)
+        return nullptr;
+    if (auto *box = qobject_cast<QCheckBox *>(cell))
+        return box;
+    return cell->findChild<QCheckBox *>();
+}
+} // namespace
+
 void WatchedFoldersDialog::appendRow(const LibraryWatcher::Folder &folder)
 {
     const int row = m_table->rowCount();
@@ -224,7 +252,7 @@ void WatchedFoldersDialog::appendRow(const LibraryWatcher::Folder &folder)
     recursive->setAccessibleName(tr("Look in subfolders too"));
     connect(recursive, &QCheckBox::toggled, this,
             [this, recursive]() { updateRowEnabling(rowOf(recursive)); });
-    m_table->setCellWidget(row, ColRecursive, recursive);
+    m_table->setCellWidget(row, ColRecursive, centred(recursive));
 
     auto *folderGenres = new QCheckBox(m_table);
     folderGenres->setChecked(folder.folderGenres);
@@ -232,7 +260,7 @@ void WatchedFoldersDialog::appendRow(const LibraryWatcher::Folder &folder)
     folderGenres->setToolTip(
         tr("Rock/Nirvana/Lithium.mp3 is filed under Rock. A track sitting "
            "loose in the watched folder gets the genre chosen here."));
-    m_table->setCellWidget(row, ColFolderGenres, folderGenres);
+    m_table->setCellWidget(row, ColFolderGenres, centred(folderGenres));
 
     auto *genre = new QComboBox(m_table);
     genre->addItems(m_genres);
@@ -263,9 +291,14 @@ int WatchedFoldersDialog::rowOf(const QWidget *cellWidget) const
     // Never a captured row index: removing a folder shifts every row below it,
     // and a control that then edits the wrong row is a bug nobody would look
     // for. The widget itself always knows where it is.
+    // Some cells hold the control inside a wrapper that centres it, so the
+    // widget a signal came from may be a child of what the table knows about.
     for (int row = 0; row < m_table->rowCount(); ++row) {
         for (int column = 0; column < m_table->columnCount(); ++column) {
-            if (m_table->cellWidget(row, column) == cellWidget)
+            const QWidget *cell = m_table->cellWidget(row, column);
+            if (!cell)
+                continue;
+            if (cell == cellWidget || cell->isAncestorOf(cellWidget))
                 return row;
         }
     }
@@ -278,8 +311,8 @@ void WatchedFoldersDialog::updateRowEnabling(int row)
         return;
 
     auto *destination = qobject_cast<QComboBox *>(m_table->cellWidget(row, ColDestination));
-    auto *recursive = qobject_cast<QCheckBox *>(m_table->cellWidget(row, ColRecursive));
-    auto *folderGenres = qobject_cast<QCheckBox *>(m_table->cellWidget(row, ColFolderGenres));
+    auto *recursive = boxIn(m_table->cellWidget(row, ColRecursive));
+    auto *folderGenres = boxIn(m_table->cellWidget(row, ColFolderGenres));
     auto *genre = qobject_cast<QComboBox *>(m_table->cellWidget(row, ColGenre));
     if (!destination || !recursive || !folderGenres || !genre)
         return;
@@ -303,9 +336,9 @@ LibraryWatcher::Folder WatchedFoldersDialog::folderFromRow(int row) const
         folder.enabled = on->checkState() == Qt::Checked;
     if (auto *destination = qobject_cast<QComboBox *>(m_table->cellWidget(row, ColDestination)))
         folder.destination = LibraryWatcher::Destination(destination->currentData().toInt());
-    if (auto *recursive = qobject_cast<QCheckBox *>(m_table->cellWidget(row, ColRecursive)))
+    if (auto *recursive = boxIn(m_table->cellWidget(row, ColRecursive)))
         folder.recursive = recursive->isChecked();
-    if (auto *folderGenres = qobject_cast<QCheckBox *>(m_table->cellWidget(row, ColFolderGenres)))
+    if (auto *folderGenres = boxIn(m_table->cellWidget(row, ColFolderGenres)))
         folder.folderGenres = folderGenres->isChecked();
     if (auto *genre = qobject_cast<QComboBox *>(m_table->cellWidget(row, ColGenre)))
         folder.genre = genre->currentText();

@@ -11,6 +11,7 @@ class player;
 #include <QColor>
 #include <QCheckBox>
 #include <QComboBox>
+#include <QFont>
 #include <QLabel>
 #include <QMainWindow>
 #include <QSettings>
@@ -43,12 +44,28 @@ private slots:
     void on_bt_save_settings_clicked();
     void on_pushButton_clicked();
     void on_pushButton_2_clicked();
-    void on_bt_pwd_clicked();
-    void on_bt_uname_clicked();
+    // Diagnostics tab. Each one appends what it finds to the output box;
+    // "Everything, as a report" runs the lot.
+    void on_bt_system_clicked();
+    void on_bt_folders_clicked();
+    void on_bt_memory_clicked();
+    void on_bt_disk_clicked();
+    void on_bt_audio_clicked();
+    void on_bt_network_clicked();
+    void on_bt_openLog_clicked();
     void on_bt_edit_settings_clicked();
-    void on_bt_free_clicked();
-    void on_bt_df_clicked();
-    void on_bt_update_youtubedl_clicked();
+    void on_bt_report_clicked();
+    void on_bt_copyOutput_clicked();
+    void on_bt_saveOutput_clicked();
+    void on_bt_clearOutput_clicked();
+
+    // Database tab
+    void on_bt_dbRefresh_clicked();
+    void on_bt_dbBackup_clicked();
+    void on_bt_dbCheck_clicked();
+    void on_bt_dbCompact_clicked();
+    void on_bt_dbShow_clicked();
+
     void on_pushButton_3_clicked();
     void on_f_bt_del_jingles_table_clicked();
     void on_f_bt_del_pub_table_clicked();
@@ -71,8 +88,23 @@ private slots:
     void on_bt_accentColor_clicked();
     void on_bt_accentReset_clicked();
 
+    // Typeface of the now-playing elapsed-time clock on the player panel
+    void on_bt_clockFont_clicked();
+    void on_bt_clockFontReset_clicked();
+
 private:
+    /** Appends a heading, then lines, to the Diagnostics output box. */
+    void reportSection(const QString &heading, const QStringList &lines);
+    /** Runs `command` through the shell and appends its output. */
+    void reportCommand(const QString &heading, const QString &command);
+    /** The database file the open connection is actually using. */
+    QString databasePath() const;
+    /** Re-reads the row counts shown on the Database tab. */
+    void refreshDatabaseCounts();
+
     void updateAccentButton();
+    /** Redraws the clock sample in the font currently picked. */
+    void updateClockFontSample();
     /**
      * Builds the "Cue and outputs" tab in C++ (no .ui edit, so no stale
      * ui_optionsdialog.h to regenerate) and fills it from xfb.conf.
@@ -96,6 +128,8 @@ private:
 
     Ui::optionsDialog *ui;
     QColor m_accentColor; // invalid when using the theme default
+    QFont m_clockFont;         // the now-playing clock's typeface
+    bool m_clockFontCustom = false; // false = whatever XFB ships with
     QString m_initialLanguage;   // language code the dialog was opened with
     bool m_languageChanged = false; // set on save; a restart is needed to apply
     QString txt_selected_db;

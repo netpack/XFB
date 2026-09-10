@@ -2,6 +2,10 @@
 
 #include <QApplication>
 #include <QDebug>
+#include <QDir>
+#include <QFile>
+#include <QPainter>
+#include <QPixmap>
 #include <QPalette>
 #include <QSettings>
 #include <QStandardPaths>
@@ -23,6 +27,46 @@ QString configFilePath()
 {
     return QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
            + QStringLiteral("/xfb.conf");
+}
+
+// A checked box used to be nothing but a square filled with the accent colour.
+// That reads as "checked" only as long as the accent stands well clear of what
+// is behind it, and inside an item view — a checkbox sitting in a table cell,
+// on a selected row — it often does not: the box and its background become the
+// same colour and the state is gone. So the checked indicators wear a real
+// mark, drawn in the colour that reads over the accent.
+//
+// Qt's stylesheet engine can only take an image from a file, so the mark is
+// painted here and cached; the file is named after its ink, so switching back
+// and forth between themes reuses what is already on disk.
+QString markImage(const QColor &ink, bool round)
+{
+    const QString dir = QStandardPaths::writableLocation(QStandardPaths::CacheLocation)
+                        + QStringLiteral("/indicators");
+    QDir().mkpath(dir);
+    const QString path = QStringLiteral("%1/%2-%3.png")
+                             .arg(dir, round ? QStringLiteral("dot") : QStringLiteral("tick"),
+                                  ink.name(QColor::HexRgb).mid(1));
+    if (QFile::exists(path))
+        return path;
+
+    QPixmap pixmap(14, 14);
+    pixmap.fill(Qt::transparent);
+    QPainter painter(&pixmap);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    if (round) {
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(ink);
+        painter.drawEllipse(QPointF(7.0, 7.0), 3.2, 3.2);
+    } else {
+        QPen pen(ink, 2.0, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+        painter.setPen(pen);
+        painter.drawPolyline(QPolygonF({ QPointF(3.0, 7.2), QPointF(5.9, 10.2),
+                                         QPointF(11.0, 4.0) }));
+    }
+    painter.end();
+
+    return pixmap.save(path, "PNG") ? path : QString();
 }
 } // namespace
 
@@ -80,6 +124,47 @@ bool ThemeManager::systemPrefersDark()
         return qApp->styleHints()->colorScheme() == Qt::ColorScheme::Dark;
 #endif
     return false; // older Qt (Debian bookworm): default to light
+}
+
+// ---------------------------------------------------------------------------
+// The now-playing elapsed-time clock
+// ---------------------------------------------------------------------------
+
+const char *ThemeManager::nowPlayingClockFontKey()
+{
+    return "NowPlayingClockFont";
+}
+
+QFont ThemeManager::defaultNowPlayingClockFont()
+{
+    // What player.ui asks for: no family of its own, so it follows the
+    // application typeface, bold, upright, at the 14 pt the panel was drawn
+    // around. Built here rather than read off the widget so the options
+    // dialog can show it without a player in front of it.
+    QFont font = QApplication::font();
+    font.setPointSize(14);
+    font.setBold(true);
+    font.setItalic(false);
+    return font;
+}
+
+QFont ThemeManager::clampNowPlayingClockFont(QFont font)
+{
+    int size = font.pointSize();
+    if (size <= 0) // a pixel-sized font: fall back to the designed size
+        size = defaultNowPlayingClockFont().pointSize();
+    font.setPointSize(qBound(kClockFontMinPt, size, kClockFontMaxPt));
+    return font;
+}
+
+QFont ThemeManager::nowPlayingClockFont()
+{
+    QSettings settings(configFilePath(), QSettings::IniFormat);
+    const QString spec = settings.value(nowPlayingClockFontKey()).toString();
+    QFont font;
+    if (spec.isEmpty() || !font.fromString(spec))
+        return defaultNowPlayingClockFont();
+    return clampNowPlayingClockFont(font);
 }
 
 QString ThemeManager::configuredTheme()
@@ -279,17 +364,42 @@ QTabBar::tab:bottom {
 }
 QTabBar::tab:bottom:!selected { margin-top: 0px; margin-bottom: 2px; }
 QCheckBox, QRadioButton { color: %TEXT%; background: transparent; }
-QCheckBox::indicator, QRadioButton::indicator {
+QCheckBox::indicator, QRadioButton::indicator, QGroupBox::indicator {
     width: 14px;
     height: 14px;
     border: 1px solid %BORDER%;
     background-color: %BASE%;
 }
 QRadioButton::indicator { border-radius: 7px; }
-QCheckBox::indicator:checked, QRadioButton::indicator:checked {
+QCheckBox::indicator:checked, QGroupBox::indicator:checked {
+    background-color: %ACCENT%;
+    border: 1px solid %ACCENT%;
+    image: url("%TICK%");
+}
+QRadioButton::indicator:checked {
+    background-color: %ACCENT%;
+    border: 1px solid %ACCENT%;
+    image: url("%DOT%");
+}
+QCheckBox::indicator:indeterminate {
     background-color: %ACCENT%;
     border: 1px solid %ACCENT%;
 }
+QCheckBox::indicator:disabled, QRadioButton::indicator:disabled,
+QGroupBox::indicator:disabled { border-color: %SUBTEXT%; }
+/* A control that is switched off has to look switched off. Without these the
+   stylesheet above paints every field the same whatever its state, so a
+   greyed-out group — the station server with networking off, the loudness
+   target with normalisation off — read as live and editable. */
+QLineEdit:disabled, QTextEdit:disabled, QPlainTextEdit:disabled,
+QSpinBox:disabled, QDoubleSpinBox:disabled, QDateEdit:disabled,
+QTimeEdit:disabled, QComboBox:disabled {
+    color: %SUBTEXT%;
+    background-color: %WINDOW%;
+    border: 1px solid %SUBTEXT%;
+}
+QLabel:disabled, QCheckBox:disabled, QRadioButton:disabled,
+QGroupBox:disabled, QGroupBox::title:disabled { color: %SUBTEXT%; }
 QSlider::groove:horizontal {
     border: 1px solid %BORDER%;
     height: 8px;
@@ -396,6 +506,12 @@ QLCDNumber { color: %ACCENT%; background: transparent; border: none; }
 /* Widget-specific accents (ids from player.ui) */
 #historyList { background-color: %ALT%; }
 #txt_horas { color: %ACCENT%; }
+/* The elapsed time of the track on air. It was drawn in a hardcoded blue set
+   on the widget itself in player.ui — which beats this stylesheet, so it
+   stayed that blue in every theme and all but vanished in the dark ones. It
+   is the same kind of readout as the hour clock above, so it takes the same
+   colour. */
+#txtDuration { color: %ACCENT%; }
 #txt_bottom_info { color: %SUBTEXT%; }
 )XFBQSS");
 
@@ -411,6 +527,8 @@ QLCDNumber { color: %ACCENT%; background: transparent; border: none; }
     qss.replace(QLatin1String("%PRESSED%"), hex(s.pressed));
     qss.replace(QLatin1String("%ACCENT%"), hex(s.accent));
     qss.replace(QLatin1String("%ACCENT_TEXT%"), hex(s.accentText));
+    qss.replace(QLatin1String("%TICK%"), markImage(s.accentText, false));
+    qss.replace(QLatin1String("%DOT%"), markImage(s.accentText, true));
     return qss;
 }
 
