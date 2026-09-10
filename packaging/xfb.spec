@@ -120,6 +120,17 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/XFB.desktop || :
 %{_datadir}/xfb/
 
 %changelog
+* Thu Sep 10 2026 Netpack <info@netpack.pt> - 1:4.0-1
+- Operator accounts: XFB asks who is at the desk, and every menu entry sits
+  behind a permission that person's role has to hold.
+- A production computer works on the station's own files over the share.
+- Watched folders file what lands in them; a folder named after a category
+  files its songs under it.
+- The national music quota, marked on the library and counted off the as-run.
+- Time signals on the hour, and What Is Scheduled to show what is booked.
+- Themed icons, two more themes, and a rearranged Options window.
+- Portuguese and French throughout.
+
 * Wed Sep 02 2026 Netpack <info@netpack.pt> - 1:3.1423-1
 - Cover art can be fetched for downloads that predate XFB keeping one.
 - The desk tells a paired phone what companion app it has, on every answer.

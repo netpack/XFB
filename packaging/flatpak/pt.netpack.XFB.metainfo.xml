@@ -57,6 +57,18 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="4.0" date="2026-09-10">
+      <description>
+        <p>
+          XFB asks who is at the desk and what each person may do; a production
+          computer can work on the station's own files; folders can be watched
+          and file themselves; the national music quota is marked and counted;
+          the hour carries its pips and its ident; and the schedule can be read
+          before it airs.
+        </p>
+      </description>
+      <url>https://github.com/netpack/XFB/releases/tag/v4.0</url>
+    </release>
     <release version="3.1423" date="2026-09-02">
       <description>
         <p>
