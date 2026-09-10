@@ -28,6 +28,7 @@ class TestUpdateCheckService : public QObject
 private slots:
     void releaseSequenceIsStrictlyIncreasing();
     void theOverflowRegression();
+    void aMajorBumpBeatsEveryFraction();
     void ignoresLeadingV();
     void identicalVersionIsNotNewer();
     void survivesFarMoreDigits();
@@ -38,8 +39,10 @@ private slots:
     void roundedPiBeatsLongerTruncatedPi();
 };
 
-// Every version XFB has shipped, oldest first. Note the last step: the digits
-// stop growing and pi is rounded instead, which is shorter but larger.
+// Every version XFB has shipped, oldest first. Two steps in here are the ones
+// worth watching: at 3.1416 the digits stop growing and pi is rounded instead,
+// which is shorter but larger; and at 4.0 the whole number moves for the first
+// time, so the fraction goes DOWN (.1423 -> .0) while the version goes up.
 static const QStringList kReleases = {
     QStringLiteral("3.14159"),
     QStringLiteral("3.141592"),
@@ -49,6 +52,14 @@ static const QStringList kReleases = {
     QStringLiteral("3.1415926535"),
     QStringLiteral("3.14159265358"),
     QStringLiteral("3.1416"),
+    QStringLiteral("3.1417"),
+    QStringLiteral("3.1418"),
+    QStringLiteral("3.1419"),
+    QStringLiteral("3.1420"),
+    QStringLiteral("3.1421"),
+    QStringLiteral("3.1422"),
+    QStringLiteral("3.1423"),
+    QStringLiteral("4.0"),
 };
 
 void TestUpdateCheckService::releaseSequenceIsStrictlyIncreasing()
@@ -65,6 +76,26 @@ void TestUpdateCheckService::releaseSequenceIsStrictlyIncreasing()
     // Also across the whole history, not just neighbours: the newest release
     // must be offered to someone still on the very first one.
     QVERIFY(UpdateCheckService::isNewerVersion(kReleases.last(), kReleases.first()));
+}
+
+// A bigger whole number wins however small the fraction after it is. This is
+// the only shape that reaches installs stranded by the overflow above: their
+// own comparator parsed anything with an 11-digit fraction as bare "3", so
+// only a first segment above 3 has ever looked newer to them.
+void TestUpdateCheckService::aMajorBumpBeatsEveryFraction()
+{
+    for (const QString &shipped : kReleases) {
+        if (shipped == QStringLiteral("4.0"))
+            continue;
+        QVERIFY2(UpdateCheckService::isNewerVersion(QStringLiteral("4.0"), shipped),
+                 qPrintable(QStringLiteral("4.0 should be newer than %1").arg(shipped)));
+        QVERIFY2(!UpdateCheckService::isNewerVersion(shipped, QStringLiteral("4.0")),
+                 qPrintable(QStringLiteral("%1 must not be newer than 4.0").arg(shipped)));
+    }
+
+    // And the fraction still decides once the whole numbers match.
+    QVERIFY(UpdateCheckService::isNewerVersion(QStringLiteral("4.1"), QStringLiteral("4.0")));
+    QVERIFY(!UpdateCheckService::isNewerVersion(QStringLiteral("4.0"), QStringLiteral("4.0.1")));
 }
 
 void TestUpdateCheckService::theOverflowRegression()
@@ -151,8 +182,10 @@ void TestUpdateCheckService::theFractionIsADecimalNotAnInteger()
     QVERIFY(UpdateCheckService::isNewerVersion(QStringLiteral("3.2"), QStringLiteral("3.14")));
     QVERIFY(!UpdateCheckService::isNewerVersion(QStringLiteral("3.14"), QStringLiteral("3.2")));
 
-    // The whole part still wins outright, and still compares as an integer.
-    QVERIFY(UpdateCheckService::isNewerVersion(QStringLiteral("4.0"), kReleases.last()));
+    // The whole part still wins outright, and still compares as an integer:
+    // .0 loses to .14159265358 on the fraction and wins anyway on the 4.
+    QVERIFY(UpdateCheckService::isNewerVersion(QStringLiteral("4.0"),
+                                               QStringLiteral("3.14159265358")));
     QVERIFY(UpdateCheckService::isNewerVersion(QStringLiteral("10.1"), QStringLiteral("9.9")));
 }
 
@@ -161,10 +194,10 @@ void TestUpdateCheckService::roundedPiBeatsLongerTruncatedPi()
     // 3.1416 is pi rounded at four places: .14160000000 > .14159265358, so it
     // must be offered to everyone on any earlier release even though the
     // version string is shorter than the one it replaces.
+    // Only the releases it actually replaced: kReleases carries the ones that
+    // came after it too, and 3.1417 is rightly newer than 3.1416.
     const QString rounded = QStringLiteral("3.1416");
-    for (const QString &v : kReleases) {
-        if (v == rounded)
-            continue; // it is the current release, not an earlier one
+    for (const QString &v : kReleases.mid(0, kReleases.indexOf(rounded))) {
         QVERIFY2(UpdateCheckService::isNewerVersion(rounded, v),
                  qPrintable(QStringLiteral("3.1416 should be newer than %1").arg(v)));
         QVERIFY2(!UpdateCheckService::isNewerVersion(v, rounded),
