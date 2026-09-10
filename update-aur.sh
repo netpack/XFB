@@ -72,13 +72,19 @@ git add PKGBUILD .SRCINFO xfb.install
 git commit -m "Update to version $VERSION-$PKGREL
 
 - Updated to XFB 4.0
-- Adds epoch=1. pacman compares the dot-separated segments as integers, so
+- Operator accounts: XFB asks who is at the desk, and every menu entry sits
+  behind a permission that person's role has to hold. Opt-in; a station that
+  never wanted a login carries on without one
+- A production computer works on the station's own files over the share
+- A watched folder files what lands in it, and a folder named after a
+  category files its songs under that category
+- The national music quota, marked on the library and counted off the as-run
+- Time signals on the hour, and What Is Scheduled to show what is booked --
+  including the weekly bookings that never aired in Portuguese or French
+- Themed icons, two more themes, and a rearranged Options window
+- Portuguese and French throughout
+- epoch=1 stays. pacman compares the dot-separated segments as integers, so
   3.14159 outranked 3.1416 and every rounded release looked like a downgrade
-  ('local is newer than AUR'). The epoch restores the ordering
-- Tab no longer traps keyboard-only operators in the library tables, the
-  playlist or a multi-line notes field
-- The Pads grid keeps one roving Tab stop instead of 24+ tab stops
-- The playlist reorders with Ctrl+Shift+Up/Down, announced for screen readers
 "
 
 echo ""
