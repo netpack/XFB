@@ -138,18 +138,47 @@ chmod +x "${APP_NAME}/Contents/MacOS/XFB"
 # Deploy Qt libraries
 print_status "Deploying Qt libraries with macdeployqt..."
 if command -v macdeployqt &> /dev/null; then
-    # Run macdeployqt without letting "set -e" abort the whole script if it
-    # returns non-zero. macdeployqt exits with an error when it can't resolve an
-    # rpath for a plugin we don't even ship (e.g. the SVG icon engine, which
-    # references QtSvg.framework). By that point the main frameworks are already
-    # deployed, and we remove the SVG plugins further below, so this is benign —
-    # but under "set -e" the bare error code would otherwise kill the script
-    # before re-signing and DMG creation ever run.
+    # macdeployqt at -verbose=2 prints a line for every single file it touches —
+    # several hundred of them, which buries anything worth reading. Keep the full
+    # log on disk for when something actually goes wrong and print only the
+    # counts plus any error we did not already expect.
+    #
+    # Run it without letting "set -e" abort the whole script if it returns
+    # non-zero. macdeployqt errors out when it cannot resolve an rpath for a
+    # plugin we do not even ship: the SVG icon engine references QtSvg, and the
+    # input-context plugin references QtVirtualKeyboard. By that point the real
+    # frameworks are already deployed, and both plugins are removed further
+    # below, so this is benign — but under "set -e" the bare error code would
+    # otherwise kill the script before re-signing and DMG creation ever run.
+    MACDEPLOY_LOG="${BUILD_DIR}/macdeployqt.log"
+    mkdir -p "$BUILD_DIR"
     macdeployqt_rc=0
-    macdeployqt "$APP_NAME" -verbose=2 || macdeployqt_rc=$?
-    if [ "$macdeployqt_rc" -ne 0 ]; then
-        print_warning "macdeployqt returned ${macdeployqt_rc} (typically an unresolved rpath for a plugin we don't ship, e.g. QtSvg). Continuing with bundle fix-ups."
+    macdeployqt "$APP_NAME" -verbose=2 > "$MACDEPLOY_LOG" 2>&1 || macdeployqt_rc=$?
+
+    # A framework copy lands on Frameworks/<Name>.framework/Versions/A/<Name>
+    # (the trailing "$" keeps its Info.plist and other resources out of the
+    # count); loose dylibs land straight in Frameworks/, which macdeployqt spells
+    # with a double slash.
+    fw_count=$(grep -c 'to "[^"]*/Contents/Frameworks/[^/]*\.framework/Versions/A/[^/"]*"$' "$MACDEPLOY_LOG" || true)
+    dylib_count=$(grep -c 'to "[^"]*/Contents/Frameworks//' "$MACDEPLOY_LOG" || true)
+    plugin_count=$(grep -c 'to "[^"]*/Contents/PlugIns/' "$MACDEPLOY_LOG" || true)
+    print_status "  ${fw_count} frameworks, ${dylib_count} dylibs, ${plugin_count} plugins deployed"
+
+    # The unresolved rpaths we already know about belong to the plugins we delete
+    # a few steps below. Anything else deserves to be seen.
+    known_rpath='QtSvg|QtVirtualKeyboard'
+    deploy_errors=$(grep '^ERROR:' "$MACDEPLOY_LOG" | grep -v 'using QList' | sort -u || true)
+    expected_errors=$(printf '%s\n' "$deploy_errors" | grep -Ec "$known_rpath" || true)
+    unexpected_errors=$(printf '%s\n' "$deploy_errors" | grep -Ev "$known_rpath" | grep . || true)
+
+    if [ "$expected_errors" -gt 0 ]; then
+        print_status "  ${expected_errors} expected rpath error(s) (QtSvg, QtVirtualKeyboard) for plugins removed below"
     fi
+    if [ -n "$unexpected_errors" ]; then
+        print_warning "macdeployqt reported ${macdeployqt_rc:+exit ${macdeployqt_rc}, }errors we did not expect:"
+        printf '%s\n' "$unexpected_errors" | sed 's/^/    /'
+    fi
+    print_status "  full log: ${MACDEPLOY_LOG}"
     # Proceed with the fix-ups as long as macdeployqt got far enough to create
     # the Frameworks directory (the SVG-plugin error happens at the very end,
     # after all real frameworks are already copied).
@@ -247,6 +276,8 @@ if command -v macdeployqt &> /dev/null; then
         fi
     else
         print_error "macdeployqt did not produce a Frameworks directory; the bundle is incomplete."
+        print_error "Last 20 lines of ${MACDEPLOY_LOG}:"
+        tail -n 20 "$MACDEPLOY_LOG" | sed 's/^/    /'
         exit 1
     fi
 else
