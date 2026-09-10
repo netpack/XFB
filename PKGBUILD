@@ -63,8 +63,8 @@ source=("git+https://github.com/netpack/XFB.git#tag=v${pkgver}"
         "xfb-companion-${pkgver}.apk::https://github.com/netpack/XFB/releases/download/v${pkgver}/xfb-companion.apk"
         "xfb-companion-${pkgver}.json::https://github.com/netpack/XFB/releases/download/v${pkgver}/xfb-companion.json")
 sha256sums=('SKIP'
-            'REPLACE_WITH_APK_SHA256'
-            'REPLACE_WITH_SIDECAR_SHA256')
+            '1e4188e07e2f9d1ba82a2fb4469d434892acd68426fe1e3d6c94bd37800b9ed3'
+            'b7136bc77a53e199c215437ca1e0dc4825ad34c94ea40157f20e9a74d50dd27b')
 
 build() {
     cd "$srcdir/XFB"
