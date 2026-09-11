@@ -15,7 +15,47 @@ RUN dnf -y install \
         ostree \
         ca-certificates \
         findutils \
+        bsdtar \
     && dnf clean all
+
+# flatpak-builder unpacks every "type: archive" source with GNU tar, and GNU
+# tar cannot extract under qemu — each openat() it makes returns ENOSYS, so an
+# emulated x86_64 build dies part-way through the lame tarball with "Cannot
+# open: Function not implemented" on file after file. bsdtar extracts the same
+# archives without a complaint and understands the flags flatpak-builder
+# passes (--no-same-owner, --strip-components).
+#
+# The real tar is moved aside rather than shadowed on PATH: flatpak-builder
+# spawns it as /usr/bin/tar by absolute path, so a shim in /usr/local/bin is
+# never consulted — the first attempt at this failed with the error still
+# naming /usr/bin/tar. Only extraction is rerouted; creating an archive works
+# under qemu and is left to GNU tar. Same fault, same shape of fix, as the
+# rpmuncompress shim in Dockerfile.fedora-build.
+RUN mv /usr/bin/tar /usr/bin/tar.gnu \
+    && printf '%s\n' \
+        '#!/bin/sh' \
+        '# flatpak-builder uses the traditional bundled form -- "tar xf ..." --' \
+        '# with no leading dash, so the first argument has to be looked at on' \
+        '# its own terms as well as scanning for -x style flags.' \
+        'extract=0' \
+        'case "$1" in' \
+        '    -*) ;;' \
+        '    *x*) extract=1 ;;' \
+        'esac' \
+        'for arg in "$@"; do' \
+        '    case "$arg" in' \
+        '        --extract|--get) extract=1 ;;' \
+        '        --*) ;;' \
+        '        -*x*) extract=1 ;;' \
+        '    esac' \
+        'done' \
+        'if [ "$extract" = 1 ]; then' \
+        '    echo "tar shim: extracting with bsdtar" >&2' \
+        '    exec bsdtar "$@"' \
+        'fi' \
+        'exec /usr/bin/tar.gnu "$@"' \
+        > /usr/bin/tar \
+    && chmod +x /usr/bin/tar
 
 COPY . /src
 WORKDIR /src

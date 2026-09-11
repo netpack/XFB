@@ -15,10 +15,20 @@
 # with "dlopen(): error loading libfuse.so.2"; `./XFB-<version>-<arch>.AppImage
 # --appimage-extract-and-run` works anyway.
 #
-# Building for a foreign architecture goes through qemu and is slow rather than
-# broken, with one exception worth knowing: GNU tar cannot extract under qemu
-# at all, so Dockerfile.appimage unpacks the ffmpeg archive with bsdtar. See
-# build-rpm-docker.sh for the same fault in rpmbuild's %prep.
+# x86_64 DOES NOT BUILD UNDER EMULATION. XFB itself compiles fine — it is
+# linuxdeploy that will not start:
+#
+#   /usr/local/bin/linuxdeploy: Exec format error
+#
+# It is a correct x86-64 ELF; `file` calls it "static-pie linked", and qemu
+# cannot load a static-pie executable. Nothing in this Dockerfile can work
+# around a tool that will not run. Build x86_64 on a real x86_64 Linux machine
+# — the UTM Fedora VM, or a CI runner.
+#
+# The aarch64 build is native here and works. One thing it taught on the way:
+# GNU tar cannot extract under qemu at all, so Dockerfile.appimage unpacks the
+# ffmpeg archive with bsdtar — see build-rpm-docker.sh for the same fault in
+# rpmbuild's %prep.
 set -e
 
 ARCHES=("$@")

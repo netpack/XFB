@@ -18,7 +18,22 @@
 #
 # The runtime and SDK are about 3 GB and land in /var/lib/flatpak, which is
 # kept in a named docker volume so a second run does not fetch them again.
-# Remove it with: docker volume rm xfb-flatpak-cache
+# Remove them with: docker volume rm xfb-flatpak-cache-x86_64 xfb-flatpak-cache-aarch64
+#
+# x86_64 DOES NOT BUILD UNDER EMULATION, and this one cannot be shimmed around.
+# bubblewrap, which flatpak-builder sandboxes every module with, always installs
+# a seccomp filter, and qemu does not implement prctl(PR_SET_SECCOMP) — the
+# build stops on the first module with:
+#
+#   bwrap: Unable to set up system call filtering as requested:
+#          prctl(PR_SET_SECCOMP) reported EINVAL
+#
+# EINVAL is 22, the same 22 that stops pacman's sandbox under emulation. There
+# is no flatpak-builder flag to drop the filter, and --privileged does not
+# help: the syscall is missing rather than forbidden. Build x86_64 on a real
+# x86_64 Linux machine — the UTM Fedora VM, or a CI runner. The tar shim in
+# Dockerfile.flatpak-build does nothing on a native build and is what gets an
+# emulated one as far as this, so it stays either way.
 set -e
 
 ARCHES=("$@")
