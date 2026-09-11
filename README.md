@@ -106,6 +106,48 @@ cd xfb
 makepkg -si
 ```
 
+### Any Linux — AppImage
+
+One file. No package manager, no root, nothing installed.
+
+```sh
+# Intel/AMD 64-bit
+chmod +x XFB-4.0-x86_64.AppImage
+./XFB-4.0-x86_64.AppImage
+
+# ARM64
+chmod +x XFB-4.0-aarch64.AppImage
+./XFB-4.0-aarch64.AppImage
+```
+
+It carries Qt, ffmpeg and ffprobe, so the library scan, waveforms and BPM work
+on a machine with none of them installed.
+
+**Requirements:** glibc 2.36 or newer (Debian 12, Ubuntu 24.04, Fedora 37 and
+up) and FUSE 2 — `libfuse2` on Debian/Ubuntu, `fuse-libs` on Fedora. Without
+FUSE the AppImage cannot mount itself; run it with
+`--appimage-extract-and-run` instead.
+
+### Any Linux — Flatpak
+
+```sh
+flatpak install --user ./XFB-4.0-x86_64.flatpak
+flatpak run pt.netpack.XFB
+```
+
+The bundle carries XFB itself; `org.kde.Platform` comes from Flathub, so the
+machine needs that remote configured:
+
+```sh
+flatpak remote-add --if-not-exists --user flathub \
+    https://flathub.org/repo/flathub.flatpakrepo
+```
+
+XFB is sandboxed but keeps what a playout system needs: your home directory
+(the music has to live somewhere), audio, the network for Icecast and the phone
+sync server, and the accessibility bus, without which a screen reader would be
+told nothing.
+
 ### Windows
 
 1. Download the installer from [GitHub Releases](https://github.com/netpack/XFB/releases):

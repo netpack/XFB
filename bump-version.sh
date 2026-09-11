@@ -141,7 +141,17 @@ update-debian-repo.sh     | 1 | VERSION="${1:-@V@}"
 Dockerfile.debian-build   | 1 | Version: 1:@V@-1
 Dockerfile.debian-build   | 3 | xfb_@V@-1_
 packaging/homebrew/xfb.rb | 1 | version "@V@"
-README.md                 | 5 | @V@
+# The README used to be one bare "@V@" expecting 5 hits. That counted any "4.0"
+# anywhere in the file — "Ubuntu 24.04" contains one — so a bump would quietly
+# rewrite prose that has nothing to do with the version. Each download name is
+# listed on its own instead.
+README.md                 | 1 | XFB-@V@-macOS.dmg
+README.md                 | 2 | xfb_@V@-1_amd64.deb
+README.md                 | 2 | XFB-@V@-x86_64.AppImage
+README.md                 | 2 | XFB-@V@-aarch64.AppImage
+README.md                 | 1 | XFB-@V@-x86_64.flatpak
+README.md                 | 1 | XFB-@V@-Setup.exe
+README.md                 | 1 | XFB-@V@-arm64-Setup.exe
 CITATION.cff              | 1 | version: @V@
 '
 
@@ -185,6 +195,9 @@ G, R, Y, N = '\033[0;32m', '\033[0;31m', '\033[1;33m', '\033[0m'
 plan = {}
 order = []
 for line in os.environ['BUMP_TABLE'].strip().splitlines():
+    # Blank lines and # comments so the table can explain itself in place.
+    if not line.strip() or line.lstrip().startswith('#'):
+        continue
     path, want, snippet = (p.strip() for p in line.split('|', 2))
     if path not in plan:
         plan[path] = []
