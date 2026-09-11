@@ -15,20 +15,23 @@
 # with "dlopen(): error loading libfuse.so.2"; `./XFB-<version>-<arch>.AppImage
 # --appimage-extract-and-run` works anyway.
 #
-# x86_64 DOES NOT BUILD UNDER EMULATION. XFB itself compiles fine — it is
-# linuxdeploy that will not start:
+# Both architectures build on an Apple Silicon Mac, but x86_64 only after two
+# emulation faults were worked around, and both workarounds are in
+# Dockerfile.appimage:
 #
-#   /usr/local/bin/linuxdeploy: Exec format error
+#  - linuxdeploy is an AppImage whose runtime is static-pie linked, which the
+#    emulation cannot load at all ("Exec format error" on a perfectly good
+#    x86-64 ELF). It is unpacked with unsquashfs and its inner binaries are
+#    used directly. Done on both architectures, since it is one code path and
+#    it drops the FUSE dependency a container cannot satisfy anyway.
+#  - GNU tar could not extract under the older emulation backend, so the
+#    ffmpeg archive is unpacked with bsdtar. See build-rpm-docker.sh.
 #
-# It is a correct x86-64 ELF; `file` calls it "static-pie linked", and qemu
-# cannot load a static-pie executable. Nothing in this Dockerfile can work
-# around a tool that will not run. Build x86_64 on a real x86_64 Linux machine
-# — the UTM Fedora VM, or a CI runner.
-#
-# The aarch64 build is native here and works. One thing it taught on the way:
-# GNU tar cannot extract under qemu at all, so Dockerfile.appimage unpacks the
-# ffmpeg archive with bsdtar — see build-rpm-docker.sh for the same fault in
-# rpmbuild's %prep.
+# An x86_64 build cannot be *tested* here — the finished AppImage's own runtime
+# is static-pie too, so it will not start on this machine however well it was
+# built. Unpack it with unsquashfs at the offset in its ELF header and run
+# AppDir/AppRun to check the payload, or test the whole file on a real x86_64
+# Linux box.
 set -e
 
 ARCHES=("$@")
