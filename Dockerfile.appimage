@@ -1,0 +1,141 @@
+# Dockerfile for building the XFB AppImage.
+#
+# Usage:
+#   ./build-appimage-docker.sh             # both architectures
+#   docker build -t xfb-appimage-builder -f Dockerfile.appimage .
+#   docker run --rm -v $(pwd)/output:/output xfb-appimage-builder
+#
+# Debian bookworm rather than something newer on purpose. An AppImage runs
+# against the host's glibc, so the oldest system it can start on is decided
+# right here by the build image: bookworm's 2.36 reaches Debian 12, Ubuntu
+# 24.04 and Fedora 37 upwards. Build this on trixie and it stops starting on
+# all of them. Check what a build actually asks for with
+#   objdump -T AppDir/usr/bin/XFB | grep -o 'GLIBC_[0-9.]*' | sort -V -u | tail
+FROM debian:bookworm
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# The build dependencies are the Debian package's, plus the three the AppImage
+# itself needs: file (linuxdeploy inspects binaries with it), curl, and bsdtar.
+# bsdtar is not a preference — GNU tar cannot extract under qemu, every
+# openat() it makes returns ENOSYS, so an emulated x86_64 build dies unpacking
+# the ffmpeg archive. See Dockerfile.fedora-build for the same fix in %prep.
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    pkg-config \
+    qt6-base-dev \
+    qt6-base-dev-tools \
+    qt6-multimedia-dev \
+    qt6-webengine-dev \
+    qt6-webengine-dev-tools \
+    qt6-declarative-dev \
+    qt6-positioning-dev \
+    qt6-webchannel-dev \
+    qt6-quick3d-dev \
+    libqt6opengl6-dev \
+    libqt6sql6-sqlite \
+    libqt6concurrent6 \
+    qml6-module-qtquick \
+    qml6-module-qtwebengine \
+    qt6-wayland \
+    libgl1-mesa-dev \
+    libatspi2.0-dev \
+    libspeechd-dev \
+    libasound2-dev \
+    libpulse-dev \
+    libsqlite3-dev \
+    libcurl4-openssl-dev \
+    file \
+    curl \
+    ca-certificates \
+    libarchive-tools \
+    && rm -rf /var/lib/apt/lists/*
+
+# linuxdeploy and its Qt plugin are themselves AppImages, and an AppImage needs
+# FUSE to mount itself — which a container does not have. APPIMAGE_EXTRACT_AND_RUN
+# makes them unpack to a temporary directory and run from there instead, which
+# is the supported way to use them in CI.
+ENV APPIMAGE_EXTRACT_AND_RUN=1
+ARG TARGETARCH
+RUN set -eu; \
+    case "$TARGETARCH" in \
+        amd64) ldarch=x86_64 ;; \
+        arm64) ldarch=aarch64 ;; \
+        *) echo "unsupported architecture: $TARGETARCH" >&2; exit 1 ;; \
+    esac; \
+    echo "$ldarch" > /tmp/.ldarch; \
+    base=https://github.com/linuxdeploy; \
+    curl -fsSL -o /usr/local/bin/linuxdeploy \
+        "$base/linuxdeploy/releases/download/continuous/linuxdeploy-$ldarch.AppImage"; \
+    curl -fsSL -o /usr/local/bin/linuxdeploy-plugin-qt \
+        "$base/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-$ldarch.AppImage"; \
+    chmod +x /usr/local/bin/linuxdeploy /usr/local/bin/linuxdeploy-plugin-qt
+
+# ffmpeg and ffprobe, bundled rather than left to the host. XFB shells out to
+# them for waveforms, BPM, durations, cover art and every conversion, and an
+# AppImage has no Recommends: field to ask for them with — the whole point of
+# the format is that the operator downloads one file. Static builds, so they
+# carry no library expectations of their own.
+#
+# yt-dlp is deliberately NOT bundled, for the reason written up in
+# packaging/flatpak/pt.netpack.XFB.yml: it goes stale in days, and a copy
+# frozen inside a read-only image would fail a fortnight after release with
+# nothing the operator could do. XFB downloads the official standalone build
+# into ~/.local/bin and prefers it over any system copy precisely so it can
+# keep itself current.
+RUN set -eu; \
+    case "$TARGETARCH" in \
+        amd64) ffarch=amd64 ;; \
+        arm64) ffarch=arm64 ;; \
+    esac; \
+    curl -fsSL -o /tmp/ffmpeg.tar.xz \
+        "https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-$ffarch-static.tar.xz"; \
+    mkdir -p /tmp/ffmpeg; \
+    bsdtar -xf /tmp/ffmpeg.tar.xz -C /tmp/ffmpeg --strip-components=1; \
+    install -Dm755 /tmp/ffmpeg/ffmpeg /opt/ffmpeg/ffmpeg; \
+    install -Dm755 /tmp/ffmpeg/ffprobe /opt/ffmpeg/ffprobe; \
+    rm -rf /tmp/ffmpeg /tmp/ffmpeg.tar.xz
+
+COPY . /src
+WORKDIR /src
+
+RUN rm -rf build-appimage && mkdir -p build-appimage && cd build-appimage && \
+    cmake .. \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/usr \
+        -DBUILD_TESTING=OFF && \
+    make -j2 XFB && \
+    make install DESTDIR=/src/AppDir
+
+# ffmpeg goes in beside XFB. linuxdeploy's AppRun puts $APPDIR/usr/bin on PATH,
+# which is how XFB's own lookup finds these ahead of anything on the host.
+RUN install -Dm755 /opt/ffmpeg/ffmpeg /src/AppDir/usr/bin/ffmpeg && \
+    install -Dm755 /opt/ffmpeg/ffprobe /src/AppDir/usr/bin/ffprobe
+
+# The Qt plugin needs to be told which Qt to deploy; bookworm has qmake6 but no
+# plain qmake, and the plugin looks for the latter.
+ENV QMAKE=/usr/bin/qmake6
+ENV QT_SELECT=6
+
+# The Qt plugin deploys the xcb platform plugin and nothing else. A desk
+# running a Wayland session would then get XWayland at best and no window at
+# worst, and nothing headless could start it at all — so name the other three
+# explicitly. This is why qt6-wayland is in the build dependencies above.
+ENV EXTRA_PLATFORM_PLUGINS="libqwayland-generic.so;libqwayland-egl.so;libqoffscreen.so"
+
+RUN set -eu; \
+    version="$(sed -n 's/^project(XFB VERSION \([0-9.]*\).*/\1/p' CMakeLists.txt)"; \
+    ldarch="$(cat /tmp/.ldarch)"; \
+    export OUTPUT="XFB-$version-$ldarch.AppImage"; \
+    linuxdeploy --appdir /src/AppDir \
+        --executable /src/AppDir/usr/bin/XFB \
+        --desktop-file /src/AppDir/usr/share/applications/XFB.desktop \
+        --icon-file /src/AppDir/usr/share/icons/hicolor/256x256/apps/xfb_icon.png \
+        --plugin qt \
+        --output appimage; \
+    mkdir -p /out; \
+    mv "$OUTPUT" /out/
+
+# The runner copies the finished AppImage out.
+CMD ["/bin/sh", "-c", "mkdir -p /output && cp -v /out/*.AppImage /output/"]
