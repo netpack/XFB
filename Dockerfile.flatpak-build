@@ -1,0 +1,23 @@
+# Dockerfile for building the XFB flatpak.
+#
+# This image only carries the tools and the source. The build itself happens in
+# `docker run --privileged` (see build-flatpak-docker.sh), because
+# flatpak-builder sandboxes every module it builds with bubblewrap, and
+# bubblewrap needs privileges a `docker build` step does not have.
+#
+# Fedora because that is where XFB's Linux packaging already lives, and its
+# flatpak is current.
+FROM fedora:44
+
+RUN dnf -y install \
+        flatpak \
+        flatpak-builder \
+        ostree \
+        ca-certificates \
+        findutils \
+    && dnf clean all
+
+COPY . /src
+WORKDIR /src
+
+CMD ["/bin/bash", "/src/packaging/flatpak/build-in-container.sh"]

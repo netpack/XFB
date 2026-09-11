@@ -6,6 +6,12 @@ build/
 build-*/
 **/build-*/
 *-build/
+# Docker strips the trailing slash off these patterns, so "**/build-*/" also
+# matches ordinary FILES whose name starts with "build-" at any depth. That
+# silently kept the flatpak's own build script out of the image, and the
+# container failed with "No such file or directory" on a file that is plainly
+# in the tree. Named back in rather than renamed.
+!packaging/flatpak/build-in-container.sh
 pkg-root/
 **/pkg-root/
 pkg-build/

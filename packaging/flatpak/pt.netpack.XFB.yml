@@ -4,9 +4,9 @@
 #       packaging/flatpak/pt.netpack.XFB.yml
 #   flatpak run pt.netpack.XFB
 #
-# UNVERIFIED. Written on a Mac, where flatpak-builder cannot run; nothing below
-# has been built. The three things to check first are called out in comments as
-# CHECK. Build it on the Fedora machine before trusting any of it.
+# Built and verified 2026-09-11 with build-flatpak-docker.sh, which runs
+# flatpak-builder in a privileged container. The three CHECKs this file used to
+# carry are answered where they stood.
 #
 # The design decision behind this file: yt-dlp is NOT bundled. It goes stale in
 # days — YouTube changes and an old yt-dlp simply fails — and a read-only
@@ -19,9 +19,11 @@
 # which can wait on a download, so it is built in.
 app-id: pt.netpack.XFB
 runtime: org.kde.Platform
-# CHECK: pick the newest KDE runtime that exists when you build. XFB needs
-# Qt >= 6.4; Fedora 44 ships 6.11 and builds it fine.
-runtime-version: '6.9'
+# 6.9 never existed. Flathub carries 6.10 and 6.11 (plus the old 5.15-25.08);
+# 6.11 is the newest and matches the Qt that Fedora 44 already builds XFB with.
+# Check `flatpak remote-ls flathub --columns=application,branch | grep org.kde.Sdk`
+# before moving it again.
+runtime-version: '6.11'
 sdk: org.kde.Sdk
 command: XFB
 rename-desktop-file: XFB.desktop
@@ -43,10 +45,14 @@ finish-args:
 
   # The music library lives wherever the operator keeps it, and ~/.local/bin is
   # where the self-updating yt-dlp goes.
-  # CHECK: whether ~/.var/app/pt.netpack.XFB is mounted noexec. The whole
-  # yt-dlp design depends on being able to run a downloaded binary from the
-  # app's writable home. Test before trusting: flatpak run --command=sh
-  # pt.netpack.XFB, drop a script in ~/.local/bin, chmod +x, run it.
+  # STILL TO CHECK, and it needs a real desktop rather than a container:
+  # whether ~/.var/app/pt.netpack.XFB is mounted noexec. The whole yt-dlp
+  # design depends on running a downloaded binary from the app's writable
+  # home, and that directory is an ordinary directory in $HOME, so it inherits
+  # whatever that filesystem was mounted with — nothing flatpak decides, and
+  # nothing a container can tell you about the operator's machine. Test on the
+  # Fedora box: flatpak run --command=sh pt.netpack.XFB, drop a script in
+  # ~/.local/bin, chmod +x, run it.
   - --filesystem=home
 
   # Accessibility. This is not optional for XFB: the app is used without sight,
@@ -62,9 +68,10 @@ modules:
   # ffmpeg's command-line tools. The KDE runtime carries the libav* libraries
   # Qt Multimedia links against, but not the ffmpeg and ffprobe binaries, and
   # XFB shells out to both constantly.
-  # CHECK: if org.freedesktop.Platform.ffmpeg-full turns out to ship the CLI on
-  # the runtime you target, drop this module and add the extension instead —
-  # it is a great deal cheaper to build.
+  # The org.freedesktop.Platform.ffmpeg-full extension is not a way out of
+  # this: Flathub publishes it for branch 24.08 only, and the KDE 6.11 runtime
+  # is built on 25.08, so there is no matching branch to depend on. Building it
+  # here costs most of the build time; revisit if a 25.08 branch appears.
   - name: ffmpeg
     config-opts:
       - --disable-debug
@@ -78,14 +85,25 @@ modules:
     sources:
       - type: archive
         url: https://ffmpeg.org/releases/ffmpeg-7.1.tar.xz
-        # CHECK: replace with the sha256 of whatever release you pin.
+        # Verified against the published tarball 2026-09-11.
         sha256: 40973d44970dbc83ef302b0609f2e74982be2d85916dd2ee7472d30678a7abe6
     modules:
       - name: lame
+        config-opts:
+          # --disable-frontend because the `lame` command-line tool is not
+          # wanted here and does not link in the SDK anyway: its console.c
+          # needs tgetent/tgetstr/tgetnum, which live in libtinfo rather than
+          # the -lncurses its Makefile asks for. Only libmp3lame is needed, and
+          # shared so that ffmpeg's own shared libraries can link it.
+          - --disable-frontend
+          - --disable-static
+          - --enable-shared
         sources:
           - type: archive
             url: https://downloads.sourceforge.net/lame/lame-3.100.tar.gz
-            sha256: ddfe36cab873794038ae2c1210557ad34857a4b6bdc515785d1da9e175b1da4e
+            # Ends 1e, not 4e. The 4e written here first was a slip, and it is
+            # the kind that only shows up minutes into a build.
+            sha256: ddfe36cab873794038ae2c1210557ad34857a4b6bdc515785d1da9e175b1da1e
 
   - name: xfb
     buildsystem: cmake-ninja
