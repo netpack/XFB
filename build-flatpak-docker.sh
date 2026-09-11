@@ -20,20 +20,22 @@
 # kept in a named docker volume so a second run does not fetch them again.
 # Remove them with: docker volume rm xfb-flatpak-cache-x86_64 xfb-flatpak-cache-aarch64
 #
-# x86_64 DOES NOT BUILD UNDER EMULATION, and this one cannot be shimmed around.
-# bubblewrap, which flatpak-builder sandboxes every module with, always installs
-# a seccomp filter, and qemu does not implement prctl(PR_SET_SECCOMP) — the
-# build stops on the first module with:
+# x86_64 DOES NOT BUILD UNDER EMULATION on an Apple Silicon Mac, and this one
+# is not a gap a better emulator closes. flatpak-builder sandboxes every module
+# with bubblewrap, bubblewrap always installs a seccomp filter, and a seccomp
+# filter is a BPF program validated against the NATIVE syscall ABI — so an
+# x86_64 process on an arm64 kernel cannot install one:
 #
 #   bwrap: Unable to set up system call filtering as requested:
 #          prctl(PR_SET_SECCOMP) reported EINVAL
 #
-# EINVAL is 22, the same 22 that stops pacman's sandbox under emulation. There
-# is no flatpak-builder flag to drop the filter, and --privileged does not
-# help: the syscall is missing rather than forbidden. Build x86_64 on a real
-# x86_64 Linux machine — the UTM Fedora VM, or a CI runner. The tar shim in
-# Dockerfile.flatpak-build does nothing on a native build and is what gets an
-# emulated one as far as this, so it stays either way.
+# Switching Docker to the Apple Virtualization framework with Rosetta got
+# bubblewrap's namespaces working and left this exactly where it was.
+# flatpak-builder has no flag to skip the filter. Build x86_64 on a machine
+# that is x86_64 — ./build-flatpak.sh in the UTM Fedora VM, or a CI runner.
+#
+# The tar shim in Dockerfile.flatpak-build is inert on a native build and is
+# what gets an emulated one as far as this, so it stays either way.
 set -e
 
 ARCHES=("$@")
