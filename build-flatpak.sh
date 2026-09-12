@@ -22,6 +22,21 @@
 # instruction translation underneath is. It is not a gap in the emulator that a
 # better one would close, and flatpak-builder has no flag to skip the filter.
 # Run it on a machine whose architecture is the one you are building for.
+#
+# NOTHING HEAVY IS WRITTEN INTO THE SOURCE TREE, and that is deliberate rather
+# than tidiness. The VM that builds x86_64 reaches this checkout over a shared
+# folder, and ostree cannot create a repository on one — it wants hardlinks and
+# xattrs a virtiofs/9p share does not provide. flatpak-builder's state
+# directory holds an ostree repo, so left at its default (.flatpak-builder in
+# the current directory) the build dies with
+#
+#   Error opening cache: opening repo: opendir(objects): No such file or directory
+#
+# after downloading every source perfectly well, which reads like a corrupt
+# cache and is not one. The state directory, the build tree and the output repo
+# therefore all live under $XDG_CACHE_HOME; only the finished bundle, an
+# ordinary file, is written back to output/. Override with XFB_FLATPAK_CACHE if
+# that path is itself on a share.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -58,9 +73,25 @@ flatpak install --user -y --noninteractive flathub \
 
 echo
 echo "== Building =="
-BUILD_DIR="$here/build-flatpak"
-REPO_DIR="$here/build-flatpak-repo"
-flatpak-builder --user --force-clean --repo="$REPO_DIR" "$BUILD_DIR" "$MANIFEST"
+CACHE_ROOT="${XFB_FLATPAK_CACHE:-${XDG_CACHE_HOME:-$HOME/.cache}/xfb-flatpak}"
+mkdir -p "$CACHE_ROOT"
+STATE_DIR="$CACHE_ROOT/state"
+BUILD_DIR="$CACHE_ROOT/build"
+REPO_DIR="$CACHE_ROOT/repo"
+echo "   (working in $CACHE_ROOT, off the source tree — see the note at the top)"
+
+# A state directory left behind by a failed run keeps failing the same way:
+# flatpak-builder finds cache/ already there, empty, and will not initialise
+# over it. Cheap to spot and cheap to fix.
+if [ -d "$STATE_DIR/cache" ] && [ ! -d "$STATE_DIR/cache/objects" ]; then
+    echo "   (clearing a half-made ostree cache from an earlier run)"
+    rm -rf "$STATE_DIR/cache"
+fi
+
+flatpak-builder --user --force-clean \
+    --state-dir="$STATE_DIR" \
+    --repo="$REPO_DIR" \
+    "$BUILD_DIR" "$MANIFEST"
 
 echo
 echo "== Bundling =="
