@@ -131,17 +131,25 @@ FUSE the AppImage cannot mount itself; run it with
 ### Any Linux — Flatpak
 
 ```sh
-flatpak install --user ./XFB-4.0-x86_64.flatpak
+flatpak install https://netpack.github.io/XFB/flatpak/xfb.flatpakref
 flatpak run pt.netpack.XFB
 ```
 
-The bundle carries XFB itself; `org.kde.Platform` comes from Flathub, so the
-machine needs that remote configured:
+That one command adds the XFB repository — and Flathub, if the machine does not
+have it yet, for the KDE runtime XFB is built on — and installs it. Later
+releases then arrive with `flatpak update` like any other app. The repository
+is not signed.
+
+If you would rather add the repository yourself and install by name:
 
 ```sh
-flatpak remote-add --if-not-exists --user flathub \
-    https://flathub.org/repo/flathub.flatpakrepo
+flatpak remote-add --user --if-not-exists xfb https://netpack.github.io/XFB/flatpak/xfb.flatpakrepo
+flatpak install --user xfb pt.netpack.XFB
 ```
+
+Each release also carries a standalone bundle, `XFB-4.0-x86_64.flatpak`, for a
+machine that cannot reach the repository. A bundle installed by path does not
+receive updates.
 
 XFB is sandboxed but keeps what a playout system needs: your home directory
 (the music has to live somewhere), audio, the network for Icecast and the phone

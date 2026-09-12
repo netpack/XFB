@@ -167,6 +167,7 @@ log.txt
 
 # Generated APT repository tree (update-debian-repo.sh)
 debian-repo/
+flatpak-repo/
 
 # The staged companion APK and its sidecar. Build products of the Android
 # toolchain, 8 MB a release, and produced by a signing key that is not in the

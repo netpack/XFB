@@ -50,6 +50,7 @@ dist-windows-arm64/
 aur-xfb/
 homebrew-xfb/
 debian-repo/
+flatpak-repo/
 
 # Version control and editor/IDE metadata
 .git/
