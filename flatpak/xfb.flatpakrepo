@@ -1,0 +1,7 @@
+[Flatpak Repo]
+Title=XFB
+Url=https://netpack.github.io/XFB/flatpak/
+Homepage=https://github.com/netpack/XFB
+Comment=Radio automation, playout and music library management
+Description=XFB is a radio automation and playout system, built to be used without sight.
+RuntimeRepo=https://dl.flathub.org/repo/flathub.flatpakrepo

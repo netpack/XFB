@@ -1,0 +1,10 @@
+[Flatpak Ref]
+Title=XFB
+Name=pt.netpack.XFB
+Branch=master
+Url=https://netpack.github.io/XFB/flatpak/
+Homepage=https://github.com/netpack/XFB
+Comment=Radio automation, playout and music library management
+IsRuntime=false
+RuntimeRepo=https://dl.flathub.org/repo/flathub.flatpakrepo
+SuggestRemoteName=xfb

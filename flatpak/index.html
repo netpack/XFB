@@ -1,0 +1,11 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>XFB flatpak repository</title>
+<h1>XFB flatpak repository</h1>
+<p>Install XFB, and receive every later release through <code>flatpak update</code>:</p>
+<pre>flatpak install https://netpack.github.io/XFB/flatpak/xfb.flatpakref</pre>
+<p>Or add the repository and install from it by name:</p>
+<pre>flatpak remote-add --user --if-not-exists xfb https://netpack.github.io/XFB/flatpak/xfb.flatpakrepo
+flatpak install --user xfb pt.netpack.XFB</pre>
+<p>The repository is not signed. Architectures: x86_64 and aarch64.
+<a href="https://github.com/netpack/XFB">github.com/netpack/XFB</a></p>
