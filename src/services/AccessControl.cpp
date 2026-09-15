@@ -199,7 +199,8 @@ const QVector<AccessControl::Permission> &AccessControl::catalogue()
              tr("What XFB does when the station falls silent.")},
             {QStringLiteral("programming.record"), programming,
              tr("Record a new programme"),
-             tr("Record from the microphone into the programmes library.")},
+             tr("Record a programme from the microphone, from what goes on air, "
+                "or both.")},
             {QStringLiteral("programming.makeprogram"), programming,
              tr("Make a programme from this playlist"),
              tr("Render the running order into one programme file.")},

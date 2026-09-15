@@ -52,6 +52,7 @@ void AccessibilityTutorialDialog::buildTopics()
     const QString kPrefs   = key(Qt::CTRL | Qt::SHIFT | Qt::Key_A);
     const QString kAddEnd  = key(Qt::CTRL | Qt::SHIFT | Qt::Key_Return);
     const QString kAddTop  = key(Qt::CTRL | Qt::ALT | Qt::Key_Return);
+    const QString kRecord  = key(Qt::CTRL | Qt::SHIFT | Qt::Key_E);
 
     m_topics.append({
         tr("Welcome"),
@@ -203,6 +204,8 @@ void AccessibilityTutorialDialog::buildTopics()
            "<p>Open the <b>Client</b> menu and choose <b>Record a new Program</b>.</p>"
            "<p>While recording, XFB keeps you informed without needing the screen:</p>"
            "<ul>"
+           "<li><b>%1</b> starts the recording after a five-second countdown, and stops it "
+           "again.</li>"
            "<li>It says \"Recording paused\" and \"Recording resumed\" when you use the pause "
            "control.</li>"
            "<li>If the recording is producing no audio, XFB warns you out loud that the "
@@ -211,6 +214,7 @@ void AccessibilityTutorialDialog::buildTopics()
            "</ul>"
            "<p>You can also turn the current playlist into a programme with <b>Make a program "
            "from this playlist</b> in the same menu.</p>")
+            .arg(kRecord)
     });
 
     m_topics.append({

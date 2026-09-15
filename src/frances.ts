@@ -400,11 +400,12 @@
     </message>
     <message>
         <location line="+1"/>
-        <source>Record from the microphone into the programmes library.</source>
-        <translation>Enregistrer depuis le microphone vers la bibliothèque des émissions.</translation>
+        <source>Record a programme from the microphone, from what goes on air, or both.</source>
+        <oldsource>Record from the microphone into the programmes library.</oldsource>
+        <translation>Enregistrer une émission depuis le microphone, depuis ce qui passe à l&apos;antenne, ou les deux.</translation>
     </message>
     <message>
-        <location line="+2"/>
+        <location line="+3"/>
         <source>Make a programme from this playlist</source>
         <translation>Faire une émission à partir de cette liste de lecture</translation>
     </message>
@@ -1435,7 +1436,7 @@ Moment : %2</translation>
         <translation>Un guide pas à pas pour utiliser XFB avec un lecteur d&apos;écran et le clavier.</translation>
     </message>
     <message>
-        <location line="+24"/>
+        <location line="+25"/>
         <source>Welcome</source>
         <translation>Bienvenue</translation>
     </message>
@@ -1491,11 +1492,11 @@ Moment : %2</translation>
     </message>
     <message>
         <location line="+1"/>
-        <source>&lt;h2&gt;Recording a programme&lt;/h2&gt;&lt;p&gt;Open the &lt;b&gt;Client&lt;/b&gt; menu and choose &lt;b&gt;Record a new Program&lt;/b&gt;.&lt;/p&gt;&lt;p&gt;While recording, XFB keeps you informed without needing the screen:&lt;/p&gt;&lt;ul&gt;&lt;li&gt;It says &quot;Recording paused&quot; and &quot;Recording resumed&quot; when you use the pause control.&lt;/li&gt;&lt;li&gt;If the recording is producing no audio, XFB warns you out loud that the recording is empty and that you should check the input device. Do not ignore this — it means nothing is being captured.&lt;/li&gt;&lt;/ul&gt;&lt;p&gt;You can also turn the current playlist into a programme with &lt;b&gt;Make a program from this playlist&lt;/b&gt; in the same menu.&lt;/p&gt;</source>
-        <translation>&lt;h2&gt;Enregistrer une émission&lt;/h2&gt;&lt;p&gt;Ouvrez le menu &lt;b&gt;Client&lt;/b&gt; et choisissez &lt;b&gt;Enregistrer un nouveau programme&lt;/b&gt;.&lt;/p&gt;&lt;p&gt;Pendant l&apos;enregistrement, XFB vous tient informé sans que vous ayez besoin de l&apos;écran :&lt;/p&gt;&lt;ul&gt;&lt;li&gt;Il annonce « Enregistrement en pause » et « Enregistrement repris » lorsque vous utilisez la commande de pause.&lt;/li&gt;&lt;li&gt;Si l&apos;enregistrement ne capte aucun son, XFB vous avertit à voix haute que l&apos;enregistrement est vide et qu&apos;il faut vérifier le périphérique d&apos;entrée. N&apos;ignorez pas cet avertissement — il signifie que rien n&apos;est capté.&lt;/li&gt;&lt;/ul&gt;&lt;p&gt;Vous pouvez aussi transformer la liste de lecture actuelle en émission avec &lt;b&gt;Créer un programme à partir de cette liste de lecture&lt;/b&gt;, dans le même menu.&lt;/p&gt;</translation>
+        <source>&lt;h2&gt;Recording a programme&lt;/h2&gt;&lt;p&gt;Open the &lt;b&gt;Client&lt;/b&gt; menu and choose &lt;b&gt;Record a new Program&lt;/b&gt;.&lt;/p&gt;&lt;p&gt;While recording, XFB keeps you informed without needing the screen:&lt;/p&gt;&lt;ul&gt;&lt;li&gt;&lt;b&gt;%1&lt;/b&gt; starts the recording after a five-second countdown, and stops it again.&lt;/li&gt;&lt;li&gt;It says &quot;Recording paused&quot; and &quot;Recording resumed&quot; when you use the pause control.&lt;/li&gt;&lt;li&gt;If the recording is producing no audio, XFB warns you out loud that the recording is empty and that you should check the input device. Do not ignore this — it means nothing is being captured.&lt;/li&gt;&lt;/ul&gt;&lt;p&gt;You can also turn the current playlist into a programme with &lt;b&gt;Make a program from this playlist&lt;/b&gt; in the same menu.&lt;/p&gt;</source>
+        <translation>&lt;h2&gt;Enregistrer une émission&lt;/h2&gt;&lt;p&gt;Ouvrez le menu &lt;b&gt;Client&lt;/b&gt; et choisissez &lt;b&gt;Enregistrer un nouveau programme&lt;/b&gt;.&lt;/p&gt;&lt;p&gt;Pendant l&apos;enregistrement, XFB vous tient informé sans que vous ayez besoin de l&apos;écran :&lt;/p&gt;&lt;ul&gt;&lt;li&gt;&lt;b&gt;%1&lt;/b&gt; lance l&apos;enregistrement après un compte à rebours de cinq secondes, et l&apos;arrête à nouveau.&lt;/li&gt;&lt;li&gt;Il annonce « Enregistrement en pause » et « Enregistrement repris » lorsque vous utilisez la commande de pause.&lt;/li&gt;&lt;li&gt;Si l&apos;enregistrement ne capte aucun son, XFB vous avertit à voix haute que l&apos;enregistrement est vide et qu&apos;il faut vérifier le périphérique d&apos;entrée. N&apos;ignorez pas cet avertissement — il signifie que rien n&apos;est capté.&lt;/li&gt;&lt;/ul&gt;&lt;p&gt;Vous pouvez aussi transformer la liste de lecture actuelle en émission avec &lt;b&gt;Créer un programme à partir de cette liste de lecture&lt;/b&gt;, dans le même menu.&lt;/p&gt;</translation>
     </message>
     <message>
-        <location line="+15"/>
+        <location line="+18"/>
         <source>Hearing what XFB is doing</source>
         <translation>Entendre ce que fait XFB</translation>
     </message>
@@ -6798,7 +6799,7 @@ La prochaine récupération copiera ici toute la discothèque de la station, ce 
 <context>
     <name>QObject</name>
     <message>
-        <location filename="player.cpp" line="+9690"/>
+        <location filename="player.cpp" line="+9751"/>
         <source>Not an XFB TakeOver file</source>
         <translation>Pas un fichier de reprise XFB</translation>
     </message>
@@ -15754,7 +15755,7 @@ Activer la fonction Torrents en ayant compris ces limites ?</translation>
 <context>
     <name>player</name>
     <message>
-        <location filename="player.cpp" line="-10901"/>
+        <location filename="player.cpp" line="-10962"/>
         <source>Seek to %1</source>
         <translation>Aller à %1</translation>
     </message>
@@ -15775,7 +15776,7 @@ Activer la fonction Torrents en ayant compris ces limites ?</translation>
     </message>
     <message>
         <location line="+17"/>
-        <location filename="player.cpp" line="+12767"/>
+        <location filename="player.cpp" line="+12828"/>
         <source>Sound Converter</source>
         <translation>Convertisseur audio</translation>
     </message>
@@ -15857,9 +15858,9 @@ Activer la fonction Torrents en ayant compris ces limites ?</translation>
         <location line="+16"/>
         <location line="+109"/>
         <location line="+45"/>
-        <location filename="player.cpp" line="-12508"/>
+        <location filename="player.cpp" line="-12569"/>
         <location line="+770"/>
-        <location line="+11628"/>
+        <location line="+11689"/>
         <source>Stopped</source>
         <translation>Arrêté</translation>
     </message>
@@ -15909,7 +15910,7 @@ Activer la fonction Torrents en ayant compris ces limites ?</translation>
     </message>
     <message>
         <location line="+395"/>
-        <location filename="player.cpp" line="-10565"/>
+        <location filename="player.cpp" line="-10626"/>
         <source>Play the stream</source>
         <translation>Lire le flux</translation>
     </message>
@@ -16131,7 +16132,7 @@ Activer la fonction Torrents en ayant compris ces limites ?</translation>
         <location line="+207"/>
         <location line="+33"/>
         <location line="+1566"/>
-        <location line="+10745"/>
+        <location line="+10806"/>
         <source>Play</source>
         <translation>Jouer</translation>
     </message>
@@ -16147,7 +16148,7 @@ Activer la fonction Torrents en ayant compris ces limites ?</translation>
     </message>
     <message>
         <location line="-256"/>
-        <location filename="player.cpp" line="-15375"/>
+        <location filename="player.cpp" line="-15436"/>
         <location line="+4631"/>
         <source>Stop</source>
         <translation>Arrêter</translation>
@@ -16258,7 +16259,7 @@ Activer la fonction Torrents en ayant compris ces limites ?</translation>
     </message>
     <message>
         <location line="+297"/>
-        <location filename="player.cpp" line="+987"/>
+        <location filename="player.cpp" line="+1048"/>
         <source>Torrents</source>
         <translation>Torrents</translation>
     </message>
@@ -16409,7 +16410,7 @@ Activer la fonction Torrents en ayant compris ces limites ?</translation>
     </message>
     <message>
         <location line="-1358"/>
-        <location filename="player.cpp" line="-11931"/>
+        <location filename="player.cpp" line="-11992"/>
         <source>Jingles</source>
         <translation>Jingles</translation>
     </message>
@@ -16446,7 +16447,7 @@ Activer la fonction Torrents en ayant compris ces limites ?</translation>
     </message>
     <message>
         <location line="+1389"/>
-        <location filename="player.cpp" line="+2044"/>
+        <location filename="player.cpp" line="+2105"/>
         <location line="+147"/>
         <location line="+18"/>
         <location line="+17"/>
@@ -16547,14 +16548,14 @@ Activer la fonction Torrents en ayant compris ces limites ?</translation>
         <translation>Ajouter un programme</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="-4259"/>
+        <location filename="player.cpp" line="-4320"/>
         <location line="+12"/>
-        <location line="+3264"/>
+        <location line="+3325"/>
         <source>Play and Segue</source>
         <translation>Jouer et faire suivre</translation>
     </message>
     <message>
-        <location line="-3257"/>
+        <location line="-3318"/>
         <source>Play and Stop</source>
         <translation>Jouer et arreter</translation>
     </message>
@@ -16565,12 +16566,12 @@ Activer la fonction Torrents en ayant compris ces limites ?</translation>
         <translation> sur </translation>
     </message>
     <message>
-        <location line="+1493"/>
+        <location line="+1551"/>
         <source>Broadcast &amp;Redundancy...</source>
         <translation>R&amp;edondance de diffusion...</translation>
     </message>
     <message>
-        <location line="+4856"/>
+        <location line="+4859"/>
         <source>Xml files(*.xml)</source>
         <translation>Fichier Xml (*.xml)</translation>
     </message>
@@ -16803,8 +16804,8 @@ Vous pouvez aussi utiliser : ffmpeg -i entree.ogg sortie.mp3</translation>
         <translation>Le Sound Converter permet de convertir des fichiers audio d&apos;un format à l&apos;autre. Il est fourni par le programme « soundconverter ».</translation>
     </message>
     <message>
-        <location line="-9678"/>
-        <location line="+9997"/>
+        <location line="-9739"/>
+        <location line="+10058"/>
         <source>Sure?</source>
         <translation>Vous êtes sûr ?</translation>
     </message>
@@ -16824,9 +16825,9 @@ Vous pouvez aussi utiliser : ffmpeg -i entree.ogg sortie.mp3</translation>
         <translation>Voulez-vous aussi supprimer du disque dur tous les fichiers sélectionnés ?</translation>
     </message>
     <message>
-        <location line="-9993"/>
+        <location line="-10054"/>
         <location line="+462"/>
-        <location line="+9554"/>
+        <location line="+9615"/>
         <source>Error</source>
         <translation>Erreur</translation>
     </message>
@@ -16859,7 +16860,7 @@ Installez-le avec votre gestionnaire de paquets — « tor » sous Linux et macO
         <translation>Copie locale effacée</translation>
     </message>
     <message>
-        <location line="-12229"/>
+        <location line="-12290"/>
         <source>Player controls</source>
         <translation>Commandes du lecteur</translation>
     </message>
@@ -17096,7 +17097,7 @@ Installez-le avec votre gestionnaire de paquets — « tor » sous Linux et macO
         <translation>La lecture des métadonnées d&apos;un morceau utilise l&apos;outil MediaInfo.</translation>
     </message>
     <message>
-        <location line="+11154"/>
+        <location line="+11215"/>
         <source>Trimming the silence from the start and the end of every track in the database is done by SoX (Sound eXchange).</source>
         <translation>Le rognage du silence au début et à la fin de toutes les pistes de la base de données est assuré par SoX (Sound eXchange).</translation>
     </message>
@@ -17107,7 +17108,7 @@ Installez-le avec votre gestionnaire de paquets — « tor » sous Linux et macO
         <translation>Le rognage du silence au début et à la fin des pistes sélectionnées est assuré par SoX (Sound eXchange).</translation>
     </message>
     <message>
-        <location line="-12247"/>
+        <location line="-12308"/>
         <location line="+23"/>
         <source>Metadata Error</source>
         <translation>Erreur de métadonnées</translation>
@@ -17162,7 +17163,7 @@ Débit : %8</translation>
         <location line="+12"/>
         <location line="+1285"/>
         <location line="+386"/>
-        <location line="+14433"/>
+        <location line="+14494"/>
         <location line="+7"/>
         <location line="+52"/>
         <location line="+180"/>
@@ -17173,7 +17174,7 @@ Débit : %8</translation>
         <translation>Erreur de base de données</translation>
     </message>
     <message>
-        <location line="-16674"/>
+        <location line="-16735"/>
         <source>Failed to update metadata in the database.</source>
         <translation>Impossible de mettre à jour les métadonnées dans la base de données.</translation>
     </message>
@@ -17410,7 +17411,7 @@ Débit : %8</translation>
     <message>
         <location line="+174"/>
         <location line="+69"/>
-        <location line="+8221"/>
+        <location line="+8282"/>
         <location line="+225"/>
         <location line="+4401"/>
         <location line="+127"/>
@@ -17418,7 +17419,7 @@ Débit : %8</translation>
         <translation>Erreur de script</translation>
     </message>
     <message>
-        <location line="-13042"/>
+        <location line="-13103"/>
         <source>The required check script &apos;%1&apos; was not found.
 Install it under the application data directory (e.g. share/xfb/scripts) or set ServerScriptsPath in xfb.conf.</source>
         <translation>Le script de vérification requis « %1 » est introuvable.
@@ -17427,15 +17428,15 @@ Installez-le dans le dossier de données de l&apos;application (par exemple shar
     <message>
         <location line="+4"/>
         <location line="+70"/>
-        <location line="+12844"/>
+        <location line="+12905"/>
         <location line="+129"/>
         <source>Script Not Configured</source>
         <translation>Script non configuré</translation>
     </message>
     <message>
-        <location line="-13042"/>
+        <location line="-13103"/>
         <location line="+70"/>
-        <location line="+12844"/>
+        <location line="+12905"/>
         <source>The script &apos;%1&apos; still contains the [IP]/[PORT] placeholders.
 Edit it with your server&apos;s address and port:
 %2</source>
@@ -17444,7 +17445,7 @@ Modifiez-le avec l&apos;adresse et le port de votre serveur :
 %2</translation>
     </message>
     <message>
-        <location line="-12910"/>
+        <location line="-12971"/>
         <source>Checking server...</source>
         <translation>Vérification du serveur...</translation>
     </message>
@@ -17455,14 +17456,14 @@ Modifiez-le avec l&apos;adresse et le port de votre serveur :
         <location line="+43"/>
         <location line="+147"/>
         <location line="+237"/>
-        <location line="+5993"/>
+        <location line="+6054"/>
         <location line="+6544"/>
         <location line="+370"/>
         <source>Cancel</source>
         <translation>Annuler</translation>
     </message>
     <message>
-        <location line="-15057"/>
+        <location line="-15118"/>
         <source>Check Successful</source>
         <translation>Vérification réussie</translation>
     </message>
@@ -17473,7 +17474,7 @@ Modifiez-le avec l&apos;adresse et le port de votre serveur :
     </message>
     <message>
         <location line="+25"/>
-        <location line="+8221"/>
+        <location line="+8282"/>
         <location line="+225"/>
         <location line="+4401"/>
         <source>The required upload script &apos;%1&apos; was not found.
@@ -17482,7 +17483,7 @@ Install it under the application data directory (e.g. share/xfb/scripts) or set 
 Installez-le dans le dossier de données de l&apos;application (par exemple share/xfb/scripts) ou définissez ServerScriptsPath dans xfb.conf.</translation>
     </message>
     <message>
-        <location line="-12836"/>
+        <location line="-12897"/>
         <source>Uploading to server...</source>
         <translation>Envoi vers le serveur...</translation>
     </message>
@@ -17577,35 +17578,35 @@ Vérifiez les permissions de « %1 ».</translation>
     </message>
     <message>
         <location line="+20"/>
-        <location line="+4822"/>
+        <location line="+4883"/>
         <source>Download Torrent</source>
         <translation>Télécharger le torrent</translation>
     </message>
     <message>
-        <location line="-4821"/>
-        <location line="+4822"/>
+        <location line="-4882"/>
+        <location line="+4883"/>
         <source>Download and Stream</source>
         <translation>Télécharger et diffuser</translation>
     </message>
     <message>
-        <location line="-4821"/>
-        <location line="+4823"/>
+        <location line="-4882"/>
+        <location line="+4884"/>
         <source>Copy Magnet Link</source>
         <translation>Copier le lien magnet</translation>
     </message>
     <message>
-        <location line="-4822"/>
+        <location line="-4883"/>
         <source>View Details</source>
         <translation>Voir les détails</translation>
     </message>
     <message>
         <location line="+37"/>
-        <location line="+4816"/>
+        <location line="+4877"/>
         <source>Download Confirmation</source>
         <translation>Confirmation du téléchargement</translation>
     </message>
     <message>
-        <location line="-4815"/>
+        <location line="-4876"/>
         <source>⚠️ LEGAL RESPONSIBILITY ⚠️
 
 You are about to download: %1
@@ -17786,12 +17787,12 @@ Les mesurer à nouveau ? Cela vaut la peine après une mise à jour, et c&apos;e
     </message>
     <message>
         <location line="+14"/>
-        <location line="+2060"/>
+        <location line="+2121"/>
         <source>No file path for the selected track</source>
         <translation>Aucun chemin de fichier pour le morceau sélectionné</translation>
     </message>
     <message numerus="yes">
-        <location line="-2043"/>
+        <location line="-2104"/>
         <source>%n tracks</source>
         <translation>
             <numerusform>%n morceau</numerusform>
@@ -17830,23 +17831,23 @@ Les mesurer à nouveau ? Cela vaut la peine après une mise à jour, et c&apos;e
     </message>
     <message>
         <location line="+1"/>
-        <location line="+2038"/>
+        <location line="+2099"/>
         <source>Pause</source>
         <translation>Pause</translation>
     </message>
     <message>
-        <location line="-2038"/>
+        <location line="-2099"/>
         <source>Pause or resume the track that is playing</source>
         <translation>Mettre en pause ou reprendre le morceau en cours</translation>
     </message>
     <message>
         <location line="+1"/>
-        <location line="+2043"/>
+        <location line="+2104"/>
         <source>Pause recording</source>
         <translation>Mettre l&apos;enregistrement en pause</translation>
     </message>
     <message>
-        <location line="-2043"/>
+        <location line="-2104"/>
         <source>Pause or resume the recording</source>
         <translation>Mettre en pause ou reprendre l&apos;enregistrement</translation>
     </message>
@@ -17872,12 +17873,12 @@ Les mesurer à nouveau ? Cela vaut la peine après une mise à jour, et c&apos;e
     </message>
     <message>
         <location line="+1"/>
-        <location line="+2044"/>
+        <location line="+2105"/>
         <source>Deck 1: pause</source>
         <translation>Platine 1 : pause</translation>
     </message>
     <message>
-        <location line="-2044"/>
+        <location line="-2105"/>
         <source>Pause or resume deck 1</source>
         <translation>Mettre en pause ou reprendre la platine 1</translation>
     </message>
@@ -17903,12 +17904,12 @@ Les mesurer à nouveau ? Cela vaut la peine après une mise à jour, et c&apos;e
     </message>
     <message>
         <location line="+1"/>
-        <location line="+2044"/>
+        <location line="+2105"/>
         <source>Deck 2: pause</source>
         <translation>Platine 2 : pause</translation>
     </message>
     <message>
-        <location line="-2044"/>
+        <location line="-2105"/>
         <source>Pause or resume deck 2</source>
         <translation>Mettre en pause ou reprendre la platine 2</translation>
     </message>
@@ -18080,12 +18081,12 @@ Les mesurer à nouveau ? Cela vaut la peine après une mise à jour, et c&apos;e
     <message>
         <location line="-703"/>
         <location line="+709"/>
-        <location line="+1626"/>
+        <location line="+1687"/>
         <source>Nothing is playing</source>
         <translation>Rien n&apos;est en cours de lecture</translation>
     </message>
     <message>
-        <location line="-7482"/>
+        <location line="-7543"/>
         <source>Intro set to %1</source>
         <translation>Intro fixée à %1</translation>
     </message>
@@ -18382,12 +18383,12 @@ Tout mesurer à nouveau ?</numerusform>
     </message>
     <message>
         <location line="+3"/>
-        <location line="+1709"/>
+        <location line="+1770"/>
         <source>Listen to the selected track in the cue headphones only</source>
         <translation>Écouter le morceau sélectionné uniquement dans le casque de pré-écoute</translation>
     </message>
     <message>
-        <location line="-1699"/>
+        <location line="-1760"/>
         <source>&amp;Voice track over this join...</source>
         <translation>&amp;Voice-track par-dessus cet enchaînement...</translation>
     </message>
@@ -18403,12 +18404,64 @@ Tout mesurer à nouveau ?</numerusform>
     </message>
     <message>
         <location line="+7"/>
-        <location line="+1718"/>
+        <location line="+1779"/>
         <source>Cue stopped</source>
         <translation>Pré-écoute arrêtée</translation>
     </message>
     <message>
-        <location line="-1702"/>
+        <location line="-1765"/>
+        <source>Start or stop rec&amp;ording</source>
+        <oldsource>Start or stop r&amp;ecording</oldsource>
+        <translation>Démarrer ou arrêter l&apos;enre&amp;gistrement</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Start a programme recording after the five-second countdown, or stop the one running</source>
+        <translation>Démarrer l&apos;enregistrement d&apos;une émission après le compte à rebours de cinq secondes, ou arrêter celui en cours</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>The recording is about to start</source>
+        <translation>L&apos;enregistrement va commencer</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Recording starts in five seconds</source>
+        <translation>L&apos;enregistrement commence dans cinq secondes</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Recording stopped</source>
+        <translation>Enregistrement arrêté</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Start or stop the strea&amp;m</source>
+        <oldsource>Start or stop the &amp;stream</oldsource>
+        <translation>Démarrer ou arrêter la diffusio&amp;n</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Put the built-in Icecast stream on air, or take it off</source>
+        <translation>Mettre la diffusion Icecast intégrée à l&apos;antenne, ou l&apos;en retirer</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Stream stopped</source>
+        <translation>Diffusion arrêtée</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Stream started</source>
+        <translation>Diffusion démarrée</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>The stream did not start: no mount is set up. Add one in Options, Stream to Icecast.</source>
+        <translation>La diffusion n&apos;a pas démarré : aucun point de montage n&apos;est configuré. Ajoutez-en un dans Options, Diffuser vers Icecast.</translation>
+    </message>
+    <message>
+        <location line="+19"/>
         <source>&amp;Tutorial for Blind Users</source>
         <translation>&amp;Tutoriel pour les utilisateurs aveugles</translation>
     </message>
@@ -18463,7 +18516,7 @@ Tout mesurer à nouveau ?</numerusform>
         <translation>&amp;Journal d&apos;antenne...</translation>
     </message>
     <message>
-        <location line="+4"/>
+        <location line="+7"/>
         <source>What actually went to air, and when</source>
         <translation>Ce qui est réellement passé à l&apos;antenne, et quand</translation>
     </message>
@@ -20147,7 +20200,7 @@ Les compteurs de diffusion et les valeurs de BPM, de sonie et d&apos;intro déj�
         <translation>Il n&apos;est pas possible d&apos;envoyer le programme si le Mode est &apos;Serveur&apos;</translation>
     </message>
     <message>
-        <location line="-9012"/>
+        <location line="-9073"/>
         <source>Remove this track from the playlist</source>
         <translation>Retirer ce morceau de la liste de lecture</translation>
     </message>

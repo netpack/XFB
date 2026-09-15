@@ -6685,6 +6685,64 @@ void player::setupPlaybackShortcuts()
     addAction(m_cueStopAction);
     AccessControl::instance().guard(m_cueStopAction, QStringLiteral("playback.cue"));
 
+    playbackMenu->addSeparator();
+
+    // Recording and the stream, each a single toggle. Both were mouse-only:
+    // the Record button had no key, and the stream could only be started from
+    // inside its window. An operator who works the desk by keyboard — or who
+    // is talking into the microphone at the time — needs both without looking.
+    // Ctrl+Shift+E (rEcord, Enregistrer) and D (Diffusion) were free.
+    QAction *recordToggle = playbackMenu->addAction(IconTheme::icon(QStringLiteral(":/icons/flat/Record-32.png")),
+                                                    tr("Start or stop rec&ording"));
+    recordToggle->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_E));
+    recordToggle->setShortcutContext(Qt::ApplicationShortcut);
+    recordToggle->setStatusTip(tr("Start a programme recording after the five-second "
+                                  "countdown, or stop the one running"));
+    connect(recordToggle, &QAction::triggered, this, [this]() {
+        // During the countdown the button is hidden and recMode is already 1.
+        // Stopping then would leave the countdown's RectimerDone() to start a
+        // recording nobody is tracking, so the key waits like the button does.
+        if (recMode == 1 && ui->bt_rec->isHidden()) {
+            announceAccessible(tr("The recording is about to start"));
+            return;
+        }
+        const bool starting = (recMode == 0);
+        on_bt_rec_clicked();
+        if (starting && recMode == 1)
+            announceAccessible(tr("Recording starts in five seconds"));
+        else if (!starting && recMode == 0)
+            announceAccessible(tr("Recording stopped"));
+    });
+    addAction(recordToggle);
+    AccessControl::instance().guard(recordToggle, QStringLiteral("programming.record"));
+
+    QAction *streamToggle = playbackMenu->addAction(IconTheme::icon(QStringLiteral(":/icons/flat/Connection Sync-48.png")),
+                                                    tr("Start or stop the strea&m"));
+    streamToggle->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_D));
+    streamToggle->setShortcutContext(Qt::ApplicationShortcut);
+    streamToggle->setStatusTip(tr("Put the built-in Icecast stream on air, or take it off"));
+    connect(streamToggle, &QAction::triggered, this, [this]() {
+        StreamService *service = streamService();
+        if (service->isActive()) {
+            service->stop();
+            announceAccessible(tr("Stream stopped"));
+            return;
+        }
+        service->start();
+        if (service->isActive()) {
+            announceAccessible(tr("Stream started"));
+        } else {
+            // start() declines quietly when there is nowhere to send to; a key
+            // that seems to do nothing is worse than being told why.
+            const QString why = tr("The stream did not start: no mount is set up. "
+                                   "Add one in Options, Stream to Icecast.");
+            ui->statusBar->showMessage(why, 10000);
+            announceAccessible(why);
+        }
+    });
+    addAction(streamToggle);
+    AccessControl::instance().guard(streamToggle, QStringLiteral("station.stream"));
+
     // Insert before Options so File/Playlists keep their familiar positions.
     ui->menuBar->insertMenu(ui->menuXFB->menuAction(), playbackMenu);
     qInfo() << "Playback menu installed with" << playbackMenu->actions().count()
@@ -6855,7 +6913,10 @@ void player::setupPlaybackShortcuts()
         QAction *airLog = new QAction(IconTheme::icon(QStringLiteral(":/icons/flat/Music Transcript-48.png")),
                                       tr("As-Run &Log..."), this);
         airLog->setMenuRole(QAction::NoRole);
-        airLog->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_L));
+        // Ctrl+Alt, like the schedule, rotation and quota windows beside it.
+        // It was Ctrl+Shift+L until Lock the desk took the same keys, and a
+        // shortcut two actions share fires neither.
+        airLog->setShortcut(QKeySequence(Qt::CTRL | Qt::ALT | Qt::Key_L));
         airLog->setShortcutContext(Qt::ApplicationShortcut);
         airLog->setStatusTip(tr("What actually went to air, and when"));
         connect(airLog, &QAction::triggered, this, [this]() {
