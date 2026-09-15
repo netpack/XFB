@@ -452,8 +452,6 @@ private slots:
     bool darkMode = false;
     bool disableSeekBar = false;
     QString recDeviceDesc;
-    QMediaFormat::AudioCodec recCodec = QMediaFormat::AudioCodec::Unspecified;
-    QMediaFormat::FileFormat recContainer = QMediaFormat::FileFormat();
     QNetworkAccessManager *networkManager = nullptr;
     
     // Torrent services
@@ -830,6 +828,26 @@ private slots:
     void updateStreamNowPlaying(const QString &filePath);
     QPointer<class StreamService> m_streamService;
     QPointer<class StreamDialog> m_streamDialog;
+
+    // --- Programme recording ---
+    // Options → Recording. Source: "input" is the input device alone, as the
+    // program recorder always did; "onair" is XFB's own on-air output, taken
+    // from the same tap the stream uses; "mix" is both together. Format is a
+    // ProgramRecorder code ("mp3", "ogg", "opus") with its bitrate.
+    QString m_recSource = QStringLiteral("input");
+    QString m_recFormat = QStringLiteral("ogg");
+    int m_recBitrate = 192;
+    class ProgramRecorder *m_programRecorder = nullptr;
+    /** Decided when Record is pressed: ffmpeg records, or QMediaRecorder does. */
+    bool m_recUseProgramRecorder = false;
+    /** True while the running take belongs to ProgramRecorder. */
+    bool m_recordingWithProgramRecorder = false;
+    /** True while that take wants the on-air players' taps. */
+    bool m_recordingTapsOnAir = false;
+    /** Start ProgramRecorder into saveFile; false after telling the operator. */
+    bool startProgramRecording();
+    /** Arm each on-air player's tap for whoever needs it now: stream or recorder. */
+    void refreshPcmTaps();
 
     // --- Dead air ---
     // Watches the master level and the transport, and puts evergreen material

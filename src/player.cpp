@@ -19,6 +19,7 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include "CoverArtDialog.h"
 #include "aboutus.h"
 #include "audio/AudioDeviceRouter.h"
+#include "audio/ProgramRecorder.h"
 #include "audio/BpmDetector.h"
 #include "audio/BpmLibrary.h"
 #include "audio/CueBus.h"
@@ -2273,6 +2274,10 @@ void player::closeEvent(QCloseEvent *event)
     if (audioRecorder && audioRecorder->recorderState() == QMediaRecorder::RecordingState) {
         audioRecorder->stop();
     }
+    // Closes the file properly, so a programme recorded up to the moment XFB
+    // quits is still a file that plays.
+    if (m_programRecorder)
+        m_programRecorder->stop();
     
     if (ServiceContainer::instance()) {
         ServiceContainer::instance()->shutdownServices();
@@ -2604,9 +2609,16 @@ void player::updateConfig() {
 
     // Read recording info (description and potentially enum data)
     recDevice = settings.value("RecDevice").toString(); // Store description
-    // Read enum values if you saved them that way from optionsDialog
-    recCodec = settings.value("RecCodec", QVariant::fromValue(QMediaFormat::AudioCodec::Unspecified)).value<QMediaFormat::AudioCodec>();
-    recContainer = settings.value("RecContainer", QVariant::fromValue(QMediaFormat::FileFormat())).value<QMediaFormat::FileFormat>();
+    {
+        const QString source = settings.value("RecSource").toString();
+        m_recSource = (source == QLatin1String("onair") || source == QLatin1String("mix"))
+                          ? source : QStringLiteral("input");
+        const ProgramRecorder::Format format =
+            ProgramRecorder::formatFromCode(settings.value("RecFormat").toString());
+        m_recFormat = ProgramRecorder::formatCode(format);
+        m_recBitrate = ProgramRecorder::nearestBitrate(
+            format, settings.value("RecBitrate", 192).toInt());
+    }
 
     // Database path
     txt_selected_db = settings.value("Database").toString();
@@ -7863,8 +7875,9 @@ StreamService *player::streamService()
     // Arming it is what makes FxPlayer route through the FX engine, so it
     // is armed only while the service is actually streaming.
     connect(m_streamService, &StreamService::activeChanged, this, [this](bool active) {
-        if (Xplayer)
-            Xplayer->setPcmTapEnabled(active);
+        // The on-air recorder may want the same tap, so the stream going off
+        // air does not simply disarm it.
+        refreshPcmTaps();
         ui->statusBar->showMessage(active ? tr("Streaming: on air")
                                           : tr("Streaming: off air"), 10000);
         if (active) {
@@ -7883,6 +7896,72 @@ StreamService *player::streamService()
             [](const QString &message) { qInfo() << "Stream:" << message; });
 
     return m_streamService;
+}
+
+void player::refreshPcmTaps()
+{
+    const bool recording = m_recordingWithProgramRecorder && m_recordingTapsOnAir
+                           && m_programRecorder && m_programRecorder->isRecording();
+    const bool streaming = m_streamService && m_streamService->isActive();
+
+    // The stream carries the playlist player alone, as it always has. A
+    // recording of what went on air needs every player that reaches the
+    // on-air output — the ones applyOutputDeviceSettings() routes there.
+    if (Xplayer)
+        Xplayer->setPcmTapEnabled(streaming || recording);
+    FxPlayer *const others[] = { lp1_Xplayer, lp2_Xplayer, m_tailPlayer, RadioPlayer };
+    for (FxPlayer *p : others) {
+        if (p)
+            p->setPcmTapEnabled(recording);
+    }
+}
+
+bool player::startProgramRecording()
+{
+    if (!m_programRecorder) {
+        m_programRecorder = new ProgramRecorder(this);
+
+        FxPlayer *const onAir[] = { Xplayer, lp1_Xplayer, lp2_Xplayer,
+                                    m_tailPlayer, RadioPlayer };
+        for (FxPlayer *p : onAir) {
+            if (!p)
+                continue;
+            connect(p, &FxPlayer::pcmTap, m_programRecorder,
+                    [this, p](const QByteArray &pcm, int sampleRate, int channels,
+                              float volume) {
+                m_programRecorder->feed(p, pcm, sampleRate, channels, volume);
+            });
+        }
+
+        connect(m_programRecorder, &ProgramRecorder::failed, this, [this](const QString &message) {
+            m_recordingWithProgramRecorder = false;
+            m_recordingTapsOnAir = false;
+            refreshPcmTaps();
+            ui->led_rec->setStyleSheet("background-color:#FF0010;border-radius:8px;");
+            ui->led_rec->setAccessibleName(tr("Recording problem: nothing is being recorded"));
+            ui->led_rec->setToolTip(tr("Recording problem: nothing is being recorded"));
+            announceAccessible(tr("Warning: the recording has stopped"));
+            QMessageBox::warning(this, tr("Recording Error"), message);
+        });
+    }
+
+    // A take is fixed when it starts: changing Options mid-programme changes
+    // the next recording, not this one.
+    ProgramRecorder::Config config;
+    config.format = ProgramRecorder::formatFromCode(m_recFormat);
+    config.bitrateKbps = m_recBitrate;
+    config.includeInput = (m_recSource != QLatin1String("onair"));
+    config.inputDeviceDescription = recDevice;
+
+    QString error;
+    if (!m_programRecorder->start(saveFile, config, &error)) {
+        QMessageBox::warning(this, tr("Recording Error"), error);
+        return false;
+    }
+    m_recordingWithProgramRecorder = true;
+    m_recordingTapsOnAir = (m_recSource != QLatin1String("input"));
+    refreshPcmTaps();
+    return true;
 }
 
 // Icecast carries the title out of band, so it has to be pushed as the track
@@ -11647,8 +11726,22 @@ void player::on_bt_rec_clicked()
     // macOS hands back silence rather than refusing, and the programme would
     // be lost before anyone noticed. This sits before recMode changes so the
     // answer can re-enter here and start the recording properly.
-    if (!ensureMicrophoneAccess(this, [this]() { on_bt_rec_clicked(); }))
+    // Recording the on-air output alone opens no microphone, so it asks for
+    // no permission either.
+    if (m_recSource != QLatin1String("onair")
+            && !ensureMicrophoneAccess(this, [this]() { on_bt_rec_clicked(); }))
         return;
+    // Found out now rather than after a five-second countdown into nothing.
+    // An input device alone can still fall back to QMediaRecorder; what goes
+    // on air cannot be recorded without ffmpeg.
+    m_recUseProgramRecorder = ProgramRecorder::available();
+    if (m_recSource != QLatin1String("input") && !m_recUseProgramRecorder) {
+        QMessageBox::warning(this, tr("Recording Error"),
+                             tr("Recording what goes on air needs ffmpeg, and it was "
+                                "not found. Install ffmpeg, or choose the input device "
+                                "as the recording source in Options."));
+        return;
+    }
 
     recMode = 1;
     ui->bt_rec->hide();
@@ -11657,7 +11750,12 @@ void player::on_bt_rec_clicked()
 
    // qDebug()<<"The current recording device is: "<<recDevice;
 
-        saveFile = SavePath+"/XFB.ogg";
+        // Without ffmpeg QMediaRecorder writes the Ogg it always has.
+        saveFile = SavePath + "/XFB."
+                   + (m_recUseProgramRecorder
+                          ? ProgramRecorder::extensionFor(
+                                ProgramRecorder::formatFromCode(m_recFormat))
+                          : QStringLiteral("ogg"));
 
 
 
@@ -11685,7 +11783,15 @@ void player::on_bt_rec_clicked()
         ui->bt_rec->setStyleSheet("");
         ui->bt_pause_rec->setStyleSheet("");
         setRecTimeToDefaults();
-        audioRecorder->stop();
+        if (m_recordingWithProgramRecorder) {
+            m_recordingWithProgramRecorder = false;
+            m_recordingTapsOnAir = false;
+            if (m_programRecorder)
+                m_programRecorder->stop();
+            refreshPcmTaps();
+        } else {
+            audioRecorder->stop();
+        }
         ui->led_rec->hide();
         ui->bt_pause_rec->setEnabled(false);
         recPause = false;
@@ -11774,6 +11880,20 @@ void player::RectimerDone(){
 
 
     qDebug()<<"---> NEW Recording to: "<<saveFile;
+
+    if (m_recUseProgramRecorder) {
+        aExtencaoDesteCoiso = ProgramRecorder::extensionFor(
+            ProgramRecorder::formatFromCode(m_recFormat));
+        if (!startProgramRecording()) {
+            recMode = 0;
+            ui->bt_rec->setStyleSheet("");
+            ui->bt_pause_rec->setEnabled(false);
+            setRecTimeToDefaults();
+            ui->led_rec->hide();
+        }
+        ui->bt_rec->show();
+        return;
+    }
 
     // Find the requested audio input device
     const QList<QAudioDevice> inputDevices = QMediaDevices::audioInputs();
@@ -12167,7 +12287,8 @@ void player::on_bt_ProgramStopandProcess_clicked()
 
                                 qDebug()<<"Program upload finished!";
 
-                                QString fileToRemove = FTPPath+"/"+NomeDestePrograma+".ogg";
+                                // The copy made above, whatever format it was recorded in.
+                                QString fileToRemove = FTPPath+"/"+NomeDestePrograma+"."+aExtencaoDesteCoiso;
                                 if (QFile::remove(fileToRemove)) {
                                     qDebug()<<"FTP temp file deleted:" << fileToRemove;
                                 } else {
@@ -17300,7 +17421,10 @@ void player::on_bt_pause_rec_clicked()
         recPause=true;
         ui->bt_pause_rec->setStyleSheet("background-color:yellow");
 
-        audioRecorder->pause();
+        if (m_recordingWithProgramRecorder && m_programRecorder)
+            m_programRecorder->setPaused(true);
+        else
+            audioRecorder->pause();
         recTimer->stop();
         refreshTransportAccessibleState();
         announceAccessible(tr("Recording paused"));
@@ -17308,7 +17432,10 @@ void player::on_bt_pause_rec_clicked()
     } else {
         recPause=false;
         ui->bt_pause_rec->setStyleSheet("");
-        audioRecorder->record();
+        if (m_recordingWithProgramRecorder && m_programRecorder)
+            m_programRecorder->setPaused(false);
+        else
+            audioRecorder->record();
         recTimer->start();
         refreshTransportAccessibleState();
         announceAccessible(tr("Recording resumed"));

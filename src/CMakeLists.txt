@@ -40,6 +40,7 @@ set(SOURCES
     # Voice tracking: the take's recorder and the ducking it writes
     audio/VoiceRecorder.cpp
     audio/VoiceDuck.cpp
+    audio/ProgramRecorder.cpp
     dialogs/AudioFxDialog.cpp
     dialogs/MobileSyncDialog.cpp
     # As-run log viewer + advertiser report
@@ -200,6 +201,7 @@ set(HEADERS
     audio/IntroLibrary.h
     audio/VoiceRecorder.h
     audio/VoiceDuck.h
+    audio/ProgramRecorder.h
     dialogs/AudioFxDialog.h
     dialogs/MobileSyncDialog.h
     dialogs/SignInDialog.h

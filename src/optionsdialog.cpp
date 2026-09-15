@@ -1,4 +1,5 @@
 #include "optionsdialog.h"
+#include "audio/ProgramRecorder.h"
 #include "ui_optionsdialog.h"
 #include "QFile"
 #include "QDebug"
@@ -17,7 +18,6 @@
 #include "player.h"
 #include "externaldownloader.h"
 #include <QAudio>
-#include <QMediaRecorder>
 #include <QMediaDevices> // Qt6 replacement for QAudioDeviceInfo
 #include <QAudioInput> // Qt6 for audio input
 #include <QAudioOutput> // Qt6 for audio output
@@ -49,8 +49,6 @@ optionsDialog::optionsDialog(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    audioRecorder = new QMediaRecorder(this);
-
     //Audio devices
     const QList<QAudioDevice> inputDevices = QMediaDevices::audioInputs();
     for (const QAudioDevice &device : inputDevices) {
@@ -58,19 +56,6 @@ optionsDialog::optionsDialog(QWidget *parent) :
             qDebug()<<"Audio Hardware detected on this system (optionsdialog.cpp): "<<device.description();
         }
 
-    //Audio codecs
-    foreach (const QMediaFormat::AudioCodec &codec, audioRecorder->mediaFormat().supportedAudioCodecs(QMediaFormat::Encode)) {
-            QString codecName = QMediaFormat::audioCodecName(codec);
-            ui->comboBox_codec->addItem(codecName, QVariant(codecName));
-            qDebug()<<"Audio Codecs on this system (optionsdialog.cpp): "<<QVariant(codecName);
-        }
-
-    //Containers
-    foreach (const QMediaFormat::FileFormat &format, audioRecorder->mediaFormat().supportedFileFormats(QMediaFormat::Encode)) {
-            QString containerName = QMediaFormat::fileFormatName(format);
-            ui->comboBox_container->addItem(containerName, QVariant(containerName));
-            qDebug()<<"Audio Containers on this system (optionsdialog.cpp): "<<QVariant(containerName);
-        }
     // --- Load Settings using QSettings from WRITABLE Location ---
     qDebug() << "Loading settings using QSettings...";
     QString configFileName = "xfb.conf";
@@ -248,21 +233,7 @@ optionsDialog::optionsDialog(QWidget *parent) :
     else if (!inputDevices.isEmpty()) { ui->cboxRecDev->setCurrentIndex(0); qWarning() << "Saved RecDevice not found, using default:" << ui->cboxRecDev->currentText();}
     else { qWarning() << "No recording devices available to select."; }
 
-    QVariant codecVariant = settings.value("RecCodec");
-    if (codecVariant.isValid()) {
-        QMediaFormat::AudioCodec savedCodec = codecVariant.value<QMediaFormat::AudioCodec>();
-        int codecIndex = ui->comboBox_codec->findData(QVariant::fromValue(savedCodec));
-        if (codecIndex != -1) { ui->comboBox_codec->setCurrentIndex(codecIndex); }
-        else if (ui->comboBox_codec->count() > 0) { ui->comboBox_codec->setCurrentIndex(0); qWarning() << "Saved RecCodec not found, using default:" << ui->comboBox_codec->currentText();}
-    } else if (ui->comboBox_codec->count() > 0) { ui->comboBox_codec->setCurrentIndex(0); } // Fallback if key doesn't exist
-
-    QVariant containerVariant = settings.value("RecContainer");
-    if (containerVariant.isValid()) {
-        QMediaFormat::FileFormat savedFormat = containerVariant.value<QMediaFormat::FileFormat>();
-        int formatIndex = ui->comboBox_container->findData(QVariant::fromValue(savedFormat));
-        if (formatIndex != -1) { ui->comboBox_container->setCurrentIndex(formatIndex); }
-        else if (ui->comboBox_container->count() > 0) { ui->comboBox_container->setCurrentIndex(0); qWarning() << "Saved RecContainer not found, using default:" << ui->comboBox_container->currentText();}
-    } else if (ui->comboBox_container->count() > 0) { ui->comboBox_container->setCurrentIndex(0); } // Fallback
+    buildRecordingRows(settings);
 
     // Paths
     ui->txt_savePath->setText(settings.value("SavePath").toString());
@@ -319,8 +290,8 @@ optionsDialog::optionsDialog(QWidget *parent) :
     // and every "..." button announces itself as the group box it sits in.
     const struct { QWidget *field; const char *name; } named[] = {
         { ui->cboxRecDev,        QT_TR_NOOP("Recording device") },
-        { ui->comboBox_codec,    QT_TR_NOOP("Recording codec") },
-        { ui->comboBox_container,QT_TR_NOOP("Recording container") },
+        { ui->comboBox_codec,    QT_TR_NOOP("Recording format") },
+        { ui->comboBox_container,QT_TR_NOOP("Recording bitrate") },
         { ui->txt_savePath,      QT_TR_NOOP("Folder recordings are saved in") },
         { ui->bt_browseSavePath, QT_TR_NOOP("Choose the folder recordings are saved in") },
         { ui->txt_programsPath,  QT_TR_NOOP("Programmes folder") },
@@ -426,6 +397,79 @@ void optionsDialog::refreshCueWarning()
                                  "reaches the on-air output or the stream."));
     }
     m_cueWarning->setAccessibleName(m_cueWarning->text());
+}
+
+void optionsDialog::buildRecordingRows(QSettings &settings)
+{
+    if (!ui->layout_recordingForm || !ui->cboxRecDev)
+        return;
+
+    // --- Source, a new row above Device ---
+    // Codes in the item data, never matched on the shown text.
+    m_recSourceCombo = new QComboBox(ui->cboxRecDev->parentWidget());
+    m_recSourceCombo->addItem(tr("Input device (microphone or line)"),
+                              QStringLiteral("input"));
+    m_recSourceCombo->addItem(tr("What XFB plays on air"), QStringLiteral("onair"));
+    m_recSourceCombo->addItem(tr("What XFB plays on air, mixed with the input device"),
+                              QStringLiteral("mix"));
+    m_recSourceCombo->setAccessibleName(tr("Recording source"));
+    m_recSourceCombo->setToolTip(
+        tr("What a programme recording captures. \"What XFB plays on air\" is taken "
+           "from inside XFB — the playlist, the DJ decks and the stream player, at the "
+           "level they went out — so no monitor or loopback device is needed. Pads and "
+           "time signals are not in it yet. Mixed with the input device, the "
+           "microphone chosen below is added on top."));
+    const int sourceIndex = m_recSourceCombo->findData(settings.value("RecSource").toString());
+    m_recSourceCombo->setCurrentIndex(sourceIndex >= 0 ? sourceIndex : 0);
+    ui->layout_recordingForm->insertRow(0, tr("Source:"), m_recSourceCombo);
+
+    const auto syncDevice = [this]() {
+        ui->cboxRecDev->setEnabled(m_recSourceCombo->currentData().toString()
+                                   != QLatin1String("onair"));
+    };
+    connect(m_recSourceCombo, &QComboBox::currentIndexChanged, this, syncDevice);
+    syncDevice();
+
+    // --- Format and bitrate, in the rows the .ui calls Codec and Container ---
+    // Those two combos listed what QMediaRecorder could encode on this
+    // platform and the recorder never read them. The widgets are reused rather
+    // than removed so the .ui (and its generated header) stays as it is.
+    ui->label_17->setText(tr("Format:"));
+    ui->label_18->setText(tr("Bitrate:"));
+
+    const QComboBox *formatCombo = ui->comboBox_codec;
+    ui->comboBox_codec->clear();
+    using Format = ProgramRecorder::Format;
+    ui->comboBox_codec->addItem(QStringLiteral("MP3"), ProgramRecorder::formatCode(Format::Mp3));
+    ui->comboBox_codec->addItem(QStringLiteral("Ogg Vorbis"),
+                                ProgramRecorder::formatCode(Format::OggVorbis));
+    ui->comboBox_codec->addItem(QStringLiteral("Opus"), ProgramRecorder::formatCode(Format::Opus));
+    ui->comboBox_codec->setToolTip(
+        tr("The file a programme recording is written as. MP3 plays everywhere; Opus "
+           "gives the smallest file for the same quality. Recording in any of them "
+           "needs ffmpeg — without it an input device is still recorded, as Ogg."));
+    ui->comboBox_container->setToolTip(tr("Higher is better quality and a bigger file."));
+
+    const Format storedFormat =
+        ProgramRecorder::formatFromCode(settings.value("RecFormat").toString());
+    ui->comboBox_codec->setCurrentIndex(
+        qMax(0, ui->comboBox_codec->findData(ProgramRecorder::formatCode(storedFormat))));
+
+    const auto fillBitrates = [this, formatCombo](int wantedKbps) {
+        const Format format =
+            ProgramRecorder::formatFromCode(formatCombo->currentData().toString());
+        const int selected = ProgramRecorder::nearestBitrate(format, wantedKbps);
+        ui->comboBox_container->clear();
+        for (int kbps : ProgramRecorder::bitratesFor(format))
+            ui->comboBox_container->addItem(tr("%1 kbit/s").arg(kbps), kbps);
+        ui->comboBox_container->setCurrentIndex(
+            qMax(0, ui->comboBox_container->findData(selected)));
+    };
+    fillBitrates(settings.value("RecBitrate", 192).toInt());
+    // A format change keeps the chosen bitrate where the new format offers it.
+    connect(ui->comboBox_codec, &QComboBox::currentIndexChanged, this, [this, fillBitrates](int) {
+        fillBitrates(ui->comboBox_container->currentData().toInt());
+    });
 }
 
 void optionsDialog::buildCueTab()
@@ -693,17 +737,14 @@ void optionsDialog::saveSettings2Db()
 
     // Recording (Save description and enum values)
     settings.setValue("RecDevice", ui->cboxRecDev->currentText());
-    // Ensure data is valid before saving (use index check if needed)
-    if (ui->comboBox_codec->currentIndex() >= 0) {
-        settings.setValue("RecCodec", ui->comboBox_codec->currentData());
-    } else {
-        settings.remove("RecCodec"); // Or set to default
-    }
-    if (ui->comboBox_container->currentIndex() >= 0) {
-        settings.setValue("RecContainer", ui->comboBox_container->currentData());
-    } else {
-        settings.remove("RecContainer"); // Or set to default
-    }
+    if (m_recSourceCombo)
+        settings.setValue("RecSource", m_recSourceCombo->currentData().toString());
+    settings.setValue("RecFormat", ui->comboBox_codec->currentData().toString());
+    if (ui->comboBox_container->currentIndex() >= 0)
+        settings.setValue("RecBitrate", ui->comboBox_container->currentData().toInt());
+    // The old Codec/Container pair was never read by the recorder.
+    settings.remove("RecCodec");
+    settings.remove("RecContainer");
 
 
     // Paths
@@ -1013,6 +1054,10 @@ void optionsDialog::on_bt_audio_clicked()
     lines << tr("On air: %1").arg(chosen(m_mainOutputCombo, tr("system default")))
           << tr("Cue: %1").arg(chosen(m_cueOutputCombo, tr("off")))
           << tr("Recording: %1").arg(ui->cboxRecDev->currentText());
+    if (m_recSourceCombo)
+        lines << tr("Recording source: %1").arg(m_recSourceCombo->currentText());
+    lines << tr("Recording format: %1, %2").arg(ui->comboBox_codec->currentText(),
+                                                ui->comboBox_container->currentText());
     reportSection(tr("Audio devices"), lines);
 }
 

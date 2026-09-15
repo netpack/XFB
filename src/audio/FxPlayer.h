@@ -185,9 +185,10 @@ signals:
     void levels(float left, float right);
     /**
      * Post-DSP master PCM (interleaved s16le), emitted only while the tap
-     * is armed and the engine is the active path.
+     * is armed and the engine is the active path. @a volume is the output
+     * volume, not applied to the samples (see FxEngine::pcmTap).
      */
-    void pcmTap(const QByteArray &pcm, int sampleRate, int channels);
+    void pcmTap(const QByteArray &pcm, int sampleRate, int channels, float volume);
     void sourceChanged(const QUrl &media);
     void playbackStateChanged(QMediaPlayer::PlaybackState newState);
     void mediaStatusChanged(QMediaPlayer::MediaStatus status);

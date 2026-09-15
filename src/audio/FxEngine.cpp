@@ -1033,7 +1033,7 @@ void FxEngine::emitPcmTap(const float *chunk, int frames)
 
     emit pcmTap(QByteArray(reinterpret_cast<const char *>(m_tapPcm.data()),
                            static_cast<qsizetype>(samples) * qsizetype(sizeof(qint16))),
-                kTapSampleRate, kTapChannels);
+                kTapSampleRate, kTapChannels, m_volume);
 }
 
 void FxEngine::pump()

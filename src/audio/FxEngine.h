@@ -164,8 +164,12 @@ signals:
      * compressor, the DJ filter/echo and the safety clamp, but *before*
      * QAudioSink applies the monitor volume — what goes to air must not
      * follow the operator's speaker fader.
+     *
+     * @a volume is that sink volume, passed alongside rather than applied, for
+     * an observer that does want the level the output carried: the on-air
+     * recorder, where a crossfade tail that ignored its fade would cut off.
      */
-    void pcmTap(const QByteArray &pcm, int sampleRate, int channels);
+    void pcmTap(const QByteArray &pcm, int sampleRate, int channels, float volume);
 
 private slots:
     void pump();

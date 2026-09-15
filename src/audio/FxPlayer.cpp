@@ -40,11 +40,11 @@ FxPlayer::FxPlayer(QObject *parent)
             emit levels(l, r);
     });
     connect(m_engine, &FxEngine::pcmTap, this,
-            [this](const QByteArray &pcm, int sampleRate, int channels) {
+            [this](const QByteArray &pcm, int sampleRate, int channels, float volume) {
         // Nothing is emitted by the engine unless the tap is armed, so this
         // connection costs nothing while XFB is not on air.
         if (m_mode == Mode::Fx)
-            emit pcmTap(pcm, sampleRate, channels);
+            emit pcmTap(pcm, sampleRate, channels, volume);
     });
     connect(m_engine, &FxEngine::playbackFinished, this, [this]() {
         if (m_mode != Mode::Fx || m_fxState == QMediaPlayer::StoppedState)

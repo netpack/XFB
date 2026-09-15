@@ -6,8 +6,8 @@ prompt
 binary
 cd Programs
 ls
-mget *.ogg
+mget *.ogg *.mp3 *.opus
 prompt
-mdelete *.ogg
+mdelete *.ogg *.mp3 *.opus
 bye
 EOT

@@ -8,7 +8,7 @@ binary
 prompt 
 cd Programs 
 prompt 
-mput *.ogg 
+mput *.ogg *.mp3 *.opus 
 prompt 
 bye 
 EOT

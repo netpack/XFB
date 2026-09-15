@@ -20,7 +20,6 @@ class player;
 #include <QPushButton>
 #include <QSlider>
 #include <QWidget>
-#include <QtMultimedia/QMediaRecorder>
 
 namespace Ui {
 class optionsDialog;
@@ -118,6 +117,14 @@ private:
     /** Warns in the tab when the cue output would be the on-air output. */
     void refreshCueWarning();
 
+    /**
+     * Adds the recording Source row above Device (C++, same reason as
+     * buildCueTab), keeps Device enabled only when an input is recorded, and
+     * turns the old Codec/Container rows into Format/Bitrate.
+     */
+    void buildRecordingRows(QSettings &settings);
+
+    QComboBox *m_recSourceCombo = nullptr;
     QComboBox *m_mainOutputCombo = nullptr;
     QComboBox *m_cueOutputCombo = nullptr;
     QSlider   *m_cueVolume = nullptr;
@@ -141,7 +148,6 @@ private:
     QString User;
     QString Pass;
     QString Role;
-    QMediaRecorder *audioRecorder;
     QString FTPPath;
     QString ComHour;
     QString fullScreen;
