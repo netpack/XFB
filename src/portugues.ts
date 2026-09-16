@@ -476,6 +476,16 @@
     </message>
     <message>
         <location line="+2"/>
+        <source>Set up remote control</source>
+        <translation>Configurar o controlo remoto</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Switch the network remote control on, and make the keys that let another program play, stop and change the running order.</source>
+        <translation>Ligar o controlo remoto pela rede e criar as chaves que permitem a outro programa tocar, parar e alterar o alinhamento.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
         <source>Force an FTP check</source>
         <translation>Forçar uma verificação FTP</translation>
     </message>
@@ -575,7 +585,7 @@
         <translation>Prepara a programação: a biblioteca, a rotação, o relógio. Não pode alterar as definições da estação nem quem inicia sessão.</translation>
     </message>
     <message>
-        <location line="+28"/>
+        <location line="+29"/>
         <source>Presenter</source>
         <translation>Apresentador</translation>
     </message>
@@ -6799,7 +6809,7 @@ A próxima obtenção vai copiar para aqui a discoteca inteira da estação, o q
 <context>
     <name>QObject</name>
     <message>
-        <location filename="player.cpp" line="+9751"/>
+        <location filename="player.cpp" line="+9769"/>
         <source>Not an XFB TakeOver file</source>
         <translation>Não é um ficheiro TakeOver do XFB</translation>
     </message>
@@ -8595,6 +8605,357 @@ Quer avançar?</translation>
         <location line="+12"/>
         <source>The Portuguese figures are in the form. Choose Save the rules to keep them.</source>
         <translation>Os números portugueses estão no formulário. Escolha Guardar as regras para os manter.</translation>
+    </message>
+</context>
+<context>
+    <name>RemoteControlDialog</name>
+    <message>
+        <location filename="dialogs/RemoteControlDialog.cpp" line="+41"/>
+        <source>Remote Control</source>
+        <translation>Controlo remoto</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Let other programs control this station over the network — a Stream Deck, a home-automation panel, a script or a web page of your own. They can see what is on air and the running order, and, with a control key, play, stop, skip, change the volume and the running order, and start the recording or the stream.</source>
+        <translation>Permite que outros programas controlem esta estação através da rede — um Stream Deck, um painel de domótica, um script ou uma página web sua. Podem ver o que está no ar e o alinhamento e, com uma chave de controlo, tocar, parar, saltar faixas, mudar o volume e o alinhamento, e iniciar a gravação ou a emissão.</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>The connection is not encrypted. A key keeps strangers out, but anybody who can watch this network can read the traffic, key included. Use it on the station&apos;s own network, or choose &quot;This computer only&quot; and put an SSH tunnel or a TLS proxy in front.</source>
+        <translation>A ligação não é cifrada. Uma chave impede a entrada de estranhos, mas quem puder observar esta rede consegue ler o tráfego, chave incluída. Use-o na rede da própria estação, ou escolha «Apenas este computador» e ponha à frente um túnel SSH ou um proxy TLS.</translation>
+    </message>
+    <message>
+        <location line="+12"/>
+        <source>Server</source>
+        <translation>Servidor</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>&amp;Accept remote control</source>
+        <translation>&amp;Aceitar controlo remoto</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Remembered: XFB listens again the next time it starts.</source>
+        <translation>Fica guardado: o XFB volta a escutar no arranque seguinte.</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Every network connection</source>
+        <translation>Todas as ligações de rede</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>This computer only</source>
+        <translation>Apenas este computador</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>&amp;Listen on:</source>
+        <translation>&amp;Escutar em:</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>&amp;Port:</source>
+        <translation>&amp;Porta:</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Status:</source>
+        <translation>Estado:</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Keys</source>
+        <translation>Chaves</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Each program gets a key of its own, so one can be revoked without touching the others. A read key can only look; a control key can change what goes on air.</source>
+        <translation>Cada programa tem a sua própria chave, para que se possa revogar uma sem mexer nas outras. Uma chave de leitura só permite ver; uma chave de controlo pode alterar o que vai para o ar.</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>Name</source>
+        <translation>Nome</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Access</source>
+        <translation>Acesso</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Key</source>
+        <translation>Chave</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Created</source>
+        <translation>Criada</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Last used</source>
+        <translation>Última utilização</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Remote control keys</source>
+        <translation>Chaves do controlo remoto</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>&amp;New key...</source>
+        <translation>&amp;Nova chave...</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>&amp;Revoke</source>
+        <translation>&amp;Revogar</translation>
+    </message>
+    <message>
+        <location line="+16"/>
+        <source>Activity</source>
+        <translation>Atividade</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Remote control activity</source>
+        <translation>Atividade do controlo remoto</translation>
+    </message>
+    <message>
+        <location line="+37"/>
+        <source>%1: %2</source>
+        <translation>%1: %2</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>%1: %2 (refused, %3)</source>
+        <translation>%1: %2 (recusado, %3)</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>%1 was refused for five minutes after too many wrong keys</source>
+        <translation>%1 foi recusado durante cinco minutos após demasiadas chaves erradas</translation>
+    </message>
+    <message>
+        <location line="+14"/>
+        <source>Remote control switched off</source>
+        <translation>Controlo remoto desligado</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Remote control switched on</source>
+        <translation>Controlo remoto ligado</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Remote control could not start: %1</source>
+        <translation>Não foi possível iniciar o controlo remoto: %1</translation>
+    </message>
+    <message>
+        <location line="+20"/>
+        <source>New Key</source>
+        <translation>Nova chave</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Studio Stream Deck</source>
+        <translation>Stream Deck do estúdio</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>&amp;Name:</source>
+        <translation>&amp;Nome:</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Read only — status, running order, library</source>
+        <translation>Só leitura — estado, alinhamento, biblioteca</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Control — can change what goes on air</source>
+        <translation>Controlo — pode alterar o que vai para o ar</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>&amp;Access:</source>
+        <translation>&amp;Acesso:</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>&amp;Make the key</source>
+        <translation>&amp;Criar a chave</translation>
+    </message>
+    <message>
+        <location line="+14"/>
+        <source>Your New Key</source>
+        <translation>A sua nova chave</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Copy this key into the program that will use it now. XFB keeps only a fingerprint of it and cannot show it again; if it is lost, revoke it and make another.</source>
+        <translation>Copie agora esta chave para o programa que a vai usar. O XFB guarda apenas uma impressão digital dela e não a pode mostrar outra vez; se a perder, revogue-a e crie outra.</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>New key</source>
+        <translation>Nova chave</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>&amp;Copy</source>
+        <translation>&amp;Copiar</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Copied</source>
+        <translation>Copiado</translation>
+    </message>
+    <message>
+        <location line="+18"/>
+        <source>Revoke Key</source>
+        <translation>Revogar a chave</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Revoke &quot;%1&quot;? Whatever uses it stops working at once.</source>
+        <translation>Revogar «%1»? O que a estiver a usar deixa de funcionar imediatamente.</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Key &quot;%1&quot; revoked</source>
+        <translation>Chave «%1» revogada</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Key %1 revoked</source>
+        <translation>Chave %1 revogada</translation>
+    </message>
+    <message>
+        <location line="+14"/>
+        <source>Listening on %1</source>
+        <translation>A escutar em %1</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>port %1</source>
+        <translation>a porta %1</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>There is no key yet, so nothing can use it until you make one.</source>
+        <translation>Ainda não há nenhuma chave, por isso nada o pode usar até criar uma.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Off — %1</source>
+        <translation>Desligado — %1</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Off</source>
+        <translation>Desligado</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Try it:  curl -H &quot;Authorization: Bearer &lt;key&gt;&quot; %1/api/v1/status</source>
+        <translation>Experimente:  curl -H &quot;Authorization: Bearer &lt;chave&gt;&quot; %1/api/v1/status</translation>
+    </message>
+    <message>
+        <location line="+15"/>
+        <source>Control</source>
+        <translation>Controlo</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Read only</source>
+        <translation>Só leitura</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Never</source>
+        <translation>Nunca</translation>
+    </message>
+</context>
+<context>
+    <name>RemoteControlServer</name>
+    <message>
+        <location filename="services/RemoteControlServer.cpp" line="+245"/>
+        <source>Could not listen on port %1: %2</source>
+        <translation>Não foi possível escutar na porta %1: %2</translation>
+    </message>
+    <message>
+        <location line="+75"/>
+        <source>Unnamed key</source>
+        <translation>Chave sem nome</translation>
+    </message>
+    <message>
+        <location line="+196"/>
+        <source>Request too large.</source>
+        <translation>Pedido demasiado grande.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Chunked requests are not supported.</source>
+        <translation>Os pedidos em blocos (chunked) não são suportados.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Malformed request.</source>
+        <translation>Pedido malformado.</translation>
+    </message>
+    <message>
+        <location line="+88"/>
+        <source>Too many bad keys from this address. Try again later.</source>
+        <translation>Demasiadas chaves erradas deste endereço. Tente mais tarde.</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Use GET.</source>
+        <translation>Use GET.</translation>
+    </message>
+    <message>
+        <location line="+19"/>
+        <source>No such endpoint.</source>
+        <translation>Não existe esse endpoint.</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>A valid API key is required.</source>
+        <translation>É necessária uma chave de API válida.</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>This endpoint does not accept %1.</source>
+        <translation>Este endpoint não aceita %1.</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>This key may only read. Make a control key to change anything.</source>
+        <translation>Esta chave só pode ler. Crie uma chave de controlo para alterar algo.</translation>
+    </message>
+    <message>
+        <location line="+20"/>
+        <source>Send the arguments as application/json.</source>
+        <translation>Envie os argumentos como application/json.</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>The body must be a JSON object.</source>
+        <translation>O corpo do pedido tem de ser um objeto JSON.</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>XFB is not ready to take commands yet.</source>
+        <translation>O XFB ainda não está pronto para receber comandos.</translation>
+    </message>
+    <message>
+        <location line="+36"/>
+        <source>Too many event subscribers.</source>
+        <translation>Demasiados subscritores de eventos.</translation>
     </message>
 </context>
 <context>
@@ -15752,7 +16113,7 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
 <context>
     <name>player</name>
     <message>
-        <location filename="player.cpp" line="-10962"/>
+        <location filename="player.cpp" line="-10980"/>
         <source>Seek to %1</source>
         <translation>Saltar para %1</translation>
     </message>
@@ -15790,7 +16151,7 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
         <location line="+207"/>
         <location line="+33"/>
         <location line="+1566"/>
-        <location line="+10806"/>
+        <location line="+10824"/>
         <source>Play</source>
         <translation>Tocar</translation>
     </message>
@@ -15806,7 +16167,7 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
     </message>
     <message>
         <location line="-256"/>
-        <location filename="player.cpp" line="-15436"/>
+        <location filename="player.cpp" line="-15454"/>
         <location line="+4631"/>
         <source>Stop</source>
         <translation>Parar</translation>
@@ -15917,7 +16278,7 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
     </message>
     <message>
         <location line="+297"/>
-        <location filename="player.cpp" line="+1048"/>
+        <location filename="player.cpp" line="+1066"/>
         <source>Torrents</source>
         <translation>Torrents</translation>
     </message>
@@ -16068,7 +16429,7 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
     </message>
     <message>
         <location line="-1358"/>
-        <location filename="player.cpp" line="-11992"/>
+        <location filename="player.cpp" line="-12010"/>
         <source>Jingles</source>
         <translation>Jingles</translation>
     </message>
@@ -16090,7 +16451,7 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
     </message>
     <message>
         <location line="+17"/>
-        <location filename="player.cpp" line="+7141"/>
+        <location filename="player.cpp" line="+7159"/>
         <source>Sound Converter</source>
         <translation>Conversor de som</translation>
     </message>
@@ -16172,15 +16533,15 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
         <location line="+16"/>
         <location line="+109"/>
         <location line="+45"/>
-        <location filename="player.cpp" line="-12569"/>
+        <location filename="player.cpp" line="-12587"/>
         <location line="+770"/>
-        <location line="+11689"/>
+        <location line="+11707"/>
         <source>Stopped</source>
         <translation>Parado</translation>
     </message>
     <message>
         <location line="-381"/>
-        <location filename="player.cpp" line="-7057"/>
+        <location filename="player.cpp" line="-7075"/>
         <source>Play the stream</source>
         <translation>Reproduzir a emissão</translation>
     </message>
@@ -16264,7 +16625,7 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
     </message>
     <message>
         <location line="+32"/>
-        <location filename="player.cpp" line="+9228"/>
+        <location filename="player.cpp" line="+9246"/>
         <location line="+24"/>
         <location line="+5832"/>
         <location line="+26"/>
@@ -16365,7 +16726,7 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
     </message>
     <message>
         <location line="+14"/>
-        <location filename="player.cpp" line="-15213"/>
+        <location filename="player.cpp" line="-15231"/>
         <location line="+5"/>
         <source>Check for updates</source>
         <translation>Verificar atualizações</translation>
@@ -16432,7 +16793,7 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
     </message>
     <message>
         <location line="+1389"/>
-        <location filename="player.cpp" line="+6713"/>
+        <location filename="player.cpp" line="+6731"/>
         <location line="+147"/>
         <location line="+18"/>
         <location line="+17"/>
@@ -16533,14 +16894,14 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
         <translation>Adicionar Programa</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="-4320"/>
+        <location filename="player.cpp" line="-4338"/>
         <location line="+12"/>
-        <location line="+3325"/>
+        <location line="+3343"/>
         <source>Play and Segue</source>
         <translation>Tocar e seguir</translation>
     </message>
     <message>
-        <location line="-3318"/>
+        <location line="-3336"/>
         <source>Play and Stop</source>
         <translation>Tocar e Parar</translation>
     </message>
@@ -16556,7 +16917,7 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
         <translation>&amp;Redundância de emissão...</translation>
     </message>
     <message>
-        <location line="+4859"/>
+        <location line="+4877"/>
         <source>Xml files(*.xml)</source>
         <translation>Ficheiros Xml (*.xml)</translation>
     </message>
@@ -16789,8 +17150,8 @@ Também pode usar: ffmpeg -i entrada.ogg saida.mp3</translation>
         <translation>O Sound Converter permite converter ficheiros de áudio entre formatos. É fornecido pelo programa &quot;soundconverter&quot;.</translation>
     </message>
     <message>
-        <location line="-9739"/>
-        <location line="+10058"/>
+        <location line="-9757"/>
+        <location line="+10076"/>
         <source>Sure?</source>
         <translation>Tem a certeza?</translation>
     </message>
@@ -16810,9 +17171,9 @@ Também pode usar: ffmpeg -i entrada.ogg saida.mp3</translation>
         <translation>Deseja apagar todos os ficheiros selectionados do disco rigido também?</translation>
     </message>
     <message>
-        <location line="-10054"/>
+        <location line="-10072"/>
         <location line="+462"/>
-        <location line="+9615"/>
+        <location line="+9633"/>
         <source>Error</source>
         <translation>Erro</translation>
     </message>
@@ -16845,7 +17206,7 @@ Instale-o com o seu gestor de pacotes — &quot;tor&quot; no Linux e no macOS, o
         <translation>Ficheiro local apagado</translation>
     </message>
     <message>
-        <location line="-12290"/>
+        <location line="-12308"/>
         <source>Player controls</source>
         <translation>Comandos do leitor</translation>
     </message>
@@ -17082,7 +17443,7 @@ Instale-o com o seu gestor de pacotes — &quot;tor&quot; no Linux e no macOS, o
         <translation>A leitura dos metadados de uma faixa usa a ferramenta MediaInfo.</translation>
     </message>
     <message>
-        <location line="+11215"/>
+        <location line="+11233"/>
         <source>Trimming the silence from the start and the end of every track in the database is done by SoX (Sound eXchange).</source>
         <translation>Cortar o silêncio do início e do fim de todas as faixas da base de dados é feito pelo SoX (Sound eXchange).</translation>
     </message>
@@ -17093,7 +17454,7 @@ Instale-o com o seu gestor de pacotes — &quot;tor&quot; no Linux e no macOS, o
         <translation>Cortar o silêncio do início e do fim das faixas selecionadas é feito pelo SoX (Sound eXchange).</translation>
     </message>
     <message>
-        <location line="-12308"/>
+        <location line="-12326"/>
         <location line="+23"/>
         <source>Metadata Error</source>
         <translation>Erro de metadados</translation>
@@ -17148,7 +17509,7 @@ Débito: %8</translation>
         <location line="+12"/>
         <location line="+1285"/>
         <location line="+386"/>
-        <location line="+14494"/>
+        <location line="+14512"/>
         <location line="+7"/>
         <location line="+52"/>
         <location line="+180"/>
@@ -17159,7 +17520,7 @@ Débito: %8</translation>
         <translation>Erro da base de dados</translation>
     </message>
     <message>
-        <location line="-16735"/>
+        <location line="-16753"/>
         <source>Failed to update metadata in the database.</source>
         <translation>Não foi possível atualizar os metadados na base de dados.</translation>
     </message>
@@ -17396,7 +17757,7 @@ Débito: %8</translation>
     <message>
         <location line="+174"/>
         <location line="+69"/>
-        <location line="+8282"/>
+        <location line="+8300"/>
         <location line="+225"/>
         <location line="+4401"/>
         <location line="+127"/>
@@ -17404,7 +17765,7 @@ Débito: %8</translation>
         <translation>Erro de script</translation>
     </message>
     <message>
-        <location line="-13103"/>
+        <location line="-13121"/>
         <source>The required check script &apos;%1&apos; was not found.
 Install it under the application data directory (e.g. share/xfb/scripts) or set ServerScriptsPath in xfb.conf.</source>
         <translation>O script de verificação necessário &apos;%1&apos; não foi encontrado.
@@ -17413,15 +17774,15 @@ Instale-o na pasta de dados da aplicação (por exemplo share/xfb/scripts) ou de
     <message>
         <location line="+4"/>
         <location line="+70"/>
-        <location line="+12905"/>
+        <location line="+12923"/>
         <location line="+129"/>
         <source>Script Not Configured</source>
         <translation>Script não configurado</translation>
     </message>
     <message>
-        <location line="-13103"/>
+        <location line="-13121"/>
         <location line="+70"/>
-        <location line="+12905"/>
+        <location line="+12923"/>
         <source>The script &apos;%1&apos; still contains the [IP]/[PORT] placeholders.
 Edit it with your server&apos;s address and port:
 %2</source>
@@ -17430,7 +17791,7 @@ Edite-o com o endereço e a porta do seu servidor:
 %2</translation>
     </message>
     <message>
-        <location line="-12971"/>
+        <location line="-12989"/>
         <source>Checking server...</source>
         <translation>A verificar o servidor...</translation>
     </message>
@@ -17441,14 +17802,14 @@ Edite-o com o endereço e a porta do seu servidor:
         <location line="+43"/>
         <location line="+147"/>
         <location line="+237"/>
-        <location line="+6054"/>
+        <location line="+6072"/>
         <location line="+6544"/>
         <location line="+370"/>
         <source>Cancel</source>
         <translation>Cancelar</translation>
     </message>
     <message>
-        <location line="-15118"/>
+        <location line="-15136"/>
         <source>Check Successful</source>
         <translation>Verificação bem-sucedida</translation>
     </message>
@@ -17459,7 +17820,7 @@ Edite-o com o endereço e a porta do seu servidor:
     </message>
     <message>
         <location line="+25"/>
-        <location line="+8282"/>
+        <location line="+8300"/>
         <location line="+225"/>
         <location line="+4401"/>
         <source>The required upload script &apos;%1&apos; was not found.
@@ -17468,7 +17829,7 @@ Install it under the application data directory (e.g. share/xfb/scripts) or set 
 Instale-o na pasta de dados da aplicação (por exemplo share/xfb/scripts) ou defina ServerScriptsPath no xfb.conf.</translation>
     </message>
     <message>
-        <location line="-12897"/>
+        <location line="-12915"/>
         <source>Uploading to server...</source>
         <translation>A enviar para o servidor...</translation>
     </message>
@@ -17563,35 +17924,35 @@ Verifique as permissões de &apos;%1&apos;.</translation>
     </message>
     <message>
         <location line="+20"/>
-        <location line="+4883"/>
+        <location line="+4901"/>
         <source>Download Torrent</source>
         <translation>Transferir o torrent</translation>
     </message>
     <message>
-        <location line="-4882"/>
-        <location line="+4883"/>
+        <location line="-4900"/>
+        <location line="+4901"/>
         <source>Download and Stream</source>
         <translation>Transferir e emitir</translation>
     </message>
     <message>
-        <location line="-4882"/>
-        <location line="+4884"/>
+        <location line="-4900"/>
+        <location line="+4902"/>
         <source>Copy Magnet Link</source>
         <translation>Copiar a ligação magnet</translation>
     </message>
     <message>
-        <location line="-4883"/>
+        <location line="-4901"/>
         <source>View Details</source>
         <translation>Ver os detalhes</translation>
     </message>
     <message>
         <location line="+37"/>
-        <location line="+4877"/>
+        <location line="+4895"/>
         <source>Download Confirmation</source>
         <translation>Confirmação da transferência</translation>
     </message>
     <message>
-        <location line="-4876"/>
+        <location line="-4894"/>
         <source>⚠️ LEGAL RESPONSIBILITY ⚠️
 
 You are about to download: %1
@@ -17772,12 +18133,12 @@ Medi-las novamente? Vale a pena fazê-lo depois de uma atualização, e é a for
     </message>
     <message>
         <location line="+14"/>
-        <location line="+2121"/>
+        <location line="+2139"/>
         <source>No file path for the selected track</source>
         <translation>Não há caminho de ficheiro para a faixa selecionada</translation>
     </message>
     <message numerus="yes">
-        <location line="-2104"/>
+        <location line="-2122"/>
         <source>%n tracks</source>
         <translation>
             <numerusform>%n faixa</numerusform>
@@ -17816,23 +18177,23 @@ Medi-las novamente? Vale a pena fazê-lo depois de uma atualização, e é a for
     </message>
     <message>
         <location line="+1"/>
-        <location line="+2099"/>
+        <location line="+2117"/>
         <source>Pause</source>
         <translation>Pausa</translation>
     </message>
     <message>
-        <location line="-2099"/>
+        <location line="-2117"/>
         <source>Pause or resume the track that is playing</source>
         <translation>Pausar ou retomar a faixa que está a tocar</translation>
     </message>
     <message>
         <location line="+1"/>
-        <location line="+2104"/>
+        <location line="+2122"/>
         <source>Pause recording</source>
         <translation>Pausar a gravação</translation>
     </message>
     <message>
-        <location line="-2104"/>
+        <location line="-2122"/>
         <source>Pause or resume the recording</source>
         <translation>Pausar ou retomar a gravação</translation>
     </message>
@@ -17858,12 +18219,12 @@ Medi-las novamente? Vale a pena fazê-lo depois de uma atualização, e é a for
     </message>
     <message>
         <location line="+1"/>
-        <location line="+2105"/>
+        <location line="+2123"/>
         <source>Deck 1: pause</source>
         <translation>Prato 1: pausa</translation>
     </message>
     <message>
-        <location line="-2105"/>
+        <location line="-2123"/>
         <source>Pause or resume deck 1</source>
         <translation>Pausar ou retomar o prato 1</translation>
     </message>
@@ -17889,12 +18250,12 @@ Medi-las novamente? Vale a pena fazê-lo depois de uma atualização, e é a for
     </message>
     <message>
         <location line="+1"/>
-        <location line="+2105"/>
+        <location line="+2123"/>
         <source>Deck 2: pause</source>
         <translation>Prato 2: pausa</translation>
     </message>
     <message>
-        <location line="-2105"/>
+        <location line="-2123"/>
         <source>Pause or resume deck 2</source>
         <translation>Pausar ou retomar o prato 2</translation>
     </message>
@@ -18066,12 +18427,12 @@ Medi-las novamente? Vale a pena fazê-lo depois de uma atualização, e é a for
     <message>
         <location line="-703"/>
         <location line="+709"/>
-        <location line="+1687"/>
+        <location line="+1705"/>
         <source>Nothing is playing</source>
         <translation>Não está nada a tocar</translation>
     </message>
     <message>
-        <location line="-7543"/>
+        <location line="-7561"/>
         <source>Intro set to %1</source>
         <translation>Intro definida em %1</translation>
     </message>
@@ -18368,12 +18729,12 @@ Medir tudo outra vez?</numerusform>
     </message>
     <message>
         <location line="+3"/>
-        <location line="+1770"/>
+        <location line="+1788"/>
         <source>Listen to the selected track in the cue headphones only</source>
         <translation>Ouvir a faixa selecionada apenas nos auscultadores de pré-escuta</translation>
     </message>
     <message>
-        <location line="-1760"/>
+        <location line="-1778"/>
         <source>&amp;Voice track over this join...</source>
         <translation>&amp;Locução por cima desta passagem...</translation>
     </message>
@@ -18389,12 +18750,12 @@ Medir tudo outra vez?</numerusform>
     </message>
     <message>
         <location line="+7"/>
-        <location line="+1779"/>
+        <location line="+1797"/>
         <source>Cue stopped</source>
         <translation>Pré-escuta parada</translation>
     </message>
     <message>
-        <location line="-1765"/>
+        <location line="-1783"/>
         <source>Start or stop rec&amp;ording</source>
         <oldsource>Start or stop r&amp;ecording</oldsource>
         <translation>Iniciar ou parar a gravaçã&amp;o</translation>
@@ -18606,7 +18967,17 @@ Medir tudo outra vez?</numerusform>
         <translation>Computadores de &amp;produção...</translation>
     </message>
     <message>
-        <location line="+150"/>
+        <location line="+50"/>
+        <source>&amp;Remote Control...</source>
+        <translation>&amp;Controlo remoto...</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Let other programs control XFB over the network</source>
+        <translation>Permitir que outros programas controlem o XFB através da rede</translation>
+    </message>
+    <message>
+        <location line="+116"/>
         <source>&amp;Users and roles...</source>
         <translation>&amp;Utilizadores e funções...</translation>
     </message>
@@ -20185,7 +20556,7 @@ As contagens de reproduções e quaisquer BPM, intensidade sonora e tempos de in
         <translation>Não é possível enviar ficheiros para o servidor se o XFB está no modo Server</translation>
     </message>
     <message>
-        <location line="-9073"/>
+        <location line="-9091"/>
         <source>Remove this track from the playlist</source>
         <translation>Remover esta música da playlist</translation>
     </message>
@@ -20263,6 +20634,170 @@ As contagens de reproduções e quaisquer BPM, intensidade sonora e tempos de in
         <location line="+7"/>
         <source>The pub was removed from the database!</source>
         <translation>A publicidade foi apagada da base de dados!</translation>
+    </message>
+    <message>
+        <location filename="PlayerRemoteControl.cpp" line="+157"/>
+        <source>Remote control (%1): %2</source>
+        <translation>Controlo remoto (%1): %2</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Remote control: %1</source>
+        <translation>Controlo remoto: %1</translation>
+    </message>
+    <message>
+        <location line="+97"/>
+        <source>XFB is still starting.</source>
+        <translation>O XFB ainda está a arrancar.</translation>
+    </message>
+    <message>
+        <location line="+38"/>
+        <location line="+202"/>
+        <source>Unknown source &quot;%1&quot;. Use music, jingles or programs.</source>
+        <translation>Fonte «%1» desconhecida. Use music, jingles ou programs.</translation>
+    </message>
+    <message>
+        <location line="-198"/>
+        <source>limit must be a whole number.</source>
+        <translation>limit tem de ser um número inteiro.</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <location line="+197"/>
+        <source>The library database is not open.</source>
+        <translation>A base de dados da biblioteca não está aberta.</translation>
+    </message>
+    <message>
+        <location line="-172"/>
+        <source>The library search failed.</source>
+        <translation>A pesquisa na biblioteca falhou.</translation>
+    </message>
+    <message>
+        <location line="+42"/>
+        <source>The playlist is empty and Auto Mode is off.</source>
+        <translation>O alinhamento está vazio e o Modo Automático está desligado.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Nothing could be played: the library has no track to offer.</source>
+        <translation>Não foi possível tocar nada: a biblioteca não tem faixas a oferecer.</translation>
+    </message>
+    <message>
+        <location line="+12"/>
+        <location line="+12"/>
+        <location line="+42"/>
+        <source>Nothing is playing.</source>
+        <translation>Não está nada a tocar.</translation>
+    </message>
+    <message>
+        <location line="-14"/>
+        <source>Nothing is playing. Use play to start.</source>
+        <translation>Não está nada a tocar. Use play para começar.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Nothing is queued after this track and Auto Mode is off.</source>
+        <translation>Não há nada em fila depois desta faixa e o Modo Automático está desligado.</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>positionMs must be a whole number of milliseconds.</source>
+        <translation>positionMs tem de ser um número inteiro de milissegundos.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Seeking is switched off in Options.</source>
+        <translation>O avanço manual está desligado nas Opções.</translation>
+    </message>
+    <message>
+        <location line="+16"/>
+        <source>volume must be a whole number from 0 to 100.</source>
+        <translation>volume tem de ser um número inteiro de 0 a 100.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>The volume control is locked in Options.</source>
+        <translation>O controlo de volume está bloqueado nas Opções.</translation>
+    </message>
+    <message>
+        <location line="+11"/>
+        <source>enabled must be true or false.</source>
+        <translation>enabled tem de ser true ou false.</translation>
+    </message>
+    <message>
+        <location line="+21"/>
+        <source>ref must look like &quot;music:123&quot;.</source>
+        <translation>ref tem de ter a forma «music:123».</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Give the track as ref (&quot;music:123&quot;), or as source and id.</source>
+        <translation>Indique a faixa em ref («music:123»), ou em source e id.</translation>
+    </message>
+    <message>
+        <location line="+15"/>
+        <source>There is no %1 entry %2 in the library.</source>
+        <translation>Não existe o registo %2 de %1 na biblioteca.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>The audio file for that entry is missing.</source>
+        <translation>Falta o ficheiro de áudio desse registo.</translation>
+    </message>
+    <message>
+        <location line="+12"/>
+        <source>position must be &quot;start&quot;, &quot;end&quot; or an index from 0 to %1.</source>
+        <translation>position tem de ser «start», «end» ou um índice de 0 a %1.</translation>
+    </message>
+    <message>
+        <location line="+16"/>
+        <source>index must be a whole number.</source>
+        <translation>index tem de ser um número inteiro.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>There is no playlist entry %1.</source>
+        <translation>Não existe a entrada %1 do alinhamento.</translation>
+    </message>
+    <message>
+        <location line="+13"/>
+        <source>from and to must be whole numbers.</source>
+        <translation>from e to têm de ser números inteiros.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>from and to must be indexes from 0 to %1.</source>
+        <translation>from e to têm de ser índices de 0 a %1.</translation>
+    </message>
+    <message>
+        <location line="+31"/>
+        <source>This computer has not allowed XFB to use the microphone. Start one recording at the desk first.</source>
+        <translation>Este computador não autorizou o XFB a usar o microfone. Inicie primeiro uma gravação no posto.</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Recording what goes on air needs ffmpeg, and it was not found.</source>
+        <translation>Gravar o que vai para o ar precisa do ffmpeg, e este não foi encontrado.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>The recording did not start.</source>
+        <translation>A gravação não arrancou.</translation>
+    </message>
+    <message>
+        <location line="+12"/>
+        <source>The recording is about to start. Stop it once the countdown ends.</source>
+        <translation>A gravação está a ponto de começar. Pare-a depois de terminar a contagem decrescente.</translation>
+    </message>
+    <message>
+        <location line="+11"/>
+        <source>The stream did not start: no mount is set up.</source>
+        <translation>A emissão não arrancou: não há nenhum ponto de montagem configurado.</translation>
+    </message>
+    <message>
+        <location line="+11"/>
+        <source>No such command.</source>
+        <translation>Não existe esse comando.</translation>
     </message>
 </context>
 </TS>
