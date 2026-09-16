@@ -123,6 +123,32 @@ An address that presents ten wrong keys in five minutes is refused for five
 minutes. The connection is **not encrypted**, like the other features in this
 chapter.
 
+### The control page
+
+Most people should not need the API at all. XFB serves a small web page of its
+own — **Also serve the control page** in that window, on by default — and the
+window shows its address. Open it in any browser on the network, on a phone or
+a laptop, sign in with a key, and you get a GUI: what is on air with its cover
+and a playhead you can drag, Play, Pause, Stop, Next and Stop after, the
+volume, Auto Mode, the recording and the stream, the running order (reorder or
+remove a track, or clear it), and a library search that queues a track at the
+end or plays it next.
+
+- It is **the same API** underneath, so a key is what signs you in, and a
+  read-only key gets the whole page with every control greyed out and a line
+  saying why.
+- The page updates itself as the station changes — the playhead, the track, the
+  running order — without being reloaded.
+- "Stay signed in on this device" keeps the key in that browser only. **Sign
+  out** forgets it; do that on a shared computer.
+- It loads nothing from the internet: no fonts, no frameworks, no analytics.
+  Everything it needs — XFB's icon included — is in the page XFB serves, which
+  is also why it works on a studio network with no internet at all. The one
+  address that points outward is the donation link in the corner reminder, and
+  nothing follows it unless somebody clicks it.
+- Switch it off and its address answers 404 like any other unknown path, with
+  the API carrying on as before.
+
 ### The API
 
 Plain HTTP and JSON. Send the key on every request as

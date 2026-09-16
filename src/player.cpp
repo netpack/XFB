@@ -7907,38 +7907,49 @@ MobileSyncServer::NowPlaying player::publicNowPlaying()
         }
     }
 
-    // The cover, re-encoded small. The page never opens a file, so the only
-    // way a picture reaches it is as bytes handed over here — and these are a
-    // fresh JPEG made from the decoded image, not a copy of anything on disk.
-    // Encoded once per track and then held, because this runs on every poll.
-    if (m_publicArtPath != lastPlayedSong) {
-        m_publicArtPath = lastPlayedSong;
-        m_publicArtJpeg.clear();
-        m_publicArtKey.clear();
-
-        if (m_artStore) {
-            const ArtworkData *art = m_artStore->fetch(lastPlayedSong);
-            if (art && art->ready()) {
-                const QImage image = art->pixmap.toImage().scaled(
-                    220, 220, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-                QBuffer buffer(&m_publicArtJpeg);
-                if (buffer.open(QIODevice::WriteOnly)
-                    && image.save(&buffer, "JPEG", 72)) {
-                    buffer.close();
-                    m_publicArtKey = QString::fromLatin1(
-                        QCryptographicHash::hash(m_publicArtJpeg,
-                                                 QCryptographicHash::Sha256)
-                            .toHex().left(16));
-                } else {
-                    m_publicArtJpeg.clear();
-                }
-            }
-        }
-    }
+    refreshPublicArtwork();
     now.artworkJpeg = m_publicArtJpeg;
     now.artworkKey  = m_publicArtKey;
 
     return now;
+}
+
+// The on-air cover, re-encoded small and held until the track changes.
+//
+// Its own function because two callers need it and only one of them is the
+// public page: the remote control's status has to report the *key* every
+// second so a client knows when to ask for a new picture, and it must not have
+// to go through publicNowPlaying() to get one — that answers nothing at all
+// while the track is paused, which is exactly when somebody is looking at it.
+//
+// Nothing here opens a file for a caller: the bytes are a fresh JPEG made from
+// the image the artwork store had already decoded for the window.
+void player::refreshPublicArtwork()
+{
+    if (m_publicArtPath == lastPlayedSong)
+        return;  // already encoded for this track
+
+    m_publicArtPath = lastPlayedSong;
+    m_publicArtJpeg.clear();
+    m_publicArtKey.clear();
+    if (lastPlayedSong.isEmpty() || !m_artStore)
+        return;
+
+    const ArtworkData *art = m_artStore->fetch(lastPlayedSong);
+    if (!art || !art->ready())
+        return;
+
+    const QImage image = art->pixmap.toImage().scaled(
+        220, 220, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    QBuffer buffer(&m_publicArtJpeg);
+    if (buffer.open(QIODevice::WriteOnly) && image.save(&buffer, "JPEG", 72)) {
+        buffer.close();
+        m_publicArtKey = QString::fromLatin1(
+            QCryptographicHash::hash(m_publicArtJpeg, QCryptographicHash::Sha256)
+                .toHex().left(16));
+    } else {
+        m_publicArtJpeg.clear();
+    }
 }
 
 // Created on demand and inert until told to start: an operator who never

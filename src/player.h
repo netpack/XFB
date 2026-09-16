@@ -884,6 +884,9 @@ private slots:
     // from publicNowPlaying() and from nowhere else — deliberately not from
     // stationHeartbeatState(), which carries the file path.
     MobileSyncServer::NowPlaying publicNowPlaying();
+    /** Encodes the on-air cover once per track into the three fields below.
+     *  Shared by the public page and the remote control's status. */
+    void refreshPublicArtwork();
     QPointer<class RequestTrayDialog> m_requestTrayDialog;
     /// The on-air cover, re-encoded small, held so the poll costs nothing.
     QString    m_publicArtPath;

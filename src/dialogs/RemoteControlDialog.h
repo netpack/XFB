@@ -44,10 +44,12 @@ private:
     RemoteControlServer *m_server = nullptr;
 
     QCheckBox   *m_enabled = nullptr;
+    QCheckBox   *m_webApp = nullptr;
     QComboBox   *m_bind = nullptr;
     QSpinBox    *m_port = nullptr;
     QLabel      *m_status = nullptr;
     QLabel      *m_example = nullptr;
+    QLabel      *m_pageAddress = nullptr;
     QTreeWidget *m_keys = nullptr;
     QPushButton *m_revoke = nullptr;
     QListWidget *m_activity = nullptr;

@@ -484,11 +484,17 @@ set_tests_properties(AccessControlTest PROPERTIES
 add_executable(test_remote_control_server
     services/TestRemoteControlServer.cpp
     ${CMAKE_SOURCE_DIR}/src/services/RemoteControlServer.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/RemoteControlPage.cpp
+    # for the station's own name, which the control page shows
+    ${CMAKE_SOURCE_DIR}/src/services/RequestLine.cpp
 )
 
 target_link_libraries(test_remote_control_server
     Qt6::Core
+    # the control page embeds XFB's icon, which means QImage
+    Qt6::Gui
     Qt6::Network
+    Qt6::Sql
     Qt6::Test
 )
 

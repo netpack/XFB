@@ -221,6 +221,13 @@ QJsonObject player::remoteStatus()
         now.insert(QStringLiteral("positionMs"), position);
         now.insert(QStringLiteral("durationMs"), duration);
         now.insert(QStringLiteral("remainingMs"), duration > 0 ? qMax(qint64(0), duration - position) : qint64(-1));
+        // Only the key travels here; the cover itself is a request of its own,
+        // because this object is polled every second and a JPEG is not. The
+        // refresh has to happen here rather than being left to whoever else
+        // might ask: without it the key stays empty and no client ever learns
+        // there is a cover to fetch.
+        refreshPublicArtwork();
+        now.insert(QStringLiteral("artworkKey"), m_publicArtKey);
         status.insert(QStringLiteral("nowPlaying"), now);
     } else {
         status.insert(QStringLiteral("nowPlaying"), QJsonValue::Null);
@@ -263,6 +270,19 @@ Reply player::handleRemoteCommand(const QString &command, const QJsonObject &arg
 
     if (command == QLatin1String("status"))
         return Reply::ok(remoteStatus());
+
+    if (command == QLatin1String("artwork")) {
+        // The very JPEG the public page is given: already decoded, scaled and
+        // re-encoded by publicNowPlaying(), and held until the track changes.
+        // No route here ever opens a file, so a cover can only be bytes the
+        // player deliberately handed over.
+        // Not publicNowPlaying(): that reports nothing while the track is
+        // paused, and a paused track still has a cover worth showing.
+        refreshPublicArtwork();
+        if (m_publicArtJpeg.isEmpty())
+            return Reply::error(404, tr("There is no cover for what is playing."));
+        return Reply::file(m_publicArtJpeg, QByteArrayLiteral("image/jpeg"));
+    }
 
     if (command == QLatin1String("playlist")) {
         QJsonArray items;

@@ -9,6 +9,7 @@
 #include <QTcpSocket>
 #include <QTimer>
 
+#include "services/RemoteControlPage.h"
 #include "services/RemoteControlServer.h"
 
 /**
@@ -47,6 +48,9 @@ private slots:
     void guessingKeysLocksTheAddressOut();
     void oversizedRequestsAreRefused();
     void subscribersHearTheStateAndItsChanges();
+    void theControlPageIsServedAndSelfContained();
+    void whoAmITellsThePageWhatItMayDo();
+    void everyStringThePageAsksForExists();
 
 private:
     struct Response {
@@ -81,6 +85,7 @@ void TestRemoteControlServer::init()
     QDir().mkpath(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation));
 
     RemoteControlServer::setLocalOnlySetting(true);
+    RemoteControlServer::setServeWebAppSetting(true);
 
     m_server = new RemoteControlServer(this);
     m_server->setCommandHandler([this](const QString &command, const QJsonObject &args) {
@@ -338,6 +343,109 @@ void TestRemoteControlServer::subscribersHearTheStateAndItsChanges()
     m_server->notifyStateChanged();
     QTRY_VERIFY_WITH_TIMEOUT(received.contains("\"counter\":7"), 3000);
     QCOMPARE(socket.state(), QAbstractSocket::ConnectedState);
+}
+
+void TestRemoteControlServer::theControlPageIsServedAndSelfContained()
+{
+    // No key: this is the page a key is typed into.
+    const Response page = request("GET", "/");
+    QCOMPARE(page.status, 200);
+    QVERIFY(page.head.contains("text/html"));
+
+    // It must FETCH nothing from anywhere — no stylesheet, script, font or
+    // image from off the machine. That is what lets the policy below be
+    // default-src 'none', and what keeps a studio with no internet working.
+    const QByteArray lower = page.body.toLower();
+    QVERIFY(!lower.contains("<link"));
+    QVERIFY(!lower.contains("src=\"http"));
+    QVERIFY(!lower.contains("//cdn"));
+    QVERIFY(!lower.contains("url(http"));
+    QVERIFY(!lower.contains("@import"));
+
+    // A link the reader may choose to follow is another matter, and there is
+    // exactly one: the donation link, which must be an anchor and must go to
+    // PayPal. Anything else remote in this page is a mistake.
+    static const QRegularExpression remote(QStringLiteral("https?://[^\"'\\s]+"));
+    auto found = remote.globalMatch(QString::fromUtf8(page.body));
+    int links = 0;
+    while (found.hasNext()) {
+        const QString url = found.next().captured(0);
+        QVERIFY2(url.startsWith(QStringLiteral("https://www.paypal.com/")), qPrintable(url));
+        QVERIFY2(page.body.contains(("<a href=\"" + url + "\"").toUtf8()), qPrintable(url));
+        ++links;
+    }
+    QCOMPARE(links, 1);
+    const QByteArray headLower = page.head.toLower();
+    QVERIFY(headLower.contains("content-security-policy: default-src 'none'"));
+    QVERIFY(headLower.contains("frame-ancestors 'none'"));
+    QVERIFY(headLower.contains("x-content-type-options: nosniff"));
+    // It carries no key of its own, and no station data.
+    QVERIFY(!page.body.contains("xfb_"));
+
+    QCOMPARE(request("POST", "/").status, 405);
+
+    // Switched off, its address is as unknown as any other.
+    RemoteControlServer::setServeWebAppSetting(false);
+    QCOMPARE(request("GET", "/").status, 404);
+    QCOMPARE(request("GET", "/app").status, 404);
+    RemoteControlServer::setServeWebAppSetting(true);
+    QCOMPARE(request("GET", "/app").status, 200);
+}
+
+void TestRemoteControlServer::whoAmITellsThePageWhatItMayDo()
+{
+    const QString reader = m_server->createKey(QStringLiteral("Corridor display"),
+                                               RemoteControlServer::Scope::Read);
+    const QString controller = m_server->createKey(QStringLiteral("Studio deck"),
+                                                   RemoteControlServer::Scope::Control);
+
+    QCOMPARE(request("GET", "/api/v1/whoami").status, 401);
+
+    const Response asReader = request("GET", "/api/v1/whoami", reader);
+    QCOMPARE(asReader.status, 200);
+    QCOMPARE(asReader.json().value(QStringLiteral("name")).toString(), QStringLiteral("Corridor display"));
+    QCOMPARE(asReader.json().value(QStringLiteral("scope")).toString(), QStringLiteral("read"));
+
+    const Response asController = request("GET", "/api/v1/whoami", controller);
+    QCOMPARE(asController.json().value(QStringLiteral("scope")).toString(), QStringLiteral("control"));
+    QCOMPARE(asController.json().value(QStringLiteral("name")).toString(), QStringLiteral("Studio deck"));
+
+    // whoami is the server's own answer, so it never reaches the handler.
+    QVERIFY(m_lastCommand.isEmpty());
+
+    // The cover is a command like any other, and a read key may ask for it.
+    QCOMPARE(request("GET", "/api/v1/artwork", reader).status, 200);
+    QCOMPARE(m_lastCommand, QStringLiteral("artwork"));
+}
+
+// A missing string is invisible in C++ and shows up as a blank in the page —
+// the key's scope read as nothing at all until this was caught by eye. Both
+// halves of the page name their strings by key, so both can be checked.
+void TestRemoteControlServer::everyStringThePageAsksForExists()
+{
+    const QMap<QString, QString> table = RemoteControlPage::strings();
+    const QString page = RemoteControlPage::html();
+
+    // Markup: no placeholder may survive into what is served.
+    QVERIFY(!page.contains(QStringLiteral("{{t.")));
+
+    // Script: every S.<key> it reads must be in the table it is handed.
+    static const QRegularExpression used(QStringLiteral("\\bS\\.([A-Za-z_][A-Za-z0-9_]*)"));
+    QStringList missing;
+    auto it = used.globalMatch(page);
+    while (it.hasNext()) {
+        const QString key = it.next().captured(1);
+        if (!table.contains(key) && !missing.contains(key))
+            missing << key;
+    }
+    QVERIFY2(missing.isEmpty(), qPrintable(QStringLiteral("no such string: ") + missing.join(QStringLiteral(", "))));
+
+    // And every string in the table is actually asked for somewhere.
+    for (auto row = table.cbegin(); row != table.cend(); ++row) {
+        const bool inMarkupOrScript = page.contains(QStringLiteral("S.") + row.key())
+                                      || page.contains(row.value());
+        QVERIFY2(inMarkupOrScript, qPrintable(QStringLiteral("unused string: ") + row.key()));
+    }
 }
 
 QTEST_GUILESS_MAIN(TestRemoteControlServer)

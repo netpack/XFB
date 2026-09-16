@@ -94,9 +94,14 @@ public:
     struct Reply {
         int status = 200;
         QJsonObject body;
+        /** Set instead of @a body when the answer is a file rather than JSON
+         *  — the on-air cover, which the control page shows. */
+        QByteArray binary;
+        QByteArray contentType;
 
         static Reply ok(const QJsonObject &body = QJsonObject());
         static Reply error(int status, const QString &message);
+        static Reply file(const QByteArray &bytes, const QByteArray &contentType);
     };
 
     /**
@@ -128,6 +133,15 @@ public:
     /** True: listen on 127.0.0.1 only. False: on every interface. */
     static bool localOnlySetting();
     static void setLocalOnlySetting(bool localOnly);
+    /**
+     * Whether the control page is served at "/" as well as the API.
+     *
+     * On by default, because a remote control only a programmer can use is
+     * not much of a remote control. Off leaves the API exactly as it was: the
+     * page's address then answers 404 like any other unknown path.
+     */
+    static bool serveWebAppSetting();
+    static void setServeWebAppSetting(bool serve);
 
     // --- running --------------------------------------------------------
 
@@ -213,6 +227,12 @@ private:
     void route(QTcpSocket *socket, const Request &request);
 
     void handleHello(QTcpSocket *socket);
+    /** The control page itself, at "/" — no key, because this is where one
+     *  is typed in. It reveals no more than /api/v1/hello does. */
+    void handleWebApp(QTcpSocket *socket);
+    /** Who this key is and what it may do, so the page can hide what it
+     *  cannot use rather than offering buttons that answer 403. */
+    void handleWhoAmI(QTcpSocket *socket, const ApiKey &key);
     void handleEvents(QTcpSocket *socket);
     void pushEvents();
 
@@ -222,6 +242,10 @@ private:
     void noteFailure(const QString &address);
 
     void sendJson(QTcpSocket *socket, int status, const QJsonObject &body);
+    void sendBinary(QTcpSocket *socket, const QByteArray &bytes, const QByteArray &contentType);
+    /** The control page, under a content policy that permits its own inline
+     *  style and script, its own origin, and nothing else anywhere. */
+    void sendHtml(QTcpSocket *socket, const QString &page);
     void sendError(QTcpSocket *socket, int status, const QString &message);
     void closeIdleConnections();
 

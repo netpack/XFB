@@ -1,5 +1,7 @@
 #include "DonationNotice.h"
 
+#include "../donation.h"
+
 #include <QDesktopServices>
 #include <QEvent>
 #include <QGraphicsOpacityEffect>
@@ -24,8 +26,8 @@ constexpr int kMarginBottom = 42;
 constexpr int kCornerRadius = 8;
 constexpr int kIconSize     = 18;
 
-const char *kDonateUrl =
-    "https://www.paypal.com/donate/?hosted_button_id=TFDSZU78WLMC6";
+// Shared with the remote control's web page; see donation.h.
+const char *kDonateUrl = Donation::kPayPalUrl;
 
 /** The card colour: the window colour, lifted a step off what it covers. */
 QColor cardColor(const QPalette &palette)

@@ -163,6 +163,7 @@ set(SOURCES
     services/DependencyChecker.cpp
     services/NgrokTunnelService.cpp
     services/MobileSyncServer.cpp
+    services/RemoteControlPage.cpp
     services/RemoteControlServer.cpp
     services/CoverArtFetcher.cpp
     CoverArtDialog.cpp
@@ -212,6 +213,7 @@ set(HEADERS
     dialogs/StationSyncDialog.h
     dialogs/ProductionSyncDialog.h
     dialogs/RemoteControlDialog.h
+    donation.h
     dialogs/StreamDialog.h
     dialogs/AirLogDialog.h
     dialogs/ScheduleDialog.h
@@ -291,6 +293,7 @@ set(HEADERS
     services/TorrentTypes.h
     services/NgrokTunnelService.h
     services/MobileSyncServer.h
+    services/RemoteControlPage.h
     services/RemoteControlServer.h
     services/CoverArtFetcher.h
     CoverArtDialog.h

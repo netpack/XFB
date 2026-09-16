@@ -1,5 +1,8 @@
 #include "RemoteControlServer.h"
 
+#include "RemoteControlPage.h"
+#include "RequestLine.h"
+
 #include <QCryptographicHash>
 #include <QHostAddress>
 #include <QJsonArray>
@@ -13,6 +16,7 @@
 #include <QTcpServer>
 #include <QTcpSocket>
 #include <QTimer>
+#include <QSysInfo>
 #include <QUrl>
 
 #include <utility>
@@ -109,6 +113,16 @@ RemoteControlServer::Reply RemoteControlServer::Reply::error(int status, const Q
     return reply;
 }
 
+RemoteControlServer::Reply RemoteControlServer::Reply::file(const QByteArray &bytes,
+                                                            const QByteArray &contentType)
+{
+    Reply reply;
+    reply.status = 200;
+    reply.binary = bytes;
+    reply.contentType = contentType;
+    return reply;
+}
+
 // ------------------------------------------------------------------- routes
 
 const QVector<RemoteControlServer::Route> &RemoteControlServer::routes()
@@ -118,6 +132,8 @@ const QVector<RemoteControlServer::Route> &RemoteControlServer::routes()
         {"GET",  QStringLiteral("/api/v1/playlist"),            QStringLiteral("playlist"),          Scope::Read},
         {"GET",  QStringLiteral("/api/v1/library"),             QStringLiteral("library.search"),    Scope::Read},
         {"GET",  QStringLiteral("/api/v1/events"),              QStringLiteral("events"),            Scope::Read},
+        {"GET",  QStringLiteral("/api/v1/whoami"),              QStringLiteral("whoami"),            Scope::Read},
+        {"GET",  QStringLiteral("/api/v1/artwork"),             QStringLiteral("artwork"),           Scope::Read},
 
         {"POST", QStringLiteral("/api/v1/transport/play"),      QStringLiteral("transport.play"),     Scope::Control},
         {"POST", QStringLiteral("/api/v1/transport/pause"),     QStringLiteral("transport.pause"),    Scope::Control},
@@ -190,6 +206,18 @@ void RemoteControlServer::setLocalOnlySetting(bool localOnly)
 {
     QSettings settings(xfbConfigFile(), QSettings::IniFormat);
     settings.setValue(kGroup + QStringLiteral("/LocalOnly"), localOnly);
+}
+
+bool RemoteControlServer::serveWebAppSetting()
+{
+    QSettings settings(xfbConfigFile(), QSettings::IniFormat);
+    return settings.value(kGroup + QStringLiteral("/WebApp"), true).toBool();
+}
+
+void RemoteControlServer::setServeWebAppSetting(bool serve)
+{
+    QSettings settings(xfbConfigFile(), QSettings::IniFormat);
+    settings.setValue(kGroup + QStringLiteral("/WebApp"), serve);
 }
 
 // ---------------------------------------------------------------- lifecycle
@@ -607,6 +635,21 @@ void RemoteControlServer::route(QTcpSocket *socket, const Request &request)
         return;
     }
 
+    // The control page. Served before a key is looked at, because this is the
+    // page on which one is typed; it carries no station data of its own.
+    if (request.path == QLatin1String("/") || request.path == QLatin1String("/app")) {
+        if (!serveWebAppSetting()) {
+            sendError(socket, 404, tr("No such endpoint."));
+            return;
+        }
+        if (request.method != "GET") {
+            sendError(socket, 405, tr("Use GET."));
+            return;
+        }
+        handleWebApp(socket);
+        return;
+    }
+
     if (request.path == QLatin1String("/api/v1/hello") || request.path == QLatin1String("/api/v1")) {
         if (request.method != "GET") {
             sendError(socket, 405, tr("Use GET."));
@@ -660,6 +703,10 @@ void RemoteControlServer::route(QTcpSocket *socket, const Request &request)
         handleEvents(socket);
         return;
     }
+    if (match->command == QLatin1String("whoami")) {
+        handleWhoAmI(socket, *key);
+        return;
+    }
 
     QJsonObject args;
     if (request.method == "GET") {
@@ -693,7 +740,11 @@ void RemoteControlServer::route(QTcpSocket *socket, const Request &request)
         emit commandExecuted(keyName, match->command, reply.status);
         notifyStateChanged();
     }
-    if (guard)
+    if (!guard)
+        return;
+    if (!reply.binary.isEmpty() && reply.status == 200)
+        sendBinary(guard, reply.binary, reply.contentType);
+    else
         sendJson(guard, reply.status, reply.body);
 }
 
@@ -706,6 +757,26 @@ void RemoteControlServer::handleHello(QTcpSocket *socket)
     body.insert(QStringLiteral("app"), QStringLiteral("XFB"));
     body.insert(QStringLiteral("api"), apiVersion());
     body.insert(QStringLiteral("auth"), QStringLiteral("bearer"));
+    sendJson(socket, 200, body);
+}
+
+void RemoteControlServer::handleWebApp(QTcpSocket *socket)
+{
+    sendHtml(socket, RemoteControlPage::html());
+}
+
+void RemoteControlServer::handleWhoAmI(QTcpSocket *socket, const ApiKey &key)
+{
+    QString station = RequestLine::stationName();
+    if (station.isEmpty())
+        station = QSysInfo::machineHostName();
+
+    QJsonObject body;
+    body.insert(QStringLiteral("ok"), true);
+    body.insert(QStringLiteral("name"), key.name);
+    body.insert(QStringLiteral("scope"), scopeName(key.scope));
+    body.insert(QStringLiteral("station"), station);
+    body.insert(QStringLiteral("api"), apiVersion());
     sendJson(socket, 200, body);
 }
 
@@ -818,6 +889,48 @@ void RemoteControlServer::sendJson(QTcpSocket *socket, int status, const QJsonOb
 
     if (auto it = m_connections.find(socket); it != m_connections.end())
         it->lastActivityMs = QDateTime::currentMSecsSinceEpoch();
+    socket->write(response);
+    socket->disconnectFromHost();
+}
+
+void RemoteControlServer::sendBinary(QTcpSocket *socket, const QByteArray &bytes,
+                                     const QByteArray &contentType)
+{
+    QByteArray response;
+    response += "HTTP/1.1 200 OK\r\n";
+    response += "Content-Type: " + (contentType.isEmpty() ? QByteArray("application/octet-stream")
+                                                          : contentType) + "\r\n";
+    response += "Content-Length: " + QByteArray::number(bytes.size()) + "\r\n";
+    response += "Cache-Control: no-store\r\n";
+    response += "X-Content-Type-Options: nosniff\r\n";
+    response += "Connection: close\r\n\r\n";
+    response += bytes;
+
+    socket->write(response);
+    socket->disconnectFromHost();
+}
+
+void RemoteControlServer::sendHtml(QTcpSocket *socket, const QString &page)
+{
+    const QByteArray encoded = page.toUtf8();
+
+    QByteArray response;
+    response += "HTTP/1.1 200 OK\r\n";
+    response += "Content-Type: text/html; charset=utf-8\r\n";
+    response += "Content-Length: " + QByteArray::number(encoded.size()) + "\r\n";
+    response += "Cache-Control: no-store\r\n";
+    // The page is entirely its own: inline style, inline script, and the only
+    // thing it may talk to is the origin it came from. Saying so in a header
+    // means the browser holds the line even if a later edit here forgets to.
+    response += "Content-Security-Policy: default-src 'none'; "
+                "img-src 'self' data: blob:; style-src 'unsafe-inline'; "
+                "script-src 'unsafe-inline'; connect-src 'self'; "
+                "form-action 'none'; base-uri 'none'; frame-ancestors 'none'\r\n";
+    response += "X-Content-Type-Options: nosniff\r\n";
+    response += "Referrer-Policy: no-referrer\r\n";
+    response += "Connection: close\r\n\r\n";
+    response += encoded;
+
     socket->write(response);
     socket->disconnectFromHost();
 }

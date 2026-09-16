@@ -84,6 +84,7 @@ SOURCES += \
     services/TorrentDownloadService.cpp \
     services/NgrokTunnelService.cpp \
     services/MobileSyncServer.cpp \
+    services/RemoteControlPage.cpp \
     services/RemoteControlServer.cpp \
     services/StationSyncClient.cpp \
     services/ProductionSyncClient.cpp \
@@ -109,6 +110,7 @@ HEADERS += \
     dialogs/StationSyncDialog.h \
     dialogs/ProductionSyncDialog.h \
     dialogs/RemoteControlDialog.h \
+    donation.h \
     add_music_single.h \
     add_full_dir.h \
     addgenre.h \
@@ -160,6 +162,7 @@ HEADERS += \
     services/TorrentDownloadService.h \
     services/NgrokTunnelService.h \
     services/MobileSyncServer.h \
+    services/RemoteControlPage.h \
     services/RemoteControlServer.h \
     services/StationSyncClient.h \
     services/ProductionSyncClient.h \

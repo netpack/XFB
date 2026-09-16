@@ -84,6 +84,18 @@ RemoteControlDialog::RemoteControlDialog(RemoteControlServer *server, QWidget *p
     m_port->setValue(RemoteControlServer::portSetting());
     serverForm->addRow(tr("&Port:"), m_port);
 
+    m_webApp = new QCheckBox(tr("Also serve the &control page, for people rather than programs"),
+                             serverBox);
+    m_webApp->setChecked(RemoteControlServer::serveWebAppSetting());
+    m_webApp->setToolTip(tr("A page XFB serves itself, which anybody on this network can open "
+                            "in a browser and sign into with a key."));
+    serverForm->addRow(m_webApp);
+
+    m_pageAddress = new QLabel(serverBox);
+    m_pageAddress->setWordWrap(true);
+    m_pageAddress->setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::TextSelectableByKeyboard);
+    serverForm->addRow(tr("Control page:"), m_pageAddress);
+
     m_status = new QLabel(serverBox);
     m_status->setWordWrap(true);
     m_status->setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::TextSelectableByKeyboard);
@@ -151,6 +163,13 @@ RemoteControlDialog::RemoteControlDialog(RemoteControlServer *server, QWidget *p
             return;
         RemoteControlServer::setPortSetting(quint16(m_port->value()));
         restartIfRunning();
+    });
+    connect(m_webApp, &QCheckBox::toggled, this, [this](bool on) {
+        RemoteControlServer::setServeWebAppSetting(on);
+        // Nothing to restart: the route consults the setting per request.
+        refresh();
+        emit announcementRequested(on ? tr("The control page is being served")
+                                      : tr("The control page is switched off"));
     });
     connect(newKey, &QPushButton::clicked, this, &RemoteControlDialog::createKey);
     connect(m_revoke, &QPushButton::clicked, this, &RemoteControlDialog::revokeSelectedKey);
@@ -322,6 +341,13 @@ void RemoteControlDialog::refresh()
     } else {
         m_status->setText(tr("Off"));
     }
+
+    if (!RemoteControlServer::serveWebAppSetting())
+        m_pageAddress->setText(tr("Switched off"));
+    else if (!listening)
+        m_pageAddress->setText(tr("Starts with the server"));
+    else
+        m_pageAddress->setText(m_server->listenAddresses().join(QStringLiteral("  ")));
 
     const QStringList addresses = m_server->listenAddresses();
     const QString base = addresses.isEmpty()
