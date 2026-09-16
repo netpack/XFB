@@ -106,6 +106,7 @@ own.
 | The public page, and whether requests are accepted | **Options → Listener Requests…** |
 | Icecast mounts, and auto-start | **Options → Stream to Icecast…** |
 | Phone, backup and production pairing and schedules | the three sync windows ([chapter 7](07-other-computers.md)) |
+| Remote control: on/off, address, port, keys | **Options → Remote Control…** ([chapter 7](07-other-computers.md#remote-control)) |
 | Screen reader verbosity and timing | **Options → Accessibility Preferences…** |
 | Panel layout, lock, artwork panel | the **View** menu |
 | Random jingle cadence | the playlist panel |

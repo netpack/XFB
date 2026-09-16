@@ -2,6 +2,7 @@
 set(SOURCES
     main.cpp
     player.cpp
+    PlayerRemoteControl.cpp
     add_music_single.cpp
     add_full_dir.cpp
     addgenre.cpp
@@ -66,6 +67,7 @@ set(SOURCES
     dialogs/UsersRolesDialog.cpp
     dialogs/StationSyncDialog.cpp
     dialogs/ProductionSyncDialog.cpp
+    dialogs/RemoteControlDialog.cpp
     dialogs/StreamDialog.cpp
     # Voice track: record the link over a join, XFB writes the ducking
     dialogs/VoiceTrackDialog.cpp
@@ -161,6 +163,7 @@ set(SOURCES
     services/DependencyChecker.cpp
     services/NgrokTunnelService.cpp
     services/MobileSyncServer.cpp
+    services/RemoteControlServer.cpp
     services/CoverArtFetcher.cpp
     CoverArtDialog.cpp
     services/StationSyncClient.cpp
@@ -208,6 +211,7 @@ set(HEADERS
     dialogs/UsersRolesDialog.h
     dialogs/StationSyncDialog.h
     dialogs/ProductionSyncDialog.h
+    dialogs/RemoteControlDialog.h
     dialogs/StreamDialog.h
     dialogs/AirLogDialog.h
     dialogs/ScheduleDialog.h
@@ -287,6 +291,7 @@ set(HEADERS
     services/TorrentTypes.h
     services/NgrokTunnelService.h
     services/MobileSyncServer.h
+    services/RemoteControlServer.h
     services/CoverArtFetcher.h
     CoverArtDialog.h
     services/StationSyncClient.h

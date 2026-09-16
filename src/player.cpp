@@ -7242,6 +7242,24 @@ void player::setupPlaybackShortcuts()
                 }
             }
         }
+
+        // Remote control: another program driving this station over the
+        // network. Its window holds the switch and the keys.
+        QAction *remoteControl = new QAction(
+            IconTheme::icon(QStringLiteral(":/icons/flat/Connection Sync-48.png")), tr("&Remote Control..."), this);
+        remoteControl->setMenuRole(QAction::NoRole);
+        remoteControl->setStatusTip(tr("Let other programs control XFB over the network"));
+        connect(remoteControl, &QAction::triggered, this, &player::openRemoteControlDialog);
+        ui->menuXFB->addAction(remoteControl);
+        addAction(remoteControl);
+        AccessControl::instance().guard(remoteControl, QStringLiteral("station.remote"));
+
+        // Switched on once, it stays on: a Stream Deck that stops working
+        // every time the studio machine restarts is not a remote control.
+        // Not during the constructor, so the first status a client reads is
+        // of a finished window.
+        if (RemoteControlServer::enabledSetting())
+            QTimer::singleShot(0, this, [this]() { remoteControlServer()->start(); });
     }
 }
 

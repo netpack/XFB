@@ -27,7 +27,7 @@ Everything else is a reference: read the chapter when you need the feature.
 | 4 | [Automation](04-automation.md) | Auto Mode, the hour grid, rotation rules, scheduled adverts and programmes, the dead-air watchdog, the as-run log |
 | 5 | [Hour clocks and time signals](05-hour-clocks.md) | Programming the hour as a clock: slots, fixed timing, station IDs, assigning clocks to the week. Then the pips and the hour ident: which hours, how late is too late, and whether they interrupt |
 | 6 | [Listeners and streaming](06-listeners-and-streaming.md) | Streaming to Icecast, the streaming client, the public now-playing page and listener requests |
-| 7 | [Other computers](07-other-computers.md) | The phone companion, station backup, production computers, the legacy client/server link |
+| 7 | [Other computers](07-other-computers.md) | The phone companion, station backup, production computers, the remote control API, the legacy client/server link |
 | 8 | [Accessibility](08-accessibility.md) | Screen readers, keyboard operation, spoken announcements, braille |
 | 9 | [Settings reference](09-settings-reference.md) | Every tab of the Options window, and the settings that live outside it |
 | 10 | [When something goes wrong](10-troubleshooting.md) | The log, dependencies, the database, and the faults that come up most |

@@ -479,8 +479,28 @@ set_tests_properties(AccessControlTest PROPERTIES
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
 )
 
+# The network remote control: keys, scopes, routing, lockout and events,
+# against a real listening socket on 127.0.0.1.
+add_executable(test_remote_control_server
+    services/TestRemoteControlServer.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/RemoteControlServer.cpp
+)
+
+target_link_libraries(test_remote_control_server
+    Qt6::Core
+    Qt6::Network
+    Qt6::Test
+)
+
+target_include_directories(test_remote_control_server PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/tests
+)
+
+add_test(NAME RemoteControlServerTest COMMAND test_remote_control_server)
+
 # Add custom target for unit tests
 add_custom_target(unit_tests
-    DEPENDS test_config test_database test_service_container test_base_service test_database_service_unit test_music_repository test_genre_repository test_playlist_repository test_audio_service test_error_handler test_logger test_input_validator test_database_optimizer test_music_cache test_main_controller test_accessibility_manager test_update_check_service test_pad_board_focus test_access_control test_add_dialog_cancel
+    DEPENDS test_config test_database test_service_container test_base_service test_database_service_unit test_music_repository test_genre_repository test_playlist_repository test_audio_service test_error_handler test_logger test_input_validator test_database_optimizer test_music_cache test_main_controller test_accessibility_manager test_update_check_service test_pad_board_focus test_access_control test_add_dialog_cancel test_remote_control_server
     COMMENT "Building unit tests"
 )

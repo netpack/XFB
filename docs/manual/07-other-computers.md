@@ -11,6 +11,9 @@ are meant for your own network, not the open internet.
 | **Station Backup** | a second XFB standing by | copy everything down, change nothing |
 | **Production Computers** | an XFB used to prepare programme | copy down, *and* publish work back |
 
+**Remote Control**, further down, is a different thing: not another XFB but any
+program you point at the station, with its own port and keys instead of pairing.
+
 ## Sync to Phone
 
 **Options → Sync to Phone…**
@@ -93,6 +96,86 @@ Fetching **merges** rather than mirrors: entries prepared here that the station
 has not seen yet are not wiped by a fetch. That is the difference between this
 and Station Backup, and it is why the two are separate features rather than one
 with a switch.
+
+## Remote Control
+
+**Options → Remote Control…**
+
+Lets another program drive the station over the network: a Stream Deck on the
+presenter's desk, a home-automation panel, a script, or a web page of your own.
+It is a separate server with its own port and its own keys — turning on phone
+sync never opens it, and nothing listens until you tick **Accept remote
+control**. Once ticked, it starts again every time XFB does.
+
+- **Listen on** — **Every network connection**, or **This computer only** if the
+  programs run on this machine or reach it through an SSH tunnel or TLS proxy
+- **Port** — 8643 unless you change it
+- **Keys** — **New key…** makes one. Give each program its own, so one can be
+  revoked without breaking the others. A **Read only** key sees the status, the
+  running order and the library; a **Control** key can also change what goes on
+  air. The key is shown **once**: XFB keeps only a fingerprint of it, so a lost
+  key is revoked and replaced, never recovered
+- **Activity** — every command a key sends, and any address locked out for
+  guessing
+
+Whenever a key changes something, the status bar says so and names the key.
+An address that presents ten wrong keys in five minutes is refused for five
+minutes. The connection is **not encrypted**, like the other features in this
+chapter.
+
+### The API
+
+Plain HTTP and JSON. Send the key on every request as
+`Authorization: Bearer <key>`, and send arguments as a JSON object with
+`Content-Type: application/json`. Every answer carries `"ok": true` or
+`"ok": false` with an `"error"` sentence.
+
+```bash
+curl -H "Authorization: Bearer xfb_…" http://studio:8643/api/v1/status
+curl -X POST -H "Authorization: Bearer xfb_…" http://studio:8643/api/v1/transport/next
+curl -X POST -H "Authorization: Bearer xfb_…" -H "Content-Type: application/json" \
+     -d '{"ref":"music:123","position":"start"}' http://studio:8643/api/v1/playlist/add
+```
+
+| Method and path | Key | Arguments | Does |
+|---|---|---|---|
+| `GET /api/v1/hello` | none | | Says it is XFB and which API version |
+| `GET /api/v1/status` | read | | Transport, what is on air and time left, playlist length, Auto Mode, volume, recording, stream, whether the desk is locked |
+| `GET /api/v1/playlist` | read | | The running order, with artist, title, duration and crossfade |
+| `GET /api/v1/library` | read | `q`, `source` (`music`, `jingles`, `programs`), `limit` (up to 100) | Searches the library; each result has a `ref` such as `music:123` |
+| `GET /api/v1/events` | read | | Server-sent events: the status straight away and again whenever it changes |
+| `POST /api/v1/transport/play` | control | | Starts playing, resumes a pause, or cancels a stop-after |
+| `POST /api/v1/transport/pause` | control | | Pauses |
+| `POST /api/v1/transport/resume` | control | | Resumes |
+| `POST /api/v1/transport/stop` | control | | Stops now |
+| `POST /api/v1/transport/stop-after` | control | | Stops when the current track ends (the Play button's "Play and Stop") |
+| `POST /api/v1/transport/next` | control | | Skips to the next track |
+| `POST /api/v1/transport/seek` | control | `positionMs` | Moves the playhead, unless seeking is switched off in Options |
+| `POST /api/v1/volume` | control | `volume` 0–100 | Sets the on-air volume, unless it is locked in Options |
+| `POST /api/v1/automode` | control | `enabled` true/false | Switches Auto Mode |
+| `POST /api/v1/playlist/add` | control | `ref`, `position` (`"start"`, `"end"` or an index) | Adds a library entry to the running order |
+| `POST /api/v1/playlist/remove` | control | `index` | Removes one entry |
+| `POST /api/v1/playlist/move` | control | `from`, `to` | Moves one entry, crossfade and volume line included |
+| `POST /api/v1/playlist/clear` | control | | Empties the running order, without asking |
+| `POST /api/v1/recording/start` | control | | Starts a programme recording after the usual five-second countdown |
+| `POST /api/v1/recording/stop` | control | | Stops it |
+| `POST /api/v1/stream/start` | control | | Puts the built-in Icecast stream on air |
+| `POST /api/v1/stream/stop` | control | | Takes it off |
+
+Tracks are only ever named by their library `ref`, never by a file path, so a
+remote program can queue what the station already holds and nothing else.
+
+Commands that are already in the state asked for succeed with
+`"changed": false`. A command that cannot run says why with **409** — nothing to
+play, nothing queued, the microphone not yet allowed on this computer, no
+Icecast mount set up — rather than doing half of it. The other answers are
+**401** no or wrong key, **403** a read key asked to change something, **404**
+no such endpoint or entry, **422** a missing or malformed argument, and **429**
+an address locked out.
+
+`/api/v1/events` is a standard server-sent event stream, one `status` event per
+change. A browser's own `EventSource` cannot send the `Authorization` header, so
+a web page should read the stream with `fetch` instead.
 
 ## The legacy client/server link
 

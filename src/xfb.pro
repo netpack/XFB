@@ -16,6 +16,7 @@ TEMPLATE = app
 SOURCES += \
     main.cpp \
     player.cpp \
+    PlayerRemoteControl.cpp \
     audio/FxDsp.cpp \
     audio/FxEngine.cpp \
     audio/FxPlayer.cpp \
@@ -32,6 +33,7 @@ SOURCES += \
     dialogs/MobileSyncDialog.cpp \
     dialogs/StationSyncDialog.cpp \
     dialogs/ProductionSyncDialog.cpp \
+    dialogs/RemoteControlDialog.cpp \
     add_music_single.cpp \
     add_full_dir.cpp \
     addgenre.cpp \
@@ -82,6 +84,7 @@ SOURCES += \
     services/TorrentDownloadService.cpp \
     services/NgrokTunnelService.cpp \
     services/MobileSyncServer.cpp \
+    services/RemoteControlServer.cpp \
     services/StationSyncClient.cpp \
     services/ProductionSyncClient.cpp \
     services/UpdateCheckService.cpp
@@ -105,6 +108,7 @@ HEADERS += \
     dialogs/MobileSyncDialog.h \
     dialogs/StationSyncDialog.h \
     dialogs/ProductionSyncDialog.h \
+    dialogs/RemoteControlDialog.h \
     add_music_single.h \
     add_full_dir.h \
     addgenre.h \
@@ -156,6 +160,7 @@ HEADERS += \
     services/TorrentDownloadService.h \
     services/NgrokTunnelService.h \
     services/MobileSyncServer.h \
+    services/RemoteControlServer.h \
     services/StationSyncClient.h \
     services/ProductionSyncClient.h \
     services/UpdateCheckService.h

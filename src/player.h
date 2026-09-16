@@ -72,6 +72,8 @@ class PadBoardWidget;
 #include "services/TorrentTypes.h"
 // For MobileSyncServer::NowPlaying, the struct publicNowPlaying() returns.
 #include "services/MobileSyncServer.h"
+// For RemoteControlServer::Reply, which handleRemoteCommand() returns.
+#include "services/RemoteControlServer.h"
 // For TimeSignal::Signal, which fireTimeSignal() takes whole.
 #include "services/TimeSignal.h"
 #include "audio/FxPlayer.h"
@@ -890,6 +892,26 @@ private slots:
     QPointer<class QMessageBox> m_airAlertBox;
     /// Samples the transport for the watchdog once a second.
     QTimer *m_deadAirFeedTimer = nullptr;
+
+    // --- Remote control over the network ---
+    // A JSON API another program can drive the station with: status, the
+    // running order, the transport, Auto Mode, volume, recording, the stream.
+    // Its own server, port and keys (Options ▸ Remote Control), off until the
+    // operator switches it on. The commands live in PlayerRemoteControl.cpp.
+    class RemoteControlServer *remoteControlServer();
+    void openRemoteControlDialog();
+    /** Carries out one API command; see RemoteControlServer::routes(). */
+    RemoteControlServer::Reply handleRemoteCommand(const QString &command,
+                                                   const QJsonObject &args);
+    /** What GET /api/v1/status answers, and what event subscribers are sent. */
+    QJsonObject remoteStatus();
+    QPointer<class RemoteControlServer> m_remoteControl;
+    QPointer<class RemoteControlDialog> m_remoteControlDialog;
+    /// The on-air track's artist and title, looked up once per track rather
+    /// than once per status poll.
+    QString m_remoteStatusPath;
+    QString m_remoteStatusArtist;
+    QString m_remoteStatusTitle;
 
     // --- Who is at the desk ---
     // Operator accounts, roles and the permission behind every menu entry.

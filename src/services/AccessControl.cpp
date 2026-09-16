@@ -224,6 +224,10 @@ const QVector<AccessControl::Permission> &AccessControl::catalogue()
             {QStringLiteral("station.sync.production"), station,
              tr("Set up a production computer"),
              tr("Pair a machine that is allowed to write to this library.")},
+            {QStringLiteral("station.remote"), station,
+             tr("Set up remote control"),
+             tr("Switch the network remote control on, and make the keys that "
+                "let another program play, stop and change the running order.")},
             {QStringLiteral("station.server.ftp"), station,
              tr("Force an FTP check"), tr("Run the server exchange now.")},
             {QStringLiteral("station.server.monitor"), station,
@@ -340,6 +344,7 @@ QList<AccessControl::Role> AccessControl::defaultRoles()
         if (permission.key.startsWith(QLatin1String("admin."))
             || permission.key.startsWith(QLatin1String("station.sync."))
             || permission.key.startsWith(QLatin1String("station.server."))
+            || permission.key == QLatin1String("station.remote")
             || permission.key == QLatin1String("station.options")
             || permission.key == QLatin1String("station.stream")
             || permission.key == QLatin1String("station.update")
