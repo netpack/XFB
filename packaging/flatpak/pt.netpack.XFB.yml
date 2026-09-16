@@ -133,8 +133,65 @@ modules:
       - -DCMAKE_BUILD_TYPE=Release
       - -DBUILD_TESTING=OFF
     sources:
+      # `skip` is not tidiness, it is what makes this module build at all when
+      # the source tree is reached over the VM's shared folder. flatpak-builder
+      # copies everything under `path` with no equivalent of .dockerignore, so
+      # it walks into the macOS app bundles sitting in the tree -- and a macOS
+      # framework keeps `Versions/Current` as a symlink, which virtiofs/9p
+      # cannot stat. The build dies after ffmpeg has already been built:
+      #
+      #   Error: module xfb: Error when getting information for file
+      #   ".../src/XFB.app/Contents/Frameworks/QtMultimedia.framework/Versions/Current":
+      #   Invalid argument
+      #
+      # (The Docker route never hit this because .dockerignore kept the bundles
+      # out of the image, which is why it only appeared once x86_64 moved to
+      # the VM. There are 153 such symlinks in `src` alone, in TWO bundles --
+      # `src/XFB.app` and another under `src/build` from Qt Creator -- plus a
+      # third at the root and 67 more in the `.claude` worktrees.)
+      #
+      # It is also the difference between copying ~6.6 GB and copying the few
+      # hundred MB that are actually the program. Everything listed here is
+      # build output, another platform's artefacts, or a repository of its own.
+      #
+      # Paths are resolved relative to `path` (g_file_resolve_relative_path in
+      # builder-source-dir.c), so they are full relative paths -- basenames do
+      # not match -- and there are no globs. That last point is the maintenance
+      # trap: the three version-numbered installers below go stale at the next
+      # bump-version.sh and will start being copied again. That costs time and
+      # nothing else, so it is a slow build rather than a broken one.
+      #
+      # `packaging/` must NOT be skipped: the companion APK the release carries
+      # is packaging/companion/xfb-companion.apk, it is gitignored, and leaving
+      # it out is what broke AUR once already. For the same reason this stays a
+      # `dir` source rather than a `git` one -- a git source would export only
+      # tracked files and silently drop that APK.
       - type: dir
         path: ../..
+        skip:
+          - .git
+          - .claude
+          - XFB.app
+          - src/XFB.app
+          - src/build
+          - android
+          - build
+          - build-cmake
+          - build-fix
+          - build-package
+          - build-tests
+          - build-windows-arm64
+          - build-windows-x64
+          - dist
+          - dist-windows-arm64
+          - dist-windows-x64
+          - output
+          - debian-repo
+          - flatpak-repo
+          - XFB-4.0-Setup.exe
+          - XFB-4.0-arm64-Setup.exe
+          - XFB-4.0-macOS.dmg
+          - vs_BuildTools.exe
     post-install:
       # Flathub wants the desktop file, icon and metainfo named for the app id.
       # rename-desktop-file and rename-icon above handle the first two; the
