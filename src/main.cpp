@@ -270,6 +270,37 @@ static void setupPlatformPluginPath(int /*argc*/, char *argv[])
 #endif
 }
 
+// There is no display server behind us -- say so before Qt does.
+//
+// A desktop Qt app started without one aborts inside the QApplication
+// constructor, and what Qt prints is a page of plugin names ending in
+// "Reinstalling the application may fix this problem". That advice is wrong,
+// and people follow it: nothing is broken, there is simply no session to draw
+// on. One plain sentence first is worth more than the page that follows, and
+// it is worth most to an operator hearing it read out.
+static void warnIfNoDisplayServer()
+{
+#if defined(Q_OS_LINUX)
+    // An explicit QT_QPA_PLATFORM means someone picked a platform on purpose
+    // -- offscreen for the headless widget tests, vnc, linuxfb on a kiosk --
+    // and none of those want a WAYLAND_DISPLAY or a DISPLAY. Say nothing.
+    if (qEnvironmentVariableIsSet("QT_QPA_PLATFORM"))
+        return;
+
+    // IsEmpty rather than IsSet on purpose: DISPLAY set to the empty string is
+    // what a flatpak sandbox leaves behind when the X11 socket was withheld,
+    // and it is no more usable than an unset one.
+    if (!qEnvironmentVariableIsEmpty("WAYLAND_DISPLAY")
+        || !qEnvironmentVariableIsEmpty("DISPLAY"))
+        return;
+
+    qWarning() << "XFB found no display server: neither WAYLAND_DISPLAY nor DISPLAY is set.";
+    qWarning() << "XFB is a desktop application and needs a graphical session, so start it";
+    qWarning() << "from the desk itself rather than from a text console or an ssh login.";
+    qWarning() << "The installation is fine; reinstalling will not change this.";
+#endif
+}
+
 // Platform-specific multimedia environment setup
 static void setupMultimediaEnvironment()
 {
@@ -524,6 +555,7 @@ int main(int argc, char *argv[])
     // 1. Platform setup (before QApplication)
     setupPlatformPluginPath(argc, argv);
     setupMultimediaEnvironment();
+    warnIfNoDisplayServer();
 
     // 2. Create QApplication
     QApplication::setDesktopSettingsAware(false);
@@ -547,6 +579,12 @@ int main(int argc, char *argv[])
 
     // From here on every qDebug/qWarning also lands in xfb.log
     setupFileLogging();
+
+    // Which windowing system we actually landed on, in the log the operator is
+    // asked for first. A flatpak on a GNOME Wayland desk spent a whole report
+    // on this question -- Qt picks xcb unless the session says otherwise -- and
+    // the answer is one word that was nowhere to be found.
+    qDebug() << "Qt platform plugin:" << QApplication::platformName();
 
 #ifdef Q_OS_WIN
     // Make command-line tools bundled next to XFB.exe (e.g. ffmpeg.exe /

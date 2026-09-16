@@ -36,6 +36,28 @@ finish-args:
   - --socket=fallback-x11
   - --device=dri
 
+  # Qt has to be told to try Wayland first, and this line is the whole reason
+  # a 4.0 flatpak would not start on someone's desk (reported 2026-09-16).
+  # Qt's own default platform on Linux is plain "xcb"; nothing but a session
+  # that exports QT_QPA_PLATFORM itself moves it, and Plasma does that while
+  # GNOME does not. So on a GNOME Wayland desk Qt asks for xcb -- and
+  # fallback-x11 withholds the X11 socket precisely when a Wayland socket was
+  # granted, which is precisely when Qt asks. DISPLAY is then unset, the xcb
+  # plugin has nothing to connect to, and QApplication aborts:
+  #     qt.qpa.xcb: could not connect to display
+  #     This application failed to start because no Qt platform plugin could
+  #     be initialized.
+  # (Qt also prints a line about xcb-cursor0 there. It prints that whenever
+  # the xcb plugin fails, whatever the cause, and it is not the cause here:
+  # the runtime carries the library, and the plugin never got as far as a
+  # cursor.) Qt 6 reads this variable as a ';'-separated list and keeps the
+  # first plugin that loads, so an X11 desk still ends up on xcb: the wayland
+  # plugin returns nothing there rather than dying, and Qt tries the next
+  # name. An operator who wants to force one can still pass
+  # `flatpak run --env=QT_QPA_PLATFORM=xcb pt.netpack.XFB`, which overrides
+  # this.
+  - --env=QT_QPA_PLATFORM=wayland;xcb
+
   # Audio. XFB is a playout system; without this it has nothing to do.
   - --socket=pulseaudio
 
