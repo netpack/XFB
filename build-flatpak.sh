@@ -34,9 +34,10 @@
 #
 # after downloading every source perfectly well, which reads like a corrupt
 # cache and is not one. The state directory, the build tree and the output repo
-# therefore all live under $XDG_CACHE_HOME; only the finished bundle, an
-# ordinary file, is written back to output/. Override with XFB_FLATPAK_CACHE if
-# that path is itself on a share.
+# therefore all live under $XDG_CACHE_HOME, and so does the bundle while it is
+# being written -- `flatpak build-bundle` wants open(O_TMPFILE), which 9p does
+# not implement either, so only a plain `cp` of the finished file touches
+# output/. Override with XFB_FLATPAK_CACHE if that path is itself on a share.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -95,9 +96,25 @@ flatpak-builder --user --force-clean \
 
 echo
 echo "== Bundling =="
+# The bundle is written under $CACHE_ROOT and copied out, for the same reason
+# everything else here is -- and the note above was wrong to call the finished
+# bundle "an ordinary file". `flatpak build-bundle` creates its output with
+# open(O_TMPFILE), an unnamed temporary in the destination directory that is
+# given a name once it is complete, and 9p does not implement it:
+#
+#   == Bundling ==
+#   error: open(O_TMPFILE): No such file or directory
+#
+# after the whole build has succeeded and both commits are already in the repo,
+# which is a galling place to stop. `cp` uses an ordinary create and is fine, so
+# only build-bundle has to be kept off the share.
 mkdir -p "$here/output"
 BUNDLE="$here/output/XFB-$VERSION-$ARCH.flatpak"
-flatpak build-bundle "$REPO_DIR" "$BUNDLE" pt.netpack.XFB
+STAGED_BUNDLE="$CACHE_ROOT/XFB-$VERSION-$ARCH.flatpak"
+rm -f "$STAGED_BUNDLE"
+flatpak build-bundle "$REPO_DIR" "$STAGED_BUNDLE" pt.netpack.XFB
+cp "$STAGED_BUNDLE" "$BUNDLE"
+rm -f "$STAGED_BUNDLE"
 
 echo
 echo "Done:"
