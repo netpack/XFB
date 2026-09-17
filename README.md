@@ -158,9 +158,15 @@ told nothing.
 
 ### Windows
 
-1. Download the installer from [GitHub Releases](https://github.com/netpack/XFB/releases):
-   - Intel/AMD 64-bit: `XFB-4.01-Setup.exe`
-   - ARM64 (Windows on ARM, e.g. Snapdragon): `XFB-4.01-arm64-Setup.exe`
+**4.01 has no Windows installer.** The current release for Windows is **4.0**,
+and the next one will carry Windows again. If XFB offers you the 4.01 update it
+will send you to the releases page, where there is nothing to install for this
+platform; nothing is wrong with your copy.
+
+1. Download the installer from the
+   [4.0 release](https://github.com/netpack/XFB/releases/tag/v4.0):
+   - Intel/AMD 64-bit: `XFB-4.0-Setup.exe`
+   - ARM64 (Windows on ARM, e.g. Snapdragon): `XFB-4.0-arm64-Setup.exe`
 2. Run the installer and follow the prompts
 3. Launch XFB from the Start Menu or Desktop shortcut
 
