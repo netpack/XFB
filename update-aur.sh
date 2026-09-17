@@ -4,7 +4,7 @@
 
 set -e
 
-VERSION="4.0"
+VERSION="4.01"
 PKGREL="1"
 
 echo "=========================================="
@@ -71,7 +71,7 @@ echo "Committing changes..."
 git add PKGBUILD .SRCINFO xfb.install
 git commit -m "Update to version $VERSION-$PKGREL
 
-- Updated to XFB 4.0
+- Updated to XFB 4.01
 - Operator accounts: XFB asks who is at the desk, and every menu entry sits
   behind a permission that person's role has to hold. Opt-in; a station that
   never wanted a login carries on without one

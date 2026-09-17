@@ -57,6 +57,17 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="4.01" date="2026-09-17">
+      <description>
+        <p>
+          XFB records what goes on air, or the source coming into the desk, as
+          MP3, Ogg or Opus; it can be controlled over the network once that is
+          switched on, with a control page for a phone or a laptop; and the
+          flatpak now starts on a Wayland desk, which the first one did not.
+        </p>
+      </description>
+      <url>https://github.com/netpack/XFB/releases/tag/v4.01</url>
+    </release>
     <release version="4.0" date="2026-09-10">
       <description>
         <p>
