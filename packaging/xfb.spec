@@ -120,6 +120,12 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/XFB.desktop || :
 %{_datadir}/xfb/
 
 %changelog
+* Tue Sep 29 2026 Netpack <info@netpack.pt> - 1:4.02-1
+- MIDI learn: faders, buttons and jog wheels on a MIDI controller drive the
+  station's transport, the DJ decks and the pads.
+- A tempo fader on each DJ deck, with nudge and Sync.
+- A crossfade no longer opens a gap where the outgoing track ends.
+
 * Thu Sep 10 2026 Netpack <info@netpack.pt> - 1:4.0-1
 - Operator accounts: XFB asks who is at the desk, and every menu entry sits
   behind a permission that person's role has to hold.

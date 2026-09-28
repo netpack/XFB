@@ -71,7 +71,7 @@ the in-app update notification.
 
 **Option B — Manual:**
 
-1. Download `XFB-4.01-macOS.dmg` from [GitHub Releases](https://github.com/netpack/XFB/releases)
+1. Download `XFB-4.02-macOS.dmg` from [GitHub Releases](https://github.com/netpack/XFB/releases)
 2. Open the DMG file
 3. Drag `XFB.app` into your **Applications** folder
 4. Launch XFB from Applications (first launch: right-click → Open to bypass Gatekeeper)
@@ -82,10 +82,10 @@ the in-app update notification.
 
 ```sh
 # Download and install the .deb package
-sudo apt install ./xfb_4.01-1_amd64.deb
+sudo apt install ./xfb_4.02-1_amd64.deb
 
 # Or if dependencies are missing:
-sudo dpkg -i xfb_4.01-1_amd64.deb
+sudo dpkg -i xfb_4.02-1_amd64.deb
 sudo apt install -f
 ```
 
@@ -112,12 +112,12 @@ One file. No package manager, no root, nothing installed.
 
 ```sh
 # Intel/AMD 64-bit
-chmod +x XFB-4.01-x86_64.AppImage
-./XFB-4.01-x86_64.AppImage
+chmod +x XFB-4.02-x86_64.AppImage
+./XFB-4.02-x86_64.AppImage
 
 # ARM64
-chmod +x XFB-4.01-aarch64.AppImage
-./XFB-4.01-aarch64.AppImage
+chmod +x XFB-4.02-aarch64.AppImage
+./XFB-4.02-aarch64.AppImage
 ```
 
 It carries Qt, ffmpeg and ffprobe, so the library scan, waveforms and BPM work
@@ -147,7 +147,7 @@ flatpak remote-add --user --if-not-exists xfb https://netpack.github.io/XFB/flat
 flatpak install --user xfb pt.netpack.XFB
 ```
 
-Each release also carries a standalone bundle, `XFB-4.01-x86_64.flatpak`, for a
+Each release also carries a standalone bundle, `XFB-4.02-x86_64.flatpak`, for a
 machine that cannot reach the repository. A bundle installed by path does not
 receive updates.
 
@@ -158,15 +158,9 @@ told nothing.
 
 ### Windows
 
-**4.01 has no Windows installer.** The current release for Windows is **4.0**,
-and the next one will carry Windows again. If XFB offers you the 4.01 update it
-will send you to the releases page, where there is nothing to install for this
-platform; nothing is wrong with your copy.
-
-1. Download the installer from the
-   [4.0 release](https://github.com/netpack/XFB/releases/tag/v4.0):
-   - Intel/AMD 64-bit: `XFB-4.0-Setup.exe`
-   - ARM64 (Windows on ARM, e.g. Snapdragon): `XFB-4.0-arm64-Setup.exe`
+1. Download the installer from [GitHub Releases](https://github.com/netpack/XFB/releases):
+   - Intel/AMD 64-bit: `XFB-4.02-Setup.exe`
+   - ARM64 (Windows on ARM, e.g. Snapdragon): `XFB-4.02-arm64-Setup.exe`
 2. Run the installer and follow the prompts
 3. Launch XFB from the Start Menu or Desktop shortcut
 
