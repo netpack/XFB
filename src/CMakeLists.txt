@@ -147,6 +147,8 @@ set(SOURCES
     ui/DonationNotice.cpp
     # The hour drawn as a clock face (the picture half of the clock editor)
     ui/HourClockWheel.cpp
+    # A DJ deck's tempo fader, nudge and Sync
+    ui/DeckTempoControl.cpp
     # Models
     models/MusicListModel.cpp
     # Enhanced Dialogs
@@ -276,6 +278,7 @@ set(HEADERS
     ui/ProgressIndicatorWidget.h
     ui/DonationNotice.h
     ui/HourClockWheel.h
+    ui/DeckTempoControl.h
     # Models
     models/MusicListModel.h
     # Enhanced Dialogs

@@ -68,6 +68,7 @@ class LevelMeter;
 class ArtworkStore;
 class NowPlayingArtPanel;
 class PadBoardWidget;
+class DeckTempoControl;
 
 #include "services/TorrentTypes.h"
 // For MobileSyncServer::NowPlaying, the struct publicNowPlaying() returns.
@@ -709,6 +710,15 @@ private slots:
     QPixmap m_lpPlatterBase[2];
     double m_lpPlatterRotation[2] = {0.0, 0.0};
     QPointer<QVariantAnimation> m_lpPlatterAnim[2];
+    // Deck tempo: a pitch fader, nudge and Sync per deck (index as above).
+    DeckTempoControl *m_deckTempo[2] = {nullptr, nullptr};
+    FxPlayer *deckPlayer(int deck) const { return deck == 0 ? lp1_Xplayer : lp2_Xplayer; }
+    /** The file loaded on a deck, or empty when none is. */
+    QString deckFile(int deck) const;
+    /** Show the loaded record's BPM on its deck, measuring it if unknown. */
+    void refreshDeckBpm(int deck);
+    /** Set @a deck's tempo so its BPM matches the other deck's. */
+    void syncDeckTempo(int deck);
     void setPlatterRotation(int deck, double degrees);
     void grabPlatterFrame(int deck);
     void restorePlatterMotion(int deck);

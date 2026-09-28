@@ -33,6 +33,26 @@ QString findTool(const QString &name)
     return path;
 }
 
+/** `ffmpeg -h long`, read once: which pacing options this ffmpeg has. */
+const QByteArray &ffmpegLongHelp()
+{
+    static const QByteArray help = [] {
+        QProcess probe;
+        probe.start(FxEngine::ffmpegExecutable(), {"-h", "long"});
+        probe.waitForFinished(3000);
+        return probe.readAllStandardOutput();
+    }();
+    return help;
+}
+
+/** -readrate (ffmpeg >= 5.0): pace the input at other than real time. A
+    varispeed deck playing fast needs its decoder to keep ahead of it. */
+bool ffmpegHasReadRate()
+{
+    static const bool have = ffmpegLongHelp().contains("\n-readrate ");
+    return have;
+}
+
 /** Parse `ffprobe -show_entries format=duration:format_tags:stream_tags`
     output: fills the duration and flags files already retuned to 432 Hz. */
 void parseProbeOutput(const QString &out, qint64 *durationMs, bool *is432)
@@ -194,13 +214,7 @@ void FxEngine::pause()
 
     // Position the resume point at what the listener actually heard:
     // subtract audio still queued in the sink from the decode position.
-    qint64 bufferedMs = 0;
-    if (m_sink && m_io) {
-        const int bytesPerFrame = m_sinkIsFloat ? 8 : 4;
-        const qint64 bufferedBytes = m_sink->bufferSize() - m_sink->bytesFree();
-        bufferedMs = (bufferedBytes / bytesPerFrame) * 1000 / kSampleRate;
-    }
-    m_pausedPosMs = std::max<qint64>(0, currentPositionMs() - bufferedMs);
+    m_pausedPosMs = std::max<qint64>(0, currentPositionMs() - bufferedTrackMs());
 
     stopTailMix(); // pausing mid-crossfade drops the fading tail
     stopProcess();
@@ -225,6 +239,7 @@ void FxEngine::stop()
     m_scratchMode = 0;
     m_scratchBuf.clear();
     m_history.clear();
+    m_resampler.reset();
     if (m_pumpTimer)
         m_pumpTimer->stop();
     if (m_sink)
@@ -328,7 +343,7 @@ void FxEngine::shutdown()
 
 // ------------------------------------------------------------------- internals
 
-QProcess *FxEngine::spawnDecoder(const QString &path, qint64 positionMs,
+QProcess *FxEngine::spawnDecoder(const QString &path, double positionMs,
                                  bool retune, bool isLive, bool waitForStart,
                                  QString *error)
 {
@@ -353,23 +368,28 @@ QProcess *FxEngine::spawnDecoder(const QString &path, qint64 positionMs,
              << "-reconnect_streamed" << "1"
              << "-reconnect_delay_max" << "5";
     } else {
-        args << "-re"; // decode paced at realtime: keeps process buffering bounded
+        // Decode paced, which keeps process buffering bounded: at real time,
+        // or for a varispeed deck a little faster than it is playing, so a
+        // deck pushed up to +8 % does not outrun its own decoder.
+        if (m_varispeed && ffmpegHasReadRate())
+            args << "-readrate" << QString::number(decoderReadRate(), 'f', 3);
+        else
+            args << "-re";
         // Plain -re leaves the pipeline (and so the sink) only as full as
         // ffmpeg's small startup burst, so scheduling hiccups and track
         // seams could run the sink dry and click. Front-load a few seconds
         // at full speed where ffmpeg supports it (>= 6.1), then pace.
-        static const bool haveInitialBurst = [] {
-            QProcess probe;
-            probe.start(ffmpegExecutable(), {"-h", "long"});
-            probe.waitForFinished(3000);
-            return probe.readAllStandardOutput().contains("readrate_initial_burst");
-        }();
+        static const bool haveInitialBurst =
+            ffmpegLongHelp().contains("readrate_initial_burst");
         // 12 s: also gives the auto-cue tail trim enough decoded lookahead
         // to chop long encoded outro silences (YouTube rips) off the fifo.
         if (haveInitialBurst)
             args << "-readrate_initial_burst" << "12";
+        // Microseconds: a varispeed deck's decoder is restarted where its
+        // buffered audio ends (repaceDecoder), and a millisecond there would
+        // be a 48-sample jump in the middle of the music.
         if (positionMs > 0)
-            args << "-ss" << QString::number(positionMs / 1000.0, 'f', 3);
+            args << "-ss" << QString::number(positionMs / 1000.0, 'f', 6);
     }
     args << "-i" << path
          << "-vn" << "-sn" << "-dn";
@@ -430,9 +450,11 @@ void FxEngine::startProcessAt(qint64 positionMs)
     m_history.clear();
     m_scratchActive = false;
     m_scratchBuf.clear();
+    m_resampler.reset();
     resetDspState();
 
     QString error;
+    m_procReadRate = decoderReadRate();
     m_proc = spawnDecoder(m_path, positionMs, m_retuneOn && !m_sourceIs432,
                           m_isLive, /*waitForStart*/ true, &error);
     if (!m_proc)
@@ -650,6 +672,7 @@ void FxEngine::adoptPreloaded()
     m_partialFrame.clear();
     m_fifo.clear();
     m_history.clear();
+    m_resampler.reset();
     m_scratchActive = false;
     m_scratchMode = 0;
     m_scratchBuf.clear();
@@ -1000,21 +1023,122 @@ void FxEngine::stopTailMix()
 int FxEngine::fillChunk(float *out, int maxFrames)
 {
     const int availFrames = static_cast<int>(m_fifo.size() / kChannels);
-    const int n = std::min(maxFrames, availFrames);
-    if (n > 0) {
-        std::memcpy(out, m_fifo.data(), n * kChannels * sizeof(float));
+    const double rate = playbackRate();
 
+    int produced = 0;
+    int consumed = 0;
+    if (rate == 1.0 && m_resampler.atFrameBoundary()) {
+        // As recorded: a straight copy, which is every player but a deck
+        // somebody has moved the tempo of.
+        produced = consumed = std::min(maxFrames, availFrames);
+        if (produced > 0)
+            std::memcpy(out, m_fifo.data(), produced * kChannels * sizeof(float));
+    } else {
+        produced = m_resampler.process(m_fifo.data(), availFrames, out, maxFrames,
+                                       rate, &consumed);
+        // The resampler keeps two frames of lookahead, so the very last two
+        // of a track can never come out of it. Once the decoder has nothing
+        // more to give they are dropped, or the track would never finish.
+        const bool decoderDone = !m_proc || (m_proc->state() == QProcess::NotRunning
+                                             && m_proc->bytesAvailable() == 0);
+        if (produced == 0 && decoderDone)
+            consumed = availFrames;
+    }
+
+    if (consumed > 0) {
         // Feed the scratch history with everything that gets played
-        m_history.insert(m_history.end(), m_fifo.begin(), m_fifo.begin() + n * kChannels);
+        m_history.insert(m_history.end(), m_fifo.begin(), m_fifo.begin() + consumed * kChannels);
         const size_t maxHistory = static_cast<size_t>(kHistorySeconds) * kSampleRate * kChannels;
         if (m_history.size() > maxHistory)
             m_history.erase(m_history.begin(),
                             m_history.begin() + (m_history.size() - maxHistory));
 
-        m_fifo.erase(m_fifo.begin(), m_fifo.begin() + n * kChannels);
-        m_framesTaken += n;
+        m_fifo.erase(m_fifo.begin(), m_fifo.begin() + consumed * kChannels);
+        m_framesTaken += consumed;
     }
-    return n;
+    return produced;
+}
+
+qint64 FxEngine::bufferedTrackMs() const
+{
+    if (!m_sink || !m_io)
+        return 0;
+    const int bytesPerFrame = (m_sinkIsFloat ? 4 : 2) * m_sinkChannels;
+    const qint64 bufferedBytes = m_sink->bufferSize() - m_sink->bytesFree();
+    const double wallMs = double(bufferedBytes / bytesPerFrame) * 1000.0 / kSampleRate;
+    // The sink holds output frames; at another tempo each is more or less
+    // than one frame of the track.
+    return qint64(wallMs * playbackRate());
+}
+
+// ---------------------------------------------------------------- tempo
+
+void FxEngine::setVarispeedEnabled(bool enabled)
+{
+    m_varispeed = enabled;
+}
+
+void FxEngine::setTempo(double ratio)
+{
+    m_tempo = std::clamp(ratio, 0.5, 1.5);
+}
+
+void FxEngine::setTempoBend(double fraction)
+{
+    m_tempoBend = std::clamp(fraction, -0.2, 0.2);
+}
+
+double FxEngine::playbackRate() const
+{
+    if (!m_varispeed || m_isLive)
+        return 1.0;
+    double rate = std::clamp(m_tempo * (1.0 + m_tempoBend), 0.25, 1.9);
+    // Without -readrate the decoder is held to real time and a faster deck
+    // would drain it within seconds; hold the deck to at most natural speed.
+    if (!ffmpegHasReadRate())
+        rate = std::min(rate, 1.0);
+    return rate;
+}
+
+double FxEngine::decoderReadRate() const
+{
+    // A little faster than the deck plays, so a push on the platter or a
+    // small tempo change never catches the decoder; pump() restarts it at a
+    // new rate when the tempo moves further than this margin.
+    return m_varispeed ? playbackRate() + 0.05 : 1.0;
+}
+
+void FxEngine::repaceDecoder()
+{
+    if (!m_proc || m_isLive || m_state != State::Playing
+            || m_proc->state() != QProcess::Running)
+        return;
+
+    readProcessOutput();
+    const qint64 fifoFrames = static_cast<qint64>(m_fifo.size() / kChannels);
+    // Where the audio already decoded ends, on the track's timeline. The new
+    // decoder starts exactly there, so the join is inside the fifo and is
+    // never heard as a jump.
+    const double endMs = double(m_baseMs)
+        + double(inputFramesConsumed() + fifoFrames) * 1000.0 / kSampleRate;
+    if (m_durationMs > 0 && endMs >= double(m_durationMs) - 250.0)
+        return; // the decoder is about to finish anyway
+
+    QProcess *old = m_proc;
+    m_proc = nullptr;
+    old->disconnect(this);
+    connect(old, &QProcess::finished, old, &QObject::deleteLater);
+    old->kill(); // async reap: never block the pump
+    m_partialFrame.clear();
+
+    QString error;
+    m_procReadRate = decoderReadRate();
+    qDebug() << "FxEngine: tempo" << playbackRate() << "- decoder restarted at"
+             << qint64(endMs) << "ms, read rate" << m_procReadRate;
+    m_proc = spawnDecoder(m_path, endMs, m_retuneOn && !m_sourceIs432, false,
+                          /*waitForStart*/ false, &error);
+    if (!m_proc)
+        failTrack(error);
 }
 
 void FxEngine::applyFxChain(float *chunk, int frames)
@@ -1132,6 +1256,21 @@ void FxEngine::pump()
         m_skipFrames -= drop;
     }
 
+    // A varispeed deck whose tempo moved away from what its decoder was
+    // paced for: running low means it is playing faster than the decoder
+    // reads, piling up means much slower. Either way restart the decoder at
+    // a read rate that suits the tempo now.
+    if (m_varispeed && m_proc && m_proc->state() == QProcess::Running) {
+        const qint64 fifoFrames = static_cast<qint64>(m_fifo.size() / kChannels);
+        const double rate = playbackRate();
+        const bool starving = fifoFrames < 3 * kSampleRate
+                              && rate > m_procReadRate - 0.02;
+        const bool piling = fifoFrames > 30 * kSampleRate
+                            && m_procReadRate > rate + 0.08;
+        if (starving || piling)
+            repaceDecoder();
+    }
+
     // Auto-cue, tail side: once the decoder has delivered everything, chop
     // the encoded trailing silence off the fifo so the track finishes where
     // its audio does (YouTube rips carry seconds of outro silence, which a
@@ -1216,12 +1355,7 @@ void FxEngine::pump()
     // crossfade trigger and the tail handoff all act early.
     if (++m_positionEmitDivider >= 16) {
         m_positionEmitDivider = 0;
-        qint64 bufferedMs = 0;
-        if (m_sink && m_io) {
-            const qint64 bufferedBytes = m_sink->bufferSize() - m_sink->bytesFree();
-            bufferedMs = (bufferedBytes / bytesPerOutFrame) * 1000 / kSampleRate;
-        }
-        emit positionChanged(std::max<qint64>(0, currentPositionMs() - bufferedMs));
+        emit positionChanged(std::max<qint64>(0, currentPositionMs() - bufferedTrackMs()));
     }
 }
 

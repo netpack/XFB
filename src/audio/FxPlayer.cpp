@@ -567,6 +567,25 @@ void FxPlayer::djBackspin()
         engineCall([](FxEngine *e) { e->djBackspin(); });
 }
 
+void FxPlayer::setVarispeedEnabled(bool enabled)
+{
+    engineCall([enabled](FxEngine *e) { e->setVarispeedEnabled(enabled); });
+}
+
+void FxPlayer::setTempo(double ratio)
+{
+    m_tempo = qBound(0.5, ratio, 1.5);
+    const double t = m_tempo;
+    engineCall([t](FxEngine *e) { e->setTempo(t); });
+}
+
+void FxPlayer::setTempoBend(double fraction)
+{
+    m_tempoBend = qBound(-0.2, fraction, 0.2);
+    const double b = m_tempoBend;
+    engineCall([b](FxEngine *e) { e->setTempoBend(b); });
+}
+
 void FxPlayer::switchToFx(QMediaPlayer::PlaybackState resumeState, qint64 resumePos)
 {
     m_switching = true;

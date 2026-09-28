@@ -199,6 +199,20 @@ public:
     void djBrake();
     void djBackspin();
 
+    // Tempo — the DJ decks' pitch fader. Varispeed, as on a turntable: the
+    // pitch moves with the speed. Only a player that setVarispeedEnabled()
+    // was called on responds; and like the rest of the DJ controls it acts
+    // only while the engine drives playback.
+    void setVarispeedEnabled(bool enabled);
+    /** 1.0 = as recorded. */
+    void setTempo(double ratio);
+    double tempo() const { return m_tempo; }
+    /** A temporary push on top of the tempo (+0.03 = 3 % faster); 0 lets go. */
+    void setTempoBend(double fraction);
+    double tempoBend() const { return m_tempoBend; }
+    /** Tempo times bend: what the deck is actually playing at. */
+    double playbackRate() const { return m_tempo * (1.0 + m_tempoBend); }
+
 signals:
     void positionChanged(qint64 position);
     void durationChanged(qint64 duration);
@@ -253,6 +267,8 @@ private:
     QByteArray m_deviceId;           // output device (empty = system default)
     bool m_deviceLocked = false;     // cue player: this device or silence
     double m_loudnessGainDb = 0.0;
+    double m_tempo = 1.0;
+    double m_tempoBend = 0.0;
     bool m_limiterOn = false;
     double m_limiterCeilingDbTp = -1.0;
 

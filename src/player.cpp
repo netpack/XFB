@@ -40,6 +40,7 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include "services/NgrokTunnelService.h"
 #include "services/UpdateCheckService.h"
 #include "ui/DonationNotice.h"
+#include "ui/DeckTempoControl.h"
 
 #include <QMessageBox>
 #include <QInputDialog>
@@ -2020,6 +2021,31 @@ checkDbOpen();
                   ui->lp1_bt_brake, ui->lp1_bt_backspin, lp1_Xplayer, 0);
        wireDeckFx(ui->lp2_dial_filter, ui->lp2_dial_echo,
                   ui->lp2_bt_brake, ui->lp2_bt_backspin, lp2_Xplayer, 1);
+
+       // Tempo: a pitch fader per deck, under its transport buttons, with
+       // nudge and Sync. The decks are the only players that vary speed; the
+       // on-air player never does.
+       const QRect tempoArea[2] = { QRect(10, 168, 240, 84), QRect(820, 168, 240, 84) };
+       for (int deck = 0; deck < 2; ++deck) {
+           FxPlayer *player = deckPlayer(deck);
+           player->setVarispeedEnabled(true);
+           auto *control = new DeckTempoControl(tr("Deck %1").arg(deck + 1), ui->tab_dj);
+           control->setGeometry(tempoArea[deck]);
+           control->show();
+           m_deckTempo[deck] = control;
+           connect(control, &DeckTempoControl::tempoChanged, player, &FxPlayer::setTempo);
+           connect(control, &DeckTempoControl::bendChanged, player, &FxPlayer::setTempoBend);
+           connect(control, &DeckTempoControl::syncRequested, this,
+                   [this, deck]() { syncDeckTempo(deck); });
+       }
+       // A record's tempo measured in the background lands on its deck.
+       connect(m_bpmLibrary, &BpmLibrary::bpmMeasured, this,
+               [this](const QString &path, double) {
+           for (int deck = 0; deck < 2; ++deck) {
+               if (deckFile(deck) == path)
+                   refreshDeckBpm(deck);
+           }
+       });
 
        // When a deck stops on its own (brake, backspin, natural end),
        // restore its play button and platter artwork
@@ -5178,7 +5204,10 @@ void player::lp1_onPositionChanged(qint64 position)
     ui->lbl_total_time_lp1->setText(time);
 
 
-    int timeLeft = lp1_total_time_int - position;
+    // Time left on the clock, not on the record: at +8 % the record runs out
+    // sooner than its own length says.
+    const double lp1Rate = lp1_Xplayer ? lp1_Xplayer->playbackRate() : 1.0;
+    int timeLeft = int((lp1_total_time_int - position) / (lp1Rate > 0 ? lp1Rate : 1.0));
 
     segundos = timeLeft/1000;
     h = 0;
@@ -5337,7 +5366,8 @@ void player::lp2_onPositionChanged(qint64 position)
     ui->lbl_total_time_lp2->setText(time);
 
 
-    int timeLeft = lp2_total_time_int - position;
+    const double lp2Rate = lp2_Xplayer ? lp2_Xplayer->playbackRate() : 1.0;
+    int timeLeft = int((lp2_total_time_int - position) / (lp2Rate > 0 ? lp2Rate : 1.0));
 
     segundos = timeLeft/1000;
     h = 0;
@@ -8980,6 +9010,7 @@ void player::dropEvent(QDropEvent *event)
 
                      ui->lp_1_txt_file->setText(estevalor);
                      ui->lp_1->setPixmap(QPixmap(":/images/lp_player_p1.png"));
+                     refreshDeckBpm(0);
 
                 }
 
@@ -8990,6 +9021,7 @@ void player::dropEvent(QDropEvent *event)
 
                         ui->lp_2_txt_file->setText(estevalor);
                         ui->lp_2->setPixmap(QPixmap(":/images/lp_player_p1.png"));
+                        refreshDeckBpm(1);
 
                 }
 
@@ -13648,6 +13680,86 @@ void player::on_pushButton_2_clicked()
     if (movie2) movie2->stop(); // null until the first play — avoid crash on early Stop
     lp_2_paused = false;
     ui->lp_2_bt_pause->setStyleSheet("");
+}
+
+QString player::deckFile(int deck) const
+{
+    const QString path = (deck == 0 ? ui->lp_1_txt_file : ui->lp_2_txt_file)->text();
+    // The label starts out holding a slogan, not a file.
+    return QFileInfo(path).isFile() ? path : QString();
+}
+
+void player::refreshDeckBpm(int deck)
+{
+    DeckTempoControl *control = m_deckTempo[deck];
+    if (!control)
+        return;
+    const QString path = deckFile(deck);
+    const double bpm = (m_bpmLibrary && !path.isEmpty()) ? m_bpmLibrary->bpmFor(path) : 0.0;
+    control->setTrackBpm(bpm);
+    // Unknown: measure it now, so Sync has something to work with by the
+    // time the DJ reaches for it. The answer arrives through bpmMeasured.
+    if (bpm <= 0 && m_bpmLibrary && !path.isEmpty())
+        m_bpmLibrary->analyzeQuietly(path);
+}
+
+void player::syncDeckTempo(int deck)
+{
+    const int other = 1 - deck;
+    DeckTempoControl *mine = m_deckTempo[deck];
+    DeckTempoControl *theirs = m_deckTempo[other];
+    if (!mine || !theirs)
+        return;
+
+    auto tell = [this](const QString &message) {
+        ui->statusBar->showMessage(message, 6000);
+        announceAccessible(message);
+    };
+
+    const QString myFile = deckFile(deck);
+    const QString theirFile = deckFile(other);
+    if (myFile.isEmpty() || theirFile.isEmpty()) {
+        tell(tr("Sync needs a record on both decks."));
+        return;
+    }
+
+    const double myBpm = mine->trackBpm();
+    const double theirBpm = theirs->trackBpm();
+    if (myBpm <= 0 || theirBpm <= 0) {
+        QStringList unknown;
+        for (const QString &file : { myFile, theirFile }) {
+            if ((file == myFile ? myBpm : theirBpm) <= 0) {
+                unknown << QFileInfo(file).completeBaseName();
+                if (m_bpmLibrary)
+                    m_bpmLibrary->analyzeQuietly(file);
+            }
+        }
+        tell(tr("The tempo of %1 is not known yet. It is being measured now; "
+                "press Sync again in a moment. Tracks with no steady beat "
+                "have no tempo to sync to.").arg(unknown.join(tr(" and "))));
+        return;
+    }
+
+    // Match what the other deck is playing at, not what it was recorded at.
+    const double target = theirBpm * theirs->tempo();
+    double ratio = target / myBpm;
+    // Half and double time mix just as well and need a smaller change — and
+    // the tempo detector itself can land an octave off (see BpmDetector).
+    for (const double candidate : { ratio * 2.0, ratio / 2.0 }) {
+        if (std::abs(candidate - 1.0) < std::abs(ratio - 1.0))
+            ratio = candidate;
+    }
+    if (std::abs(ratio - 1.0) > 0.5) {
+        tell(tr("Deck %1 cannot reach %2 BPM: the tempo fader goes to ±50 % at most.")
+                 .arg(deck + 1).arg(target, 0, 'f', 1));
+        return;
+    }
+    mine->setTempo(ratio);
+    tell(tr("Deck %1 synced to %2 BPM (%3%4 %).")
+             .arg(deck + 1)
+             .arg(myBpm * ratio, 0, 'f', 1)
+             .arg(ratio >= 1.0 ? QStringLiteral("+") : QString())
+             .arg((ratio - 1.0) * 100.0, 0, 'f', 2));
 }
 
 void player::on_lp_1_bt_pause_clicked()

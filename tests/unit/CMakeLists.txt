@@ -505,8 +505,27 @@ target_include_directories(test_remote_control_server PRIVATE
 
 add_test(NAME RemoteControlServerTest COMMAND test_remote_control_server)
 
+# The DJ decks' tempo resampler: rate 1 is a copy, other rates change length
+# and pitch by exactly the rate, and chunk boundaries are seamless.
+add_executable(test_varispeed
+    audio/TestVarispeed.cpp
+    ${CMAKE_SOURCE_DIR}/src/audio/FxDsp.cpp
+)
+
+target_link_libraries(test_varispeed
+    Qt6::Core
+    Qt6::Test
+)
+
+target_include_directories(test_varispeed PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/tests
+)
+
+add_test(NAME VarispeedTest COMMAND test_varispeed)
+
 # Add custom target for unit tests
 add_custom_target(unit_tests
-    DEPENDS test_config test_database test_service_container test_base_service test_database_service_unit test_music_repository test_genre_repository test_playlist_repository test_audio_service test_error_handler test_logger test_input_validator test_database_optimizer test_music_cache test_main_controller test_accessibility_manager test_update_check_service test_pad_board_focus test_access_control test_add_dialog_cancel test_remote_control_server
+    DEPENDS test_config test_database test_service_container test_base_service test_database_service_unit test_music_repository test_genre_repository test_playlist_repository test_audio_service test_error_handler test_logger test_input_validator test_database_optimizer test_music_cache test_main_controller test_accessibility_manager test_update_check_service test_pad_board_focus test_access_control test_add_dialog_cancel test_remote_control_server test_varispeed
     COMMENT "Building unit tests"
 )

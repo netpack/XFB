@@ -232,6 +232,42 @@ void clampBuffer(float *interleaved, int frames);
 double dbToLinear(double db);
 double linearToDb(double lin);
 
+/**
+ * Varispeed: plays interleaved stereo input back at a variable rate, the way
+ * a turntable's pitch fader does — faster is also higher, as on vinyl.
+ *
+ * Four-point cubic (Hermite) interpolation between input frames. The read
+ * position is kept as a fraction between calls, so a rate change mid-stream
+ * is seamless, and at a rate of exactly 1 with no fraction left over the
+ * output is the input sample for sample.
+ */
+class Varispeed
+{
+public:
+    /**
+     * Produces up to @a maxOut frames into @a out from the @a inFrames
+     * frames at @a in, at @a rate input frames per output frame.
+     *
+     * Two frames of lookahead are needed, so the last two input frames are
+     * never consumed by one call; @a consumed receives how many were (the
+     * caller drops those from its buffer and calls again with more). The
+     * frame before in[0] is remembered from the previous call.
+     *
+     * @return the number of output frames written.
+     */
+    int process(const float *in, int inFrames, float *out, int maxOut,
+                double rate, int *consumed);
+    /** Forget the fractional position and the remembered frame. */
+    void reset();
+    /** True when nothing is carried between calls (rate 1 is then a copy). */
+    bool atFrameBoundary() const { return m_phase == 0.0; }
+
+private:
+    double m_phase = 0.0;     ///< position between in[0] and in[1], 0..1
+    float m_prevL = 0.0f;     ///< the frame before in[0]
+    float m_prevR = 0.0f;
+};
+
 } // namespace fxdsp
 
 #endif // FXDSP_H

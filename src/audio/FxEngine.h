@@ -160,6 +160,24 @@ public slots:
     /** Backspin: the platter whips backwards, then stops. */
     void djBackspin();
 
+    // --- Tempo (DJ decks) ---
+    /**
+     * Let this engine play at other than its natural speed. Only then is its
+     * decoder paced to stay ahead of a faster deck (see decoderReadRate);
+     * the on-air player never varies its speed and is left exactly as it was.
+     */
+    void setVarispeedEnabled(bool enabled);
+    /**
+     * Playback rate, 1.0 = as recorded. Varispeed, like a turntable's pitch
+     * fader: 1.06 is 6 % faster and 6 % higher. Takes effect on the next
+     * chunk, with no break in the audio.
+     */
+    void setTempo(double ratio);
+    /** A temporary push on top of the tempo, as a fraction (+0.03 = 3 %
+     *  faster): what a DJ does with a finger on the platter edge to line up
+     *  two beats. 0 lets go. */
+    void setTempoBend(double fraction);
+
 signals:
     void positionChanged(qint64 positionMs);
     void durationChanged(qint64 durationMs);
@@ -187,7 +205,7 @@ private slots:
     void pump();
 
 private:
-    QProcess *spawnDecoder(const QString &path, qint64 positionMs,
+    QProcess *spawnDecoder(const QString &path, double positionMs,
                            bool retune, bool isLive, bool waitForStart,
                            QString *error);
     void spawnPreloadDecoder();
@@ -205,7 +223,16 @@ private:
     void probeLocalSource(const QString &filePath);
     qint64 inputFramesConsumed() const;
     qint64 currentPositionMs() const;
+    /** Audio queued in the sink, in ms of the TRACK (not of wall time). */
+    qint64 bufferedTrackMs() const;
     int fillChunk(float *out, int maxFrames);
+    /** Tempo times bend, bounded to what Varispeed can do. */
+    double playbackRate() const;
+    /** How fast a varispeed deck's decoder is allowed to read its file. */
+    double decoderReadRate() const;
+    /** Restart a varispeed deck's decoder where its buffered audio ends, at
+     *  a read rate that suits the tempo now; see pump(). */
+    void repaceDecoder();
     void readProcessOutput();
     void mixTail(float *out, int frames);
     void stopTailMix();
@@ -311,6 +338,14 @@ private:
     double m_scratchPos = 0.0;         // absolute input frame (fractional)
     double m_scratchVel = 1.0;         // rate: input frames per output frame
     double m_scratchTargetVel = 0.0;
+
+    // Tempo (DJ decks). Off by default, and while it is off nothing below
+    // is consulted: rate 1 with no fraction takes the plain copy path.
+    bool m_varispeed = false;
+    double m_tempo = 1.0;
+    double m_tempoBend = 0.0;
+    fxdsp::Varispeed m_resampler;
+    double m_procReadRate = 1.0;     // read rate the running decoder was given
 
     // Broadcast tap (see setPcmTapEnabled): off by default and read only
     // from the pump, so no synchronisation is involved.

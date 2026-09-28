@@ -462,4 +462,59 @@ void clampBuffer(float *interleaved, int frames)
 double dbToLinear(double db) { return dbToLin(db); }
 double linearToDb(double lin) { return linToDb(lin); }
 
+// ------------------------------------------------------------ Varispeed
+
+namespace
+{
+// 4-point, 3rd-order Hermite: passes through x0 at t = 0 and x1 at t = 1.
+inline float hermite(float xm1, float x0, float x1, float x2, float t)
+{
+    const float c = (x1 - xm1) * 0.5f;
+    const float v = x0 - x1;
+    const float w = c + v;
+    const float a = w + v + (x2 - x0) * 0.5f;
+    const float bNeg = w + a;
+    return ((a * t - bNeg) * t + c) * t + x0;
+}
+} // namespace
+
+int Varispeed::process(const float *in, int inFrames, float *out, int maxOut,
+                       double rate, int *consumed)
+{
+    int produced = 0;
+    int idx = 0;
+    while (produced < maxOut && idx + 2 < inFrames) {
+        const float *f0 = in + idx * 2;
+        const float *f1 = f0 + 2;
+        const float *f2 = f1 + 2;
+        const float xm1L = idx > 0 ? f0[-2] : m_prevL;
+        const float xm1R = idx > 0 ? f0[-1] : m_prevR;
+        const float t = static_cast<float>(m_phase);
+        out[produced * 2] = hermite(xm1L, f0[0], f1[0], f2[0], t);
+        out[produced * 2 + 1] = hermite(xm1R, f0[1], f1[1], f2[1], t);
+        ++produced;
+
+        m_phase += rate;
+        const int step = static_cast<int>(m_phase);
+        m_phase -= step;
+        idx += step;
+    }
+    // A fast rate can step past the lookahead on the last frame produced;
+    // never report more than there was.
+    idx = std::min(idx, inFrames);
+    if (idx > 0) {
+        m_prevL = in[(idx - 1) * 2];
+        m_prevR = in[(idx - 1) * 2 + 1];
+    }
+    *consumed = idx;
+    return produced;
+}
+
+void Varispeed::reset()
+{
+    m_phase = 0.0;
+    m_prevL = 0.0f;
+    m_prevR = 0.0f;
+}
+
 } // namespace fxdsp
