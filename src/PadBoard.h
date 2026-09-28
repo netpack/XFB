@@ -238,6 +238,12 @@ public slots:
     void stopAll();
     /** Route every pad, on every bank, to the configured on-air output. */
     void setOutputDeviceId(const QByteArray &deviceId);
+    /**
+     * Presses pad @a index of the bank on show, counting across the rows
+     * from the top left (0-based) — what a controller's pad N does. Same as
+     * a tap on it, retrigger rule included. False when there is no such pad.
+     */
+    bool triggerPad(int index);
 
 signals:
     /** A pad wants to be auditioned on the cue device (see CueBus). */

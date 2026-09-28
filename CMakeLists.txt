@@ -103,6 +103,9 @@ elseif(MSVC)
 endif()
 
 # Add subdirectories
+# Bundled third-party code: RtMidi, the MIDI input behind MIDI learn.
+add_subdirectory(third_party/rtmidi)
+
 add_subdirectory(src)
 
 # Add tests subdirectory if BUILD_TESTING is enabled (default ON)

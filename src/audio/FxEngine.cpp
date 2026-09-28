@@ -829,7 +829,11 @@ bool FxEngine::ensureSink()
         m_sink = new QAudioSink(device, fmt, this);
         m_sinkDeviceId = device.id();
         const int bytesPerFrame = (m_sinkIsFloat ? 4 : 2) * m_sinkChannels;
-        m_sink->setBufferSize(kSampleRate * bytesPerFrame * 350 / 1000); // ~350 ms
+        // ~350 ms: room for the pump to be late without the output running
+        // dry. A varispeed deck, which is played by hand, gets a shorter one
+        // (see setVarispeedEnabled).
+        const int bufferMs = m_varispeed ? kDeckSinkBufferMs : 350;
+        m_sink->setBufferSize(kSampleRate * bytesPerFrame * bufferMs / 1000);
     }
 
     m_sink->setVolume(m_volume);
@@ -1075,7 +1079,15 @@ qint64 FxEngine::bufferedTrackMs() const
 
 void FxEngine::setVarispeedEnabled(bool enabled)
 {
+    if (m_varispeed == enabled)
+        return;
     m_varispeed = enabled;
+    // A deck is played by hand: a tempo change, a filter sweep or a jog
+    // push is heard only once the audio already queued in the sink has gone
+    // out, so a deck keeps less queued. Rebuilt now if nothing is playing;
+    // otherwise the next time the sink is opened.
+    if (m_sink && m_state != State::Playing)
+        teardownSink();
 }
 
 void FxEngine::setTempo(double ratio)

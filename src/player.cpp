@@ -41,6 +41,8 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include "services/UpdateCheckService.h"
 #include "ui/DonationNotice.h"
 #include "ui/DeckTempoControl.h"
+#include "services/MidiController.h"
+#include "dialogs/MidiLearnDialog.h"
 
 #include <QMessageBox>
 #include <QInputDialog>
@@ -2135,6 +2137,9 @@ checkDbOpen();
    makeSidePanelScrollable();
    makeTabScrollable(ui->tabTorrents);
 
+
+   // MIDI control: after the decks and the pads, whose controls it drives.
+   setupMidiController();
 
    // Who is at the desk, and what they may do with it. Last, because it
    // disables menu entries and buttons that everything above has just
@@ -13680,6 +13685,163 @@ void player::on_pushButton_2_clicked()
     if (movie2) movie2->stop(); // null until the first play — avoid crash on early Stop
     lp_2_paused = false;
     ui->lp_2_bt_pause->setStyleSheet("");
+}
+
+void player::setupMidiController()
+{
+    m_midi = new MidiController(this);
+
+    using Midi::ActionType;
+    // Every action goes through what the desk itself offers — the button,
+    // the slider, the dial — so a MIDI control can do nothing an operator at
+    // the screen could not: a transport button the signed-in role may not
+    // use is disabled, and click() on a disabled button does nothing. A
+    // locked desk ignores the controller altogether.
+    auto add = [this](const QString &id, const QString &group, const QString &label,
+                      ActionType type, std::function<void(double)> handler) {
+        m_midi->registerAction({ id, group, label, type },
+                               [this, handler](double v) {
+            if (!m_deskLocked)
+                handler(v);
+        });
+    };
+    auto press = [](QAbstractButton *button) {
+        return [button](double) { button->click(); };
+    };
+
+    const QString station = tr("Station");
+    add(QStringLiteral("station.play"), station, tr("Play"), ActionType::Button, press(ui->btPlay));
+    add(QStringLiteral("station.stop"), station, tr("Stop"), ActionType::Button, press(ui->btStop));
+    add(QStringLiteral("station.pause"), station, tr("Pause / resume"), ActionType::Button,
+        press(ui->bt_pause_play));
+    add(QStringLiteral("station.next"), station, tr("Play next"), ActionType::Button,
+        press(ui->btPlayNext));
+    add(QStringLiteral("station.automode"), station, tr("Auto Mode on / off"), ActionType::Button,
+        press(ui->bt_autoMode));
+    add(QStringLiteral("station.record"), station, tr("Record on / off"), ActionType::Button,
+        press(ui->bt_rec));
+    add(QStringLiteral("station.volume"), station, tr("Volume"), ActionType::Fader,
+        [this](double v) {
+        if (!ui->sliderVolume->isEnabled())
+            return;
+        ui->sliderVolume->setValue(qRound(v * ui->sliderVolume->maximum()));
+        on_sliderVolume_sliderMoved(ui->sliderVolume->value());
+    });
+    add(QStringLiteral("station.cue"), station, tr("Cue the selection"), ActionType::Button,
+        [this](double) { cueCurrentSelection(); });
+    add(QStringLiteral("station.cuestop"), station, tr("Stop the cue"), ActionType::Button,
+        [this](double) {
+        if (m_cueStopAction && m_cueStopAction->isEnabled())
+            m_cueStopAction->trigger();
+    });
+
+    for (int deck = 0; deck < 2; ++deck) {
+        const QString group = tr("Deck %1").arg(deck + 1);
+        const QString id = QStringLiteral("deck%1.").arg(deck + 1);
+        QPushButton *play = deck == 0 ? ui->lp_1_bt_play : ui->lp_1_bt_play_2;
+        QPushButton *pause = deck == 0 ? ui->lp_1_bt_pause : ui->lp_2_bt_pause;
+        QPushButton *stop = deck == 0 ? ui->pushButton : ui->pushButton_2;
+        QPushButton *brake = deck == 0 ? ui->lp1_bt_brake : ui->lp2_bt_brake;
+        QPushButton *backspin = deck == 0 ? ui->lp1_bt_backspin : ui->lp2_bt_backspin;
+        QDial *filter = deck == 0 ? ui->lp1_dial_filter : ui->lp2_dial_filter;
+        QDial *echo = deck == 0 ? ui->lp1_dial_echo : ui->lp2_dial_echo;
+
+        add(id + QStringLiteral("play"), group, tr("Play"), ActionType::Button, press(play));
+        add(id + QStringLiteral("pause"), group, tr("Pause / resume"), ActionType::Button, press(pause));
+        add(id + QStringLiteral("stop"), group, tr("Stop"), ActionType::Button, press(stop));
+        add(id + QStringLiteral("tempo"), group, tr("Tempo"), ActionType::Fader,
+            [this, deck](double v) {
+            // A centre-detented fader sends 64 of 0..127, which is not quite
+            // the middle; anything that close to it is 0 %.
+            double position = v * 2.0 - 1.0;
+            if (std::abs(position) < 0.01)
+                position = 0.0;
+            if (m_deckTempo[deck])
+                m_deckTempo[deck]->setFaderPosition(position);
+        });
+        add(id + QStringLiteral("tempo.reset"), group, tr("Tempo back to 0 %"), ActionType::Button,
+            [this, deck](double) {
+            if (m_deckTempo[deck])
+                m_deckTempo[deck]->resetTempo();
+        });
+        add(id + QStringLiteral("sync"), group, tr("Sync to the other deck"), ActionType::Button,
+            [this, deck](double) { syncDeckTempo(deck); });
+        add(id + QStringLiteral("nudge.down"), group, tr("Hold to slow down"), ActionType::Hold,
+            [this, deck](double v) {
+            if (m_deckTempo[deck])
+                m_deckTempo[deck]->setNudge(v > 0.5 ? -1 : 0);
+        });
+        add(id + QStringLiteral("nudge.up"), group, tr("Hold to speed up"), ActionType::Hold,
+            [this, deck](double v) {
+            if (m_deckTempo[deck])
+                m_deckTempo[deck]->setNudge(v > 0.5 ? 1 : 0);
+        });
+
+        // Jog wheel: turning it pushes the record the way it turns, harder
+        // the faster it spins, and lets go when it stops — a hand on the
+        // edge of the platter, which is how two beats are pulled together.
+        m_jogRelease[deck] = new QTimer(this);
+        m_jogRelease[deck]->setSingleShot(true);
+        m_jogRelease[deck]->setInterval(120);
+        connect(m_jogRelease[deck], &QTimer::timeout, this,
+                [this, deck]() { deckPlayer(deck)->setTempoBend(0.0); });
+        add(id + QStringLiteral("jog"), group, tr("Jog wheel (push the beat)"), ActionType::Jog,
+            [this, deck](double steps) {
+            deckPlayer(deck)->setTempoBend(qBound(-0.15, steps * 0.01, 0.15));
+            m_jogRelease[deck]->start();
+        });
+
+        add(id + QStringLiteral("filter"), group, tr("Filter"), ActionType::Fader,
+            [filter](double v) {
+            double centred = v * 2.0 - 1.0;
+            if (std::abs(centred) < 0.01)
+                centred = 0.0;
+            filter->setValue(qRound(centred * filter->maximum()));
+        });
+        add(id + QStringLiteral("echo"), group, tr("Echo"), ActionType::Fader,
+            [echo](double v) { echo->setValue(qRound(v * echo->maximum())); });
+        add(id + QStringLiteral("brake"), group, tr("Brake"), ActionType::Button, press(brake));
+        add(id + QStringLiteral("backspin"), group, tr("Backspin"), ActionType::Button, press(backspin));
+    }
+
+    const QString mixer = tr("DJ mixer");
+    add(QStringLiteral("decks.crossfader"), mixer, tr("Crossfader"), ActionType::Fader,
+        [this](double v) {
+        QSlider *xf = ui->horizontalSlider_lps_vol;
+        xf->setValue(qRound(v * xf->maximum()));
+        on_horizontalSlider_lps_vol_sliderMoved(xf->value());
+    });
+
+    const QString pads = tr("Pads");
+    for (int pad = 0; pad < 16; ++pad) {
+        add(QStringLiteral("pad.%1").arg(pad + 1), pads, tr("Pad %1").arg(pad + 1),
+            ActionType::Button, [this, pad](double) {
+            if (m_padBoard)
+                m_padBoard->triggerPad(pad);
+        });
+    }
+
+    QAction *midi = new QAction(IconTheme::icon(QStringLiteral(":/icons/flat/Natural User Interface 2-48.png")),
+                                tr("&MIDI Controller..."), this);
+    midi->setMenuRole(QAction::NoRole);
+    midi->setStatusTip(tr("Control XFB from the faders, buttons and jog wheels of a MIDI controller"));
+    connect(midi, &QAction::triggered, this, &player::openMidiDialog);
+    ui->menuXFB->addAction(midi);
+    addAction(midi);
+    AccessControl::instance().guard(midi, QStringLiteral("station.options"));
+}
+
+void player::openMidiDialog()
+{
+    if (!m_midiDialog) {
+        m_midiDialog = new MidiLearnDialog(m_midi, this);
+        m_midiDialog->setAttribute(Qt::WA_DeleteOnClose, false);
+        connect(m_midiDialog, &MidiLearnDialog::announcementRequested,
+                this, &player::announceAccessible);
+    }
+    m_midiDialog->show();
+    m_midiDialog->raise();
+    m_midiDialog->activateWindow();
 }
 
 QString player::deckFile(int deck) const

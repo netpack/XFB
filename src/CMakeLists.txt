@@ -149,6 +149,9 @@ set(SOURCES
     ui/HourClockWheel.cpp
     # A DJ deck's tempo fader, nudge and Sync
     ui/DeckTempoControl.cpp
+    # MIDI learn: controls on a MIDI desk tied to XFB's actions
+    services/MidiController.cpp
+    dialogs/MidiLearnDialog.cpp
     # Models
     models/MusicListModel.cpp
     # Enhanced Dialogs
@@ -279,6 +282,8 @@ set(HEADERS
     ui/DonationNotice.h
     ui/HourClockWheel.h
     ui/DeckTempoControl.h
+    services/MidiController.h
+    dialogs/MidiLearnDialog.h
     # Models
     models/MusicListModel.h
     # Enhanced Dialogs
@@ -354,6 +359,8 @@ target_link_libraries(XFB
     Qt6::Multimedia
     Qt6::Sql
     Qt6::Network
+    # MIDI input (third_party/rtmidi), for MIDI learn
+    xfb_rtmidi
 )
 
 # macOS asks for microphone access through a plugin that Qt ships STATICALLY —

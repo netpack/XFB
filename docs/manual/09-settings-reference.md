@@ -32,6 +32,10 @@ says so.
 - **432 Hz playback (all players)** — real-time retune from A=440; files are not
   modified and the tempo is preserved
 - **Auto Auto-mix: mix tracks as they are added to the playlist**
+- **Mix transitions in XFB's audio engine (sample-accurate crossfades)** — the
+  running order plays through XFB's own engine even with no effect on, so every
+  crossfade is mixed on the exact sample. Needs ffmpeg; on by default on
+  Windows. Takes effect from the next track.
 - **Auto Mode: follow each track with one at a similar BPM**, and **BPM
   tolerance** — how far apart two tempos may be and still match
 - **Loudness normalisation (EBU R128)**, with **Target loudness** (-23 LUFS is
@@ -107,6 +111,7 @@ own.
 | Icecast mounts, and auto-start | **Options → Stream to Icecast…** |
 | Phone, backup and production pairing and schedules | the three sync windows ([chapter 7](07-other-computers.md)) |
 | Remote control: on/off, address, port, keys, the control page | **Options → Remote Control…** ([chapter 7](07-other-computers.md#remote-control)) |
+| MIDI controller: on/off, which input, what each control does | **Options → MIDI Controller…** ([chapter 3](03-going-on-air.md#midi-controllers)) |
 | Screen reader verbosity and timing | **Options → Accessibility Preferences…** |
 | Panel layout, lock, artwork panel | the **View** menu |
 | Random jingle cadence | the playlist panel |

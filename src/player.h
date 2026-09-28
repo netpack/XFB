@@ -943,6 +943,17 @@ private slots:
     QString m_remoteStatusArtist;
     QString m_remoteStatusTitle;
 
+    // --- MIDI control ---
+    // Faders, buttons and jog wheels on a MIDI desk tied to what XFB does,
+    // learnt by example in the MIDI Controller window. Off until switched on
+    // there; see services/MidiController.h.
+    class MidiController *m_midi = nullptr;
+    QPointer<class MidiLearnDialog> m_midiDialog;
+    /** Lets go of a deck's jog-wheel push once the wheel stops turning. */
+    QTimer *m_jogRelease[2] = {nullptr, nullptr};
+    void setupMidiController();
+    void openMidiDialog();
+
     // --- Who is at the desk ---
     // Operator accounts, roles and the permission behind every menu entry.
     // On an installation nobody has protected there are no accounts, every

@@ -61,6 +61,13 @@ finish-args:
   # Audio. XFB is a playout system; without this it has nothing to do.
   - --socket=pulseaudio
 
+  # MIDI controllers (Options: XFB > MIDI Controller). RtMidi reads them
+  # through the ALSA sequencer, /dev/snd/seq, and flatpak has no permission
+  # narrower than all devices that includes it (Mixxx on Flathub asks for
+  # the same, for the same reason). Without it the MIDI window simply finds
+  # no controller.
+  - --device=all
+
   # The station's own network: Icecast, the phone sync server, the public
   # now-playing page, and fetching yt-dlp on first use.
   - --share=network

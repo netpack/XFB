@@ -76,6 +76,15 @@ as it is added to the running order.
 Auto-mix reads the intro/outro measurements, so run **Database → Measure the
 intro and outro times of the database** first if you want it at its best.
 
+A crossfade is mixed on the exact sample the overlap names. That is only
+possible when XFB's own audio engine plays the running order, which it does
+whenever an effect, loudness normalisation or the stream is on, and always when
+**Mix transitions in XFB's audio engine** is ticked in **Options → Options →
+General** (on by default on Windows, where two separate players cannot be
+started together precisely enough). Without it the outgoing track is played out
+by a second player, which is started at the right moment but whose own start-up
+delay can still leave a small gap at the join.
+
 ## Cue (pre-fade listen)
 
 Cue plays a track into your headphones without any of it reaching the output.
@@ -147,6 +156,48 @@ The **DJ** tab is two auxiliary players, independent of the main one, each with:
 - **Echo** — dry through to a full echo-out tail
 - **Brake** — the platter spins down to a stop
 - **Backspin** — whips the record backwards, then stops
+
+Under each deck's transport buttons is its **tempo**:
+
+- **the tempo fader** — faster to the right. As on a turntable the pitch moves
+  with the speed. The range is **±8 %**, **±16 %** or **±50 %**, and **0** puts
+  the record back to the speed it was made at.
+- **− and +** — hold to push the record a little slower or faster, to bring
+  two beats back together, and let go to return to the fader's tempo
+- **Sync** — sets this deck's tempo so its BPM matches what the other deck is
+  playing at. Half and double time count as a match. Sync lines up the tempo,
+  not the beats: XFB knows a track's BPM but not where its beats fall, so line
+  the beats up with − and +.
+- **BPM** — what the record is playing at now. A record whose tempo has not
+  been measured is measured when it is dropped on the deck; a track with no
+  steady beat has none, and Sync says so.
+
+## MIDI controllers
+
+**Options → MIDI Controller…** ties the faders, knobs, buttons and jog wheels of
+a MIDI controller to XFB. Tick **Use a MIDI controller**, choose the controller
+under **Input** (or leave it on every connected controller), pick an action in
+the list, press **Learn** (or Enter), and move or press the control that should
+do it. The line under the list shows every message the controller sends, which
+is the quickest way to find out whether it is talking to XFB at all.
+
+There are actions for the station (play, stop, pause, next, Auto Mode, record,
+volume, cue), for each deck (play, pause, stop, tempo, tempo reset, Sync, the
+two nudge buttons, a jog wheel, filter, echo, brake, backspin), the DJ
+crossfader, and pads 1 to 16 of the bank on show. A jog wheel pushes the record
+the way it turns, harder the faster it spins, and lets go when it stops. Learn
+guesses how a wheel reports turning; if it goes the wrong way or jumps, pick the
+other setting in the **Turns as** column.
+
+A control does one thing: learning it for a second action moves it there. A
+button the signed-in role may not use stays unusable from the controller too,
+and a locked desk ignores the controller altogether.
+
+The controller has to speak MIDI. Most DJ controllers do (Hercules, Numark,
+Pioneer DDJ, Akai, Reloop...). Native Instruments' Traktor Kontrol range talks
+its own USB protocol instead; some models can be switched to a MIDI mode with
+NI's Controller Editor, and only then will XFB see them. In the Flatpak the
+controller needs the device permission the package already asks for.
 
 ## Audio FX
 

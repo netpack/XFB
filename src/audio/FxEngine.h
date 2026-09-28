@@ -250,6 +250,10 @@ private:
     static constexpr int kSampleRate = kTapSampleRate;
     static constexpr int kChannels = kTapChannels;
     static constexpr int kChunkFrames = 2048;
+    // Sink buffer of a varispeed deck, in ms. The pump tops the sink up every
+    // 15 ms (up to about 30 on Windows' coarse timer), so this still leaves
+    // it five to ten ticks of slack.
+    static constexpr int kDeckSinkBufferMs = 150;
     // Auto-cue: silence floor (~-50 dBFS) and the most leading silence a
     // track may have skipped before playback proceeds normally.
     static constexpr float kSilenceFloor = 0.0032f;

@@ -524,8 +524,28 @@ target_include_directories(test_varispeed PRIVATE
 
 add_test(NAME VarispeedTest COMMAND test_varispeed)
 
+# MIDI learn without a device: message parsing, what each kind of action is
+# told, learning, one job per control, and bindings kept in xfb.conf.
+add_executable(test_midi_controller
+    services/TestMidiController.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/MidiController.cpp
+)
+
+target_link_libraries(test_midi_controller
+    Qt6::Core
+    Qt6::Test
+    xfb_rtmidi
+)
+
+target_include_directories(test_midi_controller PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/tests
+)
+
+add_test(NAME MidiControllerTest COMMAND test_midi_controller)
+
 # Add custom target for unit tests
 add_custom_target(unit_tests
-    DEPENDS test_config test_database test_service_container test_base_service test_database_service_unit test_music_repository test_genre_repository test_playlist_repository test_audio_service test_error_handler test_logger test_input_validator test_database_optimizer test_music_cache test_main_controller test_accessibility_manager test_update_check_service test_pad_board_focus test_access_control test_add_dialog_cancel test_remote_control_server test_varispeed
+    DEPENDS test_config test_database test_service_container test_base_service test_database_service_unit test_music_repository test_genre_repository test_playlist_repository test_audio_service test_error_handler test_logger test_input_validator test_database_optimizer test_music_cache test_main_controller test_accessibility_manager test_update_check_service test_pad_board_focus test_access_control test_add_dialog_cancel test_remote_control_server test_varispeed test_midi_controller
     COMMENT "Building unit tests"
 )

@@ -1209,6 +1209,16 @@ void PadBoardWidget::rebuildGrid()
         preloadBank(m_bank);
 }
 
+bool PadBoardWidget::triggerPad(int index)
+{
+    if (m_bank < 0 || m_bank >= m_pads.size()
+            || index < 0 || index >= m_pads[m_bank].size())
+        return false;
+    // An empty pad explains itself in the status line, as a tap does.
+    m_pads[m_bank].at(index)->trigger();
+    return true;
+}
+
 PadButton *PadBoardWidget::padAt(int bank, int row, int col) const
 {
     if (bank < 0 || bank >= m_pads.size())
