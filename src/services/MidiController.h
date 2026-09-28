@@ -173,6 +173,9 @@ private:
     void reopenInputs();
     void setStatus(const QString &status);
     void pollPorts();
+    void openPortWatch();
+    void closePortWatch();
+    bool openedPortWentAway();
     void onRawMessage(const std::vector<unsigned char> &bytes);
     static void rtMidiCallback(double timeStamp, std::vector<unsigned char> *message,
                                void *userData);
@@ -191,6 +194,17 @@ private:
     std::unique_ptr<RtMidiIn> m_probe;           ///< lists the ports
     std::vector<std::unique_ptr<RtMidiIn>> m_inputs;
     QStringList m_portNames;
+    /** The names as the system gives them, ALSA's "client:port" included:
+     *  a controller plugged back in may come back under the same stable
+     *  name but new numbers, and the input on the old ones hears nothing. */
+    QStringList m_rawPortNames;
+    /** ALSA "client:port" of every controller an input is open on. */
+    QStringList m_openedAddresses;
+    /** ALSA only: a sequencer client subscribed to the system's port
+     *  announcements (snd_seq_t *). Catches a controller that went away and
+     *  came back between two polls under the very same numbers, which no
+     *  port list can tell apart from one that never left. */
+    void *m_portWatch = nullptr;
     QTimer *m_pollTimer = nullptr;
 };
 

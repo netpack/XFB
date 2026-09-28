@@ -8,6 +8,11 @@
 
 #include "RtMidi.h"
 
+#ifdef __LINUX_ALSA__
+#include <alsa/asoundlib.h>
+#include <cerrno>
+#endif
+
 namespace
 {
 const QString kGroup = QStringLiteral("Midi");
@@ -183,11 +188,16 @@ MidiController::MidiController(QObject *parent)
     }
 
     // RtMidi has no hot-plug notice, and a controller is exactly the sort
-    // of thing that gets plugged in after XFB has started.
+    // of thing that gets plugged in after XFB has started. Often enough that
+    // a cable pulled and pushed back in is seen as gone, not as never moved:
+    // then its input is reopened. On Linux the port announcements catch even
+    // a replug quicker than this (see openPortWatch).
     m_pollTimer = new QTimer(this);
-    m_pollTimer->setInterval(2000);
+    m_pollTimer->setInterval(500);
     connect(m_pollTimer, &QTimer::timeout, this, &MidiController::pollPorts);
 
+    if (m_enabled)
+        openPortWatch();
     pollPorts();
     if (m_enabled) {
         reopenInputs();
@@ -201,6 +211,7 @@ MidiController::~MidiController()
 {
     // Closing a port stops its callback thread before anything goes away.
     m_inputs.clear();
+    closePortWatch();
 }
 
 bool MidiController::available()
@@ -227,12 +238,15 @@ void MidiController::setEnabled(bool enabled)
     m_enabled = enabled;
     save();
     if (m_enabled) {
+        openPortWatch();
         pollPorts();
         reopenInputs();
         m_pollTimer->start();
     } else {
         m_pollTimer->stop();
         m_inputs.clear();
+        m_openedAddresses.clear();
+        closePortWatch();
         setStatus(tr("MIDI control is off."));
     }
 }
@@ -262,26 +276,108 @@ void MidiController::pollPorts()
 {
     if (!m_probe)
         return;
-    QStringList names;
+    QStringList raw;
     try {
         const unsigned int count = m_probe->getPortCount();
         for (unsigned int i = 0; i < count; ++i)
-            names << stablePortName(QString::fromStdString(m_probe->getPortName(i)));
+            raw << QString::fromStdString(m_probe->getPortName(i));
     } catch (const RtMidiError &e) {
         qWarning() << "MIDI: listing inputs failed:" << e.what();
         return;
     }
-    if (names == m_portNames)
+    // Read the announcements whether or not the list moved: they are the
+    // only sign of a controller that left and came back under the same name
+    // and numbers, and whose input has been deaf since.
+    const bool lost = openedPortWentAway();
+    if (raw == m_rawPortNames && !lost)
         return;
-    m_portNames = names;
-    emit portsChanged(m_portNames);
+    m_rawPortNames = raw;
+
+    QStringList names;
+    for (const QString &name : std::as_const(raw))
+        names << stablePortName(name);
+    if (names != m_portNames) {
+        m_portNames = names;
+        emit portsChanged(m_portNames);
+    }
+    if (lost)
+        qInfo() << "MIDI: a controller went away and came back; reopening its input";
     if (m_enabled)
         reopenInputs();
+}
+
+void MidiController::openPortWatch()
+{
+#ifdef __LINUX_ALSA__
+    if (m_portWatch)
+        return;
+    snd_seq_t *seq = nullptr;
+    if (snd_seq_open(&seq, "default", SND_SEQ_OPEN_INPUT, SND_SEQ_NONBLOCK) < 0)
+        return; // no sequencer: the port list alone will have to do
+    snd_seq_set_client_name(seq, "XFB port watch");
+    // Write-only and not exported: nobody lists it as a MIDI input, XFB's
+    // own MIDI window included.
+    const int port = snd_seq_create_simple_port(
+        seq, "announcements", SND_SEQ_PORT_CAP_WRITE | SND_SEQ_PORT_CAP_NO_EXPORT,
+        SND_SEQ_PORT_TYPE_APPLICATION);
+    if (port < 0
+            || snd_seq_connect_from(seq, port, SND_SEQ_CLIENT_SYSTEM,
+                                    SND_SEQ_PORT_SYSTEM_ANNOUNCE) < 0) {
+        snd_seq_close(seq);
+        return;
+    }
+    m_portWatch = seq;
+#endif
+}
+
+void MidiController::closePortWatch()
+{
+#ifdef __LINUX_ALSA__
+    if (m_portWatch)
+        snd_seq_close(static_cast<snd_seq_t *>(m_portWatch));
+#endif
+    m_portWatch = nullptr;
+}
+
+bool MidiController::openedPortWentAway()
+{
+    bool gone = false;
+#ifdef __LINUX_ALSA__
+    auto *seq = static_cast<snd_seq_t *>(m_portWatch);
+    if (!seq)
+        return false;
+    // Queued since the last poll, so a controller that left and came back in
+    // between is still in here, however quickly it did so.
+    for (;;) {
+        snd_seq_event_t *ev = nullptr;
+        const int r = snd_seq_event_input(seq, &ev);
+        if (r == -ENOSPC) {
+            gone = true; // announcements were lost: assume the worst
+            continue;
+        }
+        if (r < 0 || !ev)
+            break; // -EAGAIN: nothing more queued
+        if (ev->type == SND_SEQ_EVENT_PORT_EXIT) {
+            const QString address = QStringLiteral("%1:%2")
+                                        .arg(ev->data.addr.client).arg(ev->data.addr.port);
+            if (m_openedAddresses.contains(address))
+                gone = true;
+        } else if (ev->type == SND_SEQ_EVENT_CLIENT_EXIT) {
+            const QString prefix = QStringLiteral("%1:").arg(ev->data.addr.client);
+            for (const QString &address : std::as_const(m_openedAddresses)) {
+                if (address.startsWith(prefix))
+                    gone = true;
+            }
+        }
+    }
+#endif
+    return gone;
 }
 
 void MidiController::reopenInputs()
 {
     m_inputs.clear();
+    m_openedAddresses.clear();
     if (!m_enabled)
         return;
     if (!m_probe) {
@@ -300,12 +396,13 @@ void MidiController::reopenInputs()
         count = 0;
     }
     for (unsigned int i = 0; i < count; ++i) {
-        QString name;
+        QString rawName;
         try {
-            name = stablePortName(QString::fromStdString(m_probe->getPortName(i)));
+            rawName = QString::fromStdString(m_probe->getPortName(i));
         } catch (const RtMidiError &) {
             continue;
         }
+        const QString name = stablePortName(rawName);
         if (!m_port.isEmpty() && name != m_port)
             continue;
         // The ALSA loopback carries whatever other programs send it, which
@@ -321,6 +418,10 @@ void MidiController::reopenInputs()
             input->setCallback(&MidiController::rtMidiCallback, this);
             m_inputs.push_back(std::move(input));
             opened << name;
+            static const QRegularExpression alsaAddress(QStringLiteral("(\\d+:\\d+)$"));
+            const QRegularExpressionMatch match = alsaAddress.match(rawName);
+            if (match.hasMatch())
+                m_openedAddresses << match.captured(1);
         } catch (const RtMidiError &e) {
             qWarning() << "MIDI: cannot open" << name << ":" << e.what();
             failed << name;
