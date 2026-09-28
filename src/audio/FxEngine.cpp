@@ -1114,10 +1114,18 @@ double FxEngine::playbackRate() const
 
 double FxEngine::decoderReadRate() const
 {
+    if (!m_varispeed)
+        return 1.0;
     // A little faster than the deck plays, so a push on the platter or a
     // small tempo change never catches the decoder; pump() restarts it at a
-    // new rate when the tempo moves further than this margin.
-    return m_varispeed ? playbackRate() + 0.05 : 1.0;
+    // new rate when the tempo moves further than this margin. Once the
+    // decoder is well ahead, exactly as fast as the deck plays: the margin
+    // alone would add 5 % of every second played to the fifo, three minutes
+    // of it over an hour-long file, and the fifo is erased from the front
+    // on every chunk.
+    const qint64 fifoFrames = static_cast<qint64>(m_fifo.size() / kChannels);
+    const double margin = fifoFrames >= kDeckLeadFrames / 2 ? 0.0 : 0.05;
+    return playbackRate() + margin;
 }
 
 void FxEngine::repaceDecoder()
@@ -1271,14 +1279,16 @@ void FxEngine::pump()
     // A varispeed deck whose tempo moved away from what its decoder was
     // paced for: running low means it is playing faster than the decoder
     // reads, piling up means much slower. Either way restart the decoder at
-    // a read rate that suits the tempo now.
+    // a read rate that suits the tempo now. Piling up is any decoder still
+    // reading faster than the deck plays once it is a full lead ahead,
+    // including one on the margin decoderReadRate() starts it with.
     if (m_varispeed && m_proc && m_proc->state() == QProcess::Running) {
         const qint64 fifoFrames = static_cast<qint64>(m_fifo.size() / kChannels);
         const double rate = playbackRate();
         const bool starving = fifoFrames < 3 * kSampleRate
                               && rate > m_procReadRate - 0.02;
-        const bool piling = fifoFrames > 30 * kSampleRate
-                            && m_procReadRate > rate + 0.08;
+        const bool piling = fifoFrames > kDeckLeadFrames
+                            && m_procReadRate > rate + 0.001;
         if (starving || piling)
             repaceDecoder();
     }

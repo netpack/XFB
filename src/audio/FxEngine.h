@@ -254,6 +254,9 @@ private:
     // 15 ms (up to about 30 on Windows' coarse timer), so this still leaves
     // it five to ten ticks of slack.
     static constexpr int kDeckSinkBufferMs = 150;
+    // How far a varispeed deck's decoder may run ahead of what it plays:
+    // past this it is re-paced to the deck's own rate (see pump).
+    static constexpr qint64 kDeckLeadFrames = 30LL * kSampleRate;
     // Auto-cue: silence floor (~-50 dBFS) and the most leading silence a
     // track may have skipped before playback proceeds normally.
     static constexpr float kSilenceFloor = 0.0032f;
