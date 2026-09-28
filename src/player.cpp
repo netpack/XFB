@@ -13727,8 +13727,13 @@ void player::setupMidiController()
         ui->sliderVolume->setValue(qRound(v * ui->sliderVolume->maximum()));
         on_sliderVolume_sliderMoved(ui->sliderVolume->value());
     });
+    // Through the menu entry, not cueCurrentSelection(): the entry is what
+    // carries the playback.cue permission.
     add(QStringLiteral("station.cue"), station, tr("Cue the selection"), ActionType::Button,
-        [this](double) { cueCurrentSelection(); });
+        [this](double) {
+        if (m_cueAction && m_cueAction->isEnabled())
+            m_cueAction->trigger();
+    });
     add(QStringLiteral("station.cuestop"), station, tr("Stop the cue"), ActionType::Button,
         [this](double) {
         if (m_cueStopAction && m_cueStopAction->isEnabled())
