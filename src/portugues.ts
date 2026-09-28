@@ -2324,7 +2324,7 @@ Momento: %2</translation>
 <context>
     <name>BpmCellDelegate</name>
     <message>
-        <location filename="player.cpp" line="+241"/>
+        <location filename="player.cpp" line="+244"/>
         <source>no steady beat</source>
         <translation>sem batida constante</translation>
     </message>
@@ -2966,6 +2966,109 @@ A estação está fora do ar até alguém agir.</translation>
     </message>
 </context>
 <context>
+    <name>DeckTempoControl</name>
+    <message>
+        <location filename="ui/DeckTempoControl.cpp" line="+45"/>
+        <source>%1 tempo</source>
+        <translation>%1: andamento</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Tempo: faster to the right. As on a turntable, the pitch moves with the speed.</source>
+        <translation>Andamento: mais rápido para a direita. Como num gira-discos, o tom muda com a velocidade.</translation>
+    </message>
+    <message>
+        <location line="+12"/>
+        <source>%1: hold to slow down</source>
+        <translation>%1: manter premido para abrandar</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>%1: hold to speed up</source>
+        <translation>%1: manter premido para acelerar</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Hold to slow the record down a little, to bring its beat back in line</source>
+        <translation>Mantenha premido para abrandar ligeiramente o disco e voltar a alinhar a batida</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Hold to push the record a little faster, to bring its beat back in line</source>
+        <translation>Mantenha premido para acelerar ligeiramente o disco e voltar a alinhar a batida</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>%1: reset the tempo</source>
+        <translation>%1: repor o andamento</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Back to the speed the record was made at</source>
+        <translation>Voltar à velocidade original do disco</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>±%1 %</source>
+        <translation>±%1 %</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>%1 tempo range</source>
+        <translation>%1: amplitude do andamento</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>How far the tempo fader reaches either side</source>
+        <translation>Até onde o fader de andamento vai para cada lado</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Sync</source>
+        <translation>Sync</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>%1: match the other deck&apos;s tempo</source>
+        <translation>%1: igualar o andamento do outro prato</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Set this deck&apos;s tempo so its BPM matches the other deck&apos;s. Lines up the tempo, not the beats: bring the beats together with − and +.</source>
+        <translation>Ajusta o andamento deste prato para que o BPM coincida com o do outro prato. Alinha o andamento, não as batidas: junte as batidas com − e +.</translation>
+    </message>
+    <message>
+        <location line="+99"/>
+        <source>BPM %1</source>
+        <translation>BPM %1</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Recorded at %1 BPM</source>
+        <translation>Gravado a %1 BPM</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>BPM —</source>
+        <translation>BPM —</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>The tempo of this record has not been measured</source>
+        <translation>O andamento deste disco ainda não foi medido</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>%1 percent, %2 BPM</source>
+        <translation>%1 por cento, %2 BPM</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>%1 percent</source>
+        <translation>%1 por cento</translation>
+    </message>
+</context>
+<context>
     <name>DonationNotice</name>
     <message>
         <location filename="ui/DonationNotice.cpp" line="+62"/>
@@ -2987,6 +3090,24 @@ A estação está fora do ar até alguém agir.</translation>
         <location line="+53"/>
         <source>Enjoying XFB? It is kept alive by donations — &lt;a style=&quot;color:%1;&quot; href=&quot;%2&quot;&gt;chip in via PayPal&lt;/a&gt; if you can.</source>
         <translation>Gosta do XFB? Ele vive de donativos — &lt;a style=&quot;color:%1;&quot; href=&quot;%2&quot;&gt;contribua via PayPal&lt;/a&gt; se puder.</translation>
+    </message>
+</context>
+<context>
+    <name>EnhancedPlayer</name>
+    <message>
+        <location filename="PlayerIntegration.cpp" line="+190"/>
+        <source>Successfully imported %1 music files</source>
+        <translation>Foram importados %1 ficheiros de música com sucesso</translation>
+    </message>
+    <message>
+        <location line="+12"/>
+        <source>Pause</source>
+        <translation>Pausa</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Play</source>
+        <translation>Tocar</translation>
     </message>
 </context>
 <context>
@@ -3115,18 +3236,18 @@ A estação está fora do ar até alguém agir.</translation>
 <context>
     <name>FxEngine</name>
     <message>
-        <location filename="audio/FxEngine.cpp" line="+685"/>
+        <location filename="audio/FxEngine.cpp" line="+778"/>
         <source>Audio output device disappeared</source>
         <translation>O dispositivo de saída de áudio desapareceu</translation>
     </message>
     <message>
-        <location line="-541"/>
-        <location line="+622"/>
+        <location line="-607"/>
+        <location line="+692"/>
         <source>No usable audio output device for the FX engine</source>
         <translation>Não há nenhum dispositivo de saída de áudio utilizável pelo motor de efeitos</translation>
     </message>
     <message>
-        <location line="-438"/>
+        <location line="-510"/>
         <source>ffmpeg not found — audio FX engine unavailable</source>
         <translation>ffmpeg não encontrado — motor de efeitos de áudio indisponível</translation>
     </message>
@@ -3136,18 +3257,18 @@ A estação está fora do ar até alguém agir.</translation>
         <translation>Ficheiro não encontrado: %1</translation>
     </message>
     <message>
-        <location line="+60"/>
+        <location line="+65"/>
         <source>ffmpeg did not start (FX playback)</source>
         <translation>O ffmpeg não arrancou (reprodução com efeitos)</translation>
     </message>
     <message>
-        <location line="+291"/>
-        <location line="+81"/>
+        <location line="+354"/>
+        <location line="+85"/>
         <source>The cue output device is no longer connected</source>
         <translation>O dispositivo de saída de pré-escuta já não está ligado</translation>
     </message>
     <message>
-        <location line="+391"/>
+        <location line="+524"/>
         <source>ffmpeg could not decode: %1</source>
         <translation>O ffmpeg não conseguiu descodificar: %1</translation>
     </message>
@@ -4253,6 +4374,209 @@ A estação está fora do ar até alguém agir.</translation>
     </message>
 </context>
 <context>
+    <name>MidiController</name>
+    <message>
+        <location filename="services/MidiController.cpp" line="+196"/>
+        <location line="+40"/>
+        <source>MIDI control is off.</source>
+        <translation>O controlo MIDI está desligado.</translation>
+    </message>
+    <message>
+        <location line="+52"/>
+        <source>XFB cannot reach the system&apos;s MIDI service, so no controller can be found. On Linux that is the ALSA sequencer (/dev/snd/seq); in the Flatpak it needs the device permission.</source>
+        <translation>O XFB não consegue aceder ao serviço MIDI do sistema, por isso não encontra nenhum controlador. No Linux é o sequenciador ALSA (/dev/snd/seq); no Flatpak precisa da permissão de acesso aos dispositivos.</translation>
+    </message>
+    <message>
+        <location line="+44"/>
+        <source>Listening to %1.</source>
+        <translation>A escutar %1.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>%1 is not connected.</source>
+        <translation>%1 não está ligado.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>No MIDI controller is connected.</source>
+        <translation>Nenhum controlador MIDI está ligado.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Could not open %1.</source>
+        <translation>Não foi possível abrir %1.</translation>
+    </message>
+    <message>
+        <location line="+33"/>
+        <source>%1, value %2</source>
+        <translation>%1, valor %2</translation>
+    </message>
+</context>
+<context>
+    <name>MidiLearnDialog</name>
+    <message>
+        <location filename="dialogs/MidiLearnDialog.cpp" line="+25"/>
+        <source>MIDI Controller</source>
+        <translation>Controlador MIDI</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>Last message: %1</source>
+        <translation>Última mensagem: %1</translation>
+    </message>
+    <message>
+        <location line="+12"/>
+        <source>Tie the faders, knobs, buttons and jog wheels of a MIDI controller to XFB. Choose an action, press Learn, then move or press the control on the controller that should do it.</source>
+        <translation>Associe os faders, botões rotativos, botões e jog wheels de um controlador MIDI ao XFB. Escolha uma ação, prima Aprender e depois mova ou prima o controlo do controlador que a deve fazer.</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>&amp;Use a MIDI controller</source>
+        <translation>&amp;Usar um controlador MIDI</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>&amp;Input:</source>
+        <translation>&amp;Entrada:</translation>
+    </message>
+    <message>
+        <location line="+14"/>
+        <source>Action</source>
+        <translation>Ação</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Control</source>
+        <translation>Controlo</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Turns as</source>
+        <translation>Tipo de rotação</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Actions and the controls tied to them</source>
+        <translation>Ações e os controlos associados</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Last message: none yet</source>
+        <translation>Última mensagem: nenhuma ainda</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Last MIDI message received</source>
+        <translation>Última mensagem MIDI recebida</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <location line="+122"/>
+        <source>&amp;Learn</source>
+        <translation>&amp;Aprender</translation>
+    </message>
+    <message>
+        <location line="-121"/>
+        <source>C&amp;lear</source>
+        <translation>&amp;Limpar</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Clear &amp;all</source>
+        <translation>Limpar &amp;tudo</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Tie the chosen action to the next control you move</source>
+        <translation>Associar a ação escolhida ao próximo controlo que mover</translation>
+    </message>
+    <message>
+        <location line="+14"/>
+        <source>This build of XFB has no MIDI support. On Linux it needs the ALSA libraries at build time.</source>
+        <translation>Esta versão do XFB não tem suporte MIDI. No Linux precisa das bibliotecas ALSA durante a compilação.</translation>
+    </message>
+    <message>
+        <location line="+28"/>
+        <source>Every connected controller</source>
+        <translation>Todos os controladores ligados</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>%1 (not connected)</source>
+        <translation>%1 (não ligado)</translation>
+    </message>
+    <message>
+        <location line="+24"/>
+        <source>Waiting for a control…</source>
+        <translation>À espera de um controlo…</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>—</source>
+        <translation>—</translation>
+    </message>
+    <message>
+        <location line="+14"/>
+        <source>Wheel (1 / 127)</source>
+        <translation>Roda (1 / 127)</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Wheel (65 / 63)</source>
+        <translation>Roda (65 / 63)</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Knob (0 to 127)</source>
+        <translation>Botão rotativo (0 a 127)</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>How this control reports being turned. Learn guesses it; if the wheel goes the wrong way or jumps, try another.</source>
+        <translation>Como este controlo indica que está a rodar. O Aprender adivinha-o; se a roda andar ao contrário ou aos saltos, experimente outro.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>How %1 reports turning</source>
+        <translation>Como %1 indica que está a rodar</translation>
+    </message>
+    <message>
+        <location line="+25"/>
+        <source>&amp;Cancel learning</source>
+        <translation>&amp;Cancelar aprendizagem</translation>
+    </message>
+    <message>
+        <location line="+12"/>
+        <source>Learning cancelled.</source>
+        <translation>Aprendizagem cancelada.</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>Move or press the control for %1.</source>
+        <translation>Mova ou prima o controlo para %1.</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>%1 is now on %2.</source>
+        <translation>%1 está agora em %2.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Control learnt.</source>
+        <translation>Controlo aprendido.</translation>
+    </message>
+    <message>
+        <location line="+14"/>
+        <source>Clear all</source>
+        <translation>Limpar tudo</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Untie every control from its action?</source>
+        <translation>Desassociar todos os controlos das respetivas ações?</translation>
+    </message>
+</context>
+<context>
     <name>MobileSyncDialog</name>
     <message>
         <location filename="dialogs/MobileSyncDialog.cpp" line="+36"/>
@@ -5285,7 +5609,7 @@ expira em %2 s</translation>
         <translation>Uma grelha de pads que tocam um som quando são premidos.</translation>
     </message>
     <message>
-        <location line="+133"/>
+        <location line="+143"/>
         <source>Rename the bank</source>
         <translation>Mudar o nome do banco</translation>
     </message>
@@ -5309,7 +5633,7 @@ expira em %2 s</translation>
 <context>
     <name>PadButton</name>
     <message>
-        <location line="-1090"/>
+        <location line="-1100"/>
         <source>Pad &quot;%1&quot;: %2</source>
         <translation>Pad &quot;%1&quot;: %2</translation>
     </message>
@@ -6809,7 +7133,7 @@ A próxima obtenção vai copiar para aqui a discoteca inteira da estação, o q
 <context>
     <name>QObject</name>
     <message>
-        <location filename="player.cpp" line="+9780"/>
+        <location filename="player.cpp" line="+9897"/>
         <source>Not an XFB TakeOver file</source>
         <translation>Não é um ficheiro TakeOver do XFB</translation>
     </message>
@@ -6859,7 +7183,7 @@ A próxima obtenção vai copiar para aqui a discoteca inteira da estação, o q
         <translation>Natureza (folha e casca)</translation>
     </message>
     <message>
-        <location filename="main.cpp" line="+601"/>
+        <location filename="main.cpp" line="+639"/>
         <source>Initializing...</source>
         <translation>A inicializar...</translation>
     </message>
@@ -7440,7 +7764,7 @@ Autoriza-o em Privacidade e Segurança → Microfone nas definições do sistema
         <translation>Alto contraste</translation>
     </message>
     <message>
-        <location filename="optionsdialog.cpp" line="+936"/>
+        <location filename="optionsdialog.cpp" line="+940"/>
         <source>free space unknown</source>
         <translation>espaço livre desconhecido</translation>
     </message>
@@ -7519,6 +7843,21 @@ Clique em &apos;Permitir&apos; ou &apos;OK&apos; quando lhe for pedido, para que
         <location line="+1"/>
         <source>Could not determine microphone permission status.</source>
         <translation>Não foi possível determinar o estado da permissão do microfone.</translation>
+    </message>
+    <message>
+        <location filename="services/MidiController.cpp" line="-259"/>
+        <source>note %1%2 (%3), channel %4</source>
+        <translation>nota %1%2 (%3), canal %4</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>CC %1, channel %2</source>
+        <translation>CC %1, canal %2</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>pitch bend, channel %1</source>
+        <translation>pitch bend, canal %1</translation>
     </message>
 </context>
 <context>
@@ -14838,7 +15177,7 @@ Preencha os campos Artista(s) e Música e use &quot;Saca!&quot; para essa faixa,
         <translation>Lingua:</translation>
     </message>
     <message>
-        <location line="+1019"/>
+        <location line="+1029"/>
         <location filename="optionsdialog.cpp" line="+36"/>
         <source>Database</source>
         <translation>Base de Dados</translation>
@@ -14907,7 +15246,7 @@ Preencha os campos Artista(s) e Música e use &quot;Saca!&quot; para essa faixa,
         <translation>Hora de comunicação:</translation>
     </message>
     <message>
-        <location line="-1127"/>
+        <location line="-1137"/>
         <source>Theme:</source>
         <translation>Tema:</translation>
     </message>
@@ -14963,7 +15302,7 @@ Preencha os campos Artista(s) e Música e use &quot;Saca!&quot; para essa faixa,
         <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Mostrar o separador Pads ao lado do separador DJ: uma grelha de pads identificados e coloridos que tocam um jingle, um efeito ou um fundo musical assim que são premidos — feita para um ecrã tátil. Esconder o separador não apaga os pads; eles voltam com ele.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
-        <location line="+362"/>
+        <location line="+372"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Play all music retuned from A=440 Hz to A=432 Hz in real time — files are not modified and the tempo is preserved (track length and BPM stay the same). Applies to the main player and both LP decks. To permanently convert files instead, use Database → Convert to 432 Hz.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Reproduzir toda a música reafinada de Lá=440 Hz para Lá=432 Hz em tempo real — os ficheiros não são alterados e o andamento é preservado (a duração e o BPM mantêm-se). Aplica-se ao leitor principal e a ambos os pratos LP. Para converter os ficheiros de forma permanente, use Base de Dados → Converter para 432 Hz.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
@@ -14973,7 +15312,7 @@ Preencha os campos Artista(s) e Música e use &quot;Saca!&quot; para essa faixa,
         <translation>Reprodução a 432 Hz (todos os leitores)</translation>
     </message>
     <message>
-        <location line="-166"/>
+        <location line="-176"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Run Auto-mix automatically on every track added to the playlist: its crossfade overlap with the previous track is computed in the background, so transitions are always mixed without pressing the Auto-mix button.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Executar o Auto-mix automaticamente em cada faixa adicionada à lista de reprodução: a sobreposição com a faixa anterior é calculada em segundo plano, para que as transições fiquem sempre misturadas sem premir o botão Auto-mix.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
@@ -15019,7 +15358,7 @@ Preencha os campos Artista(s) e Música e use &quot;Saca!&quot; para essa faixa,
     </message>
     <message>
         <location line="+3"/>
-        <location filename="optionsdialog.cpp" line="-502"/>
+        <location filename="optionsdialog.cpp" line="-503"/>
         <source>0:01:23 of 0:03:45</source>
         <translation>0:01:23 de 0:03:45</translation>
     </message>
@@ -15070,7 +15409,7 @@ Preencha os campos Artista(s) e Música e use &quot;Saca!&quot; para essa faixa,
     </message>
     <message>
         <location line="+7"/>
-        <location filename="optionsdialog.cpp" line="+392"/>
+        <location filename="optionsdialog.cpp" line="+393"/>
         <source>Jingles</source>
         <translation>Jingles</translation>
     </message>
@@ -15109,6 +15448,16 @@ Preencha os campos Artista(s) e Música e use &quot;Saca!&quot; para essa faixa,
         <location line="+9"/>
         <source>Auto Auto-mix: mix tracks as they are added to the playlist</source>
         <translation>Auto-mix automático: misturar as faixas à medida que são adicionadas à lista</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Play the on-air player through XFB&apos;s own audio engine (the one the DJ decks, the effects and the stream use) even when no effect is on. Every crossfade is then mixed inside one audio stream and joins on the exact sample auto-mix measured, instead of starting a second player and hoping it starts in time. Needs ffmpeg. Takes effect from the next track.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
+        <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Tocar o leitor no ar através do motor de áudio do próprio XFB (o que os pratos DJ, os efeitos e a emissão usam) mesmo sem nenhum efeito ligado. Cada crossfade é então misturado num único fluxo de áudio e junta-se na amostra exata que o auto-mix mediu, em vez de iniciar um segundo leitor e esperar que arranque a tempo. Precisa do ffmpeg. Aplica-se a partir da próxima faixa.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Mix transitions in XFB&apos;s audio engine (sample-accurate crossfades)</source>
+        <translation>Misturar as transições no motor de áudio do XFB (crossfades com precisão à amostra)</translation>
     </message>
     <message>
         <location line="+7"/>
@@ -15277,8 +15626,8 @@ Preencha os campos Artista(s) e Música e use &quot;Saca!&quot; para essa faixa,
     </message>
     <message>
         <location line="+3"/>
-        <location filename="optionsdialog.cpp" line="-386"/>
-        <location line="+374"/>
+        <location filename="optionsdialog.cpp" line="-387"/>
+        <location line="+375"/>
         <source>System</source>
         <translation>Sistema</translation>
     </message>
@@ -15404,7 +15753,7 @@ Preencha os campos Artista(s) e Música e use &quot;Saca!&quot; para essa faixa,
         <translation>Fechar sem guardar</translation>
     </message>
     <message>
-        <location line="-1380"/>
+        <location line="-1390"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Show a stereo LED level meter next to the volume slider, indicating the player&apos;s current left/right output level. Levels are measured by the FX playback engine.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Mostrar um vímetro LED estéreo junto à barra de volume, indicando o nível de saída esquerdo/direito atual do leitor. Os níveis são medidos pelo motor de reprodução com efeitos.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
@@ -15444,7 +15793,7 @@ Preencha os campos Artista(s) e Música e use &quot;Saca!&quot; para essa faixa,
         <translation> pt</translation>
     </message>
     <message>
-        <location line="+537"/>
+        <location line="+547"/>
         <source>Downloads</source>
         <translation>Transferências</translation>
     </message>
@@ -15455,7 +15804,7 @@ Preencha os campos Artista(s) e Música e use &quot;Saca!&quot; para essa faixa,
     </message>
     <message>
         <location line="+8"/>
-        <location filename="optionsdialog.cpp" line="-624"/>
+        <location filename="optionsdialog.cpp" line="-625"/>
         <source>Format:</source>
         <translation>Formato:</translation>
     </message>
@@ -15940,7 +16289,7 @@ Preencha os campos Artista(s) e Música e use &quot;Saca!&quot; para essa faixa,
         <translation>Escolher a cor de destaque</translation>
     </message>
     <message>
-        <location line="+207"/>
+        <location line="+208"/>
         <source>Settings Error</source>
         <translation>Erro nas definições</translation>
     </message>
@@ -16445,7 +16794,7 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
 <context>
     <name>player</name>
     <message>
-        <location filename="player.cpp" line="-10991"/>
+        <location filename="player.cpp" line="-11108"/>
         <source>Seek to %1</source>
         <translation>Saltar para %1</translation>
     </message>
@@ -16476,19 +16825,22 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
     </message>
     <message>
         <location line="+1609"/>
-        <location filename="player.cpp" line="+481"/>
-        <location line="+3260"/>
+        <location filename="player.cpp" line="+493"/>
+        <location line="+3296"/>
         <location line="+92"/>
         <location line="+11"/>
         <location line="+207"/>
-        <location line="+33"/>
-        <location line="+1566"/>
-        <location line="+10835"/>
+        <location line="+35"/>
+        <location line="+1631"/>
+        <location line="+7183"/>
+        <location line="+36"/>
+        <location line="+3855"/>
         <source>Play</source>
         <translation>Tocar</translation>
     </message>
     <message>
         <location line="+256"/>
+        <location filename="player.cpp" line="-3881"/>
         <source>Volume</source>
         <translation>Volume</translation>
     </message>
@@ -16499,8 +16851,10 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
     </message>
     <message>
         <location line="-256"/>
-        <location filename="player.cpp" line="-15465"/>
-        <location line="+4631"/>
+        <location filename="player.cpp" line="-11926"/>
+        <location line="+4734"/>
+        <location line="+7183"/>
+        <location line="+37"/>
         <source>Stop</source>
         <translation>Parar</translation>
     </message>
@@ -16576,6 +16930,7 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
     <message>
         <location line="-89"/>
         <location line="+114"/>
+        <location filename="player.cpp" line="+50"/>
         <source>Echo</source>
         <translation>Eco</translation>
     </message>
@@ -16588,6 +16943,7 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
     <message>
         <location line="-111"/>
         <location line="+114"/>
+        <location filename="player.cpp" line="+2"/>
         <source>Brake</source>
         <translation>Travão</translation>
     </message>
@@ -16600,6 +16956,7 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
     <message>
         <location line="-111"/>
         <location line="+114"/>
+        <location filename="player.cpp" line="+1"/>
         <source>Backspin</source>
         <translation>Backspin</translation>
     </message>
@@ -16610,13 +16967,13 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
     </message>
     <message>
         <location line="+297"/>
-        <location filename="player.cpp" line="+1066"/>
+        <location filename="player.cpp" line="-6207"/>
         <source>Torrents</source>
         <translation>Torrents</translation>
     </message>
     <message>
         <location line="+32"/>
-        <location filename="player.cpp" line="+10908"/>
+        <location filename="player.cpp" line="+11147"/>
         <location line="+10"/>
         <source>Connect to Tor</source>
         <translation>Ligar ao Tor</translation>
@@ -16741,6 +17098,7 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
         <location line="-1659"/>
         <location line="+114"/>
         <location line="+1557"/>
+        <location filename="player.cpp" line="-5031"/>
         <source>Filter</source>
         <translation>filtrar</translation>
     </message>
@@ -16761,7 +17119,7 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
     </message>
     <message>
         <location line="-1358"/>
-        <location filename="player.cpp" line="-12021"/>
+        <location filename="player.cpp" line="-7229"/>
         <source>Jingles</source>
         <translation>Jingles</translation>
     </message>
@@ -16783,7 +17141,7 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
     </message>
     <message>
         <location line="+17"/>
-        <location filename="player.cpp" line="+7170"/>
+        <location filename="player.cpp" line="+7409"/>
         <source>Sound Converter</source>
         <translation>Conversor de som</translation>
     </message>
@@ -16865,15 +17223,15 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
         <location line="+16"/>
         <location line="+109"/>
         <location line="+45"/>
-        <location filename="player.cpp" line="-12598"/>
+        <location filename="player.cpp" line="-12940"/>
         <location line="+770"/>
-        <location line="+11718"/>
+        <location line="+11823"/>
         <source>Stopped</source>
         <translation>Parado</translation>
     </message>
     <message>
         <location line="-381"/>
-        <location filename="player.cpp" line="-7086"/>
+        <location filename="player.cpp" line="-7088"/>
         <source>Play the stream</source>
         <translation>Reproduzir a emissão</translation>
     </message>
@@ -16935,7 +17293,7 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
     </message>
     <message>
         <location line="+3"/>
-        <location filename="player.cpp" line="-4635"/>
+        <location filename="player.cpp" line="-4738"/>
         <location line="+7"/>
         <source>Share</source>
         <translation>Partilhar</translation>
@@ -16957,9 +17315,9 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
     </message>
     <message>
         <location line="+32"/>
-        <location filename="player.cpp" line="+9257"/>
+        <location filename="player.cpp" line="+9362"/>
         <location line="+24"/>
-        <location line="+5832"/>
+        <location line="+6069"/>
         <location line="+26"/>
         <location line="+14"/>
         <location line="+23"/>
@@ -17058,7 +17416,7 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
     </message>
     <message>
         <location line="+14"/>
-        <location filename="player.cpp" line="-15242"/>
+        <location filename="player.cpp" line="-15584"/>
         <location line="+5"/>
         <source>Check for updates</source>
         <translation>Verificar atualizações</translation>
@@ -17125,7 +17483,7 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
     </message>
     <message>
         <location line="+1389"/>
-        <location filename="player.cpp" line="+6742"/>
+        <location filename="player.cpp" line="+6845"/>
         <location line="+147"/>
         <location line="+18"/>
         <location line="+17"/>
@@ -17226,30 +17584,30 @@ Ativar a funcionalidade Torrents com estas limitações compreendidas?</translat
         <translation>Adicionar Programa</translation>
     </message>
     <message>
-        <location filename="player.cpp" line="-4349"/>
+        <location filename="player.cpp" line="-4416"/>
         <location line="+12"/>
-        <location line="+3343"/>
+        <location line="+3410"/>
         <source>Play and Segue</source>
         <translation>Tocar e seguir</translation>
     </message>
     <message>
-        <location line="-3336"/>
+        <location line="-3403"/>
         <source>Play and Stop</source>
         <translation>Tocar e Parar</translation>
     </message>
     <message>
-        <location line="+678"/>
-        <location line="+159"/>
+        <location line="+704"/>
+        <location line="+162"/>
         <source> of </source>
         <translation>de </translation>
     </message>
     <message>
-        <location line="+1551"/>
+        <location line="+1589"/>
         <source>Broadcast &amp;Redundancy...</source>
         <translation>&amp;Redundância de emissão...</translation>
     </message>
     <message>
-        <location line="+4888"/>
+        <location line="+4890"/>
         <source>Xml files(*.xml)</source>
         <translation>Ficheiros Xml (*.xml)</translation>
     </message>
@@ -17460,7 +17818,7 @@ Ex: programa_2016-02-07
         <translation>Ligação pública da emissão copiada para a área de transferência</translation>
     </message>
     <message>
-        <location line="+119"/>
+        <location line="+356"/>
         <source>No audio converter application found.
 
 Recommended free options for macOS:
@@ -17482,8 +17840,8 @@ Também pode usar: ffmpeg -i entrada.ogg saida.mp3</translation>
         <translation>O Sound Converter permite converter ficheiros de áudio entre formatos. É fornecido pelo programa &quot;soundconverter&quot;.</translation>
     </message>
     <message>
-        <location line="-9768"/>
-        <location line="+10087"/>
+        <location line="-10074"/>
+        <location line="+10393"/>
         <source>Sure?</source>
         <translation>Tem a certeza?</translation>
     </message>
@@ -17503,9 +17861,9 @@ Também pode usar: ffmpeg -i entrada.ogg saida.mp3</translation>
         <translation>Deseja apagar todos os ficheiros selectionados do disco rigido também?</translation>
     </message>
     <message>
-        <location line="-10083"/>
+        <location line="-10389"/>
         <location line="+462"/>
-        <location line="+9644"/>
+        <location line="+9950"/>
         <source>Error</source>
         <translation>Erro</translation>
     </message>
@@ -17531,14 +17889,14 @@ Instale-o com o seu gestor de pacotes — &quot;tor&quot; no Linux e no macOS, o
         <translation>A TRANSMITIR AO VIVO!!!</translation>
     </message>
     <message>
-        <location line="-4773"/>
+        <location line="-5010"/>
         <location line="+271"/>
         <location line="+21"/>
         <source>Local file deleted</source>
         <translation>Ficheiro local apagado</translation>
     </message>
     <message>
-        <location line="-12319"/>
+        <location line="-12436"/>
         <source>Player controls</source>
         <translation>Comandos do leitor</translation>
     </message>
@@ -17589,12 +17947,12 @@ Instale-o com o seu gestor de pacotes — &quot;tor&quot; no Linux e no macOS, o
     </message>
     <message>
         <location line="+88"/>
-        <location line="+5881"/>
+        <location line="+5996"/>
         <source>Playlist</source>
         <translation>Lista de reprodução</translation>
     </message>
     <message>
-        <location line="-5835"/>
+        <location line="-5950"/>
         <source>Wave view</source>
         <translation>Vista de onda</translation>
     </message>
@@ -17639,13 +17997,13 @@ Instale-o com o seu gestor de pacotes — &quot;tor&quot; no Linux e no macOS, o
         <translation>Auto-mix: %1 transição(ões) definida(s), %2 ignorada(s)</translation>
     </message>
     <message>
-        <location line="+307"/>
-        <location line="+5583"/>
+        <location line="+319"/>
+        <location line="+5686"/>
         <source>Playing: %1</source>
         <translation>A tocar: %1</translation>
     </message>
     <message>
-        <location line="-5573"/>
+        <location line="-5676"/>
         <source>Connecting / buffering...</source>
         <translation>A ligar / a colocar em memória...</translation>
     </message>
@@ -17738,19 +18096,20 @@ Instale-o com o seu gestor de pacotes — &quot;tor&quot; no Linux e no macOS, o
         <translation>Agarre o prato para fazer scratch durante a reprodução</translation>
     </message>
     <message>
-        <location line="+77"/>
-        <location line="+688"/>
+        <location line="+102"/>
+        <location line="+699"/>
+        <location line="+11010"/>
         <source>Pads</source>
         <translation>Pads</translation>
     </message>
     <message>
-        <location line="-671"/>
-        <location line="+690"/>
+        <location line="-11692"/>
+        <location line="+701"/>
         <source>Audio FX</source>
         <translation>Audio FX</translation>
     </message>
     <message>
-        <location line="-369"/>
+        <location line="-377"/>
         <source>Application Not Found</source>
         <translation>Aplicação não encontrada</translation>
     </message>
@@ -17775,7 +18134,7 @@ Instale-o com o seu gestor de pacotes — &quot;tor&quot; no Linux e no macOS, o
         <translation>A leitura dos metadados de uma faixa usa a ferramenta MediaInfo.</translation>
     </message>
     <message>
-        <location line="+11244"/>
+        <location line="+11558"/>
         <source>Trimming the silence from the start and the end of every track in the database is done by SoX (Sound eXchange).</source>
         <translation>Cortar o silêncio do início e do fim de todas as faixas da base de dados é feito pelo SoX (Sound eXchange).</translation>
     </message>
@@ -17786,7 +18145,7 @@ Instale-o com o seu gestor de pacotes — &quot;tor&quot; no Linux e no macOS, o
         <translation>Cortar o silêncio do início e do fim das faixas selecionadas é feito pelo SoX (Sound eXchange).</translation>
     </message>
     <message>
-        <location line="-12337"/>
+        <location line="-12651"/>
         <location line="+23"/>
         <source>Metadata Error</source>
         <translation>Erro de metadados</translation>
@@ -17839,9 +18198,9 @@ Débito: %8</translation>
     </message>
     <message>
         <location line="+12"/>
-        <location line="+1285"/>
+        <location line="+1293"/>
         <location line="+386"/>
-        <location line="+14523"/>
+        <location line="+14829"/>
         <location line="+7"/>
         <location line="+52"/>
         <location line="+180"/>
@@ -17852,7 +18211,7 @@ Débito: %8</translation>
         <translation>Erro da base de dados</translation>
     </message>
     <message>
-        <location line="-16764"/>
+        <location line="-17078"/>
         <source>Failed to update metadata in the database.</source>
         <translation>Não foi possível atualizar os metadados na base de dados.</translation>
     </message>
@@ -17867,7 +18226,7 @@ Débito: %8</translation>
         <translation>Não foi possível iniciar o processo &apos;mediainfo&apos;.</translation>
     </message>
     <message>
-        <location line="+931"/>
+        <location line="+939"/>
         <location line="+279"/>
         <location line="+73"/>
         <location line="+302"/>
@@ -18089,15 +18448,15 @@ Débito: %8</translation>
     <message>
         <location line="+174"/>
         <location line="+69"/>
-        <location line="+8311"/>
+        <location line="+8380"/>
         <location line="+225"/>
-        <location line="+4401"/>
+        <location line="+4638"/>
         <location line="+127"/>
         <source>Script Error</source>
         <translation>Erro de script</translation>
     </message>
     <message>
-        <location line="-13132"/>
+        <location line="-13438"/>
         <source>The required check script &apos;%1&apos; was not found.
 Install it under the application data directory (e.g. share/xfb/scripts) or set ServerScriptsPath in xfb.conf.</source>
         <translation>O script de verificação necessário &apos;%1&apos; não foi encontrado.
@@ -18106,15 +18465,15 @@ Instale-o na pasta de dados da aplicação (por exemplo share/xfb/scripts) ou de
     <message>
         <location line="+4"/>
         <location line="+70"/>
-        <location line="+12934"/>
+        <location line="+13240"/>
         <location line="+129"/>
         <source>Script Not Configured</source>
         <translation>Script não configurado</translation>
     </message>
     <message>
-        <location line="-13132"/>
+        <location line="-13438"/>
         <location line="+70"/>
-        <location line="+12934"/>
+        <location line="+13240"/>
         <source>The script &apos;%1&apos; still contains the [IP]/[PORT] placeholders.
 Edit it with your server&apos;s address and port:
 %2</source>
@@ -18123,25 +18482,25 @@ Edite-o com o endereço e a porta do seu servidor:
 %2</translation>
     </message>
     <message>
-        <location line="-13000"/>
+        <location line="-13306"/>
         <source>Checking server...</source>
         <translation>A verificar o servidor...</translation>
     </message>
     <message>
         <location line="+0"/>
         <location line="+71"/>
-        <location line="+1685"/>
+        <location line="+1752"/>
         <location line="+43"/>
         <location line="+147"/>
         <location line="+237"/>
-        <location line="+6083"/>
-        <location line="+6544"/>
+        <location line="+6085"/>
+        <location line="+6781"/>
         <location line="+370"/>
         <source>Cancel</source>
         <translation>Cancelar</translation>
     </message>
     <message>
-        <location line="-15147"/>
+        <location line="-15453"/>
         <source>Check Successful</source>
         <translation>Verificação bem-sucedida</translation>
     </message>
@@ -18152,16 +18511,16 @@ Edite-o com o endereço e a porta do seu servidor:
     </message>
     <message>
         <location line="+25"/>
-        <location line="+8311"/>
+        <location line="+8380"/>
         <location line="+225"/>
-        <location line="+4401"/>
+        <location line="+4638"/>
         <source>The required upload script &apos;%1&apos; was not found.
 Install it under the application data directory (e.g. share/xfb/scripts) or set ServerScriptsPath in xfb.conf.</source>
         <translation>O script de envio necessário &apos;%1&apos; não foi encontrado.
 Instale-o na pasta de dados da aplicação (por exemplo share/xfb/scripts) ou defina ServerScriptsPath no xfb.conf.</translation>
     </message>
     <message>
-        <location line="-12926"/>
+        <location line="-13232"/>
         <source>Uploading to server...</source>
         <translation>A enviar para o servidor...</translation>
     </message>
@@ -18256,35 +18615,35 @@ Verifique as permissões de &apos;%1&apos;.</translation>
     </message>
     <message>
         <location line="+20"/>
-        <location line="+4912"/>
+        <location line="+4981"/>
         <source>Download Torrent</source>
         <translation>Transferir o torrent</translation>
     </message>
     <message>
-        <location line="-4911"/>
-        <location line="+4912"/>
+        <location line="-4980"/>
+        <location line="+4981"/>
         <source>Download and Stream</source>
         <translation>Transferir e emitir</translation>
     </message>
     <message>
-        <location line="-4911"/>
-        <location line="+4913"/>
+        <location line="-4980"/>
+        <location line="+4982"/>
         <source>Copy Magnet Link</source>
         <translation>Copiar a ligação magnet</translation>
     </message>
     <message>
-        <location line="-4912"/>
+        <location line="-4981"/>
         <source>View Details</source>
         <translation>Ver os detalhes</translation>
     </message>
     <message>
         <location line="+37"/>
-        <location line="+4906"/>
+        <location line="+4975"/>
         <source>Download Confirmation</source>
         <translation>Confirmação da transferência</translation>
     </message>
     <message>
-        <location line="-4905"/>
+        <location line="-4974"/>
         <source>⚠️ LEGAL RESPONSIBILITY ⚠️
 
 You are about to download: %1
@@ -18416,7 +18775,7 @@ Categoria: %7</translation>
         <translation>A tocar agora: %1</translation>
     </message>
     <message>
-        <location line="+1060"/>
+        <location line="+1127"/>
         <source>Auto-mix: analyzing waveforms...</source>
         <translation>Auto-mix: a analisar as formas de onda...</translation>
     </message>
@@ -18499,11 +18858,12 @@ Medi-las novamente? Vale a pena fazê-lo depois de uma atualização, e é a for
     </message>
     <message>
         <location line="+1"/>
+        <location line="+7185"/>
         <source>Play next</source>
         <translation>Tocar a seguinte</translation>
     </message>
     <message>
-        <location line="+0"/>
+        <location line="-7185"/>
         <source>Skip to the next track in the playlist</source>
         <translation>Saltar para a faixa seguinte da lista de reprodução</translation>
     </message>
@@ -18764,7 +19124,7 @@ Medi-las novamente? Vale a pena fazê-lo depois de uma atualização, e é a for
         <translation>Não está nada a tocar</translation>
     </message>
     <message>
-        <location line="-7572"/>
+        <location line="-7687"/>
         <source>Intro set to %1</source>
         <translation>Intro definida em %1</translation>
     </message>
@@ -18774,7 +19134,7 @@ Medi-las novamente? Vale a pena fazê-lo depois de uma atualização, e é a for
         <translation>Esta faixa não está na base de dados, por isso a sua intro não pode ser guardada</translation>
     </message>
     <message>
-        <location line="+1141"/>
+        <location line="+1153"/>
         <source>Measure the intro and outro times of the database</source>
         <translation>Medir os tempos de intro e de fecho da base de dados</translation>
     </message>
@@ -18814,7 +19174,13 @@ Medi-las novamente? Vale a pena fazê-lo depois de uma atualização, e é a for
         <translation>Pastas que o XFB vigia: tudo o que aparecer de novo numa delas é adicionado sozinho à biblioteca de músicas, jingles, publicidades ou programas.</translation>
     </message>
     <message>
-        <location line="+1381"/>
+        <location line="+63"/>
+        <location line="+11705"/>
+        <source>Deck %1</source>
+        <translation>Prato %1</translation>
+    </message>
+    <message>
+        <location line="-10351"/>
         <location line="+140"/>
         <source>Cue this track in the headphones</source>
         <translation>Pré-escutar esta faixa nos auscultadores</translation>
@@ -18855,7 +19221,7 @@ Medi-las novamente? Vale a pena fazê-lo depois de uma atualização, e é a for
         <translation>%1. Intro %2</translation>
     </message>
     <message numerus="yes">
-        <location line="+250"/>
+        <location line="+252"/>
         <source>%n second(s)</source>
         <comment>spoken countdown to the end of the on-air track</comment>
         <translation>
@@ -18864,7 +19230,7 @@ Medi-las novamente? Vale a pena fazê-lo depois de uma atualização, e é a for
         </translation>
     </message>
     <message>
-        <location line="+653"/>
+        <location line="+718"/>
         <source>A voice track sits between two tracks. Put at least two in the playlist first.</source>
         <translation>Uma locução fica entre duas faixas. Põe primeiro pelo menos duas na playlist.</translation>
     </message>
@@ -19726,7 +20092,7 @@ Esta máquina é a de reserva. Não foi posto nada no ar automaticamente — vê
         <translation>Estado</translation>
     </message>
     <message>
-        <location line="+388"/>
+        <location line="+390"/>
         <location line="+7"/>
         <source>Magnet link copied to clipboard</source>
         <translation>Ligação magnet copiada para a área de transferência</translation>
@@ -19904,9 +20270,9 @@ Medi-las agora? Cada faixa é descodificada uma vez, em segundo plano; também p
         <translation>Não foi possível escrever a playlist nesse ficheiro. Lamentamos.</translation>
     </message>
     <message>
-        <location line="-3634"/>
+        <location line="-3636"/>
         <location line="+1"/>
-        <location line="+3872"/>
+        <location line="+3874"/>
         <location line="+1"/>
         <source>Recording problem: nothing is being recorded</source>
         <translation>Problema na gravação: não está a ser gravado nada</translation>
@@ -19937,9 +20303,9 @@ Medi-las agora? Cada faixa é descodificada uma vez, em segundo plano; também p
         <translation>A gravação está a iniciar</translation>
     </message>
     <message>
-        <location line="-3889"/>
+        <location line="-3891"/>
         <location line="+14"/>
-        <location line="+3781"/>
+        <location line="+3783"/>
         <location line="+240"/>
         <source>Recording Error</source>
         <translation>Erro de gravação</translation>
@@ -20072,7 +20438,118 @@ O instalador vai abrir-se agora. O XFB fecha-se — instale a atualização e ab
         <translation>A cópia local do ficheiro foi corretamente apagada.</translation>
     </message>
     <message>
-        <location line="+4040"/>
+        <location line="+902"/>
+        <source>Station</source>
+        <translation>Estação</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <location line="+35"/>
+        <source>Pause / resume</source>
+        <translation>Pausa / retomar</translation>
+    </message>
+    <message>
+        <location line="-31"/>
+        <source>Auto Mode on / off</source>
+        <translation>Ligar / desligar o Modo Automático</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Record on / off</source>
+        <translation>Ligar / desligar a gravação</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>Cue the selection</source>
+        <translation>Pré-escutar a seleção</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Stop the cue</source>
+        <translation>Parar a pré-escuta</translation>
+    </message>
+    <message>
+        <location line="+20"/>
+        <source>Tempo</source>
+        <translation>Andamento</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>Tempo back to 0 %</source>
+        <translation>Andamento de volta a 0 %</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Sync to the other deck</source>
+        <translation>Sincronizar com o outro prato</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Hold to slow down</source>
+        <translation>Manter premido para abrandar</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Hold to speed up</source>
+        <translation>Manter premido para acelerar</translation>
+    </message>
+    <message>
+        <location line="+14"/>
+        <source>Jog wheel (push the beat)</source>
+        <translation>Jog wheel (empurrar a batida)</translation>
+    </message>
+    <message>
+        <location line="+19"/>
+        <source>DJ mixer</source>
+        <translation>Mesa de mistura DJ</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Crossfader</source>
+        <translation>Crossfader</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>Pad %1</source>
+        <translation>Pad %1</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>&amp;MIDI Controller...</source>
+        <translation>Controlador &amp;MIDI...</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Control XFB from the faders, buttons and jog wheels of a MIDI controller</source>
+        <translation>Controlar o XFB com os faders, botões e jog wheels de um controlador MIDI</translation>
+    </message>
+    <message>
+        <location line="+57"/>
+        <source>Sync needs a record on both decks.</source>
+        <translation>O Sync precisa de um disco em cada prato.</translation>
+    </message>
+    <message>
+        <location line="+15"/>
+        <source>The tempo of %1 is not known yet. It is being measured now; press Sync again in a moment. Tracks with no steady beat have no tempo to sync to.</source>
+        <translation>O andamento de %1 ainda não é conhecido. Está a ser medido agora; prima Sync de novo daqui a pouco. Faixas sem batida regular não têm andamento para sincronizar.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source> and </source>
+        <translation> e </translation>
+    </message>
+    <message>
+        <location line="+14"/>
+        <source>Deck %1 cannot reach %2 BPM: the tempo fader goes to ±50 % at most.</source>
+        <translation>O prato %1 não consegue chegar a %2 BPM: o fader de andamento vai no máximo até ±50 %.</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Deck %1 synced to %2 BPM (%3%4 %).</source>
+        <translation>Prato %1 sincronizado a %2 BPM (%3%4 %).</translation>
+    </message>
+    <message>
+        <location line="+3167"/>
         <location line="+203"/>
         <source>Missing IP</source>
         <translation>Falta o IP</translation>
@@ -20878,7 +21355,7 @@ As contagens de reproduções e quaisquer BPM, intensidade sonora e tempos de in
         <translation>Não foi apagado nenhum ficheiro de áudio.</translation>
     </message>
     <message>
-        <location line="-6873"/>
+        <location line="-7110"/>
         <source>Cannot Send</source>
         <translation>Impossível enviar</translation>
     </message>
@@ -20888,7 +21365,7 @@ As contagens de reproduções e quaisquer BPM, intensidade sonora e tempos de in
         <translation>Não é possível enviar ficheiros para o servidor se o XFB está no modo Server</translation>
     </message>
     <message>
-        <location line="-9102"/>
+        <location line="-9171"/>
         <source>Remove this track from the playlist</source>
         <translation>Remover esta música da playlist</translation>
     </message>
