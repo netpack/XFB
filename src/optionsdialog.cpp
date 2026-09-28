@@ -134,6 +134,9 @@ optionsDialog::optionsDialog(QWidget *parent) :
     ui->checkBox_showFxTab->setChecked(settings.value("ShowFxTab", true).toBool());
     ui->checkBox_showPadsTab->setChecked(settings.value("ShowPadsTab", true).toBool());
     ui->checkBox_autoAutoMix->setChecked(settings.value("AutoAutoMix", false).toBool());
+    ui->checkBox_mixInEngine->setChecked(
+        settings.value("MixInEngine", FxPlayer::mixInEngineByDefault()).toBool());
+    ui->checkBox_mixInEngine->setEnabled(FxPlayer::fxAvailable());
     ui->checkBox_bpmMatch->setChecked(settings.value("AutoModeMatchBpm", false).toBool());
     ui->spin_bpmTolerance->setValue(
         qBound(1, settings.value("AutoModeBpmTolerance", 8).toInt(), 60));
@@ -699,6 +702,7 @@ void optionsDialog::saveSettings2Db()
     settings.setValue("ShowFxTab", ui->checkBox_showFxTab->isChecked());
     settings.setValue("ShowPadsTab", ui->checkBox_showPadsTab->isChecked());
     settings.setValue("AutoAutoMix", ui->checkBox_autoAutoMix->isChecked());
+    settings.setValue("MixInEngine", ui->checkBox_mixInEngine->isChecked());
     settings.setValue("AutoModeMatchBpm", ui->checkBox_bpmMatch->isChecked());
     settings.setValue("AutoModeBpmTolerance", ui->spin_bpmTolerance->value());
     settings.setValue("LoudnessNormalize", ui->checkBox_loudnessNormalize->isChecked());

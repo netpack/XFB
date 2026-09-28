@@ -104,11 +104,18 @@ void FxEngine::setSource(const QString &pathOrUrl)
     // already running — adopt it instead of cold-starting a new one. A
     // short track's decoder may have exited already with all of its PCM
     // still buffered, which is just as usable.
-    if (!pathOrUrl.isEmpty() && pathOrUrl == m_nextPath && m_nextProc
-            && (m_nextProc->state() == QProcess::Running
-                || m_nextProc->bytesAvailable() > 0)) {
-        adoptPreloaded();
-        return;
+    if (!pathOrUrl.isEmpty() && pathOrUrl == m_nextPath) {
+        // The preload's probe has not answered yet (ffprobe is slower to
+        // start on Windows). Waiting for it would mean a cold start, which
+        // is a hard cut in the middle of a crossfade: start the decoder now
+        // and let the probe's answer fill in the duration afterwards.
+        if (!m_nextProc && m_nextProbe)
+            spawnPreloadDecoder();
+        if (m_nextProc && (m_nextProc->state() != QProcess::NotRunning
+                           || m_nextProc->bytesAvailable() > 0)) {
+            adoptPreloaded();
+            return;
+        }
     }
 
     cancelPreload();
@@ -213,6 +220,7 @@ void FxEngine::stop()
     m_procPreloaded = false;
     m_finishEmitted = false;
     m_nextCrossfadeMs = 0;
+    m_nextCrossfadeAtMs = -1;
     m_scratchActive = false;
     m_scratchMode = 0;
     m_scratchBuf.clear();
@@ -225,6 +233,8 @@ void FxEngine::stop()
     m_state = State::Stopped;
     m_baseMs = 0;
     m_framesTaken = 0;
+    m_frameOffset = 0;
+    m_skipFrames = 0;
     m_pausedPosMs = 0;
     m_producedAudio = false;
     m_meterPeakL = 0.0f;
@@ -406,6 +416,8 @@ void FxEngine::startProcessAt(qint64 positionMs)
 
     m_baseMs = m_isLive ? 0 : positionMs;
     m_framesTaken = 0;
+    m_frameOffset = 0;
+    m_skipFrames = 0;
     m_partialFrame.clear();
     m_fifo.clear();
     // Auto-cue: skip encoded leading silence only when the track starts
@@ -471,11 +483,24 @@ void FxEngine::preloadNext(const QString &path)
     connect(probe, &QProcess::finished, this,
             [this, probe, path](int, QProcess::ExitStatus) {
         probe->deleteLater();
+        const QString out = QString::fromLocal8Bit(probe->readAllStandardOutput());
+        if (probe == m_adoptedProbe) {
+            // The track was adopted before its probe answered: this is its
+            // duration, arriving late.
+            m_adoptedProbe = nullptr;
+            qint64 durationMs = 0;
+            bool is432 = false;
+            parseProbeOutput(out, &durationMs, &is432);
+            if (path == m_path && durationMs > 0) {
+                m_durationMs = durationMs;
+                emit durationChanged(m_durationMs);
+            }
+            return;
+        }
         if (probe != m_nextProbe || path != m_nextPath)
             return; // canceled or superseded meanwhile
         m_nextProbe = nullptr;
-        parseProbeOutput(QString::fromLocal8Bit(probe->readAllStandardOutput()),
-                         &m_nextDurationMs, &m_nextIs432);
+        parseProbeOutput(out, &m_nextDurationMs, &m_nextIs432);
         spawnPreloadDecoder();
     });
     QTimer::singleShot(5000, probe, [probe] {
@@ -560,6 +585,26 @@ void FxEngine::adoptPreloaded()
              << "seamless=" << seamless << "crossfade=" << crossfade
              << "state=" << int(m_state);
 
+    // Aligned join: how many frames of the outgoing track are still to go
+    // out before the incoming one has to start. Positive when the handoff
+    // came early, negative when it came late. Counted from what has been
+    // handed to the sink, which is where the incoming audio will be queued.
+    qint64 joinLeadFrames = 0;
+    if (crossfade && m_nextCrossfadeAtMs >= 0) {
+        const qint64 joinFrame = m_nextCrossfadeAtMs * kSampleRate / 1000;
+        const qint64 writtenFrame = m_baseMs * kSampleRate / 1000 + inputFramesConsumed();
+        joinLeadFrames = joinFrame - writtenFrame;
+        // A join armed a second or so ahead lands well inside this. Anything
+        // further out means the timeline moved under it (the operator seeked
+        // the outgoing track) and waiting for it would be silence on air.
+        constexpr qint64 kMaxJoinOffsetFrames = 5LL * kSampleRate;
+        if (qAbs(joinLeadFrames) > kMaxJoinOffsetFrames)
+            joinLeadFrames = 0;
+        qDebug() << "FxEngine: crossfade join is"
+                 << joinLeadFrames * 1000 / kSampleRate << "ms"
+                 << (joinLeadFrames >= 0 ? "ahead" : "behind");
+    }
+
     if (crossfade) {
         stopTailMix();
         m_tailProc = m_proc; // keeps decoding; drained by mixTail()
@@ -569,9 +614,15 @@ void FxEngine::adoptPreloaded()
         m_tailPartial = m_partialFrame;
         m_tailFifo = std::move(m_fifo);
         m_fifo = std::vector<float>();
-        m_tailGain = 1.0;
-        m_tailGainStep = 1000.0 / (double(qMax(qint64(200), m_nextCrossfadeMs))
-                                   * kSampleRate);
+        const double fadeFrames = double(qMax(qint64(200), m_nextCrossfadeMs))
+                                  * kSampleRate / 1000.0;
+        m_tailGainStep = 1.0 / fadeFrames;
+        // Early: the outgoing track stays at full level until the join.
+        // Late: the fade is already that far along.
+        m_tailHoldFrames = qMax(qint64(0), joinLeadFrames);
+        m_tailGain = joinLeadFrames >= 0
+            ? 1.0
+            : std::max(0.0, 1.0 + double(joinLeadFrames) * m_tailGainStep);
     } else {
         stopProcess(); // the old decoder (already exited after a natural end)
         if (!seamless) {
@@ -583,11 +634,15 @@ void FxEngine::adoptPreloaded()
         }
     }
     m_nextCrossfadeMs = 0;
+    m_nextCrossfadeAtMs = -1;
 
     m_proc = m_nextProc;
     m_nextProc = nullptr;
     m_path = m_nextPath;
     m_nextPath.clear();
+    // A probe still out belongs to this track now (see setSource).
+    m_adoptedProbe = m_nextProbe;
+    m_nextProbe = nullptr;
     m_durationMs = m_nextDurationMs;
     m_sourceIs432 = m_nextIs432;
     m_isLive = false;
@@ -608,10 +663,25 @@ void FxEngine::adoptPreloaded()
 
     m_baseMs = 0;
     m_framesTaken = 0;
+    m_frameOffset = 0;
+    m_skipFrames = 0;
     m_pausedPosMs = 0;
     m_producedAudio = false;
     m_finishEmitted = false;
     m_procPreloaded = true; // play() must not respawn the decoder
+
+    if (joinLeadFrames > 0) {
+        // Early: the incoming track waits behind that much silence, which
+        // the outgoing tail is mixed over. Its clock starts negative so its
+        // position reads 0 at its first real sample.
+        m_fifo.assign(size_t(joinLeadFrames) * kChannels, 0.0f);
+        m_frameOffset = -joinLeadFrames;
+    } else if (joinLeadFrames < 0) {
+        // Late: drop the head the outgoing track has already played over,
+        // so the incoming audio still lands where the mix put it.
+        m_skipFrames = -joinLeadFrames;
+        m_frameOffset = m_skipFrames;
+    }
 
     // Auto-cue the adopted track. During a crossfade the chunk-drop skip
     // would discard mixed tail audio, and the overlap was computed from
@@ -828,7 +898,7 @@ qint64 FxEngine::inputFramesConsumed() const
 {
     // With the tempo-preserving retune the output timeline matches the
     // source timeline 1:1, so consumed frames map directly to position.
-    return m_framesTaken;
+    return m_framesTaken + m_frameOffset;
 }
 
 qint64 FxEngine::currentPositionMs() const
@@ -873,9 +943,10 @@ void FxEngine::readProcessOutput()
     drainDecoder(m_proc, m_partialFrame, m_fifo);
 }
 
-void FxEngine::setNextCrossfade(qint64 fadeMs)
+void FxEngine::setNextCrossfade(qint64 fadeMs, qint64 startAtMs)
 {
     m_nextCrossfadeMs = qMax(qint64(0), fadeMs);
+    m_nextCrossfadeAtMs = startAtMs;
 }
 
 void FxEngine::mixTail(float *out, int frames)
@@ -891,7 +962,10 @@ void FxEngine::mixTail(float *out, int frames)
         const float g = static_cast<float>(m_tailGain);
         out[i] += m_tailFifo[i] * g;
         out[i + 1] += m_tailFifo[i + 1] * g;
-        m_tailGain = std::max(0.0, m_tailGain - m_tailGainStep);
+        if (m_tailHoldFrames > 0)
+            --m_tailHoldFrames;
+        else
+            m_tailGain = std::max(0.0, m_tailGain - m_tailGainStep);
     }
     if (n > 0)
         m_tailFifo.erase(m_tailFifo.begin(), m_tailFifo.begin() + n * kChannels);
@@ -920,6 +994,7 @@ void FxEngine::stopTailMix()
     m_tailFifo.clear();
     m_tailGain = 0.0;
     m_tailGainStep = 0.0;
+    m_tailHoldFrames = 0;
 }
 
 int FxEngine::fillChunk(float *out, int maxFrames)
@@ -1047,6 +1122,15 @@ void FxEngine::pump()
     }
 
     readProcessOutput();
+
+    // A late crossfade join: the head of the adopted track the outgoing one
+    // already played over is dropped as it arrives (see adoptPreloaded).
+    if (m_skipFrames > 0 && !m_fifo.empty()) {
+        const qint64 drop = std::min<qint64>(m_skipFrames,
+                                             qint64(m_fifo.size() / kChannels));
+        m_fifo.erase(m_fifo.begin(), m_fifo.begin() + drop * kChannels);
+        m_skipFrames -= drop;
+    }
 
     // Auto-cue, tail side: once the decoder has delivered everything, chop
     // the encoded trailing silence off the fifo so the track finishes where
@@ -1188,6 +1272,8 @@ void FxEngine::maybeFinish()
     const qint64 finalPos = (m_durationMs > 0) ? m_durationMs : currentPositionMs();
     m_baseMs = 0;
     m_framesTaken = 0;
+    m_frameOffset = 0;
+    m_skipFrames = 0;
     m_producedAudio = false;
     if (!m_finishEmitted) {
         emit positionChanged(finalPos);
@@ -1214,7 +1300,7 @@ bool FxEngine::enterScratchMode()
     // Freeze the decoder: while scratching, audio comes from the snapshot
     stopProcess();
 
-    const qint64 nowFrame = m_baseMs * kSampleRate / 1000 + m_framesTaken;
+    const qint64 nowFrame = m_baseMs * kSampleRate / 1000 + inputFramesConsumed();
     const qint64 historyFrames = static_cast<qint64>(m_history.size() / kChannels);
 
     m_scratchBuf.clear();
@@ -1378,6 +1464,8 @@ void FxEngine::stopFromScratch()
     m_state = State::Stopped;
     m_baseMs = 0;
     m_framesTaken = 0;
+    m_frameOffset = 0;
+    m_skipFrames = 0;
     m_producedAudio = false;
 
     emit positionChanged(finalPos);
@@ -1396,6 +1484,8 @@ void FxEngine::failTrack(const QString &message)
     m_state = State::Stopped;
     m_baseMs = 0;
     m_framesTaken = 0;
+    m_frameOffset = 0;
+    m_skipFrames = 0;
     m_producedAudio = false;
     emit engineError(message);
 }

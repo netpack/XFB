@@ -535,6 +535,16 @@
               </widget>
              </item>
              <item>
+              <widget class="QCheckBox" name="checkBox_mixInEngine">
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Play the on-air player through XFB's own audio engine (the one the DJ decks, the effects and the stream use) even when no effect is on. Every crossfade is then mixed inside one audio stream and joins on the exact sample auto-mix measured, instead of starting a second player and hoping it starts in time. Needs ffmpeg. Takes effect from the next track.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="text">
+                <string>Mix transitions in XFB's audio engine (sample-accurate crossfades)</string>
+               </property>
+              </widget>
+             </item>
+             <item>
               <widget class="QCheckBox" name="checkBox_bpmMatch">
                <property name="toolTip">
                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;In Auto Mode, pick the next track from those whose tempo is close to the one it follows, so the crossfade between them does not fight two different beats. Half and double time count as a match. Tracks need their BPM measured first (Database → Measure the BPM of all music tracks in the database); when nothing suitable is found, Auto Mode picks at random as before.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>

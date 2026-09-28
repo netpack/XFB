@@ -632,7 +632,24 @@ private slots:
     LevelMeter *m_levelMeter = nullptr;
     bool m_levelMeterVertical = false; // current docking (starts horizontal)
     QSplitter *m_middleSplitter = nullptr; // main tabs | side panel splitter
-    void startOverlapSegue(qint64 fadeMs);
+    /**
+     * Start the next playlist item @a overlapMs before the end of the one on
+     * air. The join is planned on the outgoing track's timeline (its duration
+     * minus the overlap) rather than on whenever this gets called: the FX
+     * engine places the incoming track on that exact sample, and the tail
+     * player path is started from a timer aimed at it.
+     */
+    void startOverlapSegue(qint64 overlapMs);
+    /** True when the coming segue will be mixed inside the FX engine rather
+     *  than handed to the tail player. See startOverlapSegue(). */
+    bool segueMixesInEngine() const;
+    /** Fires a tail-player segue at its planned moment. A position tick
+     *  arrives only every 100-500 ms (coarser on Windows), which is too late
+     *  for a join that auto-mix measured to the millisecond. */
+    QTimer *m_segueTimer = nullptr;
+    /** Options: route the on-air player through the FX engine even with no
+     *  FX on, so every join is mixed sample-continuously in one stream. */
+    bool m_mixInEngine = false;
     void stopTailPlayer();
 
     // Volume line (envelope) of the track playing on Xplayer, captured from

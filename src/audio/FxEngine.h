@@ -80,8 +80,20 @@ public slots:
      * the outgoing decoder keeps feeding the mix, faded out over fadeMs,
      * while the incoming track continues the same sink stream — a
      * sample-continuous crossfade with no second audio pipeline.
+     *
+     * @param startAtMs  where in the OUTGOING track the incoming one has to
+     *        begin, or -1 for "at the handoff". With a position the join is
+     *        placed on that exact sample whenever the handoff happens: a
+     *        handoff that arrives early lets the outgoing track run on alone
+     *        until then, one that arrives late starts the incoming track
+     *        that much into itself. Without it the incoming track began
+     *        wherever the request happened to land — behind the ~350 ms the
+     *        sink already held, plus however late the position tick that
+     *        fired the segue was — and an auto-mixed join, which puts the
+     *        incoming audio exactly where the outgoing audio stops, opened a
+     *        gap of that size.
      */
-    void setNextCrossfade(qint64 fadeMs);
+    void setNextCrossfade(qint64 fadeMs, qint64 startAtMs = -1);
     /**
      * Tear down the audio sink so the next start reopens it on the current
      * default device. Called by the stall watchdog: a wedged or vanished
@@ -225,6 +237,11 @@ private:
     qint64 m_durationMs = 0;
     qint64 m_baseMs = 0;          // input-timeline offset of the running decode
     qint64 m_framesTaken = 0;     // input frames consumed since m_baseMs (non-retune path)
+    // Frames to add to m_framesTaken for the track's own timeline: negative
+    // while an aligned crossfade plays the silence the incoming track waits
+    // behind, positive once its skipped head has been dropped.
+    qint64 m_frameOffset = 0;
+    qint64 m_skipFrames = 0;      // head frames of the adopted track still to drop
     qint64 m_pausedPosMs = 0;
     float m_volume = 1.0f;
     bool m_producedAudio = false;
@@ -237,6 +254,7 @@ private:
     QString m_nextPath;
     QProcess *m_nextProc = nullptr;  // decoder already running ahead of time
     QProcess *m_nextProbe = nullptr; // async ffprobe (a blocking probe would starve the pump)
+    QProcess *m_adoptedProbe = nullptr; // a probe that outlived its preload: the current track's
     qint64 m_nextDurationMs = 0;
     bool m_nextIs432 = false;
     bool m_procPreloaded = false;    // m_proc was adopted, already decoding from 0
@@ -252,7 +270,9 @@ private:
     std::vector<float> m_tailFifo;
     double m_tailGain = 0.0;
     double m_tailGainStep = 0.0;     // per-frame decrement
+    qint64 m_tailHoldFrames = 0;     // full-level frames before the fade starts
     qint64 m_nextCrossfadeMs = 0;    // armed by setNextCrossfade()
+    qint64 m_nextCrossfadeAtMs = -1; // outgoing-track position of the join, or -1
 
     // Output
     QAudioSink *m_sink = nullptr;

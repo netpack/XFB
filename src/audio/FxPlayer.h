@@ -58,8 +58,13 @@ public:
      * FX engine only: the next preloaded handoff crossfades — the outgoing
      * track keeps playing inside the engine mix, fading over fadeMs,
      * instead of being cut when the new source is adopted.
+     *
+     * @param startAtMs  position in the outgoing track where the incoming one
+     *        must begin (see FxEngine::setNextCrossfade), or -1 for "now".
+     *        Given a position, the join lands on that sample however early
+     *        or late the handoff itself arrives.
      */
-    void setNextCrossfade(qint64 fadeMs);
+    void setNextCrossfade(qint64 fadeMs, qint64 startAtMs = -1);
 
     /**
      * Rebuild the FX engine's audio sink on the current default device.
@@ -137,6 +142,22 @@ public:
      * available (falls back to plain playback when ffmpeg is missing).
      */
     void setPreferEngineAlways(bool on) { m_preferEngine = on; }
+
+    /**
+     * Default for Options ▸ "Mix transitions in XFB's audio engine", which
+     * puts the on-air player on the engine path the decks use. On by default
+     * on Windows only: there the plain player joins a crossfade from two
+     * separately started QMediaPlayers, and their start-up latency was heard
+     * as a gap. Elsewhere the long-standing default stays as it was.
+     */
+    static bool mixInEngineByDefault()
+    {
+#ifdef Q_OS_WIN
+        return true;
+#else
+        return false;
+#endif
+    }
 
     /**
      * Arm the broadcast tap: post-DSP master PCM is re-emitted through

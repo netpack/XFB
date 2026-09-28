@@ -361,9 +361,9 @@ void FxPlayer::setCueVolume(float linearVolume)
     engineCall([v](FxEngine *e) { e->setVolume(v); });
 }
 
-void FxPlayer::setNextCrossfade(qint64 fadeMs)
+void FxPlayer::setNextCrossfade(qint64 fadeMs, qint64 startAtMs)
 {
-    engineCall([fadeMs](FxEngine *e) { e->setNextCrossfade(fadeMs); });
+    engineCall([fadeMs, startAtMs](FxEngine *e) { e->setNextCrossfade(fadeMs, startAtMs); });
 }
 
 void FxPlayer::discardPrepared()

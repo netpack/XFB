@@ -983,6 +983,14 @@ player::player(QWidget *parent) :
                 stopTailPlayer();
         });
 
+        // A segue the tail player carries is fired from here, aimed at its
+        // planned moment; onPositionChanged() arms it. Precise, because the
+        // default coarse timer may be 5% late, and 5% of a long lookahead
+        // is exactly the kind of gap this timer exists to avoid.
+        m_segueTimer = new QTimer(this);
+        m_segueTimer->setSingleShot(true);
+        m_segueTimer->setTimerType(Qt::PreciseTimer);
+
         // Cue bus: its own pair of players, permanently bound to the cue
         // device. Created before the routing settings are applied below so
         // it never exists in an unrouted state.
@@ -996,6 +1004,10 @@ player::player(QWidget *parent) :
         // playback automatically when ffmpeg is missing)
         lp1_Xplayer->setPreferEngineAlways(true);
         lp2_Xplayer->setPreferEngineAlways(true);
+        // The on-air player too, when the operator asked for it (Options ▸
+        // Mixing). updateConfig() ran before the players existed.
+        Xplayer->setPreferEngineAlways(m_mixInEngine);
+        m_tailPlayer->setPreferEngineAlways(m_mixInEngine);
 
         // Streaming client: FxPlayer routes http(s) URLs through the
         // ffmpeg-CLI engine (plain QMediaPlayer cannot play live streams).
@@ -2638,6 +2650,14 @@ void player::updateConfig() {
 
     // Auto Auto-mix: overlaps computed automatically for new playlist items
     m_autoAutoMix = settings.value("AutoAutoMix", false).toBool();
+
+    // On-air player through the FX engine: every join mixed in one stream.
+    // Takes effect from the next track; the one playing is not interrupted.
+    m_mixInEngine = settings.value("MixInEngine", FxPlayer::mixInEngineByDefault()).toBool();
+    for (FxPlayer *p : {Xplayer, m_tailPlayer}) {
+        if (p)
+            p->setPreferEngineAlways(m_mixInEngine);
+    }
 
     // EBU R128 loudness normalisation. Live-applied: the Options dialog's
     // finished() signal is wired to updateConfig(), so a change to the
@@ -4833,6 +4853,8 @@ void player::on_btStop_clicked()
     m_manualAdvancing = true;  // Prevent playbackStateChanged from triggering playNextMedia
 
     stopTailPlayer(); // silence a crossfade tail that may still be fading out
+    if (m_segueTimer)
+        m_segueTimer->stop(); // and a segue that was about to fire
 
     // Forcefully reset the media player to recover from any stuck state
     // (AVFoundation on macOS can hang on certain OGG files)
@@ -4954,18 +4976,38 @@ void player::onPositionChanged(qint64 position)
     // Overlap segue: when the next playlist item defines a crossfade
     // overlap (set by dragging its wave in the playlist wave view), start
     // it that many ms before the current track ends.
+    //
+    // It is armed a little ahead of time, because this tick is not punctual:
+    // it arrives every 100-500 ms depending on the player and the platform,
+    // and firing on the first tick past the mark started the next track that
+    // much late. Auto-mix puts the incoming audio exactly where the outgoing
+    // audio stops, so that lateness was heard as a gap at the join.
+    //  - Mixed in the FX engine, the segue is handed over now together with
+    //    the position it has to start at, and the engine waits for that
+    //    sample (which also absorbs the ~350 ms the sink holds).
+    //  - Through the tail player, a precise timer fires it at the mark.
     if (PlayMode == "Playing_Segue" && !m_manualAdvancing && !m_overlapSegueFired
             && position > 0 && ui->playlist->count() > 0) {
         const qint64 overlapMs =
             ui->playlist->item(0)->data(PlaylistWaveView::OverlapRole).toLongLong();
         if (overlapMs > 0) {
+            constexpr qint64 kSegueLookaheadMs = 1500;
             const qint64 remaining = trackTotalDuration - position;
-            if (remaining > 0 && remaining <= overlapMs) {
+            if (remaining > 0 && remaining <= overlapMs + kSegueLookaheadMs) {
                 m_overlapSegueFired = true; // re-armed by the next durationChanged
-                // Deferred: don't switch sources from inside a player signal
-                QTimer::singleShot(0, this, [this, remaining]() {
-                    startOverlapSegue(remaining);
+                const qint64 delayMs = segueMixesInEngine()
+                    ? 0 : qMax(qint64(0), remaining - overlapMs);
+                const QUrl source = Xplayer->source();
+                // Deferred even at 0: don't switch sources from inside a
+                // player signal.
+                m_segueTimer->disconnect();
+                connect(m_segueTimer, &QTimer::timeout, this, [this, overlapMs, source]() {
+                    if (PlayMode != "Playing_Segue" || m_manualAdvancing
+                            || Xplayer->source() != source || ui->playlist->count() == 0)
+                        return; // the operator moved on meanwhile
+                    startOverlapSegue(overlapMs);
                 });
+                m_segueTimer->start(int(delayMs));
                 return;
             }
         }
@@ -4980,7 +5022,9 @@ void player::onPositionChanged(qint64 position)
             && position > 0 && trackTotalDuration > 0 && ui->playlist->count() > 0) {
         const qint64 overlapMs =
             ui->playlist->item(0)->data(PlaylistWaveView::OverlapRole).toLongLong();
-        const qint64 horizon = qMax(qint64(5000), overlapMs + 2000);
+        // Well ahead of the segue's own lookahead: the preload probes the
+        // file and starts a decoder, and on Windows both take a while.
+        const qint64 horizon = qMax(qint64(8000), overlapMs + 5000);
         const qint64 remaining = trackTotalDuration - position;
         if (remaining > 0 && remaining <= horizon) {
             m_nextPrepared = true; // re-armed by the next durationChanged
@@ -5024,6 +5068,8 @@ void player::durationChanged(qint64 position)
     if (m_airHandle > 0)
         AirLog::instance()->setPlannedMs(m_airHandle, position);
     m_overlapSegueFired = false; // new media: re-arm the overlap segue
+    if (m_segueTimer)
+        m_segueTimer->stop();    // ... and forget one armed for the last
     m_lastSpokenCountdown = -1;  // ... and the spoken countdown marks
     m_nextPrepared = false;      // new media: re-arm the gapless preload
 
@@ -5426,18 +5472,41 @@ void player::playlistAboutToFinish()
     }
 }
 
-void player::startOverlapSegue(qint64 fadeMs)
+bool player::segueMixesInEngine() const
 {
-    qDebug() << "Overlap segue: starting the next track" << fadeMs
-             << "ms before the current one ends";
+    if (!Xplayer || !Xplayer->fxEngineActive() || ui->playlist->count() == 0)
+        return false;
+    const QListWidgetItem *next = ui->playlist->item(0);
+    const QUrl nextUrl = QUrl::fromLocalFile(next->text());
+    const QUrl endingSource = Xplayer->source();
 
+    // The two reasons startOverlapSegue() gives for sending a join through
+    // the tail player instead: a voice track on either side of it, and a
+    // volume line on the outgoing track. Kept in step with it.
+    const bool outgoingIsVoiceTrack =
+        m_activeIsVoiceTrack && endingSource.toLocalFile() == m_activeEnvelopePath;
+    const bool voiceSegue =
+        next->data(PlaylistWaveView::VoiceTrackRole).toBool() || outgoingIsVoiceTrack;
+    const bool endingHasVolumeLine =
+        endingSource.toLocalFile() == m_activeEnvelopePath && m_activeEnvelope.size() > 1;
+
+    return !voiceSegue && !endingHasVolumeLine && Xplayer->hasPreparedNext(nextUrl);
+}
+
+void player::startOverlapSegue(qint64 overlapMs)
+{
     // Snapshot the outgoing track BEFORE playNextSong() switches the source
     const QUrl endingSource = Xplayer->source();
     const qint64 endingPos = Xplayer->position();
+    // Where the join belongs on the outgoing track's timeline, and the fade
+    // that is left from here to its end. The two differ by however early or
+    // late this call is; the engine path aims at the first, the tail player
+    // (which restarts the tail from endingPos) at the second.
+    const qint64 joinAtMs = qMax(qint64(0), trackTotalDuration - overlapMs);
+    const qint64 fadeMs = qMax(qint64(0), trackTotalDuration - endingPos);
 
-    // As-run log: the outgoing item ends here, at the position it really
-    // reached, even though its tail keeps fading for another few seconds.
-    closeAirLogEntry(QStringLiteral("segue"), endingPos);
+    qDebug() << "Overlap segue: the next track joins at" << joinAtMs
+             << "ms, with" << fadeMs << "ms of the current one left";
 
     // When the FX engine drives playback and the next track is already
     // preloaded, the engine crossfades internally: the outgoing decoder
@@ -5486,8 +5555,22 @@ void player::startOverlapSegue(qint64 fadeMs)
                            && !nextUrl.isEmpty()
                            && Xplayer->hasPreparedNext(nextUrl);
 
+    // Armed ahead of time for the engine, which then could not take it (the
+    // preload was not ready): the tail player cannot wait for a sample, so
+    // wait for the mark here instead of starting the next track early.
+    if (!engineMix && m_segueTimer && endingPos + 20 < joinAtMs) {
+        m_segueTimer->start(int(joinAtMs - endingPos));
+        return;
+    }
+
+    // As-run log: the outgoing item ends where the next one joins it, even
+    // though its tail keeps fading for another few seconds.
+    closeAirLogEntry(QStringLiteral("segue"), engineMix ? joinAtMs : endingPos);
+
     if (engineMix) {
-        Xplayer->setNextCrossfade(qBound(qint64(200), fadeMs, qint64(600000)));
+        // The fade runs from the join to the end of the outgoing track.
+        Xplayer->setNextCrossfade(qBound(qint64(200), overlapMs, qint64(600000)),
+                                  joinAtMs);
     } else if (m_tailPlayer && endingSource.isLocalFile()) {
         if (m_tailFade->state() == QAbstractAnimation::Running)
             m_tailFade->stop();
