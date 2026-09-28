@@ -1,5 +1,7 @@
 [Desktop Entry]
-Version=1.5
+# Version is the Desktop Entry spec this file follows, not XFB's version.
+# 1.5 is valid, but the validator in the AppImage catalog does not know it.
+Version=1.0
 Type=Application
 Name=XFB
 GenericName=Open-Source Radio Automation
