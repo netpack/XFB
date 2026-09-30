@@ -163,10 +163,10 @@ modules:
       #
       # Paths are resolved relative to `path` (g_file_resolve_relative_path in
       # builder-source-dir.c), so they are full relative paths -- basenames do
-      # not match -- and there are no globs. That last point is the maintenance
-      # trap: the three version-numbered installers below go stale at the next
-      # bump-version.sh and will start being copied again. That costs time and
-      # nothing else, so it is a slow build rather than a broken one.
+      # not match -- and there are no globs. So the three version-numbered
+      # installers below name the release being built, and bump-version.sh
+      # moves them on with every other version number; left behind, they would
+      # start being copied again (a slow build rather than a broken one).
       #
       # `packaging/` must NOT be skipped: the companion APK the release carries
       # is packaging/companion/xfb-companion.apk, it is gitignored, and leaving
@@ -195,9 +195,9 @@ modules:
           - output
           - debian-repo
           - flatpak-repo
-          - XFB-4.0-Setup.exe
-          - XFB-4.0-arm64-Setup.exe
-          - XFB-4.0-macOS.dmg
+          - XFB-4.02-Setup.exe
+          - XFB-4.02-arm64-Setup.exe
+          - XFB-4.02-macOS.dmg
           - vs_BuildTools.exe
     post-install:
       # Flathub wants the desktop file, icon and metainfo named for the app id.

@@ -153,6 +153,11 @@ README.md                 | 1 | XFB-@V@-x86_64.flatpak
 README.md                 | 1 | XFB-@V@-Setup.exe
 README.md                 | 1 | XFB-@V@-arm64-Setup.exe
 CITATION.cff              | 1 | version: @V@
+# The source skip list in the flatpak manifest names the installers of this
+# release, which sit in the tree after the Windows and macOS builds.
+packaging/flatpak/pt.netpack.XFB.yml | 1 | - XFB-@V@-Setup.exe
+packaging/flatpak/pt.netpack.XFB.yml | 1 | - XFB-@V@-arm64-Setup.exe
+packaging/flatpak/pt.netpack.XFB.yml | 1 | - XFB-@V@-macOS.dmg
 '
 
 # CITATION.cff also carries a release date, which no @V@ substitution can
