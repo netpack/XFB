@@ -32,12 +32,12 @@ once. Leave the artist field empty and XFB reads artist and title from the file
 name, expecting `artist - song.ext`; the genre, country and published date you
 set are applied to everything it finds.
 
-**Database → Add a song from an external source** downloads with `yt-dlp` and
+**Database → Add a song from an external source** downloads and
 catalogues the result in one step. Paste a link and press **Get it!**, or paste
 a YouTube playlist (a link containing `list=`) or a SoundCloud set and press
 **Get Playlist!** to take every entry. The audio format, whether to keep the
 original video, and whether to embed artwork and metadata are in
-**Options → Options → Downloads (yt-dlp)**.
+**Options → Options → Downloads**.
 
 Spotify and Apple Music links are resolved to a track list and then fetched
 from a source that can actually be downloaded from. Spotify's public pages only

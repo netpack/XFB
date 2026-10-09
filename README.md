@@ -30,7 +30,6 @@ If you use XFB in academic work, please cite it via [`CITATION.cff`](CITATION.cf
 - **432 Hz Playback** — Retune everything from A=440 to A=432 in real time without touching your files, or batch-convert one track, a selection, or the whole library (Database menu / music table right-click)
 - **Live Recording** — Record programs directly within the application
 - **Streaming Client** — Listen to any Icecast/Shoutcast stream or .m3u/.pls playlist from within XFB (with automatic reconnect), e.g. to monitor your station's output
-- **Torrent Search** — Search music via Tor-routed onion sites (searching is anonymised; the BitTorrent download itself is not — your IP is visible to peers)
 - **Accessibility** — Screen reader support (ORCA, VoiceOver, NVDA), full keyboard operation, spoken status announcements, audio feedback, braille display output via BrlTTY, and a built-in tutorial for blind operators (Help menu)
 - **Production Computers** — Prepare the programme on another computer instead of on the one that is broadcasting. A production machine copies down the station's music, jingles, ads, programs and schedule, plays them locally while the work is done, and publishes new or changed entries back to the station, where Auto Mode uses them from its next choice onwards (XFB → Production Computers)
 - **Themes** — Light, Dark, Midnight and Studio, or follow the system setting, with a configurable accent colour
@@ -180,7 +179,7 @@ told nothing.
 ```sh
 ./uninstall-macos.sh
 ```
-This removes the app, configuration, cache, and Tor data. Your music library is preserved.
+This removes the app, configuration and cache. Your music library is preserved.
 
 ### Debian / Ubuntu
 
@@ -372,13 +371,7 @@ You do not have to install any of these yourself. The first time you use a
 feature that needs one, XFB tells you what it needs and why, asks permission,
 and installs it for you through your platform's package manager (Homebrew,
 apt, pacman or winget). Nothing is installed at startup, and nothing is
-installed without you agreeing to it — so a station that never touches, say,
-the Torrents tab never gets a Tor client.
-
-Three of them go further and are fetched **only** at the moment the feature is
-first used: `tor`, `aria2c` (or `transmission-cli`) and `yt-dlp`. Nothing else
-pulls them in — not startup, not the sweep below — because the features they
-belong to are switched on per operator and most desks do not have them at all.
+installed without you agreeing to it.
 
 | Tool | Needed for |
 |------|------------|
@@ -388,9 +381,7 @@ belong to are switched on per operator and most desks do not have them at all.
 | `audacity` | The "Open this in Audacity" action |
 
 Options → **Install all dependencies** fetches the rest in one go if you would
-rather have them ready in advance. It deliberately leaves out the three
-on-demand tools above: a Tor daemon and a BitTorrent client are not something
-to install on a machine that has not asked for them.
+rather have them ready in advance.
 
 `orca` is different: it is the Linux screen reader *you* run, not something XFB
 launches. XFB speaks through whichever screen reader is already running — ORCA

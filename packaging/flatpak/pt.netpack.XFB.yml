@@ -8,15 +8,8 @@
 # flatpak-builder in a privileged container. The three CHECKs this file used to
 # carry are answered where they stood.
 #
-# The design decision behind this file: yt-dlp is NOT bundled. It goes stale in
-# days — YouTube changes and an old yt-dlp simply fails — and a read-only
-# /app would freeze whatever version shipped. XFB already downloads the official
-# standalone yt-dlp into ~/.local/bin and prefers it over any system copy, so it
-# can self-update (DependencyChecker::ensureYtDlp, and the note above
-# findYtDlpExecutable). Inside the sandbox that path is the app's own writable
-# home, so the mechanism works here unchanged. ffmpeg is the opposite case: it
-# is needed for waveforms, BPM, durations, cover art and conversion, none of
-# which can wait on a download, so it is built in.
+# ffmpeg is built in: it is needed for waveforms, BPM, durations, cover art and
+# conversion, none of which can wait on a download.
 app-id: pt.netpack.XFB
 runtime: org.kde.Platform
 # 6.9 never existed. Flathub carries 6.10 and 6.11 (plus the old 5.15-25.08);
@@ -69,19 +62,10 @@ finish-args:
   - --device=all
 
   # The station's own network: Icecast, the phone sync server, the public
-  # now-playing page, and fetching yt-dlp on first use.
+  # now-playing page.
   - --share=network
 
-  # The music library lives wherever the operator keeps it, and ~/.local/bin is
-  # where the self-updating yt-dlp goes.
-  # STILL TO CHECK, and it needs a real desktop rather than a container:
-  # whether ~/.var/app/pt.netpack.XFB is mounted noexec. The whole yt-dlp
-  # design depends on running a downloaded binary from the app's writable
-  # home, and that directory is an ordinary directory in $HOME, so it inherits
-  # whatever that filesystem was mounted with — nothing flatpak decides, and
-  # nothing a container can tell you about the operator's machine. Test on the
-  # Fedora box: flatpak run --command=sh pt.netpack.XFB, drop a script in
-  # ~/.local/bin, chmod +x, run it.
+  # The music library lives wherever the operator keeps it.
   - --filesystem=home
 
   # Accessibility. This is not optional for XFB: the app is used without sight,

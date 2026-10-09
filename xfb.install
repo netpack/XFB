@@ -11,8 +11,6 @@ post_install() {
     echo "    orca        - Screen reader support"
     echo "    brltty      - Braille display support"
     echo "    espeak-ng   - Text-to-speech"
-    echo "    aria2       - Torrent downloads"
-    echo "    tor         - Anonymous search"
     echo ""
     
     # Update desktop database

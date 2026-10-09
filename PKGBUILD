@@ -44,7 +44,6 @@ optdepends=(
     'mediainfo: Track metadata lookups'
     'mplayer: Media player'
     'soundconverter: Audio converter'
-    'yt-dlp: Download media from online sources'
     'lame: MP3 encoding'
     'sox: Audio processing'
     'flac: FLAC audio support'
@@ -175,7 +174,6 @@ package() {
     echo "Installation of XFB completed successfully!"
     echo "The configuration file is: /etc/xfb/xfb.conf"
     echo "The shared folders are under: /usr/share/xfb"
-    echo "You may want to install yt-dlp for downloading media"
     echo ""
     echo "New in v4.02:"
     echo "  - MIDI learn: tie the faders, buttons and jog wheels of a MIDI"

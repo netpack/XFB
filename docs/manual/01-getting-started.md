@@ -39,7 +39,7 @@ a backup strategy: it sits on the same disk as the original.
 | Windows | `%APPDATA%\Netpack - Online Solutions\XFB\XFB\` |
 
 The doubled `XFB` is not a typo: the outer folder holds things XFB downloads and
-generates (the companion app, voice tracks, Tor data), and the inner one holds
+generates (the companion app, voice tracks), and the inner one holds
 the library — `adb.db` and `backups/`. When you are looking for the database,
 it is the one in the *inner* folder.
 

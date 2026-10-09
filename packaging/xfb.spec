@@ -65,10 +65,8 @@ Requires:       at-spi2-core
 # one costs a specific feature, so they are recommendations and not hard
 # requirements: a desk that only plays its library needs none of them.
 Recommends:     ffmpeg-free
-Recommends:     yt-dlp
 Recommends:     perl-Image-ExifTool
 Recommends:     mediainfo
-Recommends:     tor
 Recommends:     speech-dispatcher
 
 %description

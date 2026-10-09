@@ -66,9 +66,6 @@ everything ready in advance, **Options → Install all dependencies**.
 | Tool | Needed for |
 |---|---|
 | `ffmpeg` | FX engine, waveforms, BPM, loudness, 432 Hz, format conversion (bundled on Windows and macOS) |
-| `tor` | anonymous torrent search |
-| `aria2c` or `transmission-cli` | torrent downloading |
-| `yt-dlp` (with `node`) | downloading from online sources |
 | `exiftool` | automatic track duration detection |
 | `mediainfo` | the music table's "Retrieve metadata from file" action |
 | `audacity` | the "Open this in Audacity" action |

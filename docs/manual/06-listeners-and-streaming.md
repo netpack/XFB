@@ -91,11 +91,11 @@ The **Torrents** tab is hidden unless you switch it on in
 **Options → Options → General → XFB Torrents**, and you are asked to confirm the
 first time.
 
-Searching runs through Tor over onion sites and is anonymised. **The BitTorrent
+Searching is anonymised. **The BitTorrent
 download itself is not** — your IP address is visible to the peers you download
 from. XFB says so on the tab, and it is worth repeating here.
 
-Connect to Tor first, then search; results can be downloaded, downloaded and
+Connect first, then search; results can be downloaded, downloaded and
 streamed, or have their magnet link copied. The Downloads section below the
 results manages what is in flight.
 

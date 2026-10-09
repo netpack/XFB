@@ -102,13 +102,6 @@ ENV PATH=/opt/linuxdeploy/usr/bin:/opt/linuxdeploy-plugin-qt/usr/bin:$PATH
 # AppImage has no Recommends: field to ask for them with — the whole point of
 # the format is that the operator downloads one file. Static builds, so they
 # carry no library expectations of their own.
-#
-# yt-dlp is deliberately NOT bundled, for the reason written up in
-# packaging/flatpak/pt.netpack.XFB.yml: it goes stale in days, and a copy
-# frozen inside a read-only image would fail a fortnight after release with
-# nothing the operator could do. XFB downloads the official standalone build
-# into ~/.local/bin and prefers it over any system copy precisely so it can
-# keep itself current.
 RUN set -eu; \
     case "$TARGETARCH" in \
         amd64) ffarch=amd64 ;; \

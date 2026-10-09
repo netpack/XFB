@@ -86,7 +86,7 @@ Diagnostics: `uname`, `pwd`, `free`, `df`, and a **Troubleshoot** section with
 **Manually edit settings.conf** for the settings that have no control of their
 own.
 
-## Downloads (yt-dlp)
+## Downloads
 
 - **Downloaded audio format** — opus, ogg or mp3. XFB produces it with ffmpeg
   and falls back to the next best open format if the encoder is unavailable
@@ -95,8 +95,6 @@ own.
 - **Embed metadata (artist/title)**
 - **Spotify account (optional)** — Client ID and secret. Without them, Spotify's
   public pages only give up the first 100 tracks of a playlist
-
-`yt-dlp` is installed into your home folder and updated before each download.
 
 ## Settings that live elsewhere
 
