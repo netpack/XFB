@@ -9,6 +9,7 @@
 #include <QTcpSocket>
 #include <QTimer>
 
+#include "donation.h"
 #include "services/RemoteControlPage.h"
 #include "services/RemoteControlServer.h"
 
@@ -363,14 +364,14 @@ void TestRemoteControlServer::theControlPageIsServedAndSelfContained()
     QVERIFY(!lower.contains("@import"));
 
     // A link the reader may choose to follow is another matter, and there is
-    // exactly one: the donation link, which must be an anchor and must go to
-    // PayPal. Anything else remote in this page is a mistake.
+    // exactly one: the donation link, which must be an anchor and must be the
+    // one in donation.h. Anything else remote in this page is a mistake.
     static const QRegularExpression remote(QStringLiteral("https?://[^\"'\\s]+"));
     auto found = remote.globalMatch(QString::fromUtf8(page.body));
     int links = 0;
     while (found.hasNext()) {
         const QString url = found.next().captured(0);
-        QVERIFY2(url.startsWith(QStringLiteral("https://www.paypal.com/")), qPrintable(url));
+        QCOMPARE(url, QString::fromLatin1(Donation::kPatreonUrl));
         QVERIFY2(page.body.contains(("<a href=\"" + url + "\"").toUtf8()), qPrintable(url));
         ++links;
     }
