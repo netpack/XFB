@@ -27,7 +27,7 @@ constexpr int kCornerRadius = 8;
 constexpr int kIconSize     = 18;
 
 // Shared with the remote control's web page; see donation.h.
-const char *kDonateUrl = Donation::kPayPalUrl;
+const char *kDonateUrl = Donation::kPatreonUrl;
 
 /** The card colour: the window colour, lifted a step off what it covers. */
 QColor cardColor(const QPalette &palette)
@@ -66,8 +66,8 @@ DonationNotice::DonationNotice(QWidget *parent)
     row->setSpacing(9);
 
     auto *icon = new QLabel(this);
-    // A heart, not the 16px coin or the donate artwork (that one is the
-    // PayPal QR code, which is illegible at this size). Scaled from the large
+    // A heart, not the 16px coin or a QR code (illegible at this size).
+    // Scaled from the large
     // original so it stays sharp on a high-DPI screen.
     const qreal dpr = devicePixelRatioF();
     QPixmap art = QPixmap(":/icons/heart200.png")
@@ -177,7 +177,7 @@ void DonationNotice::applyPalette()
 {
     const QColor link = linkColor(palette());
     m_message->setText(tr("Enjoying XFB? It is kept alive by donations — "
-                          "<a style=\"color:%1;\" href=\"%2\">chip in via PayPal</a> "
+                          "<a style=\"color:%1;\" href=\"%2\">support it on Patreon</a> "
                           "if you can.")
                            .arg(link.name(), QString::fromLatin1(kDonateUrl)));
 

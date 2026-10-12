@@ -2,21 +2,23 @@
 #define DONATION_H
 
 /**
- * Where a donation to XFB goes.
+ * Where support for XFB goes.
  *
- * One constant in one place because it is now offered from two: the desk's
- * corner notice (ui/DonationNotice.cpp) and the remote control's web page
- * (services/RemoteControlPage.cpp). Two copies of a payment address is how a
- * station ends up donating to a link that was changed in only one of them.
+ * One constant per destination, in one place, because they are offered from
+ * several: the desk's corner notice (ui/DonationNotice.cpp), the remote
+ * control's web page (services/RemoteControlPage.cpp) and the About box. Two
+ * copies of a link is how a station ends up following one that was changed in
+ * only one of them.
  *
- * It is PayPal's *hosted button* rather than an e-mail address on purpose:
- * the page that shows it is served to whoever can reach the station, and a
- * hosted button keeps the address itself off it.
+ * Both are public pages rather than a payment address on purpose: the remote
+ * control page is served to whoever can reach the station, and nothing
+ * personal should ride along on it. (This used to be a PayPal hosted button
+ * for the same reason; Patreon replaced it on 2026-10-12.)
  */
 namespace Donation {
 
-inline constexpr const char *kPayPalUrl =
-    "https://www.paypal.com/donate/?hosted_button_id=TFDSZU78WLMC6";
+inline constexpr const char *kPatreonUrl = "https://www.patreon.com/netpack";
+inline constexpr const char *kGitHubSponsorsUrl = "https://github.com/sponsors/netpack";
 
 } // namespace Donation
 

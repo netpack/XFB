@@ -9,6 +9,7 @@
     <a href="https://github.com/netpack/XFB/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3"></a>
     <a href="https://github.com/netpack/XFB/actions/workflows/ci.yml"><img src="https://github.com/netpack/XFB/actions/workflows/ci.yml/badge.svg" alt="Build"></a>
     <a href="https://github.com/sponsors/netpack"><img src="https://img.shields.io/github/sponsors/netpack?logo=githubsponsors&logoColor=white&label=Sponsor" alt="Sponsor"></a>
+    <a href="https://www.patreon.com/netpack"><img src="https://img.shields.io/badge/Patreon-netpack-F96854?logo=patreon&logoColor=white" alt="Patreon"></a>
   </p>
 </div>
 
@@ -394,6 +395,7 @@ your desktop.
 
 XFB is free and open source, and always will be. If it is useful to you or your
 station, you can support its continued development through
+[Patreon](https://www.patreon.com/netpack) or
 [GitHub Sponsors](https://github.com/sponsors/netpack). Sponsorships fund the
 time spent on new features, cross-platform packaging, and keeping the project
 maintained.

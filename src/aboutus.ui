@@ -26,7 +26,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot;font-size:11pt; font-weight:bold;&quot;&gt;Version %1&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot;font-style:italic;&quot;&gt;Pour Mr. De La Plume (Alain Bogaerts) pour l&apos;Éternité.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;XFB is an Open-source software, written in C++ and distributed under GPL-3.0.&lt;/p&gt;&lt;p&gt;Developed by Frédéric Bogaerts.&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://www.researchgate.net/profile/Frederic-Bogaerts&quot;&gt;https://www.researchgate.net/profile/Frederic-Bogaerts&lt;/a&gt;&lt;/p&gt;&lt;p&gt;Any support is very welcome!&lt;/p&gt;&lt;p&gt;If you can, buy me a coffee!: fred@netpack.pt (Paypal)&lt;/p&gt;&lt;p&gt;Thank you very much for your support!&lt;br/&gt;&lt;/p&gt;&lt;p&gt;For more information about Netpack visit &lt;a href=&quot;http://www.netpack.pt&quot;&gt;www.netpack.pt&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot;font-size:11pt; font-weight:bold;&quot;&gt;Version %1&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot;font-style:italic;&quot;&gt;Pour Mr. De La Plume (Alain Bogaerts) pour l&apos;Éternité.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;XFB is an Open-source software, written in C++ and distributed under GPL-3.0.&lt;/p&gt;&lt;p&gt;Developed by Frédéric Bogaerts.&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://www.researchgate.net/profile/Frederic-Bogaerts&quot;&gt;https://www.researchgate.net/profile/Frederic-Bogaerts&lt;/a&gt;&lt;/p&gt;&lt;p&gt;Any support is very welcome!&lt;/p&gt;&lt;p&gt;Support XFB on &lt;a href=&quot;%2&quot;&gt;Patreon&lt;/a&gt; or &lt;a href=&quot;%3&quot;&gt;GitHub Sponsors&lt;/a&gt;.&lt;/p&gt;&lt;p&gt;Thank you very much for your support!&lt;br/&gt;&lt;/p&gt;&lt;p&gt;For more information about Netpack visit &lt;a href=&quot;http://www.netpack.pt&quot;&gt;www.netpack.pt&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
    </property>
   </widget>
   <widget class="QLabel" name="label_2">
@@ -96,9 +96,6 @@
    <property name="text">
     <string/>
    </property>
-   <property name="pixmap">
-    <pixmap resource="resources.qrc">:/images/donate.png</pixmap>
-   </property>
   </widget>
   <widget class="QLabel" name="label_6">
    <property name="geometry">
@@ -110,7 +107,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Scan to donate</string>
+    <string>Scan to support</string>
    </property>
   </widget>
   <widget class="QLabel" name="label_7">

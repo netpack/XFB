@@ -3088,8 +3088,8 @@ A estação está fora do ar até alguém agir.</translation>
     </message>
     <message>
         <location line="+53"/>
-        <source>Enjoying XFB? It is kept alive by donations — &lt;a style=&quot;color:%1;&quot; href=&quot;%2&quot;&gt;chip in via PayPal&lt;/a&gt; if you can.</source>
-        <translation>Gosta do XFB? Ele vive de donativos — &lt;a style=&quot;color:%1;&quot; href=&quot;%2&quot;&gt;contribua via PayPal&lt;/a&gt; se puder.</translation>
+        <source>Enjoying XFB? It is kept alive by donations — &lt;a style=&quot;color:%1;&quot; href=&quot;%2&quot;&gt;support it on Patreon&lt;/a&gt; if you can.</source>
+        <translation>Gosta do XFB? Ele vive de donativos — &lt;a style=&quot;color:%1;&quot; href=&quot;%2&quot;&gt;apoie-o no Patreon&lt;/a&gt; se puder.</translation>
     </message>
 </context>
 <context>
@@ -9540,8 +9540,8 @@ Quer avançar?</translation>
     </message>
     <message>
         <location line="+3"/>
-        <source>Donate with PayPal</source>
-        <translation>Contribuir via PayPal</translation>
+        <source>Support XFB on Patreon</source>
+        <translation>Apoiar o XFB no Patreon</translation>
     </message>
     <message>
         <location line="+1"/>
@@ -14114,9 +14114,8 @@ Desligar?</translation>
     </message>
     <message>
         <location line="+12"/>
-        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot;font-size:11pt; font-weight:bold;&quot;&gt;Version %1&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot;font-style:italic;&quot;&gt;Pour Mr. De La Plume (Alain Bogaerts) pour l&apos;Éternité.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;XFB is an Open-source software, written in C++ and distributed under GPL-3.0.&lt;/p&gt;&lt;p&gt;Developed by Frédéric Bogaerts.&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://www.researchgate.net/profile/Frederic-Bogaerts&quot;&gt;https://www.researchgate.net/profile/Frederic-Bogaerts&lt;/a&gt;&lt;/p&gt;&lt;p&gt;Any support is very welcome!&lt;/p&gt;&lt;p&gt;If you can, buy me a coffee!: fred@netpack.pt (Paypal)&lt;/p&gt;&lt;p&gt;Thank you very much for your support!&lt;br/&gt;&lt;/p&gt;&lt;p&gt;For more information about Netpack visit &lt;a href=&quot;http://www.netpack.pt&quot;&gt;www.netpack.pt&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
-        <oldsource>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;XFB is an Open-source software, written in C++ and distributed under GPL-3.0.&lt;/p&gt;&lt;p&gt;Developed by Frédéric Bogaerts.&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://www.researchgate.net/profile/Frederic-Bogaerts&quot;&gt;https://www.researchgate.net/profile/Frederic-Bogaerts&lt;/a&gt;&lt;/p&gt;&lt;p&gt;Any support is very welcome!&lt;/p&gt;&lt;p&gt;If you can, buy me a coffee!: fred@netpack.pt (Paypal)&lt;/p&gt;&lt;p&gt;Thank you very much for your support!&lt;br/&gt;&lt;/p&gt;&lt;p&gt;For more information about Netpack visit &lt;a href=&quot;http://www.netpack.pt&quot;&gt;www.netpack.pt&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</oldsource>
-        <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot;font-size:11pt; font-weight:bold;&quot;&gt;Versão %1&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot;font-style:italic;&quot;&gt;Pour Mr. De La Plume (Alain Bogaerts) pour l&apos;Éternité.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;O XFB é um software de código aberto, escrito em C++ e distribuído sob a GPL-3.0.&lt;/p&gt;&lt;p&gt;Desenvolvido por Frédéric Bogaerts.&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://www.researchgate.net/profile/Frederic-Bogaerts&quot;&gt;https://www.researchgate.net/profile/Frederic-Bogaerts&lt;/a&gt;&lt;/p&gt;&lt;p&gt;Todo o apoio é muito bem-vindo!&lt;/p&gt;&lt;p&gt;Se puder, pague-me um café!: fred@netpack.pt (Paypal)&lt;/p&gt;&lt;p&gt;Muito obrigado pelo seu apoio!&lt;br/&gt;&lt;/p&gt;&lt;p&gt;Para mais informação sobre a Netpack visite &lt;a href=&quot;http://www.netpack.pt&quot;&gt;www.netpack.pt&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
+        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot;font-size:11pt; font-weight:bold;&quot;&gt;Version %1&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot;font-style:italic;&quot;&gt;Pour Mr. De La Plume (Alain Bogaerts) pour l&apos;Éternité.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;XFB is an Open-source software, written in C++ and distributed under GPL-3.0.&lt;/p&gt;&lt;p&gt;Developed by Frédéric Bogaerts.&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://www.researchgate.net/profile/Frederic-Bogaerts&quot;&gt;https://www.researchgate.net/profile/Frederic-Bogaerts&lt;/a&gt;&lt;/p&gt;&lt;p&gt;Any support is very welcome!&lt;/p&gt;&lt;p&gt;Support XFB on &lt;a href=&quot;%2&quot;&gt;Patreon&lt;/a&gt; or &lt;a href=&quot;%3&quot;&gt;GitHub Sponsors&lt;/a&gt;.&lt;/p&gt;&lt;p&gt;Thank you very much for your support!&lt;br/&gt;&lt;/p&gt;&lt;p&gt;For more information about Netpack visit &lt;a href=&quot;http://www.netpack.pt&quot;&gt;www.netpack.pt&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
+        <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot;font-size:11pt; font-weight:bold;&quot;&gt;Versão %1&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot;font-style:italic;&quot;&gt;Pour Mr. De La Plume (Alain Bogaerts) pour l&apos;Éternité.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;O XFB é um software de código aberto, escrito em C++ e distribuído sob a GPL-3.0.&lt;/p&gt;&lt;p&gt;Desenvolvido por Frédéric Bogaerts.&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://www.researchgate.net/profile/Frederic-Bogaerts&quot;&gt;https://www.researchgate.net/profile/Frederic-Bogaerts&lt;/a&gt;&lt;/p&gt;&lt;p&gt;Todo o apoio é muito bem-vindo!&lt;/p&gt;&lt;p&gt;Apoie o XFB no &lt;a href=&quot;%2&quot;&gt;Patreon&lt;/a&gt; ou no &lt;a href=&quot;%3&quot;&gt;GitHub Sponsors&lt;/a&gt;.&lt;/p&gt;&lt;p&gt;Muito obrigado pelo seu apoio!&lt;br/&gt;&lt;/p&gt;&lt;p&gt;Para mais informação sobre a Netpack visite &lt;a href=&quot;http://www.netpack.pt&quot;&gt;www.netpack.pt&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
         <location line="+55"/>
@@ -14125,8 +14124,8 @@ Desligar?</translation>
     </message>
     <message>
         <location line="+29"/>
-        <source>Scan to donate</source>
-        <translation>Leia para doar</translation>
+        <source>Scan to support</source>
+        <translation>Leia para apoiar</translation>
     </message>
     <message>
         <location line="+13"/>
@@ -14141,6 +14140,11 @@ You should have received a copy of the GNU General Public License along with thi
 Este programa é distribuído na esperança de que seja útil, mas SEM QUALQUER GARANTIA; sem mesmo a garantia implícita de COMERCIABILIDADE ou ADEQUAÇÃO A UM DETERMINADO FIM. Consulte a Licença Pública Geral GNU para obter mais detalhes.
 
 Você deve ter recebido uma cópia da Licença Pública Geral GNU junto com este programa. Caso contrário, consulte https://www.gnu.org/licenses/.</translation>
+    </message>
+    <message>
+        <location filename="aboutus.cpp" line="+50"/>
+        <source>QR code for XFB on Patreon</source>
+        <translation>Código QR do XFB no Patreon</translation>
     </message>
 </context>
 <context>
@@ -17691,8 +17695,8 @@ Ex: programa_2016-02-07
     </message>
     <message>
         <location line="+0"/>
-        <source>Option not coded. Can you buy me a coffee? (Paypal: fred@netpack.pt ;))</source>
-        <translation>Esta opção ainda não foi escrita. Poderia pagar-me um café? (Paypal: fred@netpack.pt ;-))</translation>
+        <source>Option not coded. Can you support XFB on Patreon? (%1 ;))</source>
+        <translation>Esta opção ainda não foi escrita. Poderia apoiar o XFB no Patreon? (%1 ;-))</translation>
     </message>
     <message>
         <location line="+49"/>

@@ -704,7 +704,7 @@ QMap<QString, QString> RemoteControlPage::strings()
         {"givebody", QT_TRANSLATE_NOOP("RemoteControlPage", "XFB is free and open source, "
                           "written by Frédéric Bogaerts and kept alive by donations. If it is "
                           "useful to your station, please chip in what you can.")},
-        {"givelink", QT_TRANSLATE_NOOP("RemoteControlPage", "Donate with PayPal")},
+        {"givelink", QT_TRANSLATE_NOOP("RemoteControlPage", "Support XFB on Patreon")},
         {"giveclose", QT_TRANSLATE_NOOP("RemoteControlPage", "Close this reminder")},
     };
 
@@ -723,7 +723,7 @@ QString RemoteControlPage::html()
     for (auto it = table.cbegin(); it != table.cend(); ++it)
         body.replace(QStringLiteral("{{t.%1}}").arg(it.key()), escapeHtml(it.value()));
     body.replace(QStringLiteral("{{icon}}"), iconDataUri());
-    body.replace(QStringLiteral("{{giveurl}}"), QString::fromLatin1(Donation::kPayPalUrl));
+    body.replace(QStringLiteral("{{giveurl}}"), QString::fromLatin1(Donation::kPatreonUrl));
 
     QJsonObject json;
     for (auto it = table.cbegin(); it != table.cend(); ++it)

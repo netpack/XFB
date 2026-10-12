@@ -40,6 +40,7 @@ Enjoy! . Frédéric Bogaerts 2015 @ Netpack - Online Solutions!.
 #include "services/NgrokTunnelService.h"
 #include "services/UpdateCheckService.h"
 #include "ui/DonationNotice.h"
+#include "donation.h"
 #include "ui/DeckTempoControl.h"
 #include "services/MidiController.h"
 #include "dialogs/MidiLearnDialog.h"
@@ -12590,7 +12591,8 @@ void player::on_actionFullScreen_triggered()
 
 void player::pingServer()
 {
-    QMessageBox::information(this,tr("Ping Server"),tr("Option not coded. Can you buy me a coffee? (Paypal: fred@netpack.pt ;))"));
+    QMessageBox::information(this,tr("Ping Server"),tr("Option not coded. Can you support XFB on Patreon? (%1 ;))")
+                                 .arg(QString::fromLatin1(Donation::kPatreonUrl)));
 }
 
 void player::on_actionForce_an_FTP_Check_triggered()
